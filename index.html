@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Nabeng-SBA System</title>
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+</head>
+
+<body>
+
+
+<div id="subHeader" class="sub-header" style="display:none;">
+
+    <h1>📊 Nabeng-SBA</h1>
+
+    <!-- MOVE ICONS DIRECTLY UNDER H1 -->
+    <div class="header-icons">
+        <div class="icon-btn" onclick="toggleTheme()">🌙</div>
+        <div class="icon-btn" onclick="logout()">🚪</div>
+    </div>
+
+<div id="topNav" class="top-nav" style="display:none;">
+
+    <div class="nav-left">
+        <span id="welcomeText"></span>
+    </div>
+
+    <div class="nav-center">
+    <button onclick="showPage('dashboardPage')">Dashboard</button>
+    <button onclick="showPage('studentsPage')">Students</button>
+    <button onclick="showPage('subjectsPage')">Subjects</button>
+    <button onclick="showPage('reportsPage')">Reports</button>
+	<button onclick="showPage('attendancePage')">Attendance</button>
+	<button onclick="showPage('chat')">Chat</button>
+	<button onclick="showProfile()">Profile</button>
+</div>
+
+</div>
+</div>
+
+
+
+
+
+<div id="loginBox" class="container" style="max-width:400px; text-align:center;">
+<h3 style="text-align:left;">Log into System</h3>
+
+<!-- LOGIN -->
+<div id="loginSection">
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="login()" style="background:#1877f2; font-weight:bold;">Log in</button>
+
+<p onclick="showForgot()" style="cursor:pointer; color:#1877f2; margin-top:10px;">
+Forgot password?
+</p>
+
+<hr style="margin:20px 0; border:1px solid #374151;">
+
+<button onclick="showSignup()" style="background:#22c55e; font-weight:bold;">
+Create new account
+</button>
+
+<p id="loginMsg" style="color:red;"></p>
+</div>
+
+<div id="signupSection" style="display:none;">
+<h4>Create Account</h4>
+
+<select id="roleSelect">
+    <option value="teacher">Teacher</option>
+    <option value="admin">Admin</option>
+</select>
+<div id="schoolNameBox">
+    <input id="schoolNameSignup" placeholder="School Name (Admin only)">
+</div>
+
+<input id="firstName" placeholder="First Name">
+<input id="surname" placeholder="Surname">
+<input id="signupUsername" placeholder="Username">
+<input id="signupEmail" placeholder="Email">
+<input id="signupPhone" placeholder="Phone Number">
+<input id="schoolCode" placeholder="">
+<input id="signupPassword" type="password" placeholder="Password">
+
+<button onclick="signup()">Sign Up</button>
+
+<p onclick="backToLogin()" style="cursor:pointer; color:#1877f2;">
+Already have an account? Login
+</p>
+</div>
+
+<!-- FORGOT -->
+<div id="forgotSection" style="display:none;">
+<h4>Reset Password</h4>
+
+<input id="fpUsername" placeholder="Enter Username">
+<input id="fpContact" placeholder="Enter Email or Phone">
+<input id="newPassword" type="password" placeholder="New Password">
+
+<button onclick="resetPassword()">Reset Password</button>
+
+<p onclick="backToLogin()" style="cursor:pointer; color:#1877f2;">
+Back to Login
+</p>
+</div>
+
+</div>
+
+<div id="app" style="display:none;">
+
+<div id="dashboardPage" class="container page">
+
+<!-- ===== HEADER (LOGO + WELCOME + SCHOOL NAME) ===== -->
+<div style="
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+    background:#1e293b;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:20px;
+">
+
+    <!-- LOGO -->
+   <img id="schoolLogoPreview" src="" onclick="uploadLogo()" style="
+    width:70px;
+    height:70px;
+    border-radius:10px;
+    object-fit:cover;
+    background:#fff;
+    cursor:pointer;
+">
+<input type="file" id="schoolLogoInput" accept="image/*" style="display:none;">
+    <!-- TEXT -->
+    <div style="flex:1;">
+        <h2 id="welcomeUser" style="
+            margin:0;
+            color:#60a5fa;
+            font-weight:bold;
+        "></h2>
+
+        <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
+            <p id="schoolNameText" style="
+                margin:0;
+                font-weight:bold;
+                color:#cbd5f5;
+                font-size:15px;
+            "></p>
+
+            <span id="editSchoolIcon" onclick="editSchoolName()" style="
+                cursor:pointer;
+                font-size:14px;
+                display:none;
+            ">✏️</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== DASHBOARD TITLE ===== -->
+<h3 style="margin-bottom:15px;">📊 Dashboard Overview</h3>
+
+<!-- ===== STATS ===== -->
+<div class="dashboard-grid">
+    <div class="stat-card">
+        <h4>Total Students</h4>
+        <p id="totalStudents">0</p>
+    </div>
+
+    <div class="stat-card">
+        <h4>Highest %</h4>
+        <p id="highestScore">0%</p>
+    </div>
+
+    <div class="stat-card">
+        <h4>Average %</h4>
+        <p id="avgScore">0%</p>
+    </div>
+
+    <div class="stat-card">
+        <h4>Pass Rate</h4>
+        <p id="passRate">0%</p>
+    </div>
+</div>
+
+<!-- ===== CHARTS ===== -->
+<div class="charts-grid">
+
+    <div class="chart-box">
+        <h4>Grade Distribution</h4>
+        <canvas id="gradeChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <h4>Top 5 Students</h4>
+        <canvas id="topChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <h4>Subject Average</h4>
+        <canvas id="subjectChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <h4>Pass vs Fail</h4>
+        <canvas id="passChart"></canvas>
+    </div>
+
+</div>
+
+</div>
+</div>
+<div id="studentsPage" class="container page">
+
+<h3>Student Management</h3>
+<input id="searchStudent" placeholder="Search student..." onkeyup="searchStudent()">
+<!-- ADD STUDENT -->
+<div style="margin-bottom:20px;">
+    <h4>Add New Student</h4>
+    <input id="studentName" placeholder="Student Name">
+   <select id="studentClass">
+    <option value="">Select Class</option>
+</select>
+    <button onclick="addStudentFromPage()">Add Student</button>
+<h3>Bulk Import Students</h3>
+
+<br><br>
+
+<input type="file" id="csvFile" accept=".csv" onchange="handleCSV(event)">
+</div>
+
+<!-- STUDENTS TABLE -->
+<div id="studentsTable"></div>
+
+</div>
+
+<div id="subjectsPage" class="container page">
+<h3>Subjects & Marks</h3>
+
+<select id="classFilter" onchange="filterStudentsByClass()" style="margin-bottom:10px;">
+    <option value="">Select Class</option>
+</select>
+<p>Select a student to fill marks:</p>
+<div id="studentsList" class="cards"></div>
+<div id="subjectForm" class="subjects-section"></div>
+<button id="saveMarksBtn" onclick="saveMarks()">Save Marks</button>
+
+</div>
+
+<div id="reportsPage" class="container page">
+<h3>Reports</h3>
+
+<input id="reportSearch" placeholder="Enter student name">
+
+<label>Select Term</label>
+<select id="reportTerm">
+    <option value="term1">Term 1</option>
+    <option value="term2">Term 2</option>
+    <option value="term3">Term 3</option>
+</select>
+
+<button onclick="confirmReport()">Confirm & Generate Report</button>
+<button onclick="generateAllReports()">Generate All Reports (PDF)</button>
+<div id="reportOutput" style="color:black;"></div>
+</div>
+
+<div id="attendancePage" class="container page">
+    <h3>Student Attendance</h3>
+
+    <label for="attendanceDate">Select Date:</label>
+    <input type="date" id="attendanceDate" onchange="loadAttendanceTable()">
+
+    <div id="attendanceStats" style="margin:15px 0; font-weight:bold;"></div>
+	<div id="termAttendanceSummary" style="margin-top:10px; font-weight:bold;"></div>
+<label>Select Term:</label>
+<select id="attendanceTerm">
+    <option value="term1">Term 1</option>
+    <option value="term2">Term 2</option>
+    <option value="term3">Term 3</option>
+</select>
+<button onclick="markAllPresent()" style="background:#22c55e;">
+    Mark All Present
+</button>
+    <div id="attendanceTable"></div>
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="container page">
+
+    <!-- USERS TOP BAR -->
+    <div class="chat-users-bar">
+        <div id="userList" class="chat-users"></div>
+		<div class="unread-badge" id="unread_${user.username}">
+0
+</div>
+    </div>
+
+    <!-- CHAT AREA -->
+    <div class="chat-area">
+
+        <div id="chatBox" class="chat-box"></div>
+
+<!-- MEDIA PREVIEW -->
+<div id="mediaPreview"
+     class="media-preview"
+     style="display:none;">
+
+    <div id="previewContent"></div>
+
+    <button class="remove-preview-btn"
+            onclick="removePreview()">
+        ✕
+    </button>
+
+</div>
+
+<div id="typingIndicator"
+style="
+padding:5px 15px;
+font-size:13px;
+color:#94a3b8;
+">
+</div>
+        <div class="chat-input-area">
+
+    <label class="media-btn">
+        +
+        <input type="file"
+               id="mediaInput"
+               accept="image/*,video/*,.pdf,.doc,.docx"
+               hidden>
+    </label>
+
+    <input id="chatInput" placeholder="Type a message...">
+
+    <button onclick="sendMessage()">➤</button>
+
+</div>
+
+    </div>
+	
+	
+</div>
+
+<div id="profilePage" class="container page">
+
+<div class="profile-wrapper">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="profile-sidebar">
+
+        <div class="profile-card">
+            <img id="profilePic" onclick="uploadProfilePic()" style="cursor:pointer;">
+<input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+        </div>
+
+        <div class="profile-menu">
+            <div class="profile-menu">
+    <div class="menu-item active" onclick="showProfileTab('userTab', this)">User</div>
+    <div class="menu-item" onclick="showProfileTab('subjectsTab', this)">Subjects</div>
+    <div class="menu-item" onclick="showProfileTab('termTab', this)">Term Setup</div>
+    <div class="menu-item" onclick="showProfileTab('planTab', this)">Plan</div>
+    <div class="menu-item" onclick="showProfileTab('noteTab', this)">Note</div>
+</div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT CONTENT -->
+    <div class="profile-content">
+
+        <!-- USER INFO -->
+        <div id="userTab">
+            <h2>User Information</h2>
+
+            <div class="form-grid">
+                <input id="pFirstName" placeholder="First Name">
+                <input id="pSurname" placeholder="Surname">
+                <input id="pUsername" placeholder="Username" disabled>
+                <input id="pEmail" placeholder="Email">
+                <input id="pPhone" placeholder="Phone">
+                <input id="pRole" placeholder="Role" disabled>
+
+            </div>
+
+            <button onclick="saveProfile()">💾 Save Changes</button>
+        </div>
+
+        <!-- SUBJECTS -->
+        <div id="subjectsTab" style="display:none;">
+    <h3>Assign Class</h3>
+
+	<input id="teacherClass" placeholder="Enter Class (e.g. 1A)">
+	<h2>Assigned Subjects</h2>
+	<select id="teacherSelect" onchange="loadSelectedTeacherSubjects()"></select>
+    <div id="subjectCheckboxes"></div>
+
+    <button id="saveSubjectsBtn" onclick="saveTeacherSubjects()">💾 Save Subjects</button>
+</div>
+
+<!-- TERM SETTINGS -->
+<div id="termTab" style="display:none;">
+    <h2>📅 Term Settings</h2>
+
+    <div class="form-grid">
+        <!-- TERM 1 -->
+        <div>
+            <label>Term 1 Start</label>
+            <input type="date" id="t1Start">
+
+            <label>Term 1 End</label>
+            <input type="date" id="t1End">
+        </div>
+
+        <!-- TERM 2 -->
+        <div>
+            <label>Term 2 Start</label>
+            <input type="date" id="t2Start">
+
+            <label>Term 2 End</label>
+            <input type="date" id="t2End">
+        </div>
+
+        <!-- TERM 3 -->
+        <div>
+            <label>Term 3 Start</label>
+            <input type="date" id="t3Start">
+
+            <label>Term 3 End</label>
+            <input type="date" id="t3End">
+        </div>
+    </div>
+
+    <button onclick="saveTermSettings()">💾 Save Term Settings</button>
+</div>
+
+<div id="planTab" style="display:none;">
+    <h2>📗 Lesson Plan Generator</h2>
+
+    <label>Select Term</label>
+    <select id="planTerm">
+        <option value="term1">Term 1</option>
+        <option value="term2">Term 2</option>
+        <option value="term3">Term 3</option>
+    </select>
+
+    <label>Select Subject</label>
+    <select id="planSubject"></select>
+
+    <button onclick="generateLessonPlan()">⚡ Generate Plan</button>
+	<button onclick="exportToWord(document.getElementById('planOutput').innerText)">
+📄 Export to Word
+</button>
+
+    <div id="planOutput" style="margin-top:15px; background:#1f2937; padding:15px; border-radius:10px;"></div>
+</div>
+
+<div id="noteTab" style="display:none;">
+    <h2>📝 Lesson Notes</h2>
+
+    <label>Select Term</label>
+    <select id="noteTerm">
+        <option value="term1">Term 1</option>
+        <option value="term2">Term 2</option>
+        <option value="term3">Term 3</option>
+    </select>
+
+    <label>Week</label>
+    <input id="noteWeek" placeholder="Enter Week (e.g Week 1)">
+
+    <label>Subject</label>
+    <select id="noteSubject"></select>
+
+    <button onclick="generateLessonNote()">🧠 Generate Note</button>
+
+    <div id="noteOutput" style="margin-top:15px; background:#1f2937; padding:15px; border-radius:10px;"></div>
+</div>
+
+    </div>
+
+</div>
+</div>
+
+
+<!-- CONFIRMATION MODAL -->
+<div id="confirmModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Confirm Action</h3>
+    <p id="modalMessage">Are you sure?</p>
+
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn confirm" id="confirmBtn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="studentModal" class="student-modal">
+
+    <div class="student-modal-box">
+
+        <span class="close-modal"
+              onclick="closeStudentModal()">
+              &times;
+        </span>
+
+        <div id="studentModalContent"></div>
+
+    </div>
+
+</div>
+
+
+<div class="bottom-nav">
+<button id="installBtn" style="display:none;">📲 Install App</button>
+    <div class="nav-item" onclick="showPage('dashboardPage')">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </div>
+
+    <div class="nav-item" onclick="showPage('studentsPage')">
+        <i class="fas fa-user-graduate"></i>
+        <span>Students</span>
+    </div>
+
+    <div class="nav-item" onclick="showPage('subjectsPage')">
+        <i class="fas fa-book"></i>
+        <span>Subjects</span>
+    </div>
+
+    <div class="nav-item" onclick="showPage('reportsPage')">
+        <i class="fas fa-file-alt"></i>
+        <span>Reports</span>
+    </div>
+	
+	<div class="nav-item" onclick="showPage('attendancePage')">
+        <i class="fas fa-check-circle"></i>
+        <span>Attendance</span>
+    </div>
+
+    <div class="nav-item" onclick="showProfile()">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </div>
+
+</div>
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js")
+    .then(() => console.log("Service Worker Registered"));
+}
+</script>
+
+<div id="studentModal"
+     style="
+        display:none;
+        position:fixed;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background:rgba(0,0,0,0.7);
+        justify-content:center;
+        align-items:center;
+        z-index:9999;
+">
+
+    <div style="
+        background:#1e293b;
+        color:white;
+        width:90%;
+        max-width:500px;
+        padding:20px;
+        border-radius:15px;
+        position:relative;
+    ">
+
+        <span onclick="closeStudentModal()"
+              style="
+                position:absolute;
+                top:10px;
+                right:15px;
+                cursor:pointer;
+                font-size:28px;
+              ">
+              &times;
+        </span>
+
+        <div id="studentModalContent"></div>
+
+    </div>
+
+</div>
+</body>
+</html>
