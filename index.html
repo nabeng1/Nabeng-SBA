@@ -230,51 +230,86 @@ async function saveStudent(){
 
     try{
 
-        showLoading("Saving student...");
+        showLoading("Saving...");
 
         const id =
         document.getElementById("studentId").value;
 
-        const photoFile =
-        document.getElementById("photo").files[0];
+        const name =
+        document.getElementById("studentName").value.trim();
+
+        const studentClass =
+        document.getElementById("studentClass").value.trim();
+
+        const math =
+        Number(document.getElementById("math").value);
+
+        const english =
+        Number(document.getElementById("english").value);
+
+        const science =
+        Number(document.getElementById("science").value);
+
+        // VALIDATION
+        if(!name || !studentClass){
+
+            alert("Please fill all fields");
+
+            clearLoading();
+
+            return;
+        }
 
         let photoUrl = "";
 
+        const photoFile =
+        document.getElementById("photo").files[0];
+
+        // UPLOAD PHOTO
         if(photoFile){
 
-            photoUrl =
-            await uploadPhoto(photoFile);
+            const fileName =
+            Date.now() + "-" + photoFile.name;
+
+            const { error:uploadError } =
+            await supabase.storage
+            .from("student-photos")
+            .upload(fileName, photoFile);
+
+            if(uploadError){
+
+                alert(uploadError.message);
+
+                clearLoading();
+
+                return;
+            }
+
+            const { data:urlData } =
+            supabase.storage
+            .from("student-photos")
+            .getPublicUrl(fileName);
+
+            photoUrl = urlData.publicUrl;
         }
 
         const studentData = {
 
-            name:
-            document.getElementById("studentName").value,
-
-            class:
-            document.getElementById("studentClass").value,
-
-            math:
-            Number(document.getElementById("math").value),
-
-            english:
-            Number(document.getElementById("english").value),
-
-            science:
-            Number(document.getElementById("science").value)
+            name:name,
+            class:studentClass,
+            math:math,
+            english:english,
+            science:science,
+            photo:photoUrl
         };
-
-        if(photoUrl){
-
-            studentData.photo = photoUrl;
-        }
 
         let response;
 
         // UPDATE
         if(id){
 
-            response = await supabase
+            response =
+            await supabase
             .from("students")
             .update(studentData)
             .eq("id", id);
@@ -282,12 +317,15 @@ async function saveStudent(){
         }else{
 
             // INSERT
-            response = await supabase
+            response =
+            await supabase
             .from("students")
             .insert([studentData]);
         }
 
         if(response.error){
+
+            console.log(response.error);
 
             alert(response.error.message);
 
@@ -296,17 +334,15 @@ async function saveStudent(){
             return;
         }
 
-        alert(
-            id
-            ? "Student Updated Successfully"
-            : "Student Saved Successfully"
-        );
+        alert("Student Saved Successfully");
 
         clearForm();
 
         clearLoading();
 
     }catch(error){
+
+        console.log(error);
 
         alert(error.message);
 
