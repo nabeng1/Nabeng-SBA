@@ -1,18 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-import { createClient } from '@supabase/supabase-js'
-import { supabase } from './supabase.js'
-
-const supabaseUrl = 'https://ftslcifbzohhgljqcgus.supabase.co'
-const supabaseKey = 'sb_publishable_xF3b2JXH72rrwvJ2MCfOuA_Lm_C-a2D'
-
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseKey
-)
-</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -23,17 +11,6 @@ export const supabase = createClient(
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-const supabaseUrl = "https://ftslcifbzohhgljqcgus.supabase.co/rest/v1/";
-const supabaseKey = "sb_publishable_xF3b2JXH72rrwvJ2MCfOuA_Lm_C-a2D";
-
-const supabase = window.supabase.createClient(
-  supabaseUrl,
-  supabaseKey
-);
-</script>
 <title>Nabeng-SBA System</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -464,17 +441,17 @@ button {
     text-align:center;
     padding:20px 10px;
     background:linear-gradient(135deg, #0f172a, #1e293b);
-	position: sticky;
+	position: fixed;
 	  top: 0;
     left: 0;
     width: 100%;
     z-index: 1000;
 }
 
-
 #app{
-    margin-top:120px;
+    margin-top: 250px; /* adjust based on header height */
 }
+
 
 
 /* LOGO */
@@ -613,9 +590,11 @@ span.psw {
 }
 
 
-.modal-content{
-    width:95%;
-    max-width:400px;
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto 15% auto;
+    border: 1px solid #888;
+    width: 80%;
 }
 
 /* The Close Button (x) */
@@ -708,16 +687,14 @@ button on extra small screens */
     gap:20px;
 }
 
-@media(max-width:768px){
-
-    .profile-sidebar{
-        width:100%;
-        padding:15px;
-    }
-
-    .profile-content{
-        padding:15px;
-    }
+/* SIDEBAR */
+.profile-sidebar{
+    width:260px;
+    background:#1f2937;
+    border-radius:16px;
+	border:20px;
+	border-color:#fff;
+    padding:20px;
 }
 
 
@@ -740,9 +717,12 @@ button on extra small screens */
     color:#ccc;
 }
 
-button{
-    min-height:50px;
-    font-size:16px;
+/* RIGHT PANEL */
+.profile-content{
+    flex:1;
+    background:none;
+    padding:25px;
+    border-radius:16px;
 }
 
 /* TITLE */
@@ -766,22 +746,17 @@ button{
         padding:10px;
     }
 
-   @media(max-width:768px){
-
     .nav-center{
-        display:grid;
-        grid-template-columns:repeat(2,1fr);
-        width:100%;
-        gap:10px;
+        flex-wrap:wrap;
+        justify-content:center;
+        gap:8px;
     }
-
-   
 
     .nav-center button{
-        width:100%;
+        width:30%;
         font-size:14px;
+        padding:10px;
     }
-}
 
     .nav-left{
         text-align:center;
@@ -880,7 +855,7 @@ table{
 
 
 #app{
-    padding-bottom:90px;
+    padding-bottom:0;
 }
 
 @media (max-width:768px){
@@ -981,7 +956,9 @@ body {
 /* CHAT AREA */
 
 .chat-area{
-    height:calc(100vh - 220px);
+    display:flex;
+    flex-direction:column;
+    height:500px;
 }
 
 .chat-box{
@@ -1159,86 +1136,6 @@ body {
     justify-content:center;
     font-size:12px;
     font-weight:bold;
-}
-
-.chart-box canvas{
-    width:100% !important;
-    height:auto !important;
-}
-
-/* ===== FINAL MOBILE FIXES ===== */
-
-@media(max-width:768px){
-
-    body{
-        overflow-x:hidden;
-    }
-
-    .container{
-        width:95%;
-        margin:10px auto;
-        padding:15px;
-    }
-
-    .sub-header{
-        position:sticky;
-        top:0;
-        padding:15px 10px;
-    }
-
-    #app{
-        margin-top:120px;
-        padding-bottom:90px;
-    }
-
-    .nav-center{
-        display:grid;
-        grid-template-columns:repeat(2,1fr);
-        gap:10px;
-        width:100%;
-    }
-
-    .nav-center button{
-        width:100%;
-    }
-
-    .table-wrapper{
-        overflow-x:auto;
-        width:100%;
-    }
-
-    table{
-        min-width:600px;
-    }
-
-    .chat-area{
-        height:calc(100vh - 220px);
-    }
-
-    .profile-wrapper{
-        flex-direction:column;
-    }
-
-    .profile-sidebar{
-        width:100%;
-    }
-
-    .form-grid{
-        grid-template-columns:1fr;
-    }
-
-    .chart-box canvas{
-        width:100% !important;
-        height:auto !important;
-    }
-
-    .modal-content{
-        width:95%;
-    }
-
-    button{
-        min-height:50px;
-    }
 }
 </style>
 </head>
@@ -1718,9 +1615,7 @@ color:#94a3b8;
 
 </div>
 </div>
-
 <script>
-localstorage
 let subjects = [
 "English Language","Mathematics","Science","Social Studies","RME",
 "History","ICT","Creative Arts","Physical Education (PE)",
@@ -1728,7 +1623,7 @@ let subjects = [
 "French","Language and literacy","Numeracy","OWOP","Writing"
 ];
 let students = [];
-let users = await loadUsers();
+let users = JSON.parse(localStorage.getItem("users")) || [];
 let currentUser = null;
 let selectedUser = null;
 let selectedMediaFile = null;
@@ -1756,21 +1651,7 @@ document.getElementById("roleSelect").addEventListener("change", function(){
         schoolCodeInput.value = "";
     }
 });
-
-async function loadUsers() {
-    const { data, error } = await supabase
-        .from("users")
-        .select("*");
-
-    if (error) {
-        console.error("Error loading users:", error);
-        return [];
-    }
-
-    return data;
-}
-
-async function signup(){
+function signup(){
     let firstName = document.getElementById("firstName").value.trim();
     let surname = document.getElementById("surname").value.trim();
     let username = document.getElementById("signupUsername").value.trim();
@@ -1809,19 +1690,8 @@ async function signup(){
 
         schoolId = schoolCodeInput;
 
-const { data, error } = await supabase
-  .from('school')
-  .insert([
-    {
-      school_name: schoolName
+        localStorage.setItem("schoolName", schoolName);
     }
-  ])
-
-if (error) {
-  console.log(error)
-} else {
-  console.log('Saved successfully')
-}    }
 
     // ===== TEACHER =====
     if(role === "teacher"){
@@ -1834,26 +1704,20 @@ if (error) {
         schoolId = schoolCodeInput;
     }
 
-   const { error } = await supabase
-    .from("users")
-    .insert([
-        {
-            firstName,
-            surname,
-            username,
-            email,
-            phone,
-            password,
-            role,
-            schoolName: role === "admin" ? schoolName : "",
-            schoolId: schoolId
-        }
-    ]);
+    // ✅ NOW PUSH USER (AFTER schoolId IS READY)
+    users.push({
+        firstName,
+        surname,
+        username,
+        email,
+        phone,
+        password,
+        role,
+        schoolName: role === "admin" ? schoolName : "",
+        schoolId: schoolId
+    });
 
-if (error) {
-    console.error(error);
-    return alert("Error creating account");
-}
+    localStorage.setItem("users", JSON.stringify(users));
 
     alert("Account created successfully!");
     backToLogin();
@@ -1871,177 +1735,111 @@ function backToLogin(){
     document.getElementById("signupSection").style.display = "none";
     document.getElementById("forgotSection").style.display = "none";
 }
-async function login() {
-
+function login(){
     let u = document.getElementById("username").value.trim();
     let p = document.getElementById("password").value.trim();
 
-    // Fetch user from Supabase
-    const { data: user, error } = await supabase
-        .from("users")
-        .select("*")
-        .ilike("username", u)
-        .eq("password", p)
-        .single();
+    users = JSON.parse(localStorage.getItem("users")) || [];
 
-    if (error || !user) {
-
-        document.getElementById("loginMsg").innerText =
-            "Invalid username or password";
-
-        return;
-    }
-
-    currentUser = user;
-
-    // FIX mainClass
-    if (
-        !currentUser.mainClass &&
-        currentUser.classes &&
-        currentUser.classes.length > 0
-    ) {
-        currentUser.mainClass =
-            currentUser.classes[0];
-    }
-
-    currentUser.classes =
-        currentUser.classes || [];
-
-    currentUser.subjects =
-        currentUser.subjects || [];
-
-    initDefaultClasses();
-
-    // Save current session locally
-    localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify(currentUser)
+    let user = users.find(x =>
+        x.username.toLowerCase() === u.toLowerCase() &&
+        x.password === p
     );
 
-    // Show app
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    document.getElementById("topNav").style.display = "flex";
-    document.getElementById("subHeader").style.display = "flex";
+    if(user){
+        currentUser = user;
+		
+		// ✅ CRITICAL FIX
+if(!currentUser.mainClass && currentUser.classes && currentUser.classes.length > 0){
+    currentUser.mainClass = currentUser.classes[0];
+}
+		
+		currentUser.classes = currentUser.classes || [];
+		currentUser.subjects = currentUser.subjects || [];
+		initDefaultClasses();
+		// ✅ reload latest saved data
+let updatedUser = users.find(u => u.username === currentUser.username);
 
-    document.getElementById("welcomeUser").innerText =
-        "👋 Welcome, " + currentUser.firstName;
+currentUser = updatedUser;
 
-    loadStudents();
-    updateDashboard();
-    populateStudentList();
-    showPage('dashboardPage');
-    loadLogo();
-    displaySchoolName();
-    loadTheme();
-    loadTermSettings();
-    updateOnlineStatus();
+localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
+		
+
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
+
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        document.getElementById("topNav").style.display = "flex";
+        document.getElementById("subHeader").style.display = "flex";
+
+        document.getElementById("welcomeUser").innerText =
+            "👋 Welcome, " + currentUser.firstName;
+
+        loadStudents();
+        updateDashboard();
+        populateStudentList();
+        showPage('dashboardPage');
+        loadLogo();
+        displaySchoolName();
+        loadTheme();
+		loadTermSettings();
+		updateOnlineStatus();
+
+    } else {
+        document.getElementById("loginMsg").innerText = "Invalid username or password";
+    }
 }
 
 
-async function displaySchoolName() {
-
-    // Fetch school from Supabase
-    const { data, error } = await supabase
-    .from("schools")
-    .update({
-        schoolName: "New School Name"
-    })
-    .eq("schoolId", currentUser.schoolId)
-        .single();
-
-    let name =
-        data?.schoolName ||
-        currentUser.schoolName ||
-        "Your School";
+function displaySchoolName(){
+    let name = localStorage.getItem("schoolName_" + currentUser.schoolId) 
+           || currentUser.schoolName 
+           || "Your School";
 
     let text = name;
 
-    // Add school code for admin
-    if (currentUser.role === "admin") {
+    // ✅ Add school code for admin
+    if(currentUser.role === "admin"){
         text += " (Code: " + currentUser.schoolId + ")";
     }
 
     document.getElementById("schoolNameText").innerText = text;
 
     // Show edit icon only for admin
-    if (currentUser.role === "admin") {
+    if(currentUser.role === "admin"){
         document.getElementById("editSchoolIcon").style.display = "inline";
     }
+	
 }
-async function editSchoolName() {
+function editSchoolName(){
+    if(currentUser.role !== "admin") return;
 
-    if (currentUser.role !== "admin") return;
+    let newName = prompt("Edit School Name:", currentUser.schoolName);
+	
 
-    let newName = prompt(
-        "Edit School Name:",
-        currentUser.schoolName
-    );
+    if(newName && newName.trim()){
+        currentUser.schoolName = newName.trim();
 
-    if (newName && newName.trim()) {
+        // update users array
+        let index = users.findIndex(u => u.username === currentUser.username);
+        users[index] = currentUser;
 
-        newName = newName.trim();
-
-        // Update current user object
-        currentUser.schoolName = newName;
-
-        // Update school table
-        const { error: schoolError } = await supabase
-            .from("schools")
-            .update({
-                schoolName: newName
-            })
-            .eq("schoolId", currentUser.schoolId);
-
-        // Update current admin user
-        const { error: userError } = await supabase
-            .from("users")
-            .update({
-                schoolName: newName
-            })
-            .eq("username", currentUser.username);
-
-        if (schoolError || userError) {
-
-            console.log(
-                schoolError || userError
-            );
-
-            alert("Failed to update school name");
-
-            return;
-        }
-
-        // Save current session locally
-        localStorage.setItem(
-            "loggedInUser",
-            JSON.stringify(currentUser)
-        );
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
+		localStorage.setItem("schoolName_" + currentUser.schoolId, newName);
+		localStorage.setItem("schoolName_" + schoolId, schoolName);
+		
 
         displaySchoolName();
     }
 }
-async function loadTheme() {
+function loadTheme(){
+    let theme = localStorage.getItem("theme");
 
-    // Fetch theme from Supabase
-    const { data, error } = await supabase
-        .from("users")
-        .select("theme")
-        .eq("username", currentUser.username)
-        .single();
-
-    let theme = data?.theme || "dark";
-
-    if (theme === "light") {
-
+    if(theme === "light"){
         document.body.classList.add("light-mode");
-
         document.getElementById("themeBtn").innerText = "☀️";
-
     } else {
-
-        document.body.classList.remove("light-mode");
-
         document.getElementById("themeBtn").innerText = "🌙";
     }
 }
@@ -2051,58 +1849,28 @@ function showForgot(){
 }
 
 
-async function resetPassword() {
+function resetPassword(){
+    let u = document.getElementById("fpUsername").value.trim();
+    let contact = document.getElementById("fpContact").value.trim();
+    let newPass = document.getElementById("newPassword").value.trim();
 
-    let u =
-        document.getElementById("fpUsername")
-        .value.trim();
-
-    let contact =
-        document.getElementById("fpContact")
-        .value.trim();
-
-    let newPass =
-        document.getElementById("newPassword")
-        .value.trim();
-
-    if (!u || !contact || !newPass) {
+    if(!u || !contact || !newPass){
         return alert("Fill all fields");
     }
 
-    // Find matching user
-    const { data: user, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("username", u)
-        .or(`email.eq.${contact},phone.eq.${contact}`)
-        .single();
+    let user = users.find(x =>
+        x.username === u &&
+        (x.email === contact || x.phone === contact)
+    );
 
-    if (error || !user) {
-
-        return alert(
-            "User not found or incorrect details"
-        );
+    if(!user){
+        return alert("User not found or incorrect details");
     }
 
-    // Update password
-    const { error: updateError } = await supabase
-        .from("users")
-        .update({
-            password: newPass
-        })
-        .eq("id", user.id);
-
-    if (updateError) {
-
-        console.log(updateError);
-
-        return alert(
-            "Failed to reset password"
-        );
-    }
+    user.password = newPass;
+    localStorage.setItem("users", JSON.stringify(users));
 
     alert("Password reset successful!");
-
     backToLogin();
 }
 
@@ -2123,26 +1891,15 @@ function uploadLogo(){
 
     document.getElementById("schoolLogoInput").click();
 }
-async function loadLogo() {
+function loadLogo(){
+    let logo = localStorage.getItem("schoolLogo");
 
-    const img =
-        document.getElementById("schoolLogoPreview");
+    let img = document.getElementById("schoolLogoPreview");
 
-    // Fetch school logo from Supabase
-    const { data, error } = await supabase
-        .from("schools")
-        .select("schoolLogo")
-        .eq("schoolId", currentUser.schoolId)
-        .single();
-
-    if (data && data.schoolLogo) {
-
-        img.src = data.schoolLogo;
-
+    if(logo){
+        img.src = logo;
     } else {
-
-        img.src =
-            "https://via.placeholder.com/70?text=Logo";
+        img.src = "https://via.placeholder.com/70?text=Logo";
     }
 }
 
@@ -2154,59 +1911,24 @@ function displayLogo(logo){
 
 }
 
-document.getElementById("schoolLogoInput")
-.addEventListener("change", async function () {
+document.getElementById("schoolLogoInput").addEventListener("change", function(){
 
     let file = this.files[0];
+    if(!file) return;
 
-    if (!file) return;
+    let reader = new FileReader();
 
-    // Unique filename
-    let fileName =
-        `${currentUser.schoolId}-${Date.now()}-${file.name}`;
+    reader.onload = function(e){
+        let logo = e.target.result;
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabase
-        .storage
-        .from("school-logos")
-        .upload(fileName, file);
+        // SAVE
+        localStorage.setItem("schoolLogo", logo);
 
-    if (error) {
+        // DISPLAY
+        document.getElementById("schoolLogoPreview").src = logo;
+    };
 
-        console.log(error);
-
-        return alert("Logo upload failed");
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase
-        .storage
-        .from("school-logos")
-        .getPublicUrl(fileName);
-
-    let logoUrl = urlData.publicUrl;
-
-    // Save URL in database
-    const { error: dbError } = await supabase
-        .from("schools")
-        .update({
-            schoolLogo: logoUrl
-        })
-        .eq("schoolId", currentUser.schoolId);
-
-    if (dbError) {
-
-        console.log(dbError);
-
-        return alert("Failed to save logo");
-    }
-
-    // Display logo
-    document.getElementById(
-        "schoolLogoPreview"
-    ).src = logoUrl;
-
-    alert("Logo uploaded successfully");
+    reader.readAsDataURL(file);
 });
 
 function logout(){
@@ -2214,91 +1936,62 @@ function logout(){
     location.reload();
 }
 
-async function loadStudents() {
+function loadStudents(){
 
-    let query = supabase
-        .from("students")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId);
+    let key = getSchoolKey();
+    let all = JSON.parse(localStorage.getItem(key)) || [];
 
-    // Teacher sees only own class
-    if (currentUser.role !== "admin") {
+    if(currentUser.role === "admin"){
+        students = all;
+    } else {
 
         let main = currentUser.mainClass;
 
-        if (!main) {
-
+        if(!main){
             console.warn("No main class assigned");
-
-            students = [];
-
+            students = []; // or fallback to all
             return;
         }
 
-        query = query.eq("class", main);
+        students = all.filter(s => s.class === main);
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-
-        console.log(error);
-
-        students = [];
-
-        return;
+	students.forEach(s => {
+    if(!s.gender){
+        s.gender = "Male"; // default
     }
-
-    students = data || [];
-
-    // Default gender
-    students.forEach(s => {
-
-        if (!s.gender) {
-            s.gender = "Male";
-        }
-    });
+});
 }
 
-async function saveStudents() {
 
-    if (!students || students.length === 0) {
+function getSchoolKey(){
+    return "students_" + currentUser.schoolId;
+}
+
+
+function saveStudents(){
+    let key = getSchoolKey();
+
+    let all = JSON.parse(localStorage.getItem(key)) || [];
+
+    if(currentUser.role === "admin"){
+        // ✅ Admin saves ALL students
+        localStorage.setItem(key, JSON.stringify(students));
         return;
     }
 
-    // Add schoolId to every student
-    let preparedStudents = students.map(s => ({
+    // ✅ Teacher: update ONLY their students
+    let otherStudents = all.filter(s => s.teacher !== currentUser.username);
+
+    let myStudents = students.map(s => ({
         ...s,
-        schoolId: currentUser.schoolId,
-        teacher:
-            currentUser.role === "admin"
-            ? s.teacher || null
-            : currentUser.username
+        teacher: currentUser.username
     }));
 
-    // Admin saves all
-    if (currentUser.role === "admin") {
+    let updated = [...otherStudents, ...myStudents];
 
-        const { error } = await supabase
-            .from("students")
-            .upsert(preparedStudents);
-
-        if (error) {
-            console.log(error);
-        }
-
-        return;
-    }
-
-    // Teacher saves only own students
-    const { error } = await supabase
-        .from("students")
-        .upsert(preparedStudents);
-
-    if (error) {
-        console.log(error);
-    }
+    localStorage.setItem(key, JSON.stringify(updated));
 }
+
 
 
 function showPage(id){
@@ -2312,8 +2005,8 @@ function showPage(id){
     if(id === 'studentsPage') document.querySelectorAll('.nav-item')[1].classList.add('active');
     if(id === 'subjectsPage') document.querySelectorAll('.nav-item')[2].classList.add('active');
 	if(id === 'attendancePage') document.querySelectorAll('.nav-item')[3].classList.add('active');
-if(id === 'chat') document.querySelectorAll('.nav-item')[4].classList.add('active');    
-if(id === 'reportsPage') document.querySelectorAll('.nav-item')[3].classList.add('active');
+	if(id === 'chatPage') document.querySelectorAll('.nav-item')[3].classList.add('active');
+    if(id === 'reportsPage') document.querySelectorAll('.nav-item')[3].classList.add('active');
 
     loadStudents();
 
@@ -2795,7 +2488,7 @@ function searchStudent(){
 }
 
 // Attendance data stored in localStorage: { date: { studentName: "Present"/"Absent" } }
-let attendanceData = {};
+let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || {};
 
 function loadAttendanceTable() {
 
@@ -2947,41 +2640,9 @@ function loadAttendanceTable() {
          Attendance %: ${termData.percentage}%`;
 }
 
-async function markAttendance(
-    date,
-    studentName,
-    status
-) {
-
-    // Save attendance to Supabase
-    const { error } = await supabase
-        .from("attendance")
-        .upsert([
-            {
-                schoolId: currentUser.schoolId,
-                date: date,
-                studentName: studentName,
-                status: status,
-                teacher: currentUser.username
-            }
-        ]);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save attendance"
-        );
-    }
-
-    // Optional local update
-    if (!attendanceData[date]) {
-        attendanceData[date] = {};
-    }
-
+function markAttendance(date, studentName, status) {
     attendanceData[date][studentName] = status;
-
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
     loadAttendanceTable();
 }
 
@@ -3013,67 +2674,27 @@ function updateAttendanceStats(date) {
          Total: ${students.length}`;
 }
 
-async function markAttendanceManual(
-    studentName,
-    status
-) {
+function markAttendanceManual(studentName, status) {
+    let date = document.getElementById("attendanceDate").value;
 
-    let date =
-        document.getElementById(
-            "attendanceDate"
-        ).value;
+    if (!date) return alert("Select a date first!");
 
-    if (!date) {
-        return alert("Select a date first!");
-    }
-
-    // Weekend block
-    if (isWeekend(date)) {
-
-        return alert(
-            "🚫 No attendance on weekends!"
-        );
+    // 🚫 WEEKEND BLOCK
+    if(isWeekend(date)){
+        return alert("🚫 No attendance on weekends!");
     }
 
     let term = getTermFromDate(date);
 
-    // Term inactive
-    if (!term) {
-
-        return alert(
-            "❌ Attendance not allowed.\nTerm has not started or has ended."
-        );
+    // 🚫 TERM NOT ACTIVE
+    if(!term){
+        return alert("❌ Attendance not allowed.\nTerm has not started or has ended.");
     }
 
-    // Save attendance online
-    const { error } = await supabase
-        .from("attendance")
-        .upsert([
-            {
-                schoolId: currentUser.schoolId,
-                teacher: currentUser.username,
-                date: date,
-                studentName: studentName,
-                status: status,
-                term: term
-            }
-        ]);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save attendance"
-        );
-    }
-
-    // Optional local cache
-    if (!attendanceData[date]) {
-        attendanceData[date] = {};
-    }
-
+    if (!attendanceData[date]) attendanceData[date] = {};
     attendanceData[date][studentName] = status;
+
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
 
     syncAttendanceToStudents();
 
@@ -3158,70 +2779,28 @@ function syncAttendanceToStudents() {
 
     saveStudents();
 }
-async function markAllPresent() {
+function markAllPresent(){
+    let date = document.getElementById("attendanceDate").value;
 
-    let date =
-        document.getElementById(
-            "attendanceDate"
-        ).value;
+    if (!date) return alert("Select a date first!");
 
-    if (!date) {
-
-        return alert(
-            "Select a date first!"
-        );
-    }
-
-    // Weekend block
-    if (isWeekend(date)) {
-
-        return alert(
-            "🚫 No attendance on weekends!"
-        );
+    if(isWeekend(date)){
+        return alert("🚫 No attendance on weekends!");
     }
 
     let term = getTermFromDate(date);
 
-    // Term inactive
-    if (!term) {
-
-        return alert(
-            "❌ Term not active!"
-        );
+    if(!term){
+        return alert("❌ Term not active!");
     }
 
-    if (!attendanceData[date]) {
-        attendanceData[date] = {};
-    }
+    if (!attendanceData[date]) attendanceData[date] = {};
 
-    // Prepare attendance records
-    let attendanceRecords = students.map(s => {
-
+    students.forEach(s => {
         attendanceData[date][s.name] = "Present";
-
-        return {
-            schoolId: currentUser.schoolId,
-            teacher: currentUser.username,
-            studentName: s.name,
-            status: "Present",
-            date: date,
-            term: term
-        };
     });
 
-    // Save all attendance online
-    const { error } = await supabase
-        .from("attendance")
-        .upsert(attendanceRecords);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save attendance"
-        );
-    }
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
 
     syncAttendanceToStudents();
 
@@ -3301,45 +2880,15 @@ function closeStudentModal(){
     document.getElementById("studentModal").style.display = "none";
 }
 
-async function toggleTheme() {
+function toggleTheme(){
+    document.body.classList.toggle("light-mode");
 
-    // Toggle theme visually
-    document.body.classList.toggle(
-        "light-mode"
-    );
+    let isLight = document.body.classList.contains("light-mode");
 
-    let isLight =
-        document.body.classList.contains(
-            "light-mode"
-        );
+    localStorage.setItem("theme", isLight ? "light" : "dark");
 
-    let newTheme =
-        isLight ? "light" : "dark";
-
-    // Save theme online
-    const { error } = await supabase
-        .from("users")
-        .update({
-            theme: newTheme
-        })
-        .eq("username", currentUser.username);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save theme"
-        );
-    }
-
-    // Update icon
-    document.getElementById(
-        "themeBtn"
-    ).className =
-        isLight
-        ? "fas fa-sun"
-        : "fas fa-moon";
+    document.getElementById("themeBtn").className =
+        isLight ? "fas fa-sun" : "fas fa-moon";
 }
 let currentStudentIndex=null;
 
@@ -3426,175 +2975,35 @@ function changeTerm(){
     selectStudent(currentStudentIndex);
 }
 
-async function loadTermSettings() {
-
-    const { data, error } = await supabase
-        .from("term_settings")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId)
-        .single();
-
-    if (error || !data) {
-
-        console.log(error);
-
-        return;
-    }
-
-    termSettings = data;
-}
-
-async function saveTermSettings() {
-
-    let t1Start =
-        document.getElementById(
-            "t1Start"
-        ).value;
-
-    let t1End =
-        document.getElementById(
-            "t1End"
-        ).value;
-
-    let t2Start =
-        document.getElementById(
-            "t2Start"
-        ).value;
-
-    let t2End =
-        document.getElementById(
-            "t2End"
-        ).value;
-
-    let t3Start =
-        document.getElementById(
-            "t3Start"
-        ).value;
-
-    let t3End =
-        document.getElementById(
-            "t3End"
-        ).value;
-
-    // Save to Supabase
-    const { error } = await supabase
-        .from("term_settings")
-        .upsert([
-            {
-                schoolId: currentUser.schoolId,
-                t1Start: t1Start,
-                t1End: t1End,
-                t2Start: t2Start,
-                t2End: t2End,
-                t3Start: t3Start,
-                t3End: t3End
-            }
-        ]);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save term settings"
-        );
-    }
-
-    // Update local cache
-    termSettings = {
-        t1Start,
-        t1End,
-        t2Start,
-        t2End,
-        t3Start,
-        t3End
-    };
-
-    alert(
-        "✅ Term settings saved successfully!"
-    );
-}
-
-function getTermFromDate(dateStr) {
-
+function getTermFromDate(dateStr){
     let date = new Date(dateStr);
 
-    let t1Start =
-        new Date(termSettings.t1Start);
+    let t1Start = new Date(localStorage.getItem("t1Start"));
+    let t1End   = new Date(localStorage.getItem("t1End"));
 
-    let t1End =
-        new Date(termSettings.t1End);
+    let t2Start = new Date(localStorage.getItem("t2Start"));
+    let t2End   = new Date(localStorage.getItem("t2End"));
 
-    let t2Start =
-        new Date(termSettings.t2Start);
+    let t3Start = new Date(localStorage.getItem("t3Start"));
+    let t3End   = new Date(localStorage.getItem("t3End"));
 
-    let t2End =
-        new Date(termSettings.t2End);
-
-    let t3Start =
-        new Date(termSettings.t3Start);
-
-    let t3End =
-        new Date(termSettings.t3End);
-
-    if (
-        date >= t1Start &&
-        date <= t1End
-    ) {
-        return "term1";
-    }
-
-    if (
-        date >= t2Start &&
-        date <= t2End
-    ) {
-        return "term2";
-    }
-
-    if (
-        date >= t3Start &&
-        date <= t3End
-    ) {
-        return "term3";
-    }
+    if(t1Start && t1End && date >= t1Start && date <= t1End) return "term1";
+    if(t2Start && t2End && date >= t2Start && date <= t2End) return "term2";
+    if(t3Start && t3End && date >= t3Start && date <= t3End) return "term3";
 
     return null;
 }
 
-function getTermEnd(term) {
-
-    if (term === "term1") {
-        return termSettings.t1End;
-    }
-
-    if (term === "term2") {
-        return termSettings.t2End;
-    }
-
-    if (term === "term3") {
-        return termSettings.t3End;
-    }
-
-    return null;
+function getTermEnd(term){
+    if(term === "term1") return localStorage.getItem("t1End");
+    if(term === "term2") return localStorage.getItem("t2End");
+    if(term === "term3") return localStorage.getItem("t3End");
 }
 
-function getNextTermStart(term) {
-
-    if (term === "term1") {
-        return termSettings.t2Start;
-    }
-
-    if (term === "term2") {
-        return termSettings.t3Start;
-    }
-
-    if (term === "term3") {
-
-        // next academic year
-        return termSettings.t1Start;
-    }
-
-    return null;
+function getNextTermStart(term){
+    if(term === "term1") return localStorage.getItem("t2Start");
+    if(term === "term2") return localStorage.getItem("t3Start");
+    if(term === "term3") return localStorage.getItem("t1Start"); // next academic year
 }
 function saveMarks(){
     let s=students[currentStudentIndex];
@@ -3688,43 +3097,10 @@ function confirmReport(){
     generateReportWithTerm(s, term, endDate, nextDate);
 }
 
-let termSettings = {};
-
-function getNextTermStart(term) {
-
-    if (term === "term1") {
-        return termSettings.t2Start;
-    }
-
-    if (term === "term2") {
-        return termSettings.t3Start;
-    }
-
-    if (term === "term3") {
-
-        // Next academic year
-        return termSettings.t1Start;
-    }
-
-    return null;
-}
-
-async function loadTermSettings() {
-
-    const { data, error } = await supabase
-        .from("term_settings")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId)
-        .single();
-
-    if (error) {
-
-        console.log(error);
-
-        return;
-    }
-
-    termSettings = data;
+function getNextTermStart(term){
+    if(term === "term1") return localStorage.getItem("t2Start");
+    if(term === "term2") return localStorage.getItem("t3Start");
+    if(term === "term3") return localStorage.getItem("t1Start"); // next academic year
 }
 function formatDate(dateStr){
     let date = new Date(dateStr);
@@ -3798,35 +3174,13 @@ if(currentUser && currentUser.role === "teacher" && (!currentUser.subjects || cu
     alert("No subjects assigned to you. Contact admin.");
 }
 // Report generation remains the same
-async function generateReportWithTerm(
-    s,
-    term,
-    endDate,
-    nextDate
-) {
+function generateReportWithTerm(s, term, endDate, nextDate){
 
 let formattedEnd = formatDate(endDate);
-
 let formattedNext = formatDate(nextDate);
-
 let totalStudents = students.length;
-
+let logo = localStorage.getItem("schoolLogo") || "";
 let position = getStudentPosition(s, term);
-
-// Fetch school info from Supabase
-const { data: schoolData, error } = await supabase
-    .from("schools")
-    .select("schoolLogo, schoolName")
-    .eq("schoolId", currentUser.schoolId)
-    .single();
-
-let logo =
-    schoolData?.schoolLogo || "";
-
-let schoolName =
-    schoolData?.schoolName ||
-    currentUser.schoolName ||
-    "Your School";
 
 
     let html = `<div id="printArea" style="
@@ -3884,7 +3238,8 @@ ${logo ? `
 
     <div>
         <h2 style="margin:0;">
-		${schoolName}        </h2>
+            ${currentUser.schoolName || localStorage.getItem("schoolName") || "Your School"}
+        </h2>
         <p style="margin:0;">STUDENT TERMINAL REPORT - ${term.toUpperCase()}</p>
     </div>
 
@@ -4086,108 +3441,37 @@ async function downloadPDF(){
 
     doc.save(fileName);
 }
-// AUTO LOGIN AFTER REFRESH
-window.onload = async function () {
+// ✅ AUTO LOGIN AFTER REFRESH (RUNS WHEN PAGE LOADS)
+window.onload = function(){
 
-    let savedUser = JSON.parse(
-        localStorage.getItem("loggedInUser")
-    );
+    let savedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+if(savedUser){
+    currentUser = savedUser;
 
-    if (savedUser) {
 
-        // Fetch latest user data from Supabase
-        const { data: user, error } = await supabase
-            .from("users")
-            .select("*")
-            .eq("username", savedUser.username)
-            .single();
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        document.getElementById("topNav").style.display = "flex";
+		document.getElementById("subHeader").style.display = "flex";
 
-        if (!error && user) {
+        let user = savedUser;
 
-            currentUser = user;
-
-            // Update cached session
-            localStorage.setItem(
-                "loggedInUser",
-                JSON.stringify(user)
-            );
-
-            document.getElementById(
-                "loginBox"
-            ).style.display = "none";
-
-            document.getElementById(
-                "app"
-            ).style.display = "block";
-
-            document.getElementById(
-                "topNav"
-            ).style.display = "flex";
-
-            document.getElementById(
-                "subHeader"
-            ).style.display = "flex";
-
-            document.getElementById(
-                "welcomeUser"
-            ).innerText =
-                "👋 Welcome, " +
-                user.firstName +
-                " " +
-                user.surname;
-
-            // IMPORTANT
-            await loadTermSettings();
-
-            await loadStudents();
-
-            await loadAttendanceData();
-
-            await loadLogo();
-
-            await displaySchoolName();
-
-            await loadTheme();
-
-            updateDashboard();
-
-            populateStudentList();
-
-            showPage("dashboardPage");
-
-        } else {
-
-            // Invalid session
-            localStorage.removeItem(
-                "loggedInUser"
-            );
+        if(user){
+            document.getElementById("welcomeUser").innerText =
+            "👋Welcome, " + user.firstName + " " + user.surname;
         }
 
-    } else {
-
-        // Load default theme if no user
-        loadTheme();
+        loadStudents();
+        updateDashboard();
+        populateStudentList();
+        showPage('dashboardPage');
+        loadLogo();
+		displaySchoolName();
     }
+
+    // Load theme too
+    loadTheme();
 };
-
-async function refreshCurrentUser() {
-
-    const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("username", currentUser.username)
-        .single();
-
-    if (!error && data) {
-
-        currentUser = data;
-
-        localStorage.setItem(
-            "loggedInUser",
-            JSON.stringify(currentUser)
-        );
-    }
-}
 
 function showProfile(){
     showPage('profilePage');
@@ -4258,69 +3542,18 @@ function loadProfileData(){
 }
 
 
-async function saveProfile() {
+function saveProfile(){
 
-    // Get form values
-    let firstName =
-        document.getElementById(
-            "pFirstName"
-        ).value.trim();
+    currentUser.firstName = document.getElementById("pFirstName").value;
+    currentUser.surname = document.getElementById("pSurname").value;
+    currentUser.email = document.getElementById("pEmail").value;
+    currentUser.phone = document.getElementById("pPhone").value;
 
-    let surname =
-        document.getElementById(
-            "pSurname"
-        ).value.trim();
+    let index = users.findIndex(u => u.username === currentUser.username);
+    users[index] = currentUser;
 
-    let email =
-        document.getElementById(
-            "pEmail"
-        ).value.trim();
-
-    let phone =
-        document.getElementById(
-            "pPhone"
-        ).value.trim();
-
-    // Update user in Supabase
-    const { error } = await supabase
-        .from("users")
-        .update({
-            firstName: firstName,
-            surname: surname,
-            email: email,
-            phone: phone
-        })
-        .eq("username", currentUser.username);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to update profile"
-        );
-    }
-
-    // Update current user locally
-    currentUser.firstName = firstName;
-    currentUser.surname = surname;
-    currentUser.email = email;
-    currentUser.phone = phone;
-
-    // Update session cache
-    localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify(currentUser)
-    );
-
-    // Update welcome text instantly
-    document.getElementById(
-        "welcomeUser"
-    ).innerText =
-        "👋 Welcome, " +
-        currentUser.firstName +
-        " " +
-        currentUser.surname;
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
 
     alert("Profile updated successfully!");
 }
@@ -4355,83 +3588,50 @@ function loadSubjectSelection(){
         document.getElementById("saveSubjectsBtn").style.display = "block";
     }
 }
-async function saveTeacherSubjects() {
+function saveTeacherSubjects(){
 
-    let teacherUsername =
-        document.getElementById(
-            "teacherSelect"
-        ).value;
+    let teacherUsername = document.getElementById("teacherSelect").value;
+    let teacher = users.find(u => u.username === teacherUsername);
 
-    // Get teacher from Supabase
-    const { data: teacher, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("username", teacherUsername)
-        .single();
-
-    if (error || !teacher) {
-
-        return alert(
-            "Teacher not found!"
-        );
+    if(!teacher){
+        return alert("Teacher not found!");
     }
 
     // SUBJECTS
     let selectedSubjects = [];
-
-    document.querySelectorAll(
-        "#subjectCheckboxes input:checked"
-    ).forEach(cb => {
-
-        selectedSubjects.push(cb.value);
-    });
+    document.querySelectorAll("#subjectCheckboxes input:checked")
+        .forEach(cb => selectedSubjects.push(cb.value));
 
     // CLASSES
-    let classInput =
-        document.getElementById(
-            "teacherClass"
-        ).value.trim();
+    let classInput = document.getElementById("teacherClass").value.trim();
 
-    if (selectedSubjects.length === 0) {
-
-        return alert(
-            "Select at least one subject"
-        );
+    if(selectedSubjects.length === 0){
+        return alert("Select at least one subject");
     }
 
-    if (!classInput) {
-
-        return alert(
-            "Enter class"
-        );
+    if(!classInput){
+        return alert("Enter class");
     }
 
-    let classList = classInput
-        .split(",")
-        .map(c => c.trim())
-        .filter(c => c);
+    let classList = classInput.split(",").map(c => c.trim()).filter(c => c);
 
     // MAIN CLASS + ALL CLASSES
-    let mainClass = classList[0];
+    teacher.mainClass = classList[0];
+    teacher.classes = classList;
 
-    // Update teacher in Supabase
-    const { error: updateError } = await supabase
-        .from("users")
-        .update({
-            mainClass: mainClass,
-            classes: classList,
-            subjects: selectedSubjects
-        })
-        .eq("username", teacherUsername);
+    // SUBJECTS
+    teacher.subjects = selectedSubjects;
 
-    if (updateError) {
+    // UPDATE USERS ARRAY SAFELY
+    let index = users.findIndex(u => u.username === teacherUsername);
 
-        console.log(updateError);
-
-        return alert(
-            "Failed to save teacher settings"
-        );
+    if(index === -1){
+        return alert("Teacher index not found in system!");
     }
+
+    users[index] = teacher;
+
+    localStorage.setItem("users", JSON.stringify(users));
 
     alert("Saved successfully ✅");
 }
@@ -4440,72 +3640,20 @@ async function saveTeacherSubjects() {
 
 
 
-async function updateProfile() {
+function updateProfile(){
 
-    let newFirst =
-        document.getElementById(
-            "profileFirstName"
-        ).value.trim();
+    let newFirst = document.getElementById("profileFirstName").value.trim();
+    let newSur = document.getElementById("profileSurname").value.trim();
+    let newUser = document.getElementById("profileUsername").value.trim();
+    let newEmail = document.getElementById("profileEmail").value.trim();
+    let newPhone = document.getElementById("profilePhone").value.trim();
+    let newPass = document.getElementById("profilePassword").value.trim();
 
-    let newSur =
-        document.getElementById(
-            "profileSurname"
-        ).value.trim();
-
-    let newUser =
-        document.getElementById(
-            "profileUsername"
-        ).value.trim();
-
-    let newEmail =
-        document.getElementById(
-            "profileEmail"
-        ).value.trim();
-
-    let newPhone =
-        document.getElementById(
-            "profilePhone"
-        ).value.trim();
-
-    let newPass =
-        document.getElementById(
-            "profilePassword"
-        ).value.trim();
-
-    if (
-        !newFirst ||
-        !newSur ||
-        !newUser ||
-        !newEmail ||
-        !newPhone
-    ) {
-
+    if(!newFirst || !newSur || !newUser || !newEmail || !newPhone){
         return alert("Fill all fields");
     }
 
-    // Update user in Supabase
-    const { error } = await supabase
-        .from("users")
-        .update({
-            firstName: newFirst,
-            surname: newSur,
-            username: newUser,
-            email: newEmail,
-            phone: newPhone,
-            password: newPass
-        })
-        .eq("id", currentUser.id);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to update profile"
-        );
-    }
-
-    // Update current user object
+    // 🔥 Update current user
     currentUser.firstName = newFirst;
     currentUser.surname = newSur;
     currentUser.username = newUser;
@@ -4513,102 +3661,57 @@ async function updateProfile() {
     currentUser.phone = newPhone;
     currentUser.password = newPass;
 
-    // Update session cache
-    localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify(currentUser)
-    );
+    // 🔥 Update in users array
+  let index = users.findIndex(u => 
+    u.email === currentUser.email || u.phone === currentUser.phone
+);
+
+    if(index !== -1){
+        users[index] = currentUser;
+    }
+
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
 
     // Update welcome text
-    document.getElementById(
-        "welcomeUser"
-    ).innerText =
-        "👋 Welcome, " +
-        currentUser.firstName +
-        " " +
-        currentUser.surname;
+    document.getElementById("welcomeUser").innerText =
+        "👋Welcome, " + currentUser.firstName + " " + currentUser.surname;
 
     alert("Profile updated successfully ✅");
 
     closeProfile();
 }
 
-
-function uploadProfilePic() {
-
-    document.getElementById(
-        "profilePicInput"
-    ).click();
+function uploadProfilePic(){
+    document.getElementById("profilePicInput").click();
 }
 
-document.getElementById(
-    "profilePicInput"
-).addEventListener("change", async function () {
+document.getElementById("profilePicInput").addEventListener("change", function(){
 
     let file = this.files[0];
+    if(!file) return;
 
-    if (!file) return;
+    let reader = new FileReader();
 
-    // Unique filename
-    let fileName =
-        `${currentUser.id}-${Date.now()}-${file.name}`;
+    reader.onload = function(e){
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabase
-        .storage
-        .from("profile-pictures")
-        .upload(fileName, file);
+        let imgData = e.target.result;
 
-    if (error) {
+        // SAVE TO USER
+        currentUser.profilePic = imgData;
 
-        console.log(error);
+        let index = users.findIndex(u => u.username === currentUser.username);
+        users[index] = currentUser;
 
-        return alert(
-            "Profile picture upload failed"
-        );
-    }
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
 
-    // Get public URL
-    const { data: urlData } = supabase
-        .storage
-        .from("profile-pictures")
-        .getPublicUrl(fileName);
+        // DISPLAY
+        document.getElementById("profilePic").src = imgData;
+    };
 
-    let imageUrl = urlData.publicUrl;
-
-    // Save URL to database
-    const { error: dbError } = await supabase
-        .from("users")
-        .update({
-            profilePic: imageUrl
-        })
-        .eq("id", currentUser.id);
-
-    if (dbError) {
-
-        console.log(dbError);
-
-        return alert(
-            "Failed to save profile picture"
-        );
-    }
-
-    // Update current user locally
-    currentUser.profilePic = imageUrl;
-
-    localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify(currentUser)
-    );
-
-    // Display image
-    document.getElementById(
-        "profilePic"
-    ).src = imageUrl;
-
-    alert("Profile picture updated ✅");
+    reader.readAsDataURL(file);
 });
-
 function uploadProfilePic(){
     document.getElementById("profilePicInput").click();
 }
@@ -4688,8 +3791,31 @@ function loadSelectedTeacherSubjects(){
 	
 }
 
+function loadTermSettings(){
 
+    document.getElementById("t1Start").value = localStorage.getItem("t1Start") || "";
+    document.getElementById("t1End").value   = localStorage.getItem("t1End") || "";
 
+    document.getElementById("t2Start").value = localStorage.getItem("t2Start") || "";
+    document.getElementById("t2End").value   = localStorage.getItem("t2End") || "";
+
+    document.getElementById("t3Start").value = localStorage.getItem("t3Start") || "";
+    document.getElementById("t3End").value   = localStorage.getItem("t3End") || "";
+}
+
+function saveTermSettings(){
+
+    localStorage.setItem("t1Start", document.getElementById("t1Start").value);
+    localStorage.setItem("t1End", document.getElementById("t1End").value);
+
+    localStorage.setItem("t2Start", document.getElementById("t2Start").value);
+    localStorage.setItem("t2End", document.getElementById("t2End").value);
+
+    localStorage.setItem("t3Start", document.getElementById("t3Start").value);
+    localStorage.setItem("t3End", document.getElementById("t3End").value);
+
+    alert("✅ Term settings saved successfully!");
+}
 function getStudentPosition(student, term){
 
     // ✅ Get students in same class
@@ -4741,20 +3867,10 @@ function formatPosition(pos){
     return pos + "th";
 }
 
-async function loadClassFilter(){
+function loadClassFilter(){
 
-    let { data: classes, error } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId);
-
-    if(error){
-        console.error(error);
-        return;
-    }
-
-    // convert objects into class names
-    classes = classes.map(c => c.className);
+    let key = "classes_" + currentUser.schoolId;
+    let classes = JSON.parse(localStorage.getItem(key)) || [];
 
     // fallback safety
     if(!Array.isArray(classes)) classes = [];
@@ -4775,52 +3891,27 @@ async function loadClassFilter(){
     document.getElementById("classFilter").innerHTML = html;
 }
 
-async function initDefaultClasses(){
+function initDefaultClasses(){
 
-    let { data: existing, error } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId);
-
-    if(error){
-        console.error(error);
-        return;
-    }
+    let key = "classes_" + currentUser.schoolId;
+    let existing = JSON.parse(localStorage.getItem(key));
 
     if(!existing || existing.length === 0){
 
-        let defaults = [
-            { className: "1A", schoolId: currentUser.schoolId },
-            { className: "1B", schoolId: currentUser.schoolId },
-            { className: "2A", schoolId: currentUser.schoolId },
-            { className: "2B", schoolId: currentUser.schoolId },
-            { className: "3A", schoolId: currentUser.schoolId }
-        ];
+        let defaults = ["1A","1B","2A","2B","3A"];
 
-        const { error: insertError } = await supabase
-            .from("classes")
-            .insert(defaults);
-
-        if(insertError){
-            console.error(insertError);
-        }
+        localStorage.setItem(key, JSON.stringify(defaults));
     }
 }
 
-async function filterStudentsByClass(){
+function filterStudentsByClass(){
 
     let selectedClass = document.getElementById("classFilter").value;
 
-    let { data: filtered, error } = await supabase
-        .from("students")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId)
-        .eq("class", selectedClass);
+    let key = getSchoolKey();
+    let all = JSON.parse(localStorage.getItem(key)) || [];
 
-    if(error){
-        console.error(error);
-        return;
-    }
+    let filtered = all.filter(s => s.class === selectedClass);
 
     // TEACHER SAFETY
     if(currentUser.role === "teacher"){
@@ -4830,25 +3921,22 @@ async function filterStudentsByClass(){
     }
 
     studentsList.innerHTML = filtered.map((s)=>
-        `<div class="card" onclick="selectStudent(${s.id})">
+        `<div class="card" onclick="selectStudent(${all.indexOf(s)})">
             ${s.name}
         </div>`
     ).join('');
 }
+function loadClassOptions(){
 
-async function loadClassOptions(){
+    let key = getSchoolKey();
+    let allStudents = JSON.parse(localStorage.getItem(key)) || [];
 
-    let { data: classes, error } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId);
+    let classSet = new Set();
 
-    if(error){
-        console.error(error);
-        return;
-    }
+    // Get all classes from students
+    allStudents.forEach(s => classSet.add(s.class));
 
-    classes = classes.map(c => c.className);
+    let classes = Array.from(classSet);
 
     // ✅ If teacher → only their classes
     if(currentUser.role === "teacher"){
@@ -5051,40 +4139,25 @@ function exportToWord(content){
     });
 }
 
-async function savePlan(){
+function savePlan(){
 
     let content = document.getElementById("planOutput").innerHTML;
 
-    const { error } = await supabase
-        .from("plans")
-        .insert([
-            {
-                schoolId: currentUser.schoolId,
-                content: content,
-                createdAt: new Date().toISOString()
-            }
-        ]);
+    let plans = JSON.parse(localStorage.getItem("plans") || "[]");
 
-    if(error){
-        console.error(error);
-        return alert("Failed to save plan");
-    }
+    plans.push({
+        date: new Date().toISOString(),
+        content
+    });
+
+    localStorage.setItem("plans", JSON.stringify(plans));
 
     alert("✅ Plan saved");
 }
 
-async function loadPlans(){
+function loadPlans(){
 
-    const { data: plans, error } = await supabase
-        .from("plans")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId)
-        .order("createdAt", { ascending: false });
-
-    if(error){
-        console.error(error);
-        return;
-    }
+    let plans = JSON.parse(localStorage.getItem("plans") || "[]");
 
     let html = "<h3>Saved Plans</h3>";
 
@@ -5183,7 +4256,7 @@ function selectUser(username){
     displayChat();
 }
 
-async function sendMessage(){
+function sendMessage(){
 
     if(!selectedUser){
         return alert("Select a user first");
@@ -5199,26 +4272,20 @@ async function sendMessage(){
 
     if(!text && !file) return;
 
+    let chats = JSON.parse(localStorage.getItem("chats")) || [];
+
     // TEXT ONLY
     if(!file){
 
-        const { error } = await supabase
-            .from("chats")
-            .insert([
-                {
-                    from_user: currentUser.username,
-                    to_user: selectedUser,
-                    text: text,
-                    type: "text",
-                    time: Date.now(),
-                    schoolId: currentUser.schoolId
-                }
-            ]);
+        chats.push({
+            from: currentUser.username,
+            to: selectedUser,
+            text: text,
+            type: "text",
+            time: Date.now()
+        });
 
-        if(error){
-            console.error(error);
-            return alert("Failed to send message");
-        }
+        localStorage.setItem("chats", JSON.stringify(chats));
 
         input.value = "";
 
@@ -5230,41 +4297,32 @@ async function sendMessage(){
     // MEDIA
     let reader = new FileReader();
 
-    reader.onload = async function(e){
+    reader.onload = function(e){
 
-        const { error } = await supabase
-            .from("chats")
-            .insert([
-                {
-                    from_user: currentUser.username,
-                    to_user: selectedUser,
-                    text: text,
-                    media: e.target.result,
-                    mediaType: file.type,
-                    fileName: file.name,
-                    type: "media",
-                    time: Date.now(),
-                    schoolId: currentUser.schoolId
-                }
-            ]);
+        chats.push({
+            from: currentUser.username,
+            to: selectedUser,
+            text: text,
+            media: e.target.result,
+            mediaType: file.type,
+            fileName: file.name,
+            type: "media",
+            time: Date.now()
+        });
 
-        if(error){
-            console.error(error);
-            return alert("Failed to send media");
-        }
+        localStorage.setItem("chats", JSON.stringify(chats));
 
         input.value = "";
 
         mediaInput.value = "";
-
-        selectedMediaFile = null;
 
         displayChat();
     };
 
     reader.readAsDataURL(file);
 }
-async function displayChat(){
+
+function displayChat(){
 
     if(!selectedUser){
 
@@ -5274,30 +4332,21 @@ async function displayChat(){
         return;
     }
 
-    const { data: chats, error } = await supabase
-        .from("chats")
-        .select("*")
-        .eq("schoolId", currentUser.schoolId)
-        .order("time", { ascending: true });
-
-    if(error){
-        console.error(error);
-        return;
-    }
+    let chats = JSON.parse(localStorage.getItem("chats")) || [];
 
     let filtered = chats.filter(c =>
-        (c.from_user === currentUser.username &&
-         c.to_user === selectedUser) ||
+        (c.from === currentUser.username &&
+         c.to === selectedUser) ||
 
-        (c.from_user === selectedUser &&
-         c.to_user === currentUser.username)
+        (c.from === selectedUser &&
+         c.to === currentUser.username)
     );
 
     let html = "";
 
     filtered.forEach(msg => {
 
-        let mine = msg.from_user === currentUser.username;
+        let mine = msg.from === currentUser.username;
 
         html += `
         <div style="
@@ -5382,17 +4431,20 @@ async function displayChat(){
     document.getElementById("chatBox").scrollTop =
         document.getElementById("chatBox").scrollHeight;
 }
-async function updateOnlineStatus(){
 
-    const { error } = await supabase
-        .from("users")
-        .update({
-            lastSeen: Date.now()
-        })
-        .eq("username", currentUser.username);
+function updateOnlineStatus(){
 
-    if(error){
-        console.error("Error updating online status:", error);
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    let index = users.findIndex(
+        u => u.username === currentUser.username
+    );
+
+    if(index !== -1){
+
+        users[index].lastSeen = Date.now();
+
+        localStorage.setItem("users", JSON.stringify(users));
     }
 }
 
@@ -5491,71 +4543,46 @@ function updateUnreadCounts(){
     });
 }
 
-
-create table typing_status (
-    id bigint generated by default as identity primary key,
-    username text unique,
-    is_typing boolean default false,
-    updated_at timestamp with time zone default now()
-);
-
-
 let typingTimeout;
 
 document.getElementById("chatInput")
-.addEventListener("input", async () => {
+.addEventListener("input", ()=>{
 
-    await supabase
-        .from("typing_status")
-        .upsert({
-            username: currentUser.username,
-            is_typing: true,
-            updated_at: new Date()
-        });
+    localStorage.setItem(
+        "typing_" + currentUser.username,
+        "true"
+    );
 
     clearTimeout(typingTimeout);
 
-    typingTimeout = setTimeout(async () => {
+    typingTimeout = setTimeout(()=>{
 
-        await supabase
-            .from("typing_status")
-            .upsert({
-                username: currentUser.username,
-                is_typing: false,
-                updated_at: new Date()
-            });
+        localStorage.setItem(
+            "typing_" + currentUser.username,
+            "false"
+        );
 
     }, 1500);
 
 });
 
-supabase
-.channel("typing-status")
-.on(
-    "postgres_changes",
-    {
-        event: "*",
-        schema: "public",
-        table: "typing_status"
-    },
-    (payload) => {
+setInterval(()=>{
 
-        if (
-            selectedUser &&
-            payload.new.username === selectedUser.username
-        ) {
+    if(!selectedUser) return;
 
-            document.getElementById(
-                "typingIndicator"
-            ).innerText =
-                payload.new.is_typing
-                ? selectedUser.firstName + " is typing..."
-                : "";
-        }
+    let typing =
+        localStorage.getItem(
+            "typing_" + selectedUser.username
+        );
 
-    }
-)
-.subscribe();
+    document.getElementById(
+        "typingIndicator"
+    ).innerText =
+        typing === "true"
+        ? selectedUser.firstName + " is typing..."
+        : "";
+
+}, 500);
 
 function getTicks(msg){
 
