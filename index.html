@@ -1,19 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
 <title>Supabase Student Portal</title>
 
 <style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
 body{
-    font-family:Arial;
+    font-family:Arial,sans-serif;
     background:#eef2f7;
     padding:20px;
 }
 
 .container{
-    max-width:800px;
+    max-width:900px;
     margin:auto;
     background:#fff;
     padding:20px;
@@ -21,11 +29,17 @@ body{
     box-shadow:0 0 10px rgba(0,0,0,0.1);
 }
 
+h2,h3{
+    margin-bottom:15px;
+}
+
 input,button{
     width:100%;
-    padding:10px;
+    padding:12px;
     margin-top:10px;
-    border-radius:5px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-size:16px;
 }
 
 button{
@@ -39,71 +53,96 @@ button:hover{
     background:#0056b3;
 }
 
-.result{
-    margin-top:20px;
+.card{
+    background:#f8f9fa;
     padding:15px;
-    background:#f1f1f1;
-    border-radius:8px;
+    border-radius:10px;
+    margin-top:20px;
 }
 
 img{
-    max-width:120px;
+    width:120px;
+    height:120px;
+    object-fit:cover;
+    border-radius:10px;
     margin-top:10px;
-    border-radius:8px;
 }
-</style>
 
+.actions{
+    display:flex;
+    gap:10px;
+    margin-top:15px;
+}
+
+.actions button{
+    flex:1;
+}
+
+.loading{
+    margin-top:10px;
+    color:#007bff;
+    font-weight:bold;
+}
+
+</style>
 </head>
+
 <body>
 
 <div class="container">
 
-<h2>Student Portal (Supabase Version)</h2>
+    <h2>Student Portal (Supabase)</h2>
 
-<h3>Add / Update Student</h3>
+    <h3>Add / Update Student</h3>
 
-<input type="hidden" id="studentId">
+    <input type="hidden" id="studentId">
 
-<input type="text" id="name" placeholder="Student Name">
+    <input type="text" id="studentName" placeholder="Student Name">
 
-<input type="text" id="class" placeholder="Class">
+    <input type="text" id="studentClass" placeholder="Class">
 
-<input type="number" id="math" placeholder="Math">
+    <input type="number" id="math" placeholder="Math Score">
 
-<input type="number" id="english" placeholder="English">
+    <input type="number" id="english" placeholder="English Score">
 
-<input type="number" id="science" placeholder="Science">
+    <input type="number" id="science" placeholder="Science Score">
 
-<input type="file" id="photo">
+    <input type="file" id="photo">
 
-<button onclick="saveStudent()">Save Student</button>
+    <button onclick="saveStudent()">
+        Save Student
+    </button>
 
-<hr>
+    <div class="loading" id="loading"></div>
 
-<h3>Search Student</h3>
+    <hr style="margin:25px 0;">
 
-<input type="text" id="searchName" placeholder="Enter Student Name">
+    <h3>Search Student</h3>
 
-<button onclick="searchStudent()">Search</button>
+    <input type="text" id="searchName" placeholder="Enter Student Name">
 
-<div class="result" id="result"></div>
+    <button onclick="searchStudent()">
+        Search Student
+    </button>
+
+    <div id="result"></div>
 
 </div>
 
-<!-- Supabase CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 
-// ===============================
+// ======================================
 // SUPABASE CONFIG
-// ===============================
+// ======================================
 
 const supabaseUrl =
 "https://ftslcifbzohhgljqcgus.supabase.co";
 
 const supabaseKey =
-"sb_publishable_xF3b2JXH72rrwvJ2MCfOuA_Lm_C-a2D";
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0c2xjaWZiem9oaGdsanFjZ3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTQ5NjUsImV4cCI6MjA5NTAzMDk2NX0.O6bGKNOdRDH1u2t-MiK8y0ppO-q-P4gggSeDEGsoUrQ";
 
 const supabase =
 window.supabase.createClient(
@@ -111,12 +150,25 @@ window.supabase.createClient(
     supabaseKey
 );
 
-// ===============================
-// FUNCTIONS
-// ===============================
+// ======================================
+// HELPERS
+// ======================================
 
-function calculateTotal(s){
-    return Number(s.math) + Number(s.english) + Number(s.science);
+function showLoading(text){
+    document.getElementById("loading").innerText = text;
+}
+
+function clearLoading(){
+    document.getElementById("loading").innerText = "";
+}
+
+function calculateTotal(student){
+
+    return (
+        Number(student.math) +
+        Number(student.english) +
+        Number(student.science)
+    );
 }
 
 function calculateGrade(total){
@@ -128,270 +180,379 @@ function calculateGrade(total){
     return "D";
 }
 
-// ===============================
+function clearForm(){
+
+    document.getElementById("studentId").value = "";
+    document.getElementById("studentName").value = "";
+    document.getElementById("studentClass").value = "";
+    document.getElementById("math").value = "";
+    document.getElementById("english").value = "";
+    document.getElementById("science").value = "";
+    document.getElementById("photo").value = "";
+}
+
+// ======================================
+// UPLOAD PHOTO
+// ======================================
+
+async function uploadPhoto(file){
+
+    if(!file) return "";
+
+    const fileName =
+    Date.now() + "-" + file.name;
+
+    const { error } = await supabase
+    .storage
+    .from("student-photos")
+    .upload(fileName, file);
+
+    if(error){
+
+        alert(error.message);
+
+        return "";
+    }
+
+    const { data } = supabase
+    .storage
+    .from("student-photos")
+    .getPublicUrl(fileName);
+
+    return data.publicUrl;
+}
+
+// ======================================
 // SAVE STUDENT
-// ===============================
+// ======================================
 
 async function saveStudent(){
 
-    const id = document.getElementById("studentId").value;
+    try{
 
-    const name = document.getElementById("name").value;
+        showLoading("Saving student...");
 
-    const studentClass = document.getElementById("class").value;
+        const id =
+        document.getElementById("studentId").value;
 
-    const math = document.getElementById("math").value;
+        const photoFile =
+        document.getElementById("photo").files[0];
 
-    const english = document.getElementById("english").value;
+        let photoUrl = "";
 
-    const science = document.getElementById("science").value;
+        if(photoFile){
 
-    const file = document.getElementById("photo").files[0];
+            photoUrl =
+            await uploadPhoto(photoFile);
+        }
 
-    let photoUrl = "";
+        const studentData = {
 
-    // ===============================
-    // UPLOAD PHOTO
-    // ===============================
+            name:
+            document.getElementById("studentName").value,
 
-    if(file){
+            class:
+            document.getElementById("studentClass").value,
 
-        const fileName = Date.now() + "_" + file.name;
+            math:
+            Number(document.getElementById("math").value),
 
-        const { data: uploadData, error: uploadError } =
-        await supabase.storage
-        .from("student-photos")
-        .upload(fileName, file);
+            english:
+            Number(document.getElementById("english").value),
 
-        if(uploadError){
-            alert(uploadError.message);
+            science:
+            Number(document.getElementById("science").value)
+        };
+
+        if(photoUrl){
+
+            studentData.photo = photoUrl;
+        }
+
+        let response;
+
+        // UPDATE
+        if(id){
+
+            response = await supabase
+            .from("students")
+            .update(studentData)
+            .eq("id", id);
+
+        }else{
+
+            // INSERT
+            response = await supabase
+            .from("students")
+            .insert([studentData]);
+        }
+
+        if(response.error){
+
+            alert(response.error.message);
+
+            clearLoading();
+
             return;
         }
 
-        const { data } = supabase.storage
-        .from("student-photos")
-        .getPublicUrl(fileName);
+        alert(
+            id
+            ? "Student Updated Successfully"
+            : "Student Saved Successfully"
+        );
 
-        photoUrl = data.publicUrl;
+        clearForm();
+
+        clearLoading();
+
+    }catch(error){
+
+        alert(error.message);
+
+        clearLoading();
     }
-
-    const studentData = {
-        name:name,
-        class:studentClass,
-        math:math,
-        english:english,
-        science:science
-    };
-
-    if(photoUrl){
-        studentData.photo = photoUrl;
-    }
-
-    // ===============================
-    // INSERT OR UPDATE
-    // ===============================
-
-    if(id){
-
-        const { error } = await supabase
-        .from("students")
-        .update(studentData)
-        .eq("id", id);
-
-        if(error){
-            alert(error.message);
-            return;
-        }
-
-        alert("Student Updated");
-
-    }else{
-
-        const { error } = await supabase
-        .from("students")
-        .insert([studentData]);
-
-        if(error){
-            alert(error.message);
-            return;
-        }
-
-        alert("Student Saved");
-    }
-
-    location.reload();
 }
 
-// ===============================
+// ======================================
 // SEARCH STUDENT
-// ===============================
+// ======================================
 
 async function searchStudent(){
 
-    const searchName = document
-    .getElementById("searchName")
-    .value
-    .toLowerCase();
+    try{
 
-    const resultDiv = document.getElementById("result");
+        showLoading("Searching...");
 
-    const { data: students, error } = await supabase
-    .from("students")
-    .select("*");
+        const searchName =
+        document.getElementById("searchName")
+        .value
+        .trim()
+        .toLowerCase();
 
-    if(error){
-        resultDiv.innerHTML = error.message;
-        return;
-    }
+        const result =
+        document.getElementById("result");
 
-    const s = students.find(
-        st => st.name.toLowerCase() === searchName
-    );
-
-    if(s){
-
-        const total = calculateTotal(s);
-
-        const grade = calculateGrade(total);
-
-        resultDiv.innerHTML = `
-            <b>Name:</b> ${s.name}<br>
-            <b>Class:</b> ${s.class}<br>
-            <b>Math:</b> ${s.math}<br>
-            <b>English:</b> ${s.english}<br>
-            <b>Science:</b> ${s.science}<br>
-            <b>Total:</b> ${total}<br>
-            <b>Grade:</b> ${grade}<br>
-
-            ${
-                s.photo
-                ? `<img src="${s.photo}">`
-                : ""
-            }
-
-            <br><br>
-
-            <button onclick="editStudent('${s.id}')">
-                Edit
-            </button>
-
-            <button onclick="deleteStudent('${s.id}')">
-                Delete
-            </button>
-
-            <button onclick="printReport('${s.id}')">
-                Print
-            </button>
-        `;
-
-    }else{
-
-        resultDiv.innerHTML = "Student not found";
-    }
-}
-
-// ===============================
-// EDIT STUDENT
-// ===============================
-
-async function editStudent(id){
-
-    const { data:s, error } = await supabase
-    .from("students")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-    if(error){
-        alert(error.message);
-        return;
-    }
-
-    document.getElementById("studentId").value = s.id;
-
-    document.getElementById("name").value = s.name;
-
-    document.getElementById("class").value = s.class;
-
-    document.getElementById("math").value = s.math;
-
-    document.getElementById("english").value = s.english;
-
-    document.getElementById("science").value = s.science;
-}
-
-// ===============================
-// DELETE STUDENT
-// ===============================
-
-async function deleteStudent(id){
-
-    if(confirm("Delete this student?")){
-
-        const { error } = await supabase
+        const { data, error } =
+        await supabase
         .from("students")
-        .delete()
-        .eq("id", id);
+        .select("*");
 
         if(error){
-            alert(error.message);
+
+            result.innerHTML = error.message;
+
+            clearLoading();
+
             return;
         }
 
-        alert("Deleted");
+        const student = data.find(s =>
 
-        location.reload();
+            s.name &&
+            s.name.toLowerCase() === searchName
+        );
+
+        if(!student){
+
+            result.innerHTML =
+            "<p>Student not found</p>";
+
+            clearLoading();
+
+            return;
+        }
+
+        const total =
+        calculateTotal(student);
+
+        const grade =
+        calculateGrade(total);
+
+        result.innerHTML = `
+
+        <div class="card">
+
+            <h3>${student.name}</h3>
+
+            <p><b>Class:</b> ${student.class}</p>
+
+            <p><b>Math:</b> ${student.math}</p>
+
+            <p><b>English:</b> ${student.english}</p>
+
+            <p><b>Science:</b> ${student.science}</p>
+
+            <p><b>Total:</b> ${total}</p>
+
+            <p><b>Grade:</b> ${grade}</p>
+
+            ${
+                student.photo
+                ?
+                `<img src="${student.photo}">`
+                :
+                ""
+            }
+
+            <div class="actions">
+
+                <button onclick="editStudent('${student.id}')">
+                    Edit
+                </button>
+
+                <button onclick="deleteStudent('${student.id}')">
+                    Delete
+                </button>
+
+                <button onclick="printReport('${student.id}')">
+                    Print
+                </button>
+
+            </div>
+
+        </div>
+        `;
+
+        clearLoading();
+
+    }catch(error){
+
+        alert(error.message);
+
+        clearLoading();
     }
 }
 
-// ===============================
-// PRINT REPORT
-// ===============================
+// ======================================
+// EDIT STUDENT
+// ======================================
 
-async function printReport(id){
+async function editStudent(id){
 
-    const { data:s, error } = await supabase
+    const { data, error } =
+    await supabase
     .from("students")
     .select("*")
     .eq("id", id)
     .single();
 
     if(error){
+
         alert(error.message);
+
         return;
     }
 
-    const total = calculateTotal(s);
+    document.getElementById("studentId").value =
+    data.id;
 
-    const grade = calculateGrade(total);
+    document.getElementById("studentName").value =
+    data.name;
 
-    let win = window.open('', '', 'width=600,height=600');
+    document.getElementById("studentClass").value =
+    data.class;
 
-    win.document.write(`
+    document.getElementById("math").value =
+    data.math;
+
+    document.getElementById("english").value =
+    data.english;
+
+    document.getElementById("science").value =
+    data.science;
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
+}
+
+// ======================================
+// DELETE STUDENT
+// ======================================
+
+async function deleteStudent(id){
+
+    if(!confirm("Delete this student?"))
+    return;
+
+    const { error } =
+    await supabase
+    .from("students")
+    .delete()
+    .eq("id", id);
+
+    if(error){
+
+        alert(error.message);
+
+        return;
+    }
+
+    alert("Student Deleted");
+
+    document.getElementById("result").innerHTML = "";
+}
+
+// ======================================
+// PRINT REPORT
+// ======================================
+
+async function printReport(id){
+
+    const { data, error } =
+    await supabase
+    .from("students")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+    if(error){
+
+        alert(error.message);
+
+        return;
+    }
+
+    const total =
+    calculateTotal(data);
+
+    const grade =
+    calculateGrade(total);
+
+    const printWindow =
+    window.open("", "", "width=700,height=700");
+
+    printWindow.document.write(`
+
         <h2>Student Report</h2>
 
-        <p>Name: ${s.name}</p>
+        <p><b>Name:</b> ${data.name}</p>
 
-        <p>Class: ${s.class}</p>
+        <p><b>Class:</b> ${data.class}</p>
 
-        <p>Math: ${s.math}</p>
+        <p><b>Math:</b> ${data.math}</p>
 
-        <p>English: ${s.english}</p>
+        <p><b>English:</b> ${data.english}</p>
 
-        <p>Science: ${s.science}</p>
+        <p><b>Science:</b> ${data.science}</p>
 
-        <p>Total: ${total}</p>
+        <p><b>Total:</b> ${total}</p>
 
-        <p>Grade: ${grade}</p>
+        <p><b>Grade:</b> ${grade}</p>
 
         ${
-            s.photo
-            ? `<img src="${s.photo}" width="120">`
-            : ""
+            data.photo
+            ?
+            `<img src="${data.photo}" width="120">`
+            :
+            ""
         }
+
     `);
 
-    win.print();
+    printWindow.print();
 }
 
 </script>
