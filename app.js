@@ -3890,8 +3890,7 @@ document.getElementById("chatInput")
 
 });
 
-supabaseClient
-.channel("typing-status")
+supabaseClient.channel("typing-status")
 .on(
     "postgres_changes",
     {
