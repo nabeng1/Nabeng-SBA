@@ -10,6 +10,8 @@ window.supabase.createClient(
     supabaseUrl,
     supabaseKey
 );
+console.log(supabaseClient);
+
 let subjects = [
 "English Language","Mathematics","Science","Social Studies","RME",
 "History","ICT","Creative Arts","Physical Education (PE)",
