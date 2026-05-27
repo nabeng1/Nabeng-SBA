@@ -48,7 +48,7 @@ document.getElementById("roleSelect").addEventListener("change", function(){
 
 async function loadUsers() {
     const { data, error } =
-    await supabase
+    await supabaseClient
         .from("users")
         .select("*");
 
@@ -113,7 +113,7 @@ async function signup(){
     // =========================
 
     const { data: authData, error: authError } =
-        await supabase.auth.signUp({
+        await supabaseClient.auth.signUp({
             email: email,
             password: password
         });
@@ -138,7 +138,7 @@ async function signup(){
         schoolId = schoolCodeInput;
 
         const { error: schoolError } =
-            await supabase
+            await supabaseClient
                 .from("schools")
                 .insert([
                     {
@@ -161,7 +161,7 @@ async function signup(){
     if(role === "teacher"){
 
         const { data: schoolCheck } =
-            await supabase
+            await supabaseClient
                 .from("schools")
                 .select("*")
                 .eq("school_id", schoolCodeInput)
@@ -179,7 +179,7 @@ async function signup(){
     // =========================
 
     const { error: userError } =
-        await supabase
+        await supabaseClient
             .from("users")
             .insert([
                 {
@@ -225,9 +225,9 @@ async function login() {
     let email = document.getElementById("username").value.trim();
     let password = document.getElementById("password").value.trim();
 
-    // LOGIN WITH SUPABASE AUTH
+    // LOGIN WITH SUPABASECLIENT AUTH
     const { data, error } =
-        await supabase.auth.signInWithPassword({
+        await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password
         });
@@ -245,7 +245,7 @@ async function login() {
 
     // FETCH PROFILE FROM DATABASE
     const { data: profile, error: profileError } =
-        await supabase
+        await supabaseClient
             .from("users")
             .select("*")
             .eq("id", authUser.id)
@@ -309,7 +309,7 @@ async function login() {
 async function displaySchoolName() {
 
     // Fetch school from Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
 .from("schools")
 .select("*")
 .eq("schoolId", currentUser.schoolId)
@@ -351,7 +351,7 @@ async function editSchoolName() {
         currentUser.schoolName = newName;
 
         // Update school table
-        const { error: schoolError } = await supabase
+        const { error: schoolError } = await supabaseClient
             .from("schools")
             .update({
                 schoolName: newName
@@ -359,7 +359,7 @@ async function editSchoolName() {
             .eq("schoolId", currentUser.schoolId);
 
         // Update current admin user
-        const { error: userError } = await supabase
+        const { error: userError } = await supabaseClient
             .from("users")
             .update({
                 schoolName: newName
@@ -389,7 +389,7 @@ async function editSchoolName() {
 async function loadTheme() {
 
     // Fetch theme from Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from("users")
         .select("theme")
         .eq("username", currentUser.username)
@@ -435,7 +435,7 @@ async function resetPassword() {
     }
 
     // Find matching user
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseClient
         .from("users")
         .select("*")
         .eq("username", u)
@@ -451,7 +451,7 @@ async function resetPassword() {
 
     // Update password
 const { error: updateError } =
-await supabase.auth.updateUser({
+await supabaseClient.auth.updateUser({
     password: newPass
 });
 
@@ -492,7 +492,7 @@ async function loadLogo() {
         document.getElementById("schoolLogoPreview");
 
     // Fetch school logo from Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from("schools")
         .select("schoolLogo")
         .eq("schoolId", currentUser.schoolId)
@@ -529,7 +529,7 @@ document.getElementById("schoolLogoInput")
         `${currentUser.schoolId}-${Date.now()}-${file.name}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .storage
         .from("school-logos")
         .upload(fileName, file);
@@ -550,7 +550,7 @@ document.getElementById("schoolLogoInput")
     let logoUrl = urlData.publicUrl;
 
     // Save URL in database
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseClient
         .from("schools")
         .update({
             schoolLogo: logoUrl
@@ -633,7 +633,7 @@ async function saveStudents() {
     // Admin saves all
     if (currentUser.role === "admin") {
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from("students")
             .upsert(preparedStudents);
 
@@ -645,7 +645,7 @@ async function saveStudents() {
     }
 
     // Teacher saves only own students
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("students")
         .upsert(preparedStudents);
 
@@ -1376,7 +1376,7 @@ async function markAttendance(
 ) {
 
     // Save attendance to Supabase
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("attendance")
         .upsert([
             {
@@ -1468,7 +1468,7 @@ async function markAttendanceManual(
     }
 
     // Save attendance online
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("attendance")
         .upsert([
             {
@@ -1632,7 +1632,7 @@ async function markAllPresent() {
     });
 
     // Save all attendance online
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("attendance")
         .upsert(attendanceRecords);
 
@@ -1739,7 +1739,7 @@ async function toggleTheme() {
         isLight ? "light" : "dark";
 
     // Save theme online
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("users")
         .update({
             theme: newTheme
@@ -1850,7 +1850,7 @@ function changeTerm(){
 
 async function loadTermSettings() {
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from("term_settings")
         .select("*")
         .eq("schoolId", currentUser.schoolId)
@@ -1899,7 +1899,7 @@ async function saveTermSettings() {
         ).value;
 
     // Save to Supabase
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("term_settings")
         .upsert([
             {
@@ -2201,7 +2201,7 @@ let totalStudents = students.length;
 let position = getStudentPosition(s, term);
 
 // Fetch school info from Supabase
-const { data: schoolData, error } = await supabase
+const { data: schoolData, error } = await supabaseClient
     .from("schools")
     .select("schoolLogo, schoolName")
     .eq("schoolId", currentUser.schoolId)
@@ -2484,7 +2484,7 @@ window.onload = async function () {
     if (savedUser) {
 
         // Fetch latest user data from Supabase
-        const { data: user, error } = await supabase
+        const { data: user, error } = await supabaseClient
             .from("users")
             .select("*")
             .eq("username", savedUser.username)
@@ -2560,7 +2560,7 @@ window.onload = async function () {
 
 async function refreshCurrentUser() {
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from("users")
         .select("*")
         .eq("username", currentUser.username)
@@ -2655,7 +2655,7 @@ async function saveProfile() {
         ).value.trim();
 
     // Update user in Supabase
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("users")
         .update({
             firstName: firstName,
@@ -2736,7 +2736,7 @@ async function saveTeacherSubjects() {
         ).value;
 
     // Get teacher from Supabase
-    const { data: teacher, error } = await supabase
+    const { data: teacher, error } = await supabaseClient
         .from("users")
         .select("*")
         .eq("username", teacherUsername)
@@ -2788,7 +2788,7 @@ async function saveTeacherSubjects() {
     let mainClass = classList[0];
 
     // Update teacher in Supabase
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
         .from("users")
         .update({
             mainClass: mainClass,
@@ -2857,7 +2857,7 @@ async function updateProfile() {
     }
 
     // Update user in Supabase
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("users")
         .update({
             firstName: newFirst,
@@ -2927,7 +2927,7 @@ document.getElementById(
         `${currentUser.id}-${Date.now()}-${file.name}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .storage
         .from("profile-pictures")
         .upload(fileName, file);
@@ -2950,7 +2950,7 @@ document.getElementById(
     let imageUrl = urlData.publicUrl;
 
     // Save URL to database
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseClient
         .from("users")
         .update({
             profilePic: imageUrl
@@ -3112,7 +3112,7 @@ function formatPosition(pos){
 
 async function loadClassFilter(){
 
-    let { data: classes, error } = await supabase
+    let { data: classes, error } = await supabaseClient
         .from("classes")
         .select("*")
         .eq("schoolId", currentUser.schoolId);
@@ -3146,7 +3146,7 @@ async function loadClassFilter(){
 
 async function initDefaultClasses(){
 
-    let { data: existing, error } = await supabase
+    let { data: existing, error } = await supabaseClient
         .from("classes")
         .select("*")
         .eq("schoolId", currentUser.schoolId);
@@ -3166,7 +3166,7 @@ async function initDefaultClasses(){
             { className: "3A", schoolId: currentUser.schoolId }
         ];
 
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseClient
             .from("classes")
             .insert(defaults);
 
@@ -3180,7 +3180,7 @@ async function filterStudentsByClass(){
 
     let selectedClass = document.getElementById("classFilter").value;
 
-    let { data: filtered, error } = await supabase
+    let { data: filtered, error } = await supabaseClient
         .from("students")
         .select("*")
         .eq("schoolId", currentUser.schoolId)
@@ -3207,7 +3207,7 @@ async function filterStudentsByClass(){
 
 async function loadClassOptions(){
 
-    let { data: classes, error } = await supabase
+    let { data: classes, error } = await supabaseClient
         .from("classes")
         .select("*")
         .eq("schoolId", currentUser.schoolId);
@@ -3424,7 +3424,7 @@ async function savePlan(){
 
     let content = document.getElementById("planOutput").innerHTML;
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("plans")
         .insert([
             {
@@ -3444,7 +3444,7 @@ async function savePlan(){
 
 async function loadPlans(){
 
-    const { data: plans, error } = await supabase
+    const { data: plans, error } = await supabaseClient
         .from("plans")
         .select("*")
         .eq("schoolId", currentUser.schoolId)
@@ -3571,7 +3571,7 @@ async function sendMessage(){
     // TEXT ONLY
     if(!file){
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from("chats")
             .insert([
                 {
@@ -3601,7 +3601,7 @@ async function sendMessage(){
 
     reader.onload = async function(e){
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from("chats")
             .insert([
                 {
@@ -3643,7 +3643,7 @@ async function displayChat(){
         return;
     }
 
-    const { data: chats, error } = await supabase
+    const { data: chats, error } = await supabaseClient
         .from("chats")
         .select("*")
         .eq("schoolId", currentUser.schoolId)
@@ -3753,7 +3753,7 @@ async function displayChat(){
 }
 async function updateOnlineStatus(){
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("users")
         .update({
             lastSeen: Date.now()
@@ -3866,7 +3866,7 @@ let typingTimeout;
 document.getElementById("chatInput")
 .addEventListener("input", async () => {
 
-    await supabase
+    await supabaseClient
         .from("typing_status")
         .upsert({
             username: currentUser.username,
@@ -3878,7 +3878,7 @@ document.getElementById("chatInput")
 
     typingTimeout = setTimeout(async () => {
 
-        await supabase
+        await supabaseClient
             .from("typing_status")
             .upsert({
                 username: currentUser.username,
@@ -3890,7 +3890,7 @@ document.getElementById("chatInput")
 
 });
 
-supabase
+supabaseClient
 .channel("typing-status")
 .on(
     "postgres_changes",
@@ -3934,6 +3934,6 @@ function getTicks(msg){
 async function test(){
 
     const { data } =
-    await supabase.from("users").select("*");
+    await supabaseClient.from("users").select("*");
 
 }
