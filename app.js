@@ -65,8 +65,8 @@ async function loadUsers() {
 
 async function signup() {
 
-    let firstName =
-        document.getElementById("firstName").value.trim();
+    let firstname =
+        document.getElementById("firstname").value.trim();
 
     let surname =
         document.getElementById("surname").value.trim();
@@ -86,8 +86,8 @@ async function signup() {
     let role =
         document.getElementById("roleSelect").value;
 
-    let schoolName =
-        document.getElementById("schoolNameSignup").value.trim();
+    let schoolname =
+        document.getElementById("schoolnameSignup").value.trim();
 
     let schoolCode =
         document.getElementById("schoolCode").value.trim();
@@ -97,7 +97,7 @@ async function signup() {
     // =========================
 
     if (
-        !firstName ||
+        !firstname ||
         !surname ||
         !username ||
         !email ||
@@ -113,7 +113,7 @@ async function signup() {
 
     if (role === "admin") {
 
-        if (!schoolName) {
+        if (!schoolname) {
             return alert("Enter school name");
         }
 
@@ -186,7 +186,7 @@ async function signup() {
                 .from("schools")
                 .insert([
                     {
-                        schoolname: schoolName,
+                        schoolname: schoolname,
                         schoolid: schoolCode,
                         adminid: authUser.id
                     }
@@ -208,7 +208,7 @@ async function signup() {
             .insert([
                 {
                     id: authUser.id,
-                    firstname: firstName,
+                    firstname: firstname,
                     surname: surname,
                     username: username,
                     email: email,
@@ -217,7 +217,7 @@ async function signup() {
                     schoolid: schoolCode,
                     schoolname:
                         role === "admin"
-                            ? schoolName
+                            ? schoolname
                             : ""
                 }
             ]);
@@ -375,19 +375,19 @@ async function displaySchoolName() {
     const { data, error } = await supabaseClient
 .from("schools")
 .select("*")
-.eq("schoolId", currentUser.schoolId)
+.eq("schoolid", currentUser.schoolid)
 .single();
 
     let name =
-        data?.schoolName ||
-        currentUser.schoolName ||
+        data?.schoolname ||
+        currentUser.schoolname ||
         "Your School";
 
     let text = name;
 
     // Add school code for admin
     if (currentUser.role === "admin") {
-        text += " (Code: " + currentUser.schoolId + ")";
+        text += " (Code: " + currentUser.schoolid + ")";
     }
 
     document.getElementById("schoolNameText").innerText = text;
@@ -403,7 +403,7 @@ async function editSchoolName() {
 
     let newName = prompt(
         "Edit School Name:",
-        currentUser.schoolName
+        currentUser.schoolname
     );
 
     if (newName && newName.trim()) {
@@ -411,21 +411,21 @@ async function editSchoolName() {
         newName = newName.trim();
 
         // Update current user object
-        currentUser.schoolName = newName;
+        currentUser.schoolname = newName;
 
         // Update school table
         const { error: schoolError } = await supabaseClient
             .from("schools")
             .update({
-                schoolName: newName
+                schoolname: newName
             })
-            .eq("schoolId", currentUser.schoolId);
+            .eq("schoolid", currentUser.schoolid);
 
         // Update current admin user
         const { error: userError } = await supabaseClient
             .from("users")
             .update({
-                schoolName: newName
+                schoolname: newName
             })
             .eq("username", currentUser.username);
 
@@ -558,7 +558,7 @@ async function loadLogo() {
     const { data, error } = await supabaseClient
         .from("schools")
         .select("schoolLogo")
-        .eq("schoolId", currentUser.schoolId)
+        .eq("schoolid", currentUser.schoolid)
         .single();
 
     if (data && data.schoolLogo) {
@@ -589,7 +589,7 @@ document.getElementById("schoolLogoInput")
 
     // Unique filename
     let fileName =
-        `${currentUser.schoolId}-${Date.now()}-${file.name}`;
+        `${currentUser.schoolid}-${Date.now()}-${file.name}`;
 
     // Upload to Supabase Storage
     const { data, error } = await supabaseClient
@@ -605,7 +605,7 @@ document.getElementById("schoolLogoInput")
     }
 
     // Get public URL
-    const { data: urlData } = supabase
+    const { data: urlData } = supabaseClient
         .storage
         .from("school-logos")
         .getPublicUrl(fileName);
@@ -618,7 +618,7 @@ document.getElementById("schoolLogoInput")
         .update({
             schoolLogo: logoUrl
         })
-        .eq("schoolId", currentUser.schoolId);
+        .eq("schoolid", currentUser.schoolid);
 
     if (dbError) {
 
@@ -677,10 +677,10 @@ async function saveStudents() {
         return;
     }
 
-    // Add schoolId to every student
+    // Add schoolid to every student
     let preparedStudents = students.map(s => ({
         ...s,
-        schoolId: currentUser.schoolId,
+        schoolid: currentUser.schoolid,
         teacher:
             currentUser.role === "admin"
             ? s.teacher || null
@@ -1597,7 +1597,7 @@ async function markAttendanceManual(
         .from("attendance")
         .upsert([
             {
-                schoolId: currentUser.schoolId,
+                schoolid: currentUser.schoolid,
                 teacher: currentUser.username,
                 date: date,
                 studentName: studentName,
@@ -1747,7 +1747,7 @@ async function markAllPresent() {
         attendanceData[date][s.name] = "Present";
 
         return {
-            schoolId: currentUser.schoolId,
+            schoolid: currentUser.schoolid,
             teacher: currentUser.username,
             studentName: s.name,
             status: "Present",
@@ -1978,7 +1978,7 @@ async function loadTermSettings() {
     const { data, error } = await supabaseClient
         .from("term_settings")
         .select("*")
-        .eq("schoolId", currentUser.schoolId)
+        .eq("schoolid", currentUser.schoolid)
         .single();
 
     if (error || !data) {
@@ -2028,7 +2028,7 @@ async function saveTermSettings() {
         .from("term_settings")
         .upsert([
             {
-                schoolId: currentUser.schoolId,
+                schoolid: currentUser.schoolid,
                 t1Start: t1Start,
                 t1End: t1End,
                 t2Start: t2Start,
@@ -2328,16 +2328,16 @@ let position = getStudentPosition(s, term);
 // Fetch school info from Supabase
 const { data: schoolData, error } = await supabaseClient
     .from("schools")
-    .select("schoolLogo, schoolName")
-    .eq("schoolId", currentUser.schoolId)
+    .select("schoolLogo, schoolname")
+    .eq("schoolid", currentUser.schoolid)
     .single();
 
 let logo =
     schoolData?.schoolLogo || "";
 
-let schoolName =
-    schoolData?.schoolName ||
-    currentUser.schoolName ||
+let schoolname =
+    schoolData?.schoolname ||
+    currentUser.schoolname ||
     "Your School";
 
 
@@ -2396,7 +2396,7 @@ ${logo ? `
 
     <div>
         <h2 style="margin:0;">
-		${schoolName}        </h2>
+		${schoolname}        </h2>
         <p style="margin:0;">STUDENT TERMINAL REPORT - ${term.toUpperCase()}</p>
     </div>
 
@@ -2645,7 +2645,7 @@ window.onload = async function () {
                 "welcomeUser"
             ).innerText =
                 "👋 Welcome, " +
-                user.firstName +
+                user.firstname +
                 " " +
                 user.surname;
 
@@ -2738,7 +2738,7 @@ function showProfileTab(tab, el){
 
 function loadProfileData(){
 
-    document.getElementById("pFirstName").value = currentUser.firstName;
+    document.getElementById("pFirstName").value = currentUser.firstname;
     document.getElementById("pSurname").value = currentUser.surname;
     document.getElementById("pUsername").value = currentUser.username;
     document.getElementById("pEmail").value = currentUser.email;
@@ -2759,7 +2759,7 @@ function loadProfileData(){
 async function saveProfile() {
 
     // Get form values
-    let firstName =
+    let firstname =
         document.getElementById(
             "pFirstName"
         ).value.trim();
@@ -2783,7 +2783,7 @@ async function saveProfile() {
     const { error } = await supabaseClient
         .from("users")
         .update({
-            firstName: firstName,
+            firstname: firstname,
             surname: surname,
             email: email,
             phone: phone
@@ -2800,7 +2800,7 @@ async function saveProfile() {
     }
 
     // Update current user locally
-    currentUser.firstName = firstName;
+    currentUser.firstname = firstname;
     currentUser.surname = surname;
     currentUser.email = email;
     currentUser.phone = phone;
@@ -2816,7 +2816,7 @@ async function saveProfile() {
         "welcomeUser"
     ).innerText =
         "👋 Welcome, " +
-        currentUser.firstName +
+        currentUser.firstname +
         " " +
         currentUser.surname;
 
@@ -3084,7 +3084,7 @@ document.getElementById(
     }
 
     // Get public URL
-    const { data: urlData } = supabase
+    const { data: urlData } = supabaseClient
         .storage
         .from("profile-pictures")
         .getPublicUrl(fileName);
@@ -3148,13 +3148,13 @@ function loadTeachers(){
     select.innerHTML = "";
 
     let teachers = users.filter(u => 
-        u.role === "teacher" && u.schoolId === currentUser.schoolId
+        u.role === "teacher" && u.schoolid === currentUser.schoolid
     );
 
     teachers.forEach(t => {
         select.innerHTML += `
             <option value="${t.username}">
-                ${t.firstName} ${t.surname}
+                ${t.firstname} ${t.surname}
             </option>
         `;
     });
@@ -3257,7 +3257,7 @@ async function loadClassFilter(){
     let { data: classes, error } = await supabaseClient
         .from("classes")
         .select("*")
-        .eq("schoolId", currentUser.schoolId);
+        .eq("schoolid", currentUser.schoolid);
 
     if(error){
         console.error(error);
@@ -3291,7 +3291,7 @@ async function initDefaultClasses(){
     let { data: existing, error } = await supabaseClient
         .from("classes")
         .select("*")
-        .eq("schoolId", currentUser.schoolId);
+        .eq("schoolid", currentUser.schoolid);
 
     if(error){
         console.error(error);
@@ -3301,11 +3301,11 @@ async function initDefaultClasses(){
     if(!existing || existing.length === 0){
 
         let defaults = [
-            { className: "1A", schoolId: currentUser.schoolId },
-            { className: "1B", schoolId: currentUser.schoolId },
-            { className: "2A", schoolId: currentUser.schoolId },
-            { className: "2B", schoolId: currentUser.schoolId },
-            { className: "3A", schoolId: currentUser.schoolId }
+            { className: "1A", schoolid: currentUser.schoolid },
+            { className: "1B", schoolid: currentUser.schoolid },
+            { className: "2A", schoolid: currentUser.schoolid },
+            { className: "2B", schoolid: currentUser.schoolid },
+            { className: "3A", schoolid: currentUser.schoolid }
         ];
 
         const { error: insertError } = await supabaseClient
@@ -3325,7 +3325,7 @@ async function filterStudentsByClass(){
     let { data: filtered, error } = await supabaseClient
         .from("students")
         .select("*")
-        .eq("schoolId", currentUser.schoolId)
+        .eq("schoolid", currentUser.schoolid)
         .eq("class", selectedClass);
 
     if(error){
@@ -3352,7 +3352,7 @@ async function loadClassOptions(){
     let { data: classes, error } = await supabaseClient
         .from("classes")
         .select("*")
-        .eq("schoolId", currentUser.schoolId);
+        .eq("schoolid", currentUser.schoolid);
 
     if(error){
         console.error(error);
@@ -3385,7 +3385,7 @@ function getClassTeacherName(studentClass){
 
     if(!teacher) return "Not Assigned";
 
-    return teacher.firstName + " " + teacher.surname;
+    return teacher.firstname + " " + teacher.surname;
 }
 
 let deferredPrompt;
@@ -3570,7 +3570,7 @@ async function savePlan(){
         .from("plans")
         .insert([
             {
-                schoolId: currentUser.schoolId,
+                schoolid: currentUser.schoolid,
                 content: content,
                 createdAt: new Date().toISOString()
             }
@@ -3589,7 +3589,7 @@ async function loadPlans(){
     const { data: plans, error } = await supabaseClient
         .from("plans")
         .select("*")
-        .eq("schoolId", currentUser.schoolId)
+        .eq("schoolid", currentUser.schoolid)
         .order("createdAt", { ascending: false });
 
     if(error){
@@ -3612,7 +3612,7 @@ function displayUsers(){
 
     let usersList = users.filter(u =>
         u.username !== currentUser.username &&
-        u.schoolId === currentUser.schoolId
+        u.schoolid === currentUser.schoolid
     );
 
     let html = "";
@@ -3621,7 +3621,7 @@ function displayUsers(){
 
         // USER INITIALS
         let initials =
-            user.firstName.charAt(0).toUpperCase() +
+            user.firstname.charAt(0).toUpperCase() +
             user.surname.charAt(0).toUpperCase();
 
         // ONLINE STATUS
@@ -3674,7 +3674,7 @@ function displayUsers(){
             ${avatar}
 
             <div class="chat-name">
-                ${user.firstName}
+                ${user.firstname}
             </div>
 
         </div>
@@ -4051,7 +4051,7 @@ supabaseClient.channel("typing-status")
                 "typingIndicator"
             ).innerText =
                 payload.new.is_typing
-                ? selectedUser.firstName + " is typing..."
+                ? selectedUser.firstname + " is typing..."
                 : "";
         }
 
@@ -4078,3 +4078,5 @@ async function test(){
     await supabaseClient.from("users").select("*");
 
 }
+
+storage
