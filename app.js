@@ -554,14 +554,10 @@ async function loadLogo() {
 
     const img = document.getElementById("schoolLogoPreview");
 
-    const { data, error } = await supabaseClient
-        .from("schools")
-        .select("schoolLogo")
-        .eq("schoolid", currentUser.schoolid)
-        .single();
-
-    console.log("Logo Data:", data);
-    console.log("Logo Error:", error);
+   const { data, error } = await supabaseClient
+  .from("schools")
+  .select("*")
+  .eq("schoolid", schoolid);
 
     if (error) {
         img.src = "assets/default-logo.png";
@@ -2963,7 +2959,7 @@ async function saveTeacherSubjects() {
     const { error: updateError } = await supabaseClient
         .from("users")
         .update({
-            mainClass: mainClass,
+             mainClass: mainClass,
             classes: classList,
             subjects: selectedSubjects
         })
@@ -3780,7 +3776,7 @@ async function sendMessage(){
                     text: text,
                     type: "text",
                     time: Date.now(),
-                    schoolId: currentUser.schoolId
+                    schoolid: currentUser.schoolid
                 }
             ]);
 
@@ -3813,7 +3809,7 @@ async function sendMessage(){
                     fileName: file.name,
                     type: "media",
                     time: Date.now(),
-                    schoolId: currentUser.schoolId
+                    schoolid: currentUser.schoolid
                 }
             ]);
 
