@@ -366,7 +366,7 @@ async function login() {
     loadTheme();
     loadTermSettings();
     updateOnlineStatus();
-	await loadUsers();
+	
 }
 
 
@@ -2750,7 +2750,7 @@ async function refreshCurrentUser() {
 
 async function showProfile(){
     showPage('profilePage');
-	 
+	 await loadUsers();
 	
     loadProfileData();
 	loadTermSettings();
