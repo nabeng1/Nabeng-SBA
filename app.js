@@ -127,7 +127,7 @@ async function signup() {
                 .from("schools")
                 .select("*")
                 .eq("schoolid", schoolCode)
-                .single();
+                .maybeSingle();
 
         if (existingSchool) {
             return alert("School code already exists");
@@ -149,7 +149,7 @@ async function signup() {
                 .from("schools")
                 .select("*")
                 .eq("schoolid", schoolCode)
-                .single();
+                .maybeSingle();
 
         if (!schoolExists) {
             return alert("Invalid school code");
@@ -366,6 +366,7 @@ async function login() {
     loadTheme();
     loadTermSettings();
     updateOnlineStatus();
+	
 }
 
 
@@ -376,7 +377,7 @@ async function displaySchoolName() {
 .from("schools")
 .select("*")
 .eq("schoolid", currentUser.schoolid)
-.single();
+.maybeSingle();
 
     let name =
         data?.schoolname ||
@@ -551,27 +552,24 @@ function uploadLogo(){
 }
 async function loadLogo() {
 
-    const img =
-        document.getElementById("schoolLogoPreview");
+    const img = document.getElementById("schoolLogoPreview");
 
-    // Fetch school logo from Supabase
     const { data, error } = await supabaseClient
         .from("schools")
         .select("schoolLogo")
         .eq("schoolid", currentUser.schoolid)
         .single();
 
-    if (data && data.schoolLogo) {
+    console.log("Logo Data:", data);
+    console.log("Logo Error:", error);
 
-        img.src = data.schoolLogo;
-
-    } else {
-
-        img.src =
-            "https://via.placeholder.com/70?text=Logo";
+    if (error) {
+        img.src = "assets/default-logo.png";
+        return;
     }
-}
 
+    img.src = data?.schoolLogo || "assets/default-logo.png";
+}
 function displayLogo(logo){
     let img = document.getElementById("schoolLogoPreview");
 
@@ -585,7 +583,19 @@ document.getElementById("schoolLogoInput")
 
     let file = this.files[0];
 
-    if (!file) return;
+if (!file) return;
+
+const allowedTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp"
+];
+
+if (!allowedTypes.includes(file.type)) {
+    alert("Please upload JPG, PNG, or WEBP images only.");
+    return;
+}
 
     // Unique filename
     let fileName =
@@ -605,10 +615,10 @@ document.getElementById("schoolLogoInput")
     }
 
     // Get public URL
-    const { data: urlData } = supabaseClient
-        .storage
-        .from("school-logos")
-        .getPublicUrl(fileName);
+   const { data: urlData } = await supabaseClient
+    .storage
+    .from("school-logos")
+    .getPublicUrl(fileName);
 
     let logoUrl = urlData.publicUrl;
 
@@ -779,12 +789,23 @@ function showPage(id){
         : "none";
     }
 
-    // STUDENTS PAGE
-    if(id === "studentsPage"){
+   // STUDENTS PAGE
+if(id === "studentsPage"){
 
-        loadStudentsTable();
-        loadClassOptions();
+    loadStudentsTable();
+    loadClassOptions();
+
+    let addSection =
+        document.getElementById("addStudentSection");
+
+    if(addSection){
+
+        addSection.style.display =
+            currentUser.role === "admin"
+            ? "none"
+            : "block";
     }
+}
 
     // SUBJECTS PAGE
     if(id === "subjectsPage"){
@@ -867,7 +888,7 @@ function displayStudents(){
     let html=`<table>
     <tr>
         <th>Name</th>
-        <th>Class</th>
+        <th>class</th>
         <th>Actions</th>
     </tr>`;
 
@@ -876,7 +897,7 @@ function displayStudents(){
            <td onclick="openStudentModal(${i})" style="cursor:pointer; color:#60a5fa;">
     ${s.name}
 </td>
-        <td>${s.class}</td>
+        <td>${s.studentclass}</td>
         <td>
             <button class="action-btn edit-btn" onclick="editStudent(${i})">✏️ Edit</button>
 			<button class="action-btn delete-btn" onclick="deleteStudent(${i})">🗑 Delete</button>
@@ -913,7 +934,7 @@ function importStudents(){
         if(name && cls){
             students.push({
     name,
-    class: cls,
+    studentclass: cls,
     subjects: {},
     currentTerm: "term1",
     teacher: currentUser.username   // ✅ ADD THIS
@@ -928,10 +949,10 @@ function importStudents(){
     alert("Students imported successfully!");
     document.getElementById("bulkData").value = "";
 	
-if(!students.find(s => s.name === name && s.class === cls)){
+if(!students.find(s => s.name === name && s.studentclass === cls)){
     students.push({
         name,
-        class: cls,
+        studentclass: cls,
         subjects: {},
         currentTerm: "term1"
     });
@@ -1020,33 +1041,51 @@ function populateStudentList(){
     ).join('');
 }
 function editStudent(index){
+
     let s = students[index];
 
     let newName = prompt("Edit Name:", s.name);
-    let newClass = prompt("Edit Class:", s.class);
+    if(!newName) return;
 
-    if(newName && newClass){
-        s.name = newName;
-        s.class = newClass;
+    let newClass = prompt(
+        "Edit Class:",
+        s.studentclass
+    );
 
-        saveStudents();
+    if(!newClass) return;
 
-        loadStudentsTable(); // ✅ ADD THIS
-        populateStudentList();
-        updateDashboard();
-    }
+    let newGender = prompt(
+        "Gender (Male/Female):",
+        s.gender || "Male"
+    );
+
+    s.name = newName;
+    s.studentclass = newClass;
+    s.gender = newGender;
+
+    saveStudents();
+
+    loadStudentsTable();
+    populateStudentList();
+    updateDashboard();
+
+    alert("Student updated successfully");
 }
+
 function deleteStudent(index){
-    {
-        students.splice(index,1);
 
-        saveStudents();
-
-        loadStudentsTable(); // ✅ ADD THIS
-        populateStudentList();
-        updateDashboard();
+    if(currentUser.role === "admin"){
+        return alert("❌ Admin cannot delete students");
     }
+
+    students.splice(index,1);
+
+    saveStudents();
+    loadStudentsTable();
+    populateStudentList();
+    updateDashboard();
 }
+
 function drawCharts(){
 
     let grades = {A:0,B:0,C:0,D:0,F:0};
@@ -1114,9 +1153,12 @@ function drawCharts(){
 
 async function addStudentFromPage(){
 
+if(currentUser.role === "admin"){
+    return alert("❌ Only teachers can add students");
+}
     let name =
         document.getElementById(
-            "studentName"
+            "studentname"
         ).value.trim();
 
     let cls =
@@ -1133,18 +1175,18 @@ async function addStudentFromPage(){
     }
 
     // TEACHER RESTRICTION
-    if(currentUser.role === "teacher"){
+   if(currentUser.role === "teacher"){
 
-        if(
-            cls.toLowerCase() !==
-            currentUser.mainClass.toLowerCase()
-        ){
+    let allowedClasses =
+        currentUser.classes || [];
 
-            return alert(
-                "❌ You can only add students to your main class"
-            );
-        }
+    if(!allowedClasses.includes(cls)){
+
+        return alert(
+            "❌ You can only add students to your assigned classes"
+        );
     }
+}
 
     let gender =
         prompt(
@@ -1159,7 +1201,7 @@ async function addStudentFromPage(){
                 {
                     name: name,
 
-                    class: cls,
+                    studentclass: cls,
 
                     gender:
                         gender || "Male",
@@ -1185,7 +1227,7 @@ async function addStudentFromPage(){
     await loadStudents();
 
     document.getElementById(
-        "studentName"
+        "studentname"
     ).value = "";
 
     document.getElementById(
@@ -1218,7 +1260,7 @@ function loadStudentsTable(){
     // FILTER STUDENTS
     let filtered = students.filter(s =>
         s.name.toLowerCase().includes(keyword) ||
-        s.class.toLowerCase().includes(keyword)
+        s.studentclass.toLowerCase().includes(keyword)
     );
 
     // START TABLE
@@ -1238,7 +1280,7 @@ function loadStudentsTable(){
         // FIND REAL INDEX
         let realIndex = students.findIndex(st =>
             st.name === s.name &&
-            st.class === s.class
+            st.studentclass === s.studentclass
         );
 
         html += `
@@ -1256,7 +1298,7 @@ function loadStudentsTable(){
             </td>
 
             <!-- CLASS -->
-            <td>${s.class}</td>
+            <td>${s.studentclass}</td>
 
             <!-- GENDER -->
             <td>
@@ -1326,7 +1368,7 @@ function searchStudent(){
     loadStudentsTable();
 }
 
-// Attendance data stored in localStorage: { date: { studentName: "Present"/"Absent" } }
+// Attendance data stored in localStorage: { date: { studentname: "Present"/"Absent" } }
 let attendanceData = {};
 
 function loadAttendanceTable() {
@@ -1351,8 +1393,8 @@ function loadAttendanceTable() {
 
         students.forEach(s => {
 
-            if(!grouped[s.class]){
-                grouped[s.class] = {
+            if(!grouped[s.studentclass]){
+                grouped[s.studentclass] = {
                     total:0,
                     present:0,
                     absent:0,
@@ -1361,25 +1403,25 @@ function loadAttendanceTable() {
                 };
             }
 
-            grouped[s.class].total++;
+            grouped[s.studentclass].total++;
 
             let status = attendanceData[date][s.name];
 
             if(status === "Present"){
 
-                grouped[s.class].present++;
+                grouped[s.studentclass].present++;
 
                 if(s.gender === "Male"){
-                    grouped[s.class].boys++;
+                    grouped[s.studentclass].boys++;
                 }
 
                 if(s.gender === "Female"){
-                    grouped[s.class].girls++;
+                    grouped[s.studentclass].girls++;
                 }
 
             } else {
 
-                grouped[s.class].absent++;
+                grouped[s.studentclass].absent++;
 
             }
 
@@ -1446,7 +1488,7 @@ function loadAttendanceTable() {
         tableHTML += `
         <tr>
             <td>${s.name}</td>
-            <td>${s.class}</td>
+            <td>${s.studentclass}</td>
 
             <td>
                 <button class="present-btn ${status === "Present" ? "active" : ""}"
@@ -1479,9 +1521,41 @@ function loadAttendanceTable() {
          Attendance %: ${termData.percentage}%`;
 }
 
+async function loadAttendanceData() {
+
+    const { data, error } = await supabaseClient
+        .from("attendance")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
+
+    if (error) {
+        console.log(error);
+        return;
+    }
+
+    attendanceData = {};
+
+    data.forEach(record => {
+
+        if (!attendanceData[record.date]) {
+            attendanceData[record.date] = {};
+        }
+
+        attendanceData[record.date][record.studentname] =
+            record.status;
+    });
+
+    let selectedDate =
+        document.getElementById("attendanceDate")?.value;
+
+    if (selectedDate) {
+        loadAttendanceTable();
+    }
+}
+
 async function markAttendance(
     date,
-    studentName,
+    studentname,
     status
 ) {
 
@@ -1501,7 +1575,7 @@ async function markAttendance(
                         date,
 
                     studentname:
-                        studentName,
+                        studentname,
 
                     status:
                         status,
@@ -1526,7 +1600,7 @@ async function markAttendance(
         attendanceData[date] = {};
     }
 
-    attendanceData[date][studentName] =
+    attendanceData[date][studentname] =
         status;
 
     loadAttendanceTable();
@@ -1561,7 +1635,7 @@ function updateAttendanceStats(date) {
 }
 
 async function markAttendanceManual(
-    studentName,
+    studentname,
     status
 ) {
 
@@ -1600,7 +1674,7 @@ async function markAttendanceManual(
                 schoolid: currentUser.schoolid,
                 teacher: currentUser.username,
                 date: date,
-                studentName: studentName,
+                studentname: studentname,
                 status: status,
                 term: term
             }
@@ -1620,7 +1694,7 @@ async function markAttendanceManual(
         attendanceData[date] = {};
     }
 
-    attendanceData[date][studentName] = status;
+    attendanceData[date][studentname] = status;
 
     syncAttendanceToStudents();
 
@@ -1749,7 +1823,7 @@ async function markAllPresent() {
         return {
             schoolid: currentUser.schoolid,
             teacher: currentUser.username,
-            studentName: s.name,
+            studentname: studentname,
             status: "Present",
             date: date,
             term: term
@@ -1778,11 +1852,11 @@ async function markAllPresent() {
 function openDeleteModal(index){
     deleteIndex = index;
 
-    let studentName = students[index].name;
+    let studentname = students[index].name;
 
     document.getElementById("modalTitle").innerText = "Delete Student";
     document.getElementById("modalMessage").innerText =
-        `Delete ${studentName}? This action cannot be undone.`;
+        `Delete ${studentname}? This action cannot be undone.`;
 
     document.getElementById("confirmModal").style.display = "flex";
 
@@ -1832,7 +1906,7 @@ function openStudentModal(index){
     content.innerHTML = `
         <h2>${student.name}</h2>
 
-        <p><strong>Class:</strong> ${student.class}</p>
+        <p><strong>Class:</strong> ${student.studentclass}</p>
 
         <p><strong>Gender:</strong> ${student.gender || "Not Set"}</p>
 
@@ -1976,10 +2050,10 @@ function changeTerm(){
 async function loadTermSettings() {
 
     const { data, error } = await supabaseClient
-        .from("term_settings")
+        .from("termsettings")
         .select("*")
         .eq("schoolid", currentUser.schoolid)
-        .single();
+        .maybeSingle();
 
     if (error || !data) {
 
@@ -1993,114 +2067,86 @@ async function loadTermSettings() {
 
 async function saveTermSettings() {
 
-    let t1Start =
-        document.getElementById(
-            "t1Start"
-        ).value;
+    const t1start = document.getElementById("t1start").value;
+    const t1end = document.getElementById("t1end").value;
 
-    let t1End =
-        document.getElementById(
-            "t1End"
-        ).value;
+    const t2start = document.getElementById("t2start").value;
+    const t2end = document.getElementById("t2end").value;
 
-    let t2Start =
-        document.getElementById(
-            "t2Start"
-        ).value;
+    const t3start = document.getElementById("t3start").value;
+    const t3end = document.getElementById("t3end").value;
 
-    let t2End =
-        document.getElementById(
-            "t2End"
-        ).value;
-
-    let t3Start =
-        document.getElementById(
-            "t3Start"
-        ).value;
-
-    let t3End =
-        document.getElementById(
-            "t3End"
-        ).value;
-
-    // Save to Supabase
-    const { error } = await supabaseClient
-        .from("term_settings")
-        .upsert([
-            {
-                schoolid: currentUser.schoolid,
-                t1Start: t1Start,
-                t1End: t1End,
-                t2Start: t2Start,
-                t2End: t2End,
-                t3Start: t3Start,
-                t3End: t3End
-            }
-        ]);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save term settings"
-        );
+    if (!currentUser || !currentUser.schoolid) {
+        alert("School information not found.");
+        return;
     }
 
-    // Update local cache
-    termSettings = {
-        t1Start,
-        t1End,
-        t2Start,
-        t2End,
-        t3Start,
-        t3End
+    const settingsData = {
+        schoolid: currentUser.schoolid,
+        t1start,
+        t1end,
+        t2start,
+        t2end,
+        t3start,
+        t3end
     };
 
-    alert(
-        "✅ Term settings saved successfully!"
-    );
+    const { error } = await supabaseClient
+        .from("termsettings")
+        .upsert(settingsData, {
+            onConflict: "schoolid"
+        });
+
+    if (error) {
+        console.error("Term settings save error:", error);
+        alert("Failed to save term settings");
+        return;
+    }
+
+    termSettings = settingsData;
+
+    alert("✅ Term settings saved successfully!");
 }
 
 function getTermFromDate(dateStr) {
 
     let date = new Date(dateStr);
 
-    let t1Start =
-        new Date(termSettings.t1Start);
+    let t1start =
+        new Date(termSettings.t1start);
 
-    let t1End =
-        new Date(termSettings.t1End);
+    let t1end =
+        new Date(termSettings.t1end);
 
-    let t2Start =
-        new Date(termSettings.t2Start);
+    let t2start =
+        new Date(termSettings.t2start);
 
-    let t2End =
-        new Date(termSettings.t2End);
+    let t2end =
+        new Date(termSettings.t2end);
 
-    let t3Start =
-        new Date(termSettings.t3Start);
+    let t3start =
+        new Date(termSettings.t3start);
 
-    let t3End =
-        new Date(termSettings.t3End);
+    let t3end =
+        new Date(termSettings.t3end);
 
     if (
-        date >= t1Start &&
-        date <= t1End
+        date >= t1start &&
+        date <= t1end
     ) {
         return "term1";
     }
 
     if (
-        date >= t2Start &&
-        date <= t2End
+        date >= t2start &&
+        date <= t2end
     ) {
         return "term2";
     }
 
     if (
-        date >= t3Start &&
-        date <= t3End
+        date >= t3start &&
+        date <= t3end
     ) {
         return "term3";
     }
@@ -2111,15 +2157,15 @@ function getTermFromDate(dateStr) {
 function getTermEnd(term) {
 
     if (term === "term1") {
-        return termSettings.t1End;
+        return termSettings.t1end;
     }
 
     if (term === "term2") {
-        return termSettings.t2End;
+        return termSettings.t2end;
     }
 
     if (term === "term3") {
-        return termSettings.t3End;
+        return termSettings.t3end;
     }
 
     return null;
@@ -2128,17 +2174,17 @@ function getTermEnd(term) {
 function getNextTermStart(term) {
 
     if (term === "term1") {
-        return termSettings.t2Start;
+        return termSettings.t2start;
     }
 
     if (term === "term2") {
-        return termSettings.t3Start;
+        return termSettings.t3start;
     }
 
     if (term === "term3") {
 
         // next academic year
-        return termSettings.t1Start;
+        return termSettings.t1start;
     }
 
     return null;
@@ -2413,7 +2459,7 @@ ${logo ? `
     </div>
 
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-        <p style="margin:0;"><b>Class:</b> ${s.class}</p>
+        <p style="margin:0;"><b>Class:</b> ${s.studentclass}</p>
         <p style="margin:0;"><b>Total Students:</b> ${totalStudents}</p>
     </div>
 
@@ -2468,7 +2514,7 @@ allowedSubjects.forEach(sub=>{
 	let daysPresent = s.daysPresent?.[term] || 0;
 	let daysAbsent = totalDays - daysPresent;
 	
-   let teacherName = getClassTeacherName(s.class);
+   let teacherName = getClassTeacherName(s.studentclass);
 
 
 
@@ -2581,7 +2627,7 @@ async function downloadPDF(){
 
 });
     // 🔥 GET STUDENT NAME
-    let studentName = document.getElementById("reportSearch").value.trim();
+    let studentname = document.getElementById("reportSearch").value.trim();
 
 
 
@@ -2589,13 +2635,13 @@ async function downloadPDF(){
     let term = document.getElementById("reportTerm").value;
 
     // Clean name (remove spaces)
-    studentName = studentName.replace(/\s+/g, "_");
+    studentname = studentname.replace(/\s+/g, "_");
 
     // Capitalize term
    term = term.charAt(0).toUpperCase() + term.slice(1);
 
     // 🔥 FINAL FILE NAME
-    let fileName = `${studentName}_${term}.pdf`;
+    let fileName = `${studentname}_${term}.pdf`;
 
     doc.save(fileName);
 }
@@ -2702,15 +2748,16 @@ async function refreshCurrentUser() {
     }
 }
 
-function showProfile(){
+async function showProfile(){
     showPage('profilePage');
+	 await loadUsers();
 	
     loadProfileData();
 	loadTermSettings();
 	
 
     if(currentUser.role === "admin"){
-        loadTeachers();
+      
     } else {
         loadSubjectSelection();
     }
@@ -2751,7 +2798,7 @@ function loadProfileData(){
     if(currentUser.profilePic){
         img.src = currentUser.profilePic;
     } else {
-        img.src = "https://via.placeholder.com/100";
+        img.src = "assets/default-profile.png";
     }
 }
 
@@ -3124,32 +3171,22 @@ document.getElementById(
     alert("Profile picture updated ✅");
 });
 
-document.getElementById("profilePicInput").addEventListener("change", function(){
-    let file = this.files[0];
-    if(!file) return;
-
-    let reader = new FileReader();
-
-    reader.onload = function(e){
-        let img = e.target.result;
-
-        localStorage.setItem("profilePic", img);
-        document.getElementById("profileImage").src = img;
-    };
-
-    reader.readAsDataURL(file);
-});
-
 function loadTeachers(){
 
     if(currentUser.role !== "admin") return;
 
-    let select = document.getElementById("teacherSelect");
-    select.innerHTML = "";
+    console.log("All Users:", users);
 
-    let teachers = users.filter(u => 
-        u.role === "teacher" && u.schoolid === currentUser.schoolid
+    let teachers = users.filter(u =>
+        u.role === "teacher" &&
+        u.schoolid === currentUser.schoolid
     );
+
+    console.log("Teachers Found:", teachers);
+
+    let select = document.getElementById("teacherSelect");
+
+    select.innerHTML = "";
 
     teachers.forEach(t => {
         select.innerHTML += `
@@ -3199,12 +3236,33 @@ function loadSelectedTeacherSubjects(){
 	
 }
 
+async function loadUsers(){
+	
+
+    const { data, error } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
+
+    if(error){
+        console.log("Load Users Error:", error);
+        return;
+    }
+
+    users = data || [];
+
+    console.log("Users Loaded:", users);
+
+    if(currentUser.role === "admin"){
+        loadTeachers();
+    }
+}
 
 
 function getStudentPosition(student, term){
 
     // ✅ Get students in same class
-    let classStudents = students.filter(s => s.class === student.class);
+    let classStudents = students.filter(s => s.studentclass === student.class);
 
     // ✅ Calculate average for each student (for that term)
     let ranked = classStudents.map(s => {
@@ -3336,7 +3394,7 @@ async function filterStudentsByClass(){
     // TEACHER SAFETY
     if(currentUser.role === "teacher"){
         filtered = filtered.filter(s =>
-            (currentUser.classes || []).includes(s.class)
+            (currentUser.classes || []).includes(s.studentclass)
         );
     }
 
@@ -3788,7 +3846,7 @@ async function displayChat(){
     const { data: chats, error } = await supabaseClient
         .from("chats")
         .select("*")
-        .eq("schoolId", currentUser.schoolId)
+        .eq("schoolid", currentUser.schoolid)
         .order("time", { ascending: true });
 
     if(error){
@@ -4078,5 +4136,3 @@ async function test(){
     await supabaseClient.from("users").select("*");
 
 }
-
-storage
