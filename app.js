@@ -24,6 +24,8 @@ let users = [];
 let currentUser = null;
 let selectedUser = null;
 let selectedMediaFile = null;
+let filteredStudents = [];
+
 
 // Show signup if no users exist
 if(users.length === 0){
@@ -648,14 +650,11 @@ function logout(){
 
 async function loadStudents() {
 
-    const { data, error } =
-        await supabaseClient
-            .from("students")
-            .select("*")
-            .eq(
-                "schoolid",
-                currentUser.schoolid
-            );
+    const { data, error } = await supabaseClient
+    .from("students")
+    .select("*")
+    .eq("schoolid", currentUser.schoolid)
+    .in("studentclass", currentUser.classes || []);
 
     if(error){
 
@@ -3318,27 +3317,27 @@ async function loadClassFilter(){
         return;
     }
 
-    // convert objects into class names
-    classes = classes.map(c => c.className);
+    // Convert objects to class names ONCE
+    classes = classes.map(c => c.classname);
 
-    // fallback safety
-    if(!Array.isArray(classes)) classes = [];
+    console.log("Raw classes:", classes);
 
-    // TEACHER FILTER
-    if(currentUser.role === "teacher"){
-        classes = classes.filter(c =>
-            (currentUser.classes || []).includes(c)
-        );
-    }
+    classes = classes.filter(c =>
+        (currentUser.classes || []).includes(c)
+    );
+
+    console.log("Teacher Classes:", currentUser.classes);
+    console.log("Filtered Classes:", classes);
 
     let html = `<option value="">Select Class</option>`;
 
-    classes.forEach(c=>{
+    classes.forEach(c => {
         html += `<option value="${c}">${c}</option>`;
     });
 
     document.getElementById("classFilter").innerHTML = html;
 }
+
 
 async function initDefaultClasses(){
 
@@ -3352,23 +3351,27 @@ async function initDefaultClasses(){
         return;
     }
 
-    if(!existing || existing.length === 0){
+if(!existing || existing.length === 0){
+
+ 
 
         let defaults = [
-            { className: "1A", schoolid: currentUser.schoolid },
-            { className: "1B", schoolid: currentUser.schoolid },
-            { className: "2A", schoolid: currentUser.schoolid },
-            { className: "2B", schoolid: currentUser.schoolid },
-            { className: "3A", schoolid: currentUser.schoolid }
+            { classname: "1A", schoolid: currentUser.schoolid },
+            { classname: "1B", schoolid: currentUser.schoolid },
+            { classname: "2A", schoolid: currentUser.schoolid },
+            { classname: "2B", schoolid: currentUser.schoolid },
+            { classname: "3A", schoolid: currentUser.schoolid }
         ];
 
         const { error: insertError } = await supabaseClient
             .from("classes")
             .insert(defaults);
 
-        if(insertError){
-            console.error(insertError);
-        }
+         if(insertError){
+        console.error("Insert Error:", insertError);
+    } else {
+        console.log("Default classes created successfully");
+    }
     }
 }
 
@@ -3380,7 +3383,7 @@ async function filterStudentsByClass(){
         .from("students")
         .select("*")
         .eq("schoolid", currentUser.schoolid)
-        .eq("class", selectedClass);
+        .eq("studentclass", selectedClass);
 
     if(error){
         console.error(error);
@@ -3393,42 +3396,106 @@ async function filterStudentsByClass(){
             (currentUser.classes || []).includes(s.studentclass)
         );
     }
+		filteredStudents = filtered;
 
-    studentsList.innerHTML = filtered.map((s)=>
-        `<div class="card" onclick="selectStudent(${s.id})">
-            ${s.name}
-        </div>`
-    ).join('');
+    studentsList.innerHTML = filtered.map((s,index)=>
+    `<div class="card" onclick="selectFilteredStudent(${index})">
+        ${s.name}
+    </div>`
+).join('');
 }
+
+function selectFilteredStudent(index){
+
+    let student = filteredStudents[index];
+
+    if(!student){
+        alert("Student not found");
+        return;
+    }
+
+    // ADMIN
+    if(currentUser.role === "admin"){
+
+        let modal = document.getElementById("studentModal");
+        let content = document.getElementById("studentModalContent");
+
+        content.innerHTML = `
+            <h2>${student.name}</h2>
+
+            <p><strong>Class:</strong> ${student.studentclass}</p>
+
+            <p><strong>Gender:</strong>
+            ${student.gender || "Not Set"}</p>
+
+            <button onclick="closeStudentModal()">
+                Close
+            </button>
+        `;
+
+        modal.style.display = "flex";
+        return;
+    }
+
+    // TEACHER
+    let originalIndex = students.findIndex(
+        s => s.id === student.id
+    );
+
+    if(originalIndex !== -1){
+        selectStudent(originalIndex);
+    }
+}
+
+window.selectFilteredStudent = selectFilteredStudent;
 
 async function loadClassOptions(){
 
     let { data: classes, error } = await supabaseClient
-        .from("classes")
-        .select("*")
-        .eq("schoolid", currentUser.schoolid);
+    .from("classes")
+    .select("*")
+    .eq("schoolid", currentUser.schoolid);
+
 
     if(error){
-        console.error(error);
+        console.error("Class Load Error:", error);
         return;
     }
 
-    classes = classes.map(c => c.className);
+    classes = classes.map(c => c.classname);
 
-    // ✅ If teacher → only their classes
+
+    // Teacher should only see assigned classes
     if(currentUser.role === "teacher"){
+
+        classes.forEach(c => {
+            console.log(
+                "Checking:",
+                c,
+                "Match:",
+                (currentUser.classes || []).includes(c)
+            );
+        });
+
         classes = classes.filter(c =>
             (currentUser.classes || []).includes(c)
         );
+
+        console.log("Filtered Classes:", classes);
     }
 
     let html = `<option value="">Select Class</option>`;
 
-    classes.forEach(c=>{
+    classes.forEach(c => {
         html += `<option value="${c}">${c}</option>`;
     });
 
-    document.getElementById("studentClass").innerHTML = html;
+    document.getElementById("classFilter").innerHTML = html;
+
+    console.log(
+        "Dropdown Updated:",
+        document.getElementById("studentClass").innerHTML
+    );
 }
 
 function getClassTeacherName(studentClass){
