@@ -559,7 +559,7 @@ async function loadLogo() {
    const { data, error } = await supabaseClient
   .from("schools")
   .select("*")
-  .eq("schoolid", schoolid);
+  .eq("schoolid", currentUser.schoolid)
 
     if (error) {
         img.src = "assets/default-logo.png";
@@ -2050,12 +2050,7 @@ async function loadTermSettings() {
         .eq("schoolid", currentUser.schoolid)
         .maybeSingle();
 
-    if (error || !data) {
-
-        console.log(error);
-
-        return;
-    }
+   
 
     termSettings = data;
 }
@@ -2184,50 +2179,76 @@ function getNextTermStart(term) {
 
     return null;
 }
-function saveMarks(){
-    let s=students[currentStudentIndex];
-    let term=s.currentTerm;
 
-   let allowedSubjects = currentUser.role === "teacher"
-    ? (currentUser.subjects || [])
-    : subjects;
 
-allowedSubjects.forEach(sub=>{
-        if(!s.subjects[sub]) s.subjects[sub]={};
-        s.subjects[sub][term]={
-			test1:+(document.getElementById(sub+"_test1").value || 0),
-			test2:+(document.getElementById(sub+"_test2").value || 0),
-			project:+(document.getElementById(sub+"_project").value || 0),
-			group:+(document.getElementById(sub+"_group").value || 0),
-			exam:+(document.getElementById(sub+"_exam").value || 0)
+async function saveMarks(){
+
+    console.log("saveMarks started");
+
+    let s = students[currentStudentIndex];
+    let term = s.currentTerm;
+
+    let allowedSubjects = currentUser.role === "teacher"
+        ? (currentUser.subjects || [])
+        : subjects;
+
+    allowedSubjects.forEach(sub => {
+
+        if(!s.subjects) s.subjects = {};
+        if(!s.subjects[sub]) s.subjects[sub] = {};
+
+        s.subjects[sub][term] = {
+            test1: +(document.getElementById(sub+"_test1")?.value || 0),
+            test2: +(document.getElementById(sub+"_test2")?.value || 0),
+            project: +(document.getElementById(sub+"_project")?.value || 0),
+            group: +(document.getElementById(sub+"_group")?.value || 0),
+            exam: +(document.getElementById(sub+"_exam")?.value || 0)
         };
     });
 
-    s.conduct=s.conduct||{}; s.attitude=s.attitude||{};
-    s.interest=s.interest||{}; s.teacherRemark=s.teacherRemark||{};
+    s.conduct = s.conduct || {};
+    s.attitude = s.attitude || {};
+    s.interest = s.interest || {};
+    s.teacherRemark = s.teacherRemark || {};
 
-    s.conduct[term]=conduct.value;
-    s.attitude[term]=attitude.value;
-    s.interest[term]=interest.value;
-    s.teacherRemark[term]=teacherRemark.value;
+    s.conduct[term] = conduct.value;
+    s.attitude[term] = attitude.value;
+    s.interest[term] = interest.value;
+    s.teacherRemark[term] = teacherRemark.value;
 
-    saveStudents();
-	
-	let total = 0;
-subjects.forEach(sub=>{
-    let d = s.subjects[sub][term];
-    let classTotal = d.test1 + d.test2 + d.project + d.group;
-    let classScore = (classTotal/100)*50;
-    let examScore = (d.exam/100)*50;
-    total += (classScore + examScore);
-});
+    console.log("Before first saveStudents");
+    await saveStudents();
+    console.log("After first saveStudents");
 
-s.average = total / subjects.length;
+    let total = 0;
 
-saveStudents();
-updateDashboard();
+    allowedSubjects.forEach(sub => {
 
-alert("Marks saved successfully ✅");
+        let d = s.subjects?.[sub]?.[term];
+        if(!d) return;
+
+        let classTotal =
+            d.test1 + d.test2 + d.project + d.group;
+
+        let classScore = (classTotal / 100) * 50;
+        let examScore = (d.exam / 100) * 50;
+
+        total += classScore + examScore;
+    });
+
+    s.average = allowedSubjects.length
+        ? total / allowedSubjects.length
+        : 0;
+
+    console.log("Before second saveStudents");
+    await saveStudents();
+    console.log("After second saveStudents");
+
+    console.log("Before updateDashboard");
+    updateDashboard();
+    console.log("After updateDashboard");
+
+    alert("Marks saved successfully ✅");
 }
 
 // Grades and Remarks functions
@@ -3317,17 +3338,20 @@ async function loadClassFilter(){
         return;
     }
 
-    // Convert objects to class names ONCE
+    // Convert objects to names ONCE
     classes = classes.map(c => c.classname);
 
-    console.log("Raw classes:", classes);
+    console.log("Role:", currentUser.role);
+    console.log("Classes before filter:", classes);
 
-    classes = classes.filter(c =>
-        (currentUser.classes || []).includes(c)
-    );
+    // Only teachers are restricted
+    if(currentUser.role === "teacher"){
+        classes = classes.filter(c =>
+            (currentUser.classes || []).includes(c)
+        );
+    }
 
-    console.log("Teacher Classes:", currentUser.classes);
-    console.log("Filtered Classes:", classes);
+    console.log("Classes after filter:", classes);
 
     let html = `<option value="">Select Class</option>`;
 
