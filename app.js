@@ -25,6 +25,10 @@ let currentUser = null;
 let selectedUser = null;
 let selectedMediaFile = null;
 let filteredStudents = [];
+let gradeChartInstance = null;
+let topChartInstance = null;
+let subjectChartInstance = null;
+let passChartInstance = null;
 
 
 // Show signup if no users exist
@@ -860,6 +864,7 @@ if(id === "studentsPage"){
 }
 
 function updateDashboard(){
+
     totalStudents.innerText = students.length;
 
     if(students.length === 0) return;
@@ -872,11 +877,18 @@ function updateDashboard(){
     let pass = averages.filter(x => x >= 50).length;
     let passRate = (pass / students.length) * 100;
 
-    document.getElementById("highestScore").innerText = highest.toFixed(1) + "%";
-    document.getElementById("avgScore").innerText = avg.toFixed(1) + "%";
-    document.getElementById("passRate").innerText = passRate.toFixed(0) + "%";
+    document.getElementById("highestScore").innerText =
+        highest.toFixed(1) + "%";
 
+    document.getElementById("avgScore").innerText =
+        avg.toFixed(1) + "%";
+
+    document.getElementById("passRate").innerText =
+        passRate.toFixed(0) + "%";
+
+    console.log("Before drawCharts");
     drawCharts();
+    console.log("After drawCharts");
 }
 
 function displayStudents(){
@@ -1089,61 +1101,90 @@ function drawCharts(){
     students.forEach(s=>{
         let avg = s.average || 0;
         let g = getGrade(avg);
-        grades[g]++;
+
+        if(grades[g] !== undefined){
+            grades[g]++;
+        }
 
         if(avg >= 50) pass++;
         else fail++;
     });
 
+    // DESTROY OLD CHARTS
+    if(gradeChartInstance) gradeChartInstance.destroy();
+    if(topChartInstance) topChartInstance.destroy();
+    if(subjectChartInstance) subjectChartInstance.destroy();
+    if(passChartInstance) passChartInstance.destroy();
+
     // GRADE PIE
-    new Chart(document.getElementById("gradeChart"), {
-        type:'pie',
-        data:{
-            labels:Object.keys(grades),
-            datasets:[{
-                data:Object.values(grades),
-                backgroundColor:['#f472b6','#fb7185','#facc15','#4ade80','#f87171']
-            }]
+    gradeChartInstance = new Chart(
+        document.getElementById("gradeChart"),
+        {
+            type:'pie',
+            data:{
+                labels:Object.keys(grades),
+                datasets:[{
+                    data:Object.values(grades),
+                    backgroundColor:[
+                        '#f472b6',
+                        '#fb7185',
+                        '#facc15',
+                        '#4ade80',
+                        '#f87171'
+                    ]
+                }]
+            }
         }
-    });
+    );
 
     // TOP STUDENTS
-    let sorted = [...students].sort((a,b)=>(b.average||0)-(a.average||0)).slice(0,5);
+    let sorted = [...students]
+        .sort((a,b)=>(b.average||0)-(a.average||0))
+        .slice(0,5);
 
-    new Chart(document.getElementById("topChart"), {
-        type:'bar',
-        data:{
-            labels:sorted.map(s=>s.name),
-            datasets:[{
-                data:sorted.map(s=>s.average||0),
-                backgroundColor:'#f472b6'
-            }]
+    topChartInstance = new Chart(
+        document.getElementById("topChart"),
+        {
+            type:'bar',
+            data:{
+                labels:sorted.map(s=>s.name || "Student"),
+                datasets:[{
+                    data:sorted.map(s=>s.average || 0),
+                    backgroundColor:'#f472b6'
+                }]
+            }
         }
-    });
+    );
 
-    // SUBJECT AVERAGE (simple demo)
-    new Chart(document.getElementById("subjectChart"), {
-        type:'bar',
-        data:{
-            labels:["Math","English","Science","ICT"],
-            datasets:[{
-                data:[65,70,75,68],
-                backgroundColor:'#fb7185'
-            }]
+    // SUBJECT AVERAGE
+    subjectChartInstance = new Chart(
+        document.getElementById("subjectChart"),
+        {
+            type:'bar',
+            data:{
+                labels:["Math","English","Science","ICT"],
+                datasets:[{
+                    data:[65,70,75,68],
+                    backgroundColor:'#fb7185'
+                }]
+            }
         }
-    });
+    );
 
     // PASS FAIL
-    new Chart(document.getElementById("passChart"), {
-        type:'bar',
-        data:{
-            labels:["Pass","Fail"],
-            datasets:[{
-                data:[pass,fail],
-                backgroundColor:['#4ade80','#f87171']
-            }]
+    passChartInstance = new Chart(
+        document.getElementById("passChart"),
+        {
+            type:'bar',
+            data:{
+                labels:["Pass","Fail"],
+                datasets:[{
+                    data:[pass,fail],
+                    backgroundColor:['#4ade80','#f87171']
+                }]
+            }
         }
-    });
+    );
 }
 
 async function addStudentFromPage(){
