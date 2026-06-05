@@ -422,7 +422,7 @@ button {
     align-items:center;
     justify-content:center;
     text-align:center;
-    padding:20px 10px;
+    padding:2px;
     background:linear-gradient(135deg, #0f172a, #1e293b);
 	position: sticky;
 	  top: 0;
@@ -433,7 +433,7 @@ button {
 
 
 #app{
-    margin-top:120px;
+    margin-top:10px;
 }
 
 
@@ -1330,4 +1330,30 @@ body::before{
 
 .logged-in::before{
     display:none;
+}
+.delete-btn{
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-size:14px;
+    opacity:0.6;
+    margin-left:5px;
+}
+
+.delete-btn:hover{
+    opacity:1;
+}
+
+.message .delete-btn{
+    display:none;
+}
+
+.message:hover .delete-btn{
+    display:inline-block;
+}
+
+.deleted-message{
+    font-style: italic;
+    color: #ccc;
+    opacity: 0.8;
 }
