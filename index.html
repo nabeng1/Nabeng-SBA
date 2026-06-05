@@ -61,14 +61,20 @@
 
 
 <div id="loginBox" class="container" style="max-width:400px; text-align:center;">
-<h3 style="text-align:left;">Log into System</h3>
+<img
+src="https://vocal.media/education/how-to-create-a-student-portal-in-word-press.png"
+class="login-logo">
+
+<h3>Log In</h3>
 
 <!-- LOGIN -->
 <div id="loginSection">
-<input id="username" placeholder="Username">
+<input id="username" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
 
-<button onclick="login()" style="background:#1877f2; font-weight:bold;">Log in</button>
+<button onclick="login()">
+Log In
+</button>
 
 <p onclick="showForgot()" style="cursor:pointer; color:#1877f2; margin-top:10px;">
 Forgot password?
@@ -102,7 +108,9 @@ Create new account
 <input id="schoolCode" placeholder="">
 <input id="signupPassword" type="password" placeholder="Password">
 
-<button onclick="signup()">Sign Up</button>
+<button onclick="showSignup()">
+Sign Up
+</button>
 
 <p onclick="backToLogin()" style="cursor:pointer; color:#1877f2;">
 Already have an account? Login
@@ -234,22 +242,36 @@ Back to Login
 <div id="studentsPage" class="container page">
 
 <h3>Student Management</h3>
-<input id="searchStudent" placeholder="Search student..." onkeyup="searchStudent()">
+
+<input id="searchStudent"
+       placeholder="Search student..."
+       onkeyup="searchStudent()">
+
 <!-- ADD STUDENT -->
-<div style="margin-bottom:20px;">
+<div id="addStudentSection" style="margin-bottom:20px;">
+
     <h4>Add New Student</h4>
-    <input id="studentName" placeholder="Student Name">
-  <input
-    type="text"
-    id="studentClass"
-    placeholder="Enter class"
-/>
-    <button onclick="addStudentFromPage()">Add Student</button>
-<h3>Bulk Import Students</h3>
 
-<br><br>
+    <input id="studentname"
+           placeholder="Student Name">
 
-<input type="file" id="csvFile" accept=".csv" onchange="handleCSV(event)">
+    <input type="text"
+           id="studentClass"
+           placeholder="Enter class">
+
+    <button onclick="addStudentFromPage()">
+        Add Student
+    </button>
+
+    <h3>Bulk Import Students</h3>
+
+    <br><br>
+
+    <input type="file"
+           id="csvFile"
+           accept=".csv"
+           onchange="handleCSV(event)">
+
 </div>
 
 <!-- STUDENTS TABLE -->
@@ -263,6 +285,8 @@ Back to Login
 <select id="classFilter" onchange="filterStudentsByClass()" style="margin-bottom:10px;">
     <option value="">Select Class</option>
 </select>
+
+
 <p>Select a student to fill marks:</p>
 <div id="studentsList" class="cards"></div>
 <div id="subjectForm" class="subjects-section"></div>
@@ -429,28 +453,28 @@ color:#94a3b8;
         <!-- TERM 1 -->
         <div>
             <label>Term 1 Start</label>
-            <input type="date" id="t1Start">
+            <input type="date" id="t1start">
 
             <label>Term 1 End</label>
-            <input type="date" id="t1End">
+            <input type="date" id="t1end">
         </div>
 
         <!-- TERM 2 -->
         <div>
             <label>Term 2 Start</label>
-            <input type="date" id="t2Start">
+            <input type="date" id="t2start">
 
             <label>Term 2 End</label>
-            <input type="date" id="t2End">
+            <input type="date" id="t2end">
         </div>
 
         <!-- TERM 3 -->
         <div>
             <label>Term 3 Start</label>
-            <input type="date" id="t3Start">
+            <input type="date" id="t3start">
 
             <label>Term 3 End</label>
-            <input type="date" id="t3End">
+            <input type="date" id="t3end">
         </div>
     </div>
 
