@@ -2529,9 +2529,10 @@ ${logo ? `
     
     ${logo ? `<img src="${logo}" style="width:120px; height:120px; object-fit:cover;">` : ""}
 
-    <div>
-        <h2 style="margin:0;">
-		${schoolname}        </h2>
+     <div>
+        <h2 style="margin:0; color: #007fff; font-size: 40px;">
+            ${currentUser.schoolName || localStorage.getItem("schoolName") || "Your School"}
+        </h2>
         <p style="margin:0;">STUDENT TERMINAL REPORT - ${term.toUpperCase()}</p>
     </div>
 
@@ -2540,7 +2541,7 @@ ${logo ? `
 </div>
 
 
-<div style="margin-top:5px; font-size:18px; line-height:1.5;">
+<div style="margin-top:5px; font-size:18px; line-height:1.5; color: #007fff;">
 
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <p style="margin:0;"><b>Name:</b> ${s.name}</p>
@@ -2548,7 +2549,7 @@ ${logo ? `
     </div>
 
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-        <p style="margin:0;"><b>Class:</b> ${s.studentclass}</p>
+        <p style="margin:0;"><b>Class:</b> ${s.class}</p>
         <p style="margin:0;"><b>Total Students:</b> ${totalStudents}</p>
     </div>
 
