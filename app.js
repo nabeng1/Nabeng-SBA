@@ -279,7 +279,8 @@ async function login() {
 
         return;
     }
-
+document.body.style.background = "#000";
+document.body.classList.add("logged-in");
     // =========================
     // GET AUTH USER
     // =========================
@@ -363,14 +364,14 @@ async function login() {
         "👋 Welcome, " + currentUser.firstname;
 
     // LOAD DATA
-    loadStudents();
+    await loadStudents();
     updateDashboard();
     populateStudentList();
     showPage("dashboardPage");
     loadLogo();
-    displaySchoolName();
-    loadTheme();
-    loadTermSettings();
+    await displaySchoolName();
+    await loadTheme();
+    await loadTermSettings();
     updateOnlineStatus();
 	
 }
@@ -561,16 +562,16 @@ async function loadLogo() {
     const img = document.getElementById("schoolLogoPreview");
 
    const { data, error } = await supabaseClient
-  .from("schools")
-  .select("*")
-  .eq("schoolid", currentUser.schoolid)
+    .from("students")
+    .select("*");
+
 
     if (error) {
-        img.src = "assets/default-logo.png";
+        img.src = "";
         return;
     }
 
-    img.src = data?.schoolLogo || "assets/default-logo.png";
+    img.src = data?.schoolLogo || "";
 }
 function displayLogo(logo){
     let img = document.getElementById("schoolLogoPreview");
@@ -654,30 +655,28 @@ function logout(){
 
 async function loadStudents() {
 
-    const { data, error } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from("students")
-    .select("*")
-    .eq("schoolid", currentUser.schoolid)
-    .in("studentclass", currentUser.classes || []);
+    .select("*");
+
+
 
     if(error){
-
         console.log(error);
-
         students = [];
-
         return;
     }
 
     students = data || [];
+	
 
-    students.forEach(s => {
 
+    students.forEach(s=>{
         if(!s.gender){
-
             s.gender = "Male";
         }
     });
+
 }
 
 async function saveStudents() {
@@ -703,9 +702,13 @@ async function saveStudents() {
             .from("students")
             .upsert(preparedStudents);
 
-        if (error) {
-            console.log(error);
-        }
+       if (error) {
+    console.error("SAVE ERROR:", error);
+    alert(error.message);
+    return;
+}
+
+console.log("Students saved successfully");
 
         return;
     }
@@ -721,7 +724,7 @@ async function saveStudents() {
 }
 
 
-function showPage(id){
+async function showPage(id){
 
     document.querySelectorAll('.page')
     .forEach(p => p.style.display = 'none');
@@ -760,7 +763,7 @@ function showPage(id){
         document.querySelectorAll('.nav-item')[5]
         ?.classList.add('active');
 
-    loadStudents();
+  await loadStudents();
 
     // ATTENDANCE
     if(id === "attendancePage"){
@@ -886,9 +889,9 @@ function updateDashboard(){
     document.getElementById("passRate").innerText =
         passRate.toFixed(0) + "%";
 
-    console.log("Before drawCharts");
+    
     drawCharts();
-    console.log("After drawCharts");
+    
 }
 
 function displayStudents(){
@@ -1040,13 +1043,20 @@ if(!student.name || !student.class){
     reader.readAsText(file);
 }
 function populateStudentList(){
-    studentsList.innerHTML = students.map((s,i)=>
-    `<div class="card ${i === currentStudentIndex ? 'active-student' : ''}" 
-        onclick="selectStudent(${students.indexOf(s)})">
+
+   
+
+    let html = students.map((s,i)=>
+    `<div class="card ${i === currentStudentIndex ? 'active-student' : ''}"
+        onclick="selectStudent(${i})">
         ${s.name}
     </div>`
     ).join('');
+
+    studentsList.innerHTML = html;
 }
+
+
 function editStudent(index){
 
     let s = students[index];
@@ -1234,21 +1244,17 @@ if(currentUser.role === "admin"){
         await supabaseClient
             .from("students")
             .insert([
-                {
-                    name: name,
-
-                    studentclass: cls,
-
-                    gender:
-                        gender || "Male",
-
-                    teacher:
-                        currentUser.username,
-
-                    schoolid:
-                        currentUser.schoolid
-                }
-            ]);
+{
+    name: name,
+    studentclass: cls,
+    gender: gender || "Male",
+    teacher: currentUser.username,
+    schoolid: currentUser.schoolid,
+    subjects: {},
+    currentTerm: "term1",
+    average: 0
+}
+])
 
     if(error){
 
@@ -1288,7 +1294,6 @@ function openStudentForm(index){
 
 
 function loadStudentsTable(){
-
     let keyword =
         document.getElementById("searchStudent")?.value
         .toLowerCase() || "";
@@ -2003,6 +2008,9 @@ let currentStudentIndex=null;
 function selectStudent(index){
     currentStudentIndex=index;
     let s=students[index];
+	if(!s.currentTerm){
+    s.currentTerm = "term1";
+}
     let term=s.currentTerm||"term1";
     let html=`<label>Term</label>
     <select id="termSelect" onchange="changeTerm()">
@@ -2026,32 +2034,44 @@ allowedSubjects.forEach(sub=>{
     });
 
 
-    html+=`
-        <hr><h3>Additional Assessment</h3>
-        <label>Conduct</label>
-        <select id="conduct" value="${s.conduct?.[term]||''}">
-            <option value="">Select</option>
-            <option>Excellent</option><option>Very Good</option><option>Good</option><option>Needs Improvement</option>
-        </select>
-        <label>Attitude</label>
-        <select id="attitude" value="${s.attitude?.[term]||''}">
-            <option value="">Select</option>
-            <option>Respectful</option><option>Hardworking</option><option>Cooperative</option><option>Disruptive</option>
-        </select>
-        <label>Interest</label>
-        <select id="interest" value="${s.interest?.[term]||''}">
-            <option value="">Select</option>
-            <option>Highly Interested</option><option>Average</option><option>Low</option>
-        </select>
-        <label>Teacher Remark</label>
-        <select id="teacherRemark" value="${s.teacherRemark?.[term]||''}">
-            <option value="">Select</option>
-            <option>Excellent performance</option>
-            <option>Very good work</option>
-            <option>Good effort</option>
-            <option>Needs improvement</option>
-        </select>
-    `;
+ html += `
+    <hr><h3>Additional Assessment</h3>
+
+    <label>Conduct</label>
+    <select id="conduct">
+        <option value="">Select</option>
+        <option value="Excellent" ${s.conduct?.[term] === "Excellent" ? "selected" : ""}>Excellent</option>
+        <option value="Very Good" ${s.conduct?.[term] === "Very Good" ? "selected" : ""}>Very Good</option>
+        <option value="Good" ${s.conduct?.[term] === "Good" ? "selected" : ""}>Good</option>
+        <option value="Needs Improvement" ${s.conduct?.[term] === "Needs Improvement" ? "selected" : ""}>Needs Improvement</option>
+    </select>
+
+    <label>Attitude</label>
+    <select id="attitude">
+        <option value="">Select</option>
+        <option value="Respectful" ${s.attitude?.[term] === "Respectful" ? "selected" : ""}>Respectful</option>
+        <option value="Hardworking" ${s.attitude?.[term] === "Hardworking" ? "selected" : ""}>Hardworking</option>
+        <option value="Cooperative" ${s.attitude?.[term] === "Cooperative" ? "selected" : ""}>Cooperative</option>
+        <option value="Disruptive" ${s.attitude?.[term] === "Disruptive" ? "selected" : ""}>Disruptive</option>
+    </select>
+
+    <label>Interest</label>
+    <select id="interest">
+        <option value="">Select</option>
+        <option value="Highly Interested" ${s.interest?.[term] === "Highly Interested" ? "selected" : ""}>Highly Interested</option>
+        <option value="Average" ${s.interest?.[term] === "Average" ? "selected" : ""}>Average</option>
+        <option value="Low" ${s.interest?.[term] === "Low" ? "selected" : ""}>Low</option>
+    </select>
+
+    <label>Teacher Remark</label>
+    <select id="teacherRemark">
+        <option value="">Select</option>
+        <option value="Excellent performance" ${s.teacherRemark?.[term] === "Excellent performance" ? "selected" : ""}>Excellent performance</option>
+        <option value="Very good work" ${s.teacherRemark?.[term] === "Very good work" ? "selected" : ""}>Very good work</option>
+        <option value="Good effort" ${s.teacherRemark?.[term] === "Good effort" ? "selected" : ""}>Good effort</option>
+        <option value="Needs improvement" ${s.teacherRemark?.[term] === "Needs improvement" ? "selected" : ""}>Needs improvement</option>
+    </select>
+`;
 
 html += `
 <hr><h3>Attendance Summary</h3>
@@ -2091,9 +2111,22 @@ async function loadTermSettings() {
         .eq("schoolid", currentUser.schoolid)
         .maybeSingle();
 
-   
+    if (error) {
+        console.error("Load term settings error:", error);
+        return;
+    }
 
-    termSettings = data;
+    termSettings = data || {};
+
+    // Restore values into inputs
+    document.getElementById("t1start").value = termSettings.t1start || "";
+    document.getElementById("t1end").value = termSettings.t1end || "";
+
+    document.getElementById("t2start").value = termSettings.t2start || "";
+    document.getElementById("t2end").value = termSettings.t2end || "";
+
+    document.getElementById("t3start").value = termSettings.t3start || "";
+    document.getElementById("t3end").value = termSettings.t3end || "";
 }
 
 async function saveTermSettings() {
@@ -2224,10 +2257,8 @@ function getNextTermStart(term) {
 
 async function saveMarks(){
 
-    console.log("saveMarks started");
-
     let s = students[currentStudentIndex];
-    let term = s.currentTerm;
+    let term = s.currentTerm || "term1";
 
     let allowedSubjects = currentUser.role === "teacher"
         ? (currentUser.subjects || [])
@@ -2247,6 +2278,7 @@ async function saveMarks(){
         };
     });
 
+
     s.conduct = s.conduct || {};
     s.attitude = s.attitude || {};
     s.interest = s.interest || {};
@@ -2257,9 +2289,9 @@ async function saveMarks(){
     s.interest[term] = interest.value;
     s.teacherRemark[term] = teacherRemark.value;
 
-    console.log("Before first saveStudents");
+    
     await saveStudents();
-    console.log("After first saveStudents");
+    
 
     let total = 0;
 
@@ -2281,13 +2313,13 @@ async function saveMarks(){
         ? total / allowedSubjects.length
         : 0;
 
-    console.log("Before second saveStudents");
+    
     await saveStudents();
-    console.log("After second saveStudents");
+    
 
-    console.log("Before updateDashboard");
+    
     updateDashboard();
-    console.log("After updateDashboard");
+    
 
     alert("Marks saved successfully ✅");
 }
@@ -3382,8 +3414,7 @@ async function loadClassFilter(){
     // Convert objects to names ONCE
     classes = classes.map(c => c.classname);
 
-    console.log("Role:", currentUser.role);
-    console.log("Classes before filter:", classes);
+  
 
     // Only teachers are restricted
     if(currentUser.role === "teacher"){
@@ -3391,8 +3422,6 @@ async function loadClassFilter(){
             (currentUser.classes || []).includes(c)
         );
     }
-
-    console.log("Classes after filter:", classes);
 
     let html = `<option value="">Select Class</option>`;
 
