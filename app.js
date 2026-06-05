@@ -29,6 +29,7 @@ let gradeChartInstance = null;
 let topChartInstance = null;
 let subjectChartInstance = null;
 let passChartInstance = null;
+let selectedMessageId = null;
 
 
 // Show signup if no users exist
@@ -379,32 +380,56 @@ document.body.classList.add("logged-in");
 
 async function displaySchoolName() {
 
-    // Fetch school from Supabase
+    const el = document.getElementById("schoolNameText");
+
+    if (!el) {
+        console.warn("schoolNameText element missing");
+        return;
+    }
+
+    console.log("CURRENT USER:", currentUser);
+
+    const schoolid = currentUser?.schoolid;
+
+    console.log("LOOKING FOR SCHOOLID:", schoolid);
+
+    if (!schoolid) {
+        el.innerText = "No School Assigned";
+        return;
+    }
+
     const { data, error } = await supabaseClient
-.from("schools")
-.select("*")
-.eq("schoolid", currentUser.schoolid)
-.maybeSingle();
+        .from("schools")
+        .select("*")
+        .eq("schoolid", schoolid); // VERIFY THIS COLUMN NAME
+
+    console.log("RAW SCHOOL RESULT:", { data, error });
+
+    if (error) {
+        console.error("School fetch error:", error);
+    }
+
+    const school = data?.[0]; // because you're getting array
 
     let name =
-        data?.schoolname ||
+        school?.schoolname ||
+        school?.name ||
         currentUser.schoolname ||
         "Your School";
 
     let text = name;
 
-    // Add school code for admin
     if (currentUser.role === "admin") {
-        text += " (Code: " + currentUser.schoolid + ")";
+        text += " (Code: " + schoolid + ")";
     }
 
-    document.getElementById("schoolNameText").innerText = text;
+    el.innerText = text;
 
-    // Show edit icon only for admin
-    if (currentUser.role === "admin") {
-        document.getElementById("editSchoolIcon").style.display = "inline";
-    }
+    document.getElementById("editSchoolIcon").style.display =
+        currentUser.role === "admin" ? "inline" : "none";
 }
+
+
 async function editSchoolName() {
 
     if (currentUser.role !== "admin") return;
@@ -457,6 +482,7 @@ async function editSchoolName() {
         displaySchoolName();
     }
 }
+
 async function loadTheme() {
 
     // Fetch theme from Supabase
@@ -1861,14 +1887,14 @@ async function markAllPresent() {
 
         attendanceData[date][s.name] = "Present";
 
-        return {
-            schoolid: currentUser.schoolid,
-            teacher: currentUser.username,
-            studentname: studentname,
-            status: "Present",
-            date: date,
-            term: term
-        };
+      return {
+    schoolid: currentUser.schoolid,
+    teacher: currentUser.username,
+    studentname: s.name,
+    status: "Present",
+    date: date,
+    term: term
+};
     });
 
     // Save all attendance online
@@ -2529,10 +2555,9 @@ ${logo ? `
     
     ${logo ? `<img src="${logo}" style="width:120px; height:120px; object-fit:cover;">` : ""}
 
-     <div>
-        <h2 style="margin:0; color: #007fff; font-size: 40px;">
-            ${currentUser.schoolName || localStorage.getItem("schoolName") || "Your School"}
-        </h2>
+    <div>
+        <h2 style="margin:0;">
+		${schoolname}        </h2>
         <p style="margin:0;">STUDENT TERMINAL REPORT - ${term.toUpperCase()}</p>
     </div>
 
@@ -2541,7 +2566,7 @@ ${logo ? `
 </div>
 
 
-<div style="margin-top:5px; font-size:18px; line-height:1.5; color: #007fff;">
+<div style="margin-top:5px; font-size:18px; line-height:1.5;">
 
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <p style="margin:0;"><b>Name:</b> ${s.name}</p>
@@ -2549,7 +2574,7 @@ ${logo ? `
     </div>
 
     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-        <p style="margin:0;"><b>Class:</b> ${s.class}</p>
+        <p style="margin:0;"><b>Class:</b> ${s.studentclass}</p>
         <p style="margin:0;"><b>Total Students:</b> ${totalStudents}</p>
     </div>
 
@@ -3942,10 +3967,12 @@ async function sendMessage(){
                 }
             ]);
 
-        if(error){
-            console.error(error);
-            return alert("Failed to send message");
-        }
+if(error){
+    console.log(JSON.stringify(error, null, 2));
+    console.error(error);
+    alert(JSON.stringify(error));
+    return;
+}
 
         input.value = "";
 
@@ -3960,20 +3987,28 @@ async function sendMessage(){
     reader.onload = async function(e){
 
         const { error } = await supabaseClient
-            .from("chats")
-            .insert([
-                {
-                    from_user: currentUser.username,
-                    to_user: selectedUser,
-                    text: text,
-                    media: e.target.result,
-                    mediaType: file.type,
-                    fileName: file.name,
-                    type: "media",
-                    time: Date.now(),
-                    schoolid: currentUser.schoolid
-                }
-            ]);
+    .from("chats")
+    .insert([
+        {
+            from_user: currentUser.username,
+            to_user: selectedUser,
+            text: text,
+            media: e.target.result,
+            mediatype: file.type,
+            filename: file.name,
+            type: "media",
+            time: Date.now(),
+            schoolid: currentUser.schoolid
+        }
+    ]);
+
+const { data } = await supabaseClient
+    .from("chats")
+    .select("*")
+    .order("id", { ascending: false })
+    .limit(1);
+
+console.log(JSON.stringify(data[0], null, 2));
 
         if(error){
             console.error(error);
@@ -4027,10 +4062,14 @@ async function displayChat(){
         let mine = msg.from_user === currentUser.username;
 
         html += `
-        <div style="
-            margin:10px 0;
-            text-align:${mine ? "right" : "left"};
-        ">
+<div
+    onclick="selectMessage(${msg.id})"
+    style="
+        margin:10px 0;
+        text-align:${mine ? "right" : "left"};
+        cursor:pointer;
+    ">
+
 
             <div style="
                 display:inline-block;
@@ -4040,61 +4079,86 @@ async function displayChat(){
                 color:white;
                 max-width:300px;
                 overflow:hidden;
+                position:relative;
             ">
         `;
 
-        // TEXT
-        if(msg.text){
+        // DELETED MESSAGE
+       if(msg.deleted){
 
-            html += `
-                <div style="margin-bottom:8px;">
-                    ${msg.text}
-                </div>
-            `;
-        }
+    html += `
+        <div class="deleted-message">
+            🚫 This message was deleted
+        </div>
+    `;
+}
+        else{
 
-        // IMAGE
-        if(msg.mediaType &&
-           msg.mediaType.startsWith("image/")){
+            // TEXT
+            if(msg.text){
 
-            html += `
-                <img src="${msg.media}"
-                     style="
-                        width:100%;
-                        border-radius:10px;
-                        margin-top:5px;
-                     ">
-            `;
-        }
+                html += `
+                    <div style="margin-bottom:8px;">
+                        ${msg.text}
+                    </div>
+                `;
+            }
 
-        // VIDEO
-        else if(msg.mediaType &&
-                msg.mediaType.startsWith("video/")){
+            // IMAGE
+            if(msg.mediatype &&
+               msg.mediatype.startsWith("image/")){
 
-            html += `
-                <video controls
-                       style="
+                html += `
+                    <img src="${msg.media}"
+                         style="
                             width:100%;
                             border-radius:10px;
                             margin-top:5px;
+                         ">
+                `;
+            }
+
+            // VIDEO
+            else if(msg.mediatype &&
+                    msg.mediatype.startsWith("video/")){
+
+                html += `
+                    <video controls
+                           style="
+                                width:100%;
+                                border-radius:10px;
+                                margin-top:5px;
+                           ">
+                        <source src="${msg.media}">
+                    </video>
+                `;
+            }
+
+            // FILES
+            else if(msg.media){
+
+                html += `
+                    <a href="${msg.media}"
+                       download="${msg.filename}"
+                       style="
+                            color:#93c5fd;
+                            text-decoration:none;
                        ">
-                    <source src="${msg.media}">
-                </video>
-            `;
+                        📄 ${msg.filename}
+                    </a>
+                `;
+            }
         }
 
-        // OTHER FILES
-        else if(msg.media){
+        // DELETE BUTTON FOR MY MESSAGES ONLY
+        if(mine && !msg.deleted){
 
             html += `
-                <a href="${msg.media}"
-                   download="${msg.fileName}"
-                   style="
-                        color:#93c5fd;
-                        text-decoration:none;
-                   ">
-                    📄 ${msg.fileName}
-                </a>
+                <div style="
+                    margin-top:5px;
+                    text-align:right;
+                ">
+                </div>
             `;
         }
 
@@ -4102,12 +4166,88 @@ async function displayChat(){
             </div>
         </div>
         `;
+		
     });
 
     document.getElementById("chatBox").innerHTML = html;
 
     document.getElementById("chatBox").scrollTop =
         document.getElementById("chatBox").scrollHeight;
+}
+
+function selectMessage(messageId){
+
+    selectedMessageId = messageId;
+
+    document.getElementById("messageActions")
+        .style.display = "block";
+}
+
+function clearSelection(){
+
+    selectedMessageId = null;
+
+    document.getElementById("messageActions")
+        .style.display = "none";
+}
+
+async function deleteSelectedMessage(){
+
+    if(!selectedMessageId) return;
+
+    // Get the message first
+    const { data: msg, error: fetchError } =
+        await supabaseClient
+            .from("chats")
+            .select("*")
+            .eq("id", selectedMessageId)
+            .single();
+
+    if(fetchError){
+        console.error(fetchError);
+        return;
+    }
+
+    // Already deleted → remove permanently
+    if(msg.deleted){
+
+        const { error } = await supabaseClient
+            .from("chats")
+            .delete()
+            .eq("id", selectedMessageId);
+
+        if(error){
+            console.error(error);
+            return;
+        }
+    }
+
+    // First delete → show "This message was deleted"
+    else{
+
+        const { error } = await supabaseClient
+            .from("chats")
+            .update({
+                text: null,
+                media: null,
+                filename: null,
+                mediatype: null,
+                deleted: true
+            })
+            .eq("id", selectedMessageId);
+
+        if(error){
+            console.error(error);
+            return;
+        }
+    }
+
+    selectedMessageId = null;
+
+    document.getElementById("messageActions")
+        .style.display = "none";
+
+    displayChat();
 }
 async function updateOnlineStatus(){
 
@@ -4294,3 +4434,5 @@ async function test(){
     await supabaseClient.from("users").select("*");
 
 }
+
+
