@@ -1200,3 +1200,134 @@ body {
         min-height:50px;
     }
 }
+
+/* ===== AUTH STYLE LOGIN ===== */
+
+body{
+    min-height:100vh;
+    background:
+    linear-gradient(
+        rgba(90,60,255,.3),
+        rgba(30,20,120,.5)
+    ),
+    url("https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1600");
+    background-size:cover;
+    background-position:center;
+}
+
+/* Floating Stars */
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background-image:
+    radial-gradient(white 1px, transparent 1px);
+    background-size:40px 40px;
+    opacity:.3;
+    animation:moveStars 30s linear infinite;
+    pointer-events:none;
+}
+
+@keyframes moveStars{
+    from{transform:translateY(0);}
+    to{transform:translateY(100px);}
+}
+
+#loginBox{
+    width:380px;
+    padding:40px;
+    border-radius:20px;
+
+    background:rgba(255,255,255,0.08);
+
+    backdrop-filter:blur(15px);
+    -webkit-backdrop-filter:blur(15px);
+
+    border:1px solid rgba(255,255,255,.3);
+
+    box-shadow:0 8px 32px rgba(0,0,0,.3);
+
+    color:white;
+}
+
+#loginBox h3,
+#loginBox h4{
+    text-align:center;
+    color:white;
+    margin-bottom:20px;
+}
+
+#loginBox input,
+#loginBox select{
+    width:100%;
+    padding:12px 15px;
+    margin:10px 0;
+    border-radius:30px;
+    border:1px solid rgba(255,255,255,.4);
+    background:transparent;
+    color:white;
+    outline:none;
+}
+
+#loginBox input::placeholder{
+    color:rgba(255,255,255,.8);
+}
+
+#loginBox button{
+    width:100%;
+    margin-top:15px;
+    padding:12px;
+    border:none;
+    border-radius:30px;
+
+    background:linear-gradient(
+        135deg,
+        #ff4fd8,
+        #7d4dff
+    );
+
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+#loginBox button:hover{
+    transform:translateY(-2px);
+
+    box-shadow:
+    0 0 15px #ff4fd8,
+    0 0 30px #7d4dff;
+}
+
+#loginBox p{
+    color:white;
+    text-align:center;
+}
+
+#loginBox hr{
+    border:1px solid rgba(255,255,255,.2);
+}
+
+.login-logo{
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    display:block;
+    margin:0 auto 15px;
+}
+
+.school-title{
+    text-align:center;
+    color:white;
+    margin-bottom:20px;
+    letter-spacing:1px;
+}
+
+.logged-in{
+    background:#000 !important;
+}
+
+.logged-in::before{
+    display:none;
+}
