@@ -345,8 +345,35 @@ Back to Login
     <!-- CHAT AREA -->
     <div class="chat-area">
 
-        <div id="chatBox" class="chat-box"></div>
+    <div class="chat-header">
 
+        <div class="chat-header-user">
+
+            <img id="chatUserAvatar"
+                 src="default-avatar.png"
+                 class="header-avatar">
+
+            <div>
+
+                <div id="chatUserName"
+                     class="header-name">
+                    Select User
+                </div>
+
+                <div id="chatUserStatus"
+                     class="header-status">
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+    <div id="chatBox" class="chat-box"></div>
+
+</div>
 <!-- MEDIA PREVIEW -->
 <div id="mediaPreview"
      class="media-preview"
@@ -369,23 +396,7 @@ color:#94a3b8;
 ">
 </div>
 
-<div id="messageActions"
-     style="
-        display:none;
-        padding:8px;
-        background:#1e293b;
-        border-top:1px solid #334155;
-     ">
 
-    <button onclick="deleteSelectedMessage()">
-        🗑️ Delete
-    </button>
-
-    <button onclick="clearSelection()">
-        ✖ Cancel
-    </button>
-
-</div>
         <div class="chat-input-area">
 
     <label class="media-btn">
@@ -396,13 +407,34 @@ color:#94a3b8;
                hidden>
     </label>
 
-    <input id="chatInput" placeholder="Type a message...">
+    <input
+    id="chatInput"
+    class="chat-input"
+    placeholder="Type a message...">
 
-    <button onclick="sendMessage()">➤</button>
+    <button class="send-btn"
+        onclick="sendMessage()">
+    ➤
+</button>
 
 </div>
 
     </div>
+	<div id="contextMenu" class="context-menu">
+
+    <div onclick="replyMessage()">
+        Reply
+    </div>
+
+    <div onclick="forwardMessage()">
+        Forward
+    </div>
+
+    <div onclick="deleteSelectedMessage()">
+        Delete
+    </div>
+
+</div>
 	
 	
 </div>
