@@ -1204,13 +1204,8 @@ body {
 /* ===== AUTH STYLE LOGIN ===== */
 
 body{
-    min-height:100vh;
-    background:
-    linear-gradient(
-        rgba(90,60,255,.3),
-        rgba(30,20,120,.5)
-    ),
-    url("https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1600");
+    min-height:100%;
+    background:url("https://i.pinimg.com/1200x/8d/e7/c3/8de7c35e275b98bc265f1c83b068e912.jpg");
     background-size:cover;
     background-position:center;
 }
@@ -1220,11 +1215,8 @@ body::before{
     content:"";
     position:fixed;
     inset:0;
-    background-image:
-    radial-gradient(white 1px, transparent 1px);
-    background-size:40px 40px;
-    opacity:.3;
-    animation:moveStars 30s linear infinite;
+    background-size:10px 40px;
+    opacity:.0;
     pointer-events:none;
 }
 
@@ -1282,8 +1274,8 @@ body::before{
 
     background:linear-gradient(
         135deg,
-        #ff4fd8,
-        #7d4dff
+        #007fff,
+        #007fff
     );
 
     color:white;
@@ -1296,8 +1288,8 @@ body::before{
     transform:translateY(-2px);
 
     box-shadow:
-    0 0 15px #ff4fd8,
-    0 0 30px #7d4dff;
+    0 0 15px #007fff,
+    0 0 30px #007fff;
 }
 
 #loginBox p{
@@ -1324,13 +1316,7 @@ body::before{
     letter-spacing:1px;
 }
 
-.logged-in{
-    background:#000 !important;
-}
 
-.logged-in::before{
-    display:none;
-}
 .delete-btn{
     background:none;
     border:none;
