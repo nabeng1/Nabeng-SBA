@@ -3896,9 +3896,17 @@ function displayUsers(){
 
             ${avatar}
 
-            <div class="chat-name">
-                ${user.firstname}
-            </div>
+            <div class="user-details">
+
+    <div class="chat-name">
+        ${user.firstname} ${user.surname}
+    </div>
+
+    <div class="last-seen">
+        ${online ? "Online" : "Offline"}
+    </div>
+
+</div>
 
         </div>
         `;
@@ -3909,6 +3917,25 @@ function displayUsers(){
 
 
 function selectUser(username){
+	let user = users.find(
+    u => u.username === username
+);
+
+document.getElementById("chatUserName")
+.innerText =
+`${user.firstname} ${user.surname}`;
+
+document.getElementById("chatUserStatus")
+.innerText =
+(Date.now() - user.lastSeen < 60000)
+? "Online"
+: "Offline";
+
+if(user.profilePicture){
+    document.getElementById(
+        "chatUserAvatar"
+    ).src = user.profilePicture;
+}
 
     selectedUser = username;
 
@@ -3962,7 +3989,20 @@ if(error){
 
         return;
     }
+let recorder;
+let chunks=[];
 
+navigator.mediaDevices
+.getUserMedia({audio:true})
+.then(stream=>{
+
+    recorder =
+        new MediaRecorder(stream);
+
+    recorder.ondataavailable =
+        e=>chunks.push(e.data);
+
+});
     // MEDIA
     let reader = new FileReader();
 
@@ -4002,6 +4042,8 @@ console.log(JSON.stringify(data[0], null, 2));
         mediaInput.value = "";
 
         selectedMediaFile = null;
+		
+		
 
         displayChat();
     };
@@ -4028,6 +4070,27 @@ async function displayChat(){
         console.error(error);
         return;
     }
+	
+	await supabaseClient
+.from("chats")
+.update({
+    delivered:true
+})
+.eq("to_user", currentUser.username)
+.eq("from_user", selectedUser)
+.eq("delivered", false);
+
+
+	
+await supabaseClient
+.from("chats")
+.update({
+    seen:true
+})
+.eq("to_user", currentUser.username)
+.eq("from_user", selectedUser)
+.eq("seen", false);
+
 
     let filtered = chats.filter(c =>
         (c.from_user === currentUser.username &&
@@ -4045,7 +4108,12 @@ async function displayChat(){
 
         html += `
 <div
-    onclick="selectMessage(${msg.id})"
+    <div
+    ondblclick="selectMessage(${msg.id})"
+    oncontextmenu="
+        showContextMenu(event,${msg.id});
+        return false;
+    "
     style="
         margin:10px 0;
         text-align:${mine ? "right" : "left"};
@@ -4056,7 +4124,7 @@ async function displayChat(){
             <div style="
                 display:inline-block;
                 padding:10px;
-                border-radius:15px;
+                border-radius:8px;
                 background:${mine ? "#2563eb" : "#1e293b"};
                 color:white;
                 max-width:300px;
@@ -4145,9 +4213,22 @@ async function displayChat(){
         }
 
         html += `
-            </div>
-        </div>
-        `;
+    <div style="
+        text-align:right;
+        font-size:11px;
+        margin-top:5px;
+        color:#cbd5e1;
+    ">
+        ${new Date(msg.time).toLocaleTimeString([],{
+            hour:'2-digit',
+            minute:'2-digit'
+        })}
+        ${mine ? getTicks(msg) : ""}
+    </div>
+
+    </div>
+</div>
+`;
 		
     });
 
@@ -4400,14 +4481,26 @@ supabaseClient.channel("typing-status")
 function getTicks(msg){
 
     if(msg.seen){
-        return "✓✓";
+        return `
+            <span style="color:#53bdeb">
+                ✓✓
+            </span>
+        `;
     }
 
     if(msg.delivered){
-        return "✓✓";
+        return `
+            <span style="color:#8696a0">
+                ✓✓
+            </span>
+        `;
     }
 
-    return "✓";
+    return `
+        <span style="color:#8696a0">
+            ✓
+        </span>
+    `;
 }
 
 async function test(){
@@ -4416,5 +4509,47 @@ async function test(){
     await supabaseClient.from("users").select("*");
 
 }
+supabaseClient
+.channel("chat-room")
+.on(
+    "postgres_changes",
+    {
+        event: "*",
+        schema: "public",
+        table: "chats"
+    },
+    () => {
 
+        displayChat();
+        displayUsers();
 
+    }
+)
+.subscribe();
+
+function showContextMenu(e,messageId){
+
+    e.preventDefault();
+
+    selectedMessageId = messageId;
+
+    let menu =
+        document.getElementById("contextMenu");
+
+    menu.style.left = e.pageX + "px";
+    menu.style.top = e.pageY + "px";
+
+    menu.style.display = "block";
+}
+
+function replyMessage(){
+
+    alert("Reply feature coming soon");
+
+}
+
+function forwardMessage(){
+
+    alert("Forward feature coming soon");
+
+}
