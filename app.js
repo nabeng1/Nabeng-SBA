@@ -380,56 +380,39 @@ document.body.classList.add("logged-in");
 
 async function displaySchoolName() {
 
-    const el = document.getElementById("schoolNameText");
-
-    if (!el) {
-        console.warn("schoolNameText element missing");
-        return;
-    }
-
     console.log("CURRENT USER:", currentUser);
 
-    const schoolid = currentUser?.schoolid;
-
-    console.log("LOOKING FOR SCHOOLID:", schoolid);
-
-    if (!schoolid) {
-        el.innerText = "No School Assigned";
+    if (!currentUser?.schoolid) {
+        console.warn("No schoolid found for user");
+        document.getElementById("schoolNameText").innerText = "No School Assigned";
         return;
     }
 
-    const { data, error } = await supabaseClient
-        .from("schools")
-        .select("*")
-        .eq("schoolid", schoolid); // VERIFY THIS COLUMN NAME
+    console.log("schoolid:", currentUser.schoolid);
 
-    console.log("RAW SCHOOL RESULT:", { data, error });
-
-    if (error) {
-        console.error("School fetch error:", error);
-    }
-
-    const school = data?.[0]; // because you're getting array
+const { data, error } = await supabaseClient
+supabaseClient
+  .from("schools")
+  .select("*")
+  .limit(5)
+  .then(console.log);
 
     let name =
-        school?.schoolname ||
-        school?.name ||
+        data?.schoolname ||   // your DB field (verify!)
         currentUser.schoolname ||
         "Your School";
 
     let text = name;
 
     if (currentUser.role === "admin") {
-        text += " (Code: " + schoolid + ")";
+        text += " (Code: " + currentUser.schoolid + ")";
     }
 
-    el.innerText = text;
+    document.getElementById("schoolNameText").innerText = text;
 
     document.getElementById("editSchoolIcon").style.display =
         currentUser.role === "admin" ? "inline" : "none";
 }
-
-
 async function editSchoolName() {
 
     if (currentUser.role !== "admin") return;
@@ -482,7 +465,6 @@ async function editSchoolName() {
         displaySchoolName();
     }
 }
-
 async function loadTheme() {
 
     // Fetch theme from Supabase
@@ -588,7 +570,7 @@ async function loadLogo() {
     const img = document.getElementById("schoolLogoPreview");
 
    const { data, error } = await supabaseClient
-    .from("students")
+    .from("schools")
     .select("*");
 
 
