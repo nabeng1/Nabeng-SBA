@@ -10,7 +10,6 @@ window.supabase.createClient(
     supabaseUrl,
     supabaseKey
 );
-console.log(supabaseClient);
 
 
 let subjects = [
@@ -94,7 +93,7 @@ async function signup() {
         document.getElementById("roleSelect").value;
 
     let schoolname =
-        document.getElementById("schoolnameSignup").value.trim();
+        document.getElementById("schoolnamesignup").value.trim();
 
     let schoolCode =
         document.getElementById("schoolCode").value.trim();
@@ -370,48 +369,78 @@ document.body.classList.add("logged-in");
     populateStudentList();
     showPage("dashboardPage");
     loadLogo();
-    await displaySchoolName();
+	await displaySchoolName();
     await loadTheme();
     await loadTermSettings();
     updateOnlineStatus();
+	
 	
 }
 
 
 async function displaySchoolName() {
 
-    console.log("CURRENT USER:", currentUser);
 
-    if (!currentUser?.schoolid) {
+    if (!currentUser || !currentUser.schoolid) {
+
         console.warn("No schoolid found for user");
-        document.getElementById("schoolNameText").innerText = "No School Assigned";
+
+        document.getElementById("schoolNameText").innerText =
+            "No School Assigned";
+
         return;
     }
 
-    console.log("schoolid:", currentUser.schoolid);
+    try {
 
-const { data, error } = await supabaseClient
-supabaseClient
-  .from("schools")
-  .select("*")
-  .limit(5)
-  .then(console.log);
+        const { data, error } = await supabaseClient
+            .from("schools")
+            .select("schoolname")
+            .eq("schoolid", currentUser.schoolid)
+            .single();
 
-    let name =
-        data?.schoolname ||   // your DB field (verify!)
-        currentUser.schoolname ||
-        "Your School";
+console.log("School Data:", data);
+console.log("School Error:", error);
 
-    let text = name;
+        if (error) {
 
-    if (currentUser.role === "admin") {
-        text += " (Code: " + currentUser.schoolid + ")";
+            console.error("School fetch error:", error);
+
+            document.getElementById("schoolNameText").innerText =
+    data.schoolname;
+
+            return;
+        }
+
+        let schoolName =
+            data?.schoolname ||
+            currentUser.schoolname ||
+            "Your School";
+
+        let displayText = schoolName;
+
+        // Show school code only for admin
+        if (currentUser.role === "admin") {
+            displayText +=
+                " (Code: " + currentUser.schoolid + ")";
+        }
+
+        document.getElementById("schoolNameText").innerText =
+            displayText;
+
+        // Show edit icon only for admin
+        document.getElementById("editSchoolIcon").style.display =
+            currentUser.role === "admin"
+                ? "inline"
+                : "none";
+
+    } catch (err) {
+
+        console.error("Display School Name Error:", err);
+
+        document.getElementById("schoolNameText").innerText =
+            "Error Loading School";
     }
-
-    document.getElementById("schoolNameText").innerText = text;
-
-    document.getElementById("editSchoolIcon").style.display =
-        currentUser.role === "admin" ? "inline" : "none";
 }
 async function editSchoolName() {
 
@@ -663,11 +692,12 @@ function logout(){
 
 async function loadStudents() {
 
-  const { data, error } = await supabaseClient
-    .from("students")
-    .select("*");
+    let query = supabaseClient
+        .from("students")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
 
-
+    const { data, error } = await query;
 
     if(error){
         console.log(error);
@@ -675,16 +705,20 @@ async function loadStudents() {
         return;
     }
 
-    students = data || [];
-	
+    let allStudents = data || [];
 
+    // Teacher only sees assigned classes
+    if(currentUser.role === "teacher"){
 
-    students.forEach(s=>{
-        if(!s.gender){
-            s.gender = "Male";
-        }
-    });
+        students = allStudents.filter(s =>
+            (currentUser.classes || [])
+            .includes(s.studentclass)
+        );
 
+    } else {
+
+        students = allStudents;
+    }
 }
 
 async function saveStudents() {
@@ -1517,7 +1551,15 @@ function loadAttendanceTable() {
     // =========================
     // TEACHER VIEW
     // =========================
+let teacherStudents = students;
 
+if(currentUser.role === "teacher"){
+
+    teacherStudents = students.filter(s =>
+        (currentUser.classes || [])
+            .includes(s.studentclass)
+    );
+}
     document.querySelector("button[onclick='markAllPresent()']").style.display = "block";
 
     let tableHTML = `
@@ -1530,7 +1572,7 @@ function loadAttendanceTable() {
         </tr>
     `;
 
-    students.forEach(s => {
+   teacherStudents.forEach(s => {
 
         let status = attendanceData[date][s.name] || "";
 
@@ -2997,85 +3039,203 @@ function loadSubjectSelection(){
         document.getElementById("saveSubjectsBtn").style.display = "block";
     }
 }
-async function saveTeacherSubjects() {
+async function saveTeacherSubjects(){
 
-    let teacherUsername =
-        document.getElementById(
-            "teacherSelect"
-        ).value;
+    try{
 
-    // Get teacher from Supabase
-    const { data: teacher, error } = await supabaseClient
-        .from("users")
-        .select("*")
-        .eq("username", teacherUsername)
-        .single();
+        let teacherUsername =
+            document.getElementById(
+                "teacherSelect"
+            ).value;
 
-    if (error || !teacher) {
+        if(!teacherUsername){
+            return alert(
+                "Please select a teacher"
+            );
+        }
 
-        return alert(
-            "Teacher not found!"
+        // =========================
+        // GET TEACHER
+        // =========================
+
+        const {
+            data: teacher,
+            error: teacherError
+        } = await supabaseClient
+            .from("users")
+            .select("*")
+            .eq("username", teacherUsername)
+            .single();
+
+        if(teacherError || !teacher){
+
+            console.error(teacherError);
+
+            return alert(
+                "Teacher not found"
+            );
+        }
+
+        // =========================
+        // GET SUBJECTS
+        // =========================
+
+        let selectedSubjects = [];
+
+        document
+            .querySelectorAll(
+                "#subjectCheckboxes input:checked"
+            )
+            .forEach(cb => {
+
+                selectedSubjects.push(
+                    cb.value
+                );
+
+            });
+
+        if(selectedSubjects.length === 0){
+
+            return alert(
+                "Select at least one subject"
+            );
+        }
+
+        // =========================
+        // GET CLASSES
+        // =========================
+
+        let classInput =
+            document.getElementById(
+                "teacherClass"
+            ).value.trim();
+
+        if(!classInput){
+
+            return alert(
+                "Enter class"
+            );
+        }
+
+        let classList = classInput
+            .split(",")
+            .map(c => c.trim())
+            .filter(c => c);
+
+        if(classList.length === 0){
+
+            return alert(
+                "Enter a valid class"
+            );
+        }
+
+        // =========================
+        // AUTO CREATE CLASSES
+        // =========================
+
+        for(const cls of classList){
+
+            const {
+                data: existingClass
+            } = await supabaseClient
+                .from("classes")
+                .select("*")
+                .eq(
+                    "classname",
+                    cls
+                )
+                .eq(
+                    "schoolid",
+                    currentUser.schoolid
+                )
+                .maybeSingle();
+
+            if(!existingClass){
+
+                const {
+                    error: classError
+                } = await supabaseClient
+                    .from("classes")
+                    .insert([
+                        {
+                            classname: cls,
+                            schoolid:
+                                currentUser.schoolid
+                        }
+                    ]);
+
+                if(classError){
+
+                    console.error(
+                        classError
+                    );
+
+                    return alert(
+                        `Failed to create class ${cls}`
+                    );
+                }
+            }
+        }
+
+        // =========================
+        // MAIN CLASS
+        // =========================
+
+        let mainClass =
+            classList[0];
+
+        // =========================
+        // UPDATE TEACHER
+        // =========================
+
+        const {
+            error: updateError
+        } = await supabaseClient
+            .from("users")
+            .update({
+                mainClass:
+                    mainClass,
+
+                classes:
+                    classList,
+
+                subjects:
+                    selectedSubjects
+            })
+            .eq(
+                "username",
+                teacherUsername
+            );
+
+        if(updateError){
+
+            console.error(
+                updateError
+            );
+
+            return alert(
+                "Failed to save teacher settings"
+            );
+        }
+
+        // =========================
+        // REFRESH LOCAL DATA
+        // =========================
+
+        await loadUsers();
+
+        alert(
+            "Teacher settings saved successfully ✅"
+        );
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(
+            "An unexpected error occurred"
         );
     }
-
-    // SUBJECTS
-    let selectedSubjects = [];
-
-    document.querySelectorAll(
-        "#subjectCheckboxes input:checked"
-    ).forEach(cb => {
-
-        selectedSubjects.push(cb.value);
-    });
-
-    // CLASSES
-    let classInput =
-        document.getElementById(
-            "teacherClass"
-        ).value.trim();
-
-    if (selectedSubjects.length === 0) {
-
-        return alert(
-            "Select at least one subject"
-        );
-    }
-
-    if (!classInput) {
-
-        return alert(
-            "Enter class"
-        );
-    }
-
-    let classList = classInput
-        .split(",")
-        .map(c => c.trim())
-        .filter(c => c);
-
-    // MAIN CLASS + ALL CLASSES
-    let mainClass = classList[0];
-
-    // Update teacher in Supabase
-    const { error: updateError } = await supabaseClient
-        .from("users")
-        .update({
-             mainClass: mainClass,
-            classes: classList,
-            subjects: selectedSubjects
-        })
-        .eq("username", teacherUsername);
-
-    if (updateError) {
-
-        console.log(updateError);
-
-        return alert(
-            "Failed to save teacher settings"
-        );
-    }
-
-    alert("Saved successfully ✅");
 }
 
 
@@ -3443,37 +3603,56 @@ async function loadClassFilter(){
 
 async function initDefaultClasses(){
 
-    let { data: existing, error } = await supabaseClient
+    const defaultClasses = [
+        "1A",
+        "1B",
+        "2A",
+        "2B",
+        "3A"
+    ];
+
+    const { data: existing, error } = await supabaseClient
         .from("classes")
-        .select("*")
+        .select("classname")
         .eq("schoolid", currentUser.schoolid);
 
     if(error){
-        console.error(error);
+        console.error("Class Load Error:", error);
         return;
     }
 
-if(!existing || existing.length === 0){
+    const existingClasses =
+        (existing || []).map(c => c.classname);
 
- 
+    const missingClasses =
+        defaultClasses.filter(
+            cls => !existingClasses.includes(cls)
+        );
 
-        let defaults = [
-            { classname: "1A", schoolid: currentUser.schoolid },
-            { classname: "1B", schoolid: currentUser.schoolid },
-            { classname: "2A", schoolid: currentUser.schoolid },
-            { classname: "2B", schoolid: currentUser.schoolid },
-            { classname: "3A", schoolid: currentUser.schoolid }
-        ];
-
-        const { error: insertError } = await supabaseClient
-            .from("classes")
-            .insert(defaults);
-
-         if(insertError){
-        console.error("Insert Error:", insertError);
-    } else {
-        console.log("Default classes created successfully");
+    if(missingClasses.length === 0){
+        console.log("All default classes already exist");
+        return;
     }
+
+    const records = missingClasses.map(cls => ({
+        classname: cls,
+        schoolid: currentUser.schoolid
+    }));
+
+    const { error: insertError } = await supabaseClient
+        .from("classes")
+        .insert(records);
+
+    if(insertError){
+        console.error(
+            "Default Class Insert Error:",
+            insertError
+        );
+    }else{
+        console.log(
+            "Missing classes created:",
+            missingClasses
+        );
     }
 }
 
@@ -3602,13 +3781,16 @@ async function loadClassOptions(){
 
 function getClassTeacherName(studentClass){
 
-    let teacher = users.find(u => 
-        u.role === "teacher" && u.mainClass === studentClass
+    let teacher = users.find(u =>
+        u.role === "teacher" &&
+        (u.classes || []).includes(studentClass)
     );
 
-    if(!teacher) return "Not Assigned";
+    if(!teacher){
+        return "Not Assigned";
+    }
 
-    return teacher.firstname + " " + teacher.surname;
+    return `${teacher.firstname} ${teacher.surname}`;
 }
 
 let deferredPrompt;
@@ -3630,6 +3812,36 @@ document.getElementById("installBtn").addEventListener("click", async () => {
     deferredPrompt = null;
   }
 });
+
+async function ensureClassExists(className){
+
+    if(!className) return;
+
+    const { data } = await supabaseClient
+        .from("classes")
+        .select("*")
+        .eq("classname", className)
+        .eq("schoolid", currentUser.schoolid)
+        .maybeSingle();
+
+    if(data) return;
+
+    const { error } = await supabaseClient
+        .from("classes")
+        .insert([
+            {
+                classname: className,
+                schoolid: currentUser.schoolid
+            }
+        ]);
+
+    if(error){
+        console.error(
+            "Create Class Error:",
+            error
+        );
+    }
+}
 
 function loadTeacherSubjects(){
 
@@ -3917,31 +4129,43 @@ function displayUsers(){
 
 
 function selectUser(username){
-	let user = users.find(
-    u => u.username === username
-);
 
-document.getElementById("chatUserName")
-.innerText =
-`${user.firstname} ${user.surname}`;
+    let user = users.find(
+        u => u.username === username
+    );
 
-document.getElementById("chatUserStatus")
-.innerText =
-(Date.now() - user.lastSeen < 60000)
-? "Online"
-: "Offline";
+    document.getElementById("chatUserName")
+    .innerText =
+    `${user.firstname} ${user.surname}`;
 
-if(user.profilePicture){
-    document.getElementById(
-        "chatUserAvatar"
-    ).src = user.profilePicture;
-}
+    document.getElementById("chatUserStatus")
+    .innerText =
+    (Date.now() - user.lastSeen < 60000)
+    ? "Online"
+    : "Offline";
+
+    if(user.profilePicture){
+        document.getElementById(
+            "chatUserAvatar"
+        ).src = user.profilePicture;
+    }
 
     selectedUser = username;
 
     displayUsers();
 
     displayChat();
+
+    // MOBILE ONLY
+    if(window.innerWidth <= 768){
+
+        document.getElementById("usersPanel")
+            .style.display = "none";
+
+        document.getElementById("conversationPanel")
+            .style.display = "flex";
+    }
+
 }
 
 async function sendMessage(){
@@ -4540,6 +4764,13 @@ function showContextMenu(e,messageId){
     menu.style.top = e.pageY + "px";
 
     menu.style.display = "block";
+	
+	document.addEventListener("click", () => {
+
+    document.getElementById("contextMenu")
+        .style.display = "none";
+
+});
 }
 
 function replyMessage(){
@@ -4552,4 +4783,47 @@ function forwardMessage(){
 
     alert("Forward feature coming soon");
 
+}
+
+
+function setupMobileChat(){
+
+    if(window.innerWidth <= 768){
+
+        document.getElementById("usersPanel")
+            .style.display = "block";
+
+        document.getElementById("conversationPanel")
+            .style.display = "none";
+    }
+
+}
+
+function backToUsers(){
+	 
+
+    if(window.innerWidth <= 768){
+
+        document.getElementById("usersPanel")
+            .style.display = "block";
+
+        document.getElementById("conversationPanel")
+            .style.display = "none";
+
+    }
+
+}
+
+
+function openChatPage(){
+
+   
+
+    showPage("chat");
+
+    if(window.innerWidth <= 768){
+
+        document.getElementById("usersPanel").style.display = "block";
+        document.getElementById("conversationPanel").style.display = "none";
+    }
 }
