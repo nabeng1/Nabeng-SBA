@@ -851,7 +851,7 @@ table{
 
 
 .page{
-    animation:fadeIn 0.3s ease;
+    animation:fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn{
@@ -1468,4 +1468,59 @@ body::before{
 
 .context-menu div:hover{
     background:#2a3942;
+}
+
+
+#chatLayout{
+    display:flex;
+    height:100%;
+}
+
+#usersPanel{
+    width:320px;
+}
+
+#conversationPanel{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+
+#backToUsers{
+    display:none;
+}
+
+@media (max-width:768px){
+
+    #usersPanel{
+        width:100%;
+    }
+
+    #conversationPanel{
+        width:100%;
+    }
+
+    #backToUsers{
+        display:block;
+    }
+}
+
+
+#backToUsersBtn{
+	width: 20px;
+    display:none;
+    background:transparent;
+    border:none;
+    color:white;
+    font-size:20px;
+    cursor:pointer;
+    margin-right:10px;
+}
+
+@media(max-width:768px){
+
+    #backToUsersBtn{
+        display:block;
+    }
+
 }
