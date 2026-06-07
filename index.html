@@ -97,10 +97,10 @@ Create new account
     <option value="admin">Admin</option>
 </select>
 <div id="schoolNameBox">
-    <input id="schoolNameSignup" placeholder="School Name (Admin only)">
+    <input id="schoolnamesignup" placeholder="School Name (Admin only)">
 </div>
 
-<input id="firstName" placeholder="First Name">
+<input id="firstname" placeholder="First Name">
 <input id="surname" placeholder="Surname">
 <input id="signupUsername" placeholder="Username">
 <input id="signupEmail" placeholder="Email">
@@ -108,7 +108,7 @@ Create new account
 <input id="schoolCode" placeholder="">
 <input id="signupPassword" type="password" placeholder="Password">
 
-<button onclick="showSignup()">
+<button onclick="signup()">
 Sign Up
 </button>
 
@@ -334,92 +334,82 @@ Back to Login
 <!-- CHAT -->
 <div id="chat" class="container page">
 
-    <!-- USERS TOP BAR -->
-    <div class="chat-users-bar">
+    <div id="chatLayout">
+
+    <!-- USERS LIST -->
+    <div id="usersPanel" class="chat-users-bar">
+
         <div id="userList" class="chat-users"></div>
-		<div class="unread-badge" id="unread_${user.username}">
-0
-</div>
+
     </div>
 
-    <!-- CHAT AREA -->
-    <div class="chat-area">
+    <!-- CONVERSATION -->
+    <div id="conversationPanel" class="chat-area">
 
-    <div class="chat-header">
+        <div class="chat-header">
 
-        <div class="chat-header-user">
+            <button id="backToUsers"
+                    onclick="backToUsers()">
+                ←
+            </button>
 
-            <img id="chatUserAvatar"
-                 src="default-avatar.png"
-                 class="header-avatar">
+            <div class="chat-header-user">
 
-            <div>
+                <img id="chatUserAvatar"
+                     src="default-avatar.png"
+                     class="header-avatar">
 
-                <div id="chatUserName"
-                     class="header-name">
-                    Select User
-                </div>
+                <div>
 
-                <div id="chatUserStatus"
-                     class="header-status">
+                    <div id="chatUserName"
+                         class="header-name">
+                        Select User
+                    </div>
+
+                    <div id="chatUserStatus"
+                         class="header-status">
+                    </div>
+
                 </div>
 
             </div>
 
         </div>
 
+        <div id="chatBox" class="chat-box"></div>
 
-    </div>
+        <div id="previewContent"></div>
 
-    <div id="chatBox" class="chat-box"></div>
-
-</div>
-<!-- MEDIA PREVIEW -->
-<div id="mediaPreview"
-     class="media-preview"
-     style="display:none;">
-
-    <div id="previewContent"></div>
-
-    <button class="remove-preview-btn"
-            onclick="removePreview()">
-        ✕
-    </button>
-
-</div>
-
-<div id="typingIndicator"
-style="
-padding:5px 15px;
-font-size:13px;
-color:#94a3b8;
-">
-</div>
-
+        <button class="remove-preview-btn"
+                onclick="removePreview()">
+            ✕
+        </button>
 
         <div class="chat-input-area">
 
-    <label class="media-btn">
-        +
-        <input type="file"
-               id="mediaInput"
-               accept="image/*,video/*,.pdf,.doc,.docx"
-               hidden>
-    </label>
+            <label class="media-btn">
+                +
+                <input type="file"
+                       id="mediaInput"
+                       accept="image/*,video/*,.pdf,.doc,.docx"
+                       hidden>
+            </label>
 
-    <input
-    id="chatInput"
-    class="chat-input"
-    placeholder="Type a message...">
+            <input
+                id="chatInput"
+                class="chat-input"
+                placeholder="Type a message...">
 
-    <button class="send-btn"
-        onclick="sendMessage()">
-    ➤
-</button>
+            <button class="send-btn"
+                    onclick="sendMessage()">
+                ➤
+            </button>
 
-</div>
+        </div>
 
     </div>
+
+</div>
 	<div id="contextMenu" class="context-menu">
 
     <div onclick="replyMessage()">
@@ -620,7 +610,7 @@ color:#94a3b8;
     <span>Attendance</span>
 </div>
 
-<div class="nav-item" onclick="showPage('chat')">
+<div class="nav-item" onclick="openChatPage()">
     <i class="fas fa-comments"></i>
     <span>Chat</span>
 </div>
