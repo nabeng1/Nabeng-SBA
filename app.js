@@ -598,18 +598,28 @@ async function loadLogo() {
 
     const img = document.getElementById("schoolLogoPreview");
 
-   const { data, error } = await supabaseClient
-    .from("schools")
-    .select("*");
+    try {
 
+        const { data, error } = await supabaseClient
+            .from("schools")
+            .select("schoolLogo")
+            .eq("schoolid", currentUser.schoolid)
+            .single();
 
-    if (error) {
-        img.src = "";
-        return;
+		console.log(data);
+		console.log(error);
+        if (error) throw error;
+
+        img.src = data?.schoolLogo || "default-school-logo.png";
+
+    } catch (err) {
+
+        console.error(err);
+
+        img.src = "default-school-logo.png";
     }
-
-    img.src = data?.schoolLogo || "";
 }
+
 function displayLogo(logo){
     let img = document.getElementById("schoolLogoPreview");
 
@@ -719,6 +729,7 @@ async function loadStudents() {
 
         students = allStudents;
     }
+	updateStudentSuggestions();
 }
 
 async function saveStudents() {
@@ -1074,10 +1085,11 @@ if(!student.name || !student.class){
 }
             students.push(student);
         });
-
+		await loadStudents();
         saveStudents();
         populateStudentList();
         updateDashboard();
+		updateStudentSuggestions();
 
         alert("✅ Students + Marks Imported Successfully!");
     };
@@ -1325,6 +1337,8 @@ if(currentUser.role === "admin"){
     alert(
         "Student added successfully ✅"
     );
+	
+	updateStudentSuggestions();
 }
 
 function openStudentForm(index){
@@ -2715,6 +2729,67 @@ allowedSubjects.forEach(sub=>{
 	
 }
 
+function updateStudentSuggestions() {
+
+    let search =
+        document.getElementById("reportSearch")
+        .value
+        .toLowerCase();
+
+    let suggestionBox =
+        document.getElementById("studentSuggestions");
+
+    suggestionBox.innerHTML = "";
+
+    let filteredStudents = students;
+
+    // Teachers see only students in assigned classes
+    if (currentUser.role === "teacher") {
+
+        filteredStudents = students.filter(s =>
+            (currentUser.classes || [])
+            .includes(s.studentclass)
+        );
+    }
+
+    filteredStudents
+        .filter(s =>
+            s.name.toLowerCase().includes(search)
+        )
+        .slice(0, 10)
+        .forEach(student => {
+
+            let option =
+                document.createElement("option");
+
+            option.value = student.name;
+
+            suggestionBox.appendChild(option);
+        });
+}
+
+function getReportStudent() {
+
+    let name =
+        document.getElementById("reportSearch")
+        .value
+        .trim()
+        .toLowerCase();
+
+    let availableStudents = students;
+
+    if (currentUser.role === "teacher") {
+
+        availableStudents = students.filter(s =>
+            (currentUser.classes || [])
+            .includes(s.studentclass)
+        );
+    }
+
+    return availableStudents.find(s =>
+        s.name.toLowerCase() === name
+    );
+}
 
 function printReport(){
     let content = document.getElementById("printArea").outerHTML;
@@ -3518,46 +3593,62 @@ async function loadUsers(){
 
 function getStudentPosition(student, term){
 
-    // ✅ Get students in same class
-    let classStudents = students.filter(s => s.studentclass === student.studentclass);
+    let classStudents = students.filter(
+        s => s.studentclass === student.studentclass
+    );
 
-    // ✅ Calculate average for each student (for that term)
     let ranked = classStudents.map(s => {
 
         let total = 0;
         let count = 0;
 
-        let allowedSubjects = currentUser.role === "teacher"
+        let allowedSubjects =
+            currentUser.role === "teacher"
             ? (currentUser.subjects || [])
             : subjects;
 
-        allowedSubjects.forEach(sub=>{
+        allowedSubjects.forEach(sub => {
+
             let d = s.subjects?.[sub]?.[term];
+
             if(!d) return;
 
-            let classTotal = d.test1 + d.test2 + d.project + d.group;
-            let classScore = (classTotal/100)*50;
-            let examScore = (d.exam/100)*50;
+            let classTotal =
+                Number(d.test1 || 0) +
+                Number(d.test2 || 0) +
+                Number(d.project || 0) +
+                Number(d.group || 0);
 
-            total += (classScore + examScore);
+            let classScore = (classTotal / 100) * 50;
+            let examScore = (Number(d.exam || 0) / 100) * 50;
+
+            total += classScore + examScore;
             count++;
-        });
 
-        let avg = count ? total / count : 0;
+        });
 
         return {
             name: s.name,
-            avg: avg
+            avg: count ? total / count : 0
         };
+
     });
 
-    // ✅ Sort highest first
-    ranked.sort((a,b)=> b.avg - a.avg);
+    ranked.sort((a,b) => b.avg - a.avg);
 
-    // ✅ Find position
-    let position = ranked.findIndex(x => x.name === student.name) + 1;
+    let studentData = ranked.find(
+        x => x.name === student.name
+    );
+
+    if(!studentData) return "-";
+
+    let position =
+        ranked.filter(
+            x => x.avg > studentData.avg
+        ).length + 1;
 
     return formatPosition(position);
+
 }
 
 function formatPosition(pos){
