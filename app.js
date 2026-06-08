@@ -3519,7 +3519,7 @@ async function loadUsers(){
 function getStudentPosition(student, term){
 
     // ✅ Get students in same class
-    let classStudents = students.filter(s => s.studentclass === student.class);
+    let classStudents = students.filter(s => s.studentclass === student.studentclass);
 
     // ✅ Calculate average for each student (for that term)
     let ranked = classStudents.map(s => {
