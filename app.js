@@ -1085,6 +1085,7 @@ if(!student.name || !student.class){
 }
             students.push(student);
         });
+		
         saveStudents();
         populateStudentList();
         updateDashboard();
