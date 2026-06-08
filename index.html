@@ -297,7 +297,13 @@ Back to Login
 <div id="reportsPage" class="container page">
 <h3>Reports</h3>
 
-<input id="reportSearch" placeholder="Enter student name">
+<input
+    id="reportSearch"
+    placeholder="Enter student name"
+    list="studentSuggestions"
+    oninput="updateStudentSuggestions()">
+
+<datalist id="studentSuggestions"></datalist>
 
 <label>Select Term</label>
 <select id="reportTerm">
