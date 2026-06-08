@@ -1085,7 +1085,7 @@ if(!student.name || !student.class){
 }
             students.push(student);
         });
-		await loadStudents();
+		
         saveStudents();
         populateStudentList();
         updateDashboard();
