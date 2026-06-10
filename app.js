@@ -6025,7 +6025,7 @@ function getClassTeacherName(studentClass){
     return `${teacher.firstname} ${teacher.surname}`;
 }
 
-let deferredPrompt;
+
 
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
