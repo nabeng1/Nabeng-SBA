@@ -2545,7 +2545,7 @@ let schoolname =
 	font-size: 13
     color:black;
     width:794px;
-    min-height:1123px;
+    min-height:1000px;
     margin:auto;
     background:white;
     position:relative;
@@ -2604,14 +2604,14 @@ ${logo ? `
 </div>
 
 
-<div style="margin-top:5px; font-size:18px; line-height:1.5;">
+<div style="margin-top:3px; font-size:18px; line-height:1;">
 
-    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-        <p style="margin:0;"><b>Name:</b> ${s.name}</p>
-        <p style="margin:0;"><b>Position:</b> ${position}</p>
+    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+        <p style="margin:5;"><b>Name:</b> ${s.name}</p>
+        <p style="margin:5;"><b>Position:</b> ${position}</p>
     </div>
 
-    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
         <p style="margin:0;"><b>Class:</b> ${s.studentclass}</p>
         <p style="margin:0;"><b>Total Students:</b> ${totalStudents}</p>
     </div>
