@@ -5114,7 +5114,7 @@ ${logo ? `
             <div><strong>Term Ending:</strong> ${formattedEnd}</div>
             <div><strong>Next Term Begins:</strong> ${formattedNext}</div>
         </div>
-    </div>`;
+    </div>;
 
 				
 		
@@ -5156,7 +5156,7 @@ allowedSubjects.forEach(sub=>{
 
 
 
-	html += `
+	
 
     // Additional Info
     html += `
