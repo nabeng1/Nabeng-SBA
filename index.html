@@ -44,13 +44,37 @@
     </div>
 
     <div class="nav-center">
-    <button onclick="showPage('dashboardPage')">Dashboard</button>
-    <button onclick="showPage('studentsPage')">Students</button>
-    <button onclick="showPage('subjectsPage')">Subjects</button>
-    <button onclick="showPage('reportsPage')">Reports</button>
-	<button onclick="showPage('attendancePage')">Attendance</button>
-	<button onclick="showPage('chat')">Chat</button>
-	<button onclick="showProfile()">Profile</button>
+
+    <button onclick="showPage('dashboardPage')">
+        Dashboard
+    </button>
+
+    <div class="dropdown">
+
+        <button class="dropbtn">
+            Academics
+        </button>
+
+        <div class="dropdown-content">
+            <a href="#" onclick="showPage('studentsPage')">Students</a>
+            <a href="#" onclick="showPage('subjectsPage')">Subjects</a>
+            <a href="#" onclick="showPage('reportsPage')">Reports</a>
+        </div>
+
+    </div>
+
+    <button onclick="showPage('attendancePage')">
+        Attendance
+    </button>
+
+    <button onclick="showPage('chat')">
+        Chat
+    </button>
+
+    <button onclick="showProfile()">
+        Profile
+    </button>
+
 </div>
 
 </div>
@@ -599,19 +623,9 @@ Back to Login
         <span>Home</span>
     </div>
 
-    <div class="nav-item" onclick="showPage('studentsPage')">
-    <i class="fas fa-user-graduate"></i>
-    <span>Students</span>
-</div>
-
-<div class="nav-item" onclick="showPage('subjectsPage')">
-    <i class="fas fa-book"></i>
-    <span>Subjects</span>
-</div>
-
-<div class="nav-item" onclick="showPage('reportsPage')">
-    <i class="fas fa-file-alt"></i>
-    <span>Reports</span>
+    <div class="nav-item" onclick="toggleAcademicsMenu()">
+    <i class="fas fa-graduation-cap"></i>
+    <span>Academics</span>
 </div>
 
 <div class="nav-item" onclick="showPage('attendancePage')">
@@ -669,6 +683,22 @@ Back to Login
 
         <div id="studentModalContent"></div>
 
+    </div>
+
+</div>
+
+<div id="academicsMenu" class="academics-menu">
+
+    <div onclick="openAcademicPage('studentsPage')">
+        👨‍🎓 Students
+    </div>
+
+    <div onclick="openAcademicPage('subjectsPage')">
+        📚 Subjects
+    </div>
+
+    <div onclick="openAcademicPage('reportsPage')">
+        📄 Reports
     </div>
 
 </div>
