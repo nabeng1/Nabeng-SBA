@@ -399,8 +399,6 @@ async function displaySchoolName() {
             .eq("schoolid", currentUser.schoolid)
             .single();
 
-console.log("School Data:", data);
-console.log("School Error:", error);
 
         if (error) {
 
@@ -1991,7 +1989,7 @@ function confirmDelete(){
 }
 
 
-function openStudentModal(index){
+async function openStudentModal(index){
 
     let student = students[index];
 
@@ -2000,28 +1998,124 @@ function openStudentModal(index){
         return;
     }
 
-    let modal = document.getElementById("studentModal");
-    let content = document.getElementById("studentModalContent");
+    let term = student.currentTerm || "term1";
 
-    if(!modal || !content){
-        alert("Student modal HTML is missing");
-        return;
-    }
+    let resultsHTML = `
+        <h3>📚 Subject Results (${term.toUpperCase()})</h3>
 
-    content.innerHTML = `
-        <h2>${student.name}</h2>
-
-        <p><strong>Class:</strong> ${student.studentclass}</p>
-
-        <p><strong>Gender:</strong> ${student.gender || "Not Set"}</p>
-
-        <button onclick="closeStudentModal()">
-            Close
-        </button>
+        <table style="
+            width:100%;
+            border-collapse:collapse;
+            margin-top:10px;
+        ">
+            <tr>
+                <th>Subject</th>
+                <th>Total</th>
+                <th>Grade</th>
+            </tr>
     `;
 
-    modal.style.display = "flex";
+    let totalScore = 0;
+    let subjectCount = 0;
+
+    subjects.forEach(sub => {
+
+        let d = student.subjects?.[sub]?.[term];
+
+        if(!d) return;
+
+        let classTotal =
+            d.test1 +
+            d.test2 +
+            d.project +
+            d.group;
+
+        let classScore = (classTotal / 100) * 50;
+        let examScore = (d.exam / 100) * 50;
+
+        let finalScore =
+            classScore + examScore;
+
+        totalScore += finalScore;
+        subjectCount++;
+
+        let grade = "F";
+
+        if(finalScore >= 80) grade = "A";
+        else if(finalScore >= 70) grade = "B";
+        else if(finalScore >= 60) grade = "C";
+        else if(finalScore >= 50) grade = "D";
+        else if(finalScore >= 40) grade = "E";
+
+        resultsHTML += `
+            <tr>
+                <td>${sub}</td>
+                <td>${finalScore.toFixed(1)}</td>
+                <td>${grade}</td>
+            </tr>
+        `;
+    });
+
+    resultsHTML += "</table>";
+
+    let average = subjectCount
+        ? (totalScore / subjectCount).toFixed(1)
+        : 0;
+
+    let conduct =
+        student.conduct?.[term] || "-";
+
+    let attitude =
+        student.attitude?.[term] || "-";
+
+    let interest =
+        student.interest?.[term] || "-";
+
+    let remark =
+        student.teacherRemark?.[term] || "-";
+
+    document.getElementById(
+        "studentModalContent"
+    ).innerHTML = `
+
+        <h2>${student.name}</h2>
+
+        <p><strong>Class:</strong>
+        ${student.studentclass}</p>
+
+        <p><strong>Gender:</strong>
+        ${student.gender || "Not Set"}</p>
+
+        <hr>
+
+        ${resultsHTML}
+
+        <hr>
+
+        <p><strong>Average:</strong>
+        ${average}%</p>
+
+        <p><strong>Conduct:</strong>
+        ${conduct}</p>
+
+        <p><strong>Attitude:</strong>
+        ${attitude}</p>
+
+        <p><strong>Interest:</strong>
+        ${interest}</p>
+
+        <p><strong>Teacher's Remark:</strong>
+        ${remark}</p>
+
+       
+    `;
+
+    document.getElementById(
+        "studentModal"
+    ).style.display = "flex";
 }
+
+
 
 function closeStudentModal(){
     document.getElementById("studentModal").style.display = "none";
@@ -4993,3 +5087,37 @@ function openChatPage(){
         document.getElementById("conversationPanel").style.display = "none";
     }
 }
+
+function toggleAcademicsMenu(){
+
+    let menu =
+        document.getElementById("academicsMenu");
+
+    if(menu.style.display === "block"){
+        menu.style.display = "none";
+    }else{
+        menu.style.display = "block";
+    }
+}
+
+function openAcademicPage(pageId){
+
+    document.getElementById(
+        "academicsMenu"
+    ).style.display = "none";
+
+    showPage(pageId);
+}
+document.addEventListener("click", function(e){
+
+    let menu =
+        document.getElementById("academicsMenu");
+
+    if(
+        !e.target.closest(".academics-menu") &&
+        !e.target.closest(".nav-item")
+    ){
+        menu.style.display = "none";
+    }
+
+});
