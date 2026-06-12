@@ -668,7 +668,7 @@ button on extra small screens */
     gap:20px;
 }
 
-@media(max-width:768px){
+@media(max-width:600px){
 
     .profile-sidebar{
         width:100%;
@@ -717,7 +717,7 @@ button{
 }
 
 /* MOBILE NAV IMPROVEMENT */
-@media (max-width: 768px){
+@media (max-width: 600px){
 
     .top-nav{
         flex-direction:column;
@@ -726,7 +726,7 @@ button{
         padding:10px;
     }
 
-   @media(max-width:768px){
+   @media(max-width:600px){
 
     .nav-center{
         display:grid;
@@ -1523,4 +1523,102 @@ body::before{
         display:block;
     }
 
+}
+
+
+/* REPORT RESPONSIVE FIX */
+#printArea {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) {
+    #printArea {
+        padding: 20px 15px !important;
+        font-size: 13px !important;
+        border-width: 6px !important;
+        max-width: 100% !important;
+        margin: 10px !important;
+    }
+
+    #printArea h1 {
+        font-size: 20px !important;
+    }
+
+    #printArea table th,
+    #printArea table td {
+        padding: 6px 4px !important;
+        font-size: 12px !important;
+    }
+}
+
+
+/* DROPDOWN MENU */
+
+.dropdown{
+    position:relative;
+    display:inline-block;
+}
+
+.dropbtn{
+    background:none;
+    border:none;
+    color:white;
+    cursor:pointer;
+    padding:10px 15px;
+    font-size:15px;
+}
+
+.dropdown-content{
+    display:none;
+    position:absolute;
+    background:#1e293b;
+    min-width:180px;
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 4px 10px rgba(0,0,0,.3);
+    z-index:9999;
+}
+
+.dropdown-content a{
+    color:white;
+    padding:12px 15px;
+    text-decoration:none;
+    display:block;
+}
+
+.dropdown-content a:hover{
+    background:#2563eb;
+}
+
+.dropdown:hover .dropdown-content{
+    display:block;
+}
+
+.academics-menu{
+    position:fixed;
+    bottom:80px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#1e293b;
+    border-radius:15px;
+    overflow:hidden;
+    display:none;
+    z-index:99999;
+    min-width:220px;
+    box-shadow:0 5px 20px rgba(0,0,0,.4);
+}
+
+.academics-menu div{
+    padding:15px;
+    color:white;
+    cursor:pointer;
+    border-bottom:1px solid rgba(255,255,255,.1);
+}
+
+.academics-menu div:last-child{
+    border-bottom:none;
+}
+
+.academics-menu div:hover{
+    background:#2563eb;
 }
