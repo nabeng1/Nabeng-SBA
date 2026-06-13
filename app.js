@@ -604,9 +604,8 @@ async function loadLogo() {
             .eq("schoolid", currentUser.schoolid)
             .single();
 
-		console.log(data);
-		console.log(error);
-        if (error) throw error;
+		
+       
 
         img.src = data?.schoolLogo || "default-school-logo.png";
 
@@ -2787,7 +2786,7 @@ allowedSubjects.forEach(sub=>{
 
     <div style="text-align:center; width:45%;">
         <div style="border-bottom:1px solid black; height:30px;"></div>
-       <p> <b>${teacherName}</b></p>
+       <p><b>${teacherName}</b></p>
 	   <p>(Class Teacher)</b></p>
     </div>
 
@@ -3148,40 +3147,82 @@ async function showProfile(){
 	
 }
 
-function showProfileTab(tab, el){
+async function showProfileTab(tabId){
 
-    document.getElementById("userTab").style.display = "none";
-    document.getElementById("subjectsTab").style.display = "none";
-	document.getElementById("termTab").style.display = "none";
+    showPage("profilePage");
 
-    document.getElementById(tab).style.display = "block";
+    // Hide all profile tabs
+    [
+        "userTab",
+        "subjectsTab",
+        "termTab",
+        "planTab",
+        "noteTab"
+    ].forEach(id => {
 
-    document.querySelectorAll(".menu-item").forEach(m=>m.classList.remove("active"));
+        let el = document.getElementById(id);
 
-    el.classList.add("active"); // ✅ FIXED
-	
-	// ✅ LOAD TERM DATA
-   if(tab === "termTab"){
-        loadTermSettings();
+        if(el){
+            el.style.display = "none";
+        }
+    });
+
+    // Show selected tab
+    let activeTab = document.getElementById(tabId);
+
+    if(activeTab){
+        activeTab.style.display = "block";
+    }
+
+    // Load data when User tab opens
+    if(tabId === "userTab"){
+		await loadUsers();
+        loadProfileData();
+		
+    }
+
+    // Active menu highlight
+    document
+        .querySelectorAll(".menu-item")
+        .forEach(item =>
+            item.classList.remove("active")
+        );
+
+    if(window.event && window.event.target){
+        window.event.target.classList.add("active");
     }
 }
 
 function loadProfileData(){
 
-    document.getElementById("pFirstName").value = currentUser.firstname;
-    document.getElementById("pSurname").value = currentUser.surname;
-    document.getElementById("pUsername").value = currentUser.username;
-    document.getElementById("pEmail").value = currentUser.email;
-    document.getElementById("pPhone").value = currentUser.phone;
-    document.getElementById("pRole").value = currentUser.role;
+    if(!currentUser){
+        console.error("currentUser not found");
+        return;
+    }
 
-    // ✅ LOAD PROFILE IMAGE
-    let img = document.getElementById("profilePic");
+    document.getElementById("pFirstName").value =
+        currentUser.firstname || "";
 
-    if(currentUser.profilePic){
-        img.src = currentUser.profilePic;
-    } else {
-        img.src = "assets/default-profile.png";
+    document.getElementById("pSurname").value =
+        currentUser.surname || "";
+
+    document.getElementById("pUsername").value =
+        currentUser.username || "";
+
+    document.getElementById("pEmail").value =
+        currentUser.email || "";
+
+    document.getElementById("pPhone").value =
+        currentUser.phone || "";
+
+    document.getElementById("pRole").value =
+        currentUser.role || "";
+
+    const img = document.getElementById("profilePic");
+
+    if(img){
+        img.src = currentUser.profilePic ||
+                  "assets/default-profile.png";
     }
 }
 
@@ -3541,13 +3582,10 @@ async function updateProfile() {
             .eq("id", currentUser.id);
 
     if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to update profile"
-        );
-    }
+    console.error("Profile Update Error:", error);
+    alert(error.message);
+    return;
+}
 
     // =========================
     // UPDATE CURRENT USER
@@ -3619,7 +3657,7 @@ document.getElementById(
     // Upload to Supabase Storage
     const { data, error } = await supabaseClient
         .storage
-        .from("profile-pictures")
+        .from("profile-picture")
         .upload(fileName, file);
 
     if (error) {
@@ -3634,10 +3672,11 @@ document.getElementById(
     // Get public URL
     const { data: urlData } = supabaseClient
         .storage
-        .from("profile-pictures")
+        .from("profile-picture")
         .getPublicUrl(fileName);
 
     let imageUrl = urlData.publicUrl;
+	console.log("Image URL:", imageUrl);
 
     // Save URL to database
     const { error: dbError } = await supabaseClient
@@ -3655,7 +3694,13 @@ document.getElementById(
             "Failed to save profile picture"
         );
     }
+if (error) {
+    console.log("Upload Error:", error);
+}
 
+if (dbError) {
+    console.log("Database Error:", dbError);
+}
     // Update current user locally
     currentUser.profilePic = imageUrl;
 
@@ -3752,7 +3797,7 @@ async function loadUsers(){
 
     users = data || [];
 
-    console.log("Users Loaded:", users);
+
 
     if(currentUser.role === "admin"){
         loadTeachers();
@@ -4022,7 +4067,7 @@ async function loadClassOptions(){
             (currentUser.classes || []).includes(c)
         );
 
-        console.log("Filtered Classes:", classes);
+        
     }
 
     let html = `<option value="">Select Class</option>`;
@@ -4539,7 +4584,7 @@ async function displayChat(){
     if(!selectedUser){
 
         document.getElementById("chatBox").innerHTML =
-            "<p>Select a user to start chatting</p>";
+            "<p>Select a user</p>";
 
         return;
     }
@@ -5108,6 +5153,8 @@ function openAcademicPage(pageId){
 
     showPage(pageId);
 }
+
+
 document.addEventListener("click", function(e){
 
     let menu =
@@ -5119,5 +5166,41 @@ document.addEventListener("click", function(e){
     ){
         menu.style.display = "none";
     }
+
+});
+
+
+function toggleProfileMenu(){
+
+    let menu =
+        document.getElementById("profileMenu");
+
+    if(menu.style.display === "block"){
+        menu.style.display = "none";
+    }else{
+        menu.style.display = "block";
+    }
+}
+
+function openProfileTab(tabId){
+
+    document.getElementById(
+        "profileMenu"
+    ).style.display = "none";
+
+    showProfileTab(tabId);
+}
+
+document.querySelectorAll(".dropbtn").forEach(btn => {
+
+    btn.addEventListener("click", function(e){
+
+        e.preventDefault();
+
+        let dropdown = this.parentElement;
+
+        dropdown.classList.toggle("active");
+
+    });
 
 });
