@@ -52,7 +52,7 @@
     <div class="dropdown">
 
         <button class="dropbtn">
-            Academics
+            Academics▼
         </button>
 
         <div class="dropdown-content">
@@ -71,22 +71,54 @@
         Chat
     </button>
 
-    <button onclick="showProfile()">
-        Profile
+<div class="dropdown">
+
+    <button class="dropbtn"
+            onclick="toggleProfileMenu()">
+        Profile▼
     </button>
 
+    <div class="dropdown-content"
+         id="profileMenu">
+
+        <a href="#"
+           onclick="openProfileTab('userTab')">
+           User
+        </a>
+
+        <a href="#"
+           onclick="openProfileTab('subjectsTab')">
+           Subjects
+        </a>
+
+        <a href="#"
+           onclick="openProfileTab('termTab')">
+           Term Setup
+        </a>
+
+        <a href="#"
+           onclick="openProfileTab('planTab')">
+           Plan
+        </a>
+
+        <a href="#"
+           onclick="openProfileTab('noteTab')">
+           Note
+        </a>
+
+    </div>
+
+</div>
+
 </div>
 
 </div>
 </div>
-
-
-
 
 
 <div id="loginBox" class="container" style="max-width:400px; text-align:center;">
 <img
-src="https://vocal.media/education/how-to-create-a-student-portal-in-word-press.png"
+src=""
 class="login-logo">
 
 <h3>Log In</h3>
@@ -474,15 +506,7 @@ Back to Login
 <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
         </div>
 
-        <div class="profile-menu">
-            <div class="profile-menu">
-    <div class="menu-item active" onclick="showProfileTab('userTab', this)">User</div>
-    <div class="menu-item" onclick="showProfileTab('subjectsTab', this)">Subjects</div>
-    <div class="menu-item" onclick="showProfileTab('termTab', this)">Term Setup</div>
-    <div class="menu-item" onclick="showProfileTab('planTab', this)">Plan</div>
-    <div class="menu-item" onclick="showProfileTab('noteTab', this)">Note</div>
-</div>
-        </div>
+     
 
     </div>
 
