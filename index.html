@@ -73,40 +73,38 @@
 
 <div class="dropdown">
 
-    <button class="dropbtn"
-            onclick="toggleProfileMenu()">
+    <button class="dropbtn">
         Profile▼
     </button>
 
-    <div class="dropdown-content"
-         id="profileMenu">
+    <div class="dropdown-content">
 
-        <a href="#"
-           onclick="openProfileTab('userTab')">
-           User
-        </a>
+    <a href="#"
+       onclick="showPage('userProfilePage'); return false;">
+       User
+    </a>
 
-        <a href="#"
-           onclick="openProfileTab('subjectsTab')">
-           Subjects
-        </a>
+    <a href="#"
+       onclick="showPage('profileSubjectsPage'); return false;">
+       Subjects
+    </a>
 
-        <a href="#"
-           onclick="openProfileTab('termTab')">
-           Term Setup
-        </a>
+    <a href="#"
+       onclick="showPage('profileTermPage'); return false;">
+       Term Setup
+    </a>
 
-        <a href="#"
-           onclick="openProfileTab('planTab')">
-           Plan
-        </a>
+    <a href="#"
+       onclick="showPage('profilePlanPage'); return false;">
+       Plan
+    </a>
 
-        <a href="#"
-           onclick="openProfileTab('noteTab')">
-           Note
-        </a>
+    <a href="#"
+       onclick="showPage('profileNotePage'); return false;">
+       Note
+    </a>
 
-    </div>
+</div>
 
 </div>
 
@@ -494,28 +492,19 @@ Back to Login
 	
 </div>
 
-<div id="profilePage" class="container page">
 
-<div class="profile-wrapper">
 
-    <!-- LEFT SIDEBAR -->
-    <div class="profile-sidebar">
 
-        <div class="profile-card">
+
+
+        <!-- USER INFO -->
+        <div id="userProfilePage" class="container page">
+            <div class="profile-card">
             <img id="profilePic" onclick="uploadProfilePic()" style="cursor:pointer;">
 <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
         </div>
-
-     
-
-    </div>
-
-    <!-- RIGHT CONTENT -->
-    <div class="profile-content">
-
-        <!-- USER INFO -->
-        <div id="userTab">
-            <h2>User Information</h2>
+			<h2>User Information</h2>
+			
 
             <div class="form-grid">
                 <input id="pFirstName" placeholder="First Name">
@@ -531,8 +520,7 @@ Back to Login
         </div>
 
         <!-- SUBJECTS -->
-        <div id="subjectsTab" style="display:none;">
-    <h3>Assign Class</h3>
+		<div id="profileSubjectsPage" class="container page">    <h3>Assign Class</h3>
 
 	<input id="teacherClass" placeholder="Enter Class (e.g. 1A)">
 	<h2>Assigned Subjects</h2>
@@ -543,7 +531,7 @@ Back to Login
 </div>
 
 <!-- TERM SETTINGS -->
-<div id="termTab" style="display:none;">
+	<div id="profileTermPage" class="container page">
     <h2>📅 Term Settings</h2>
 
     <div class="form-grid">
@@ -578,7 +566,7 @@ Back to Login
     <button onclick="saveTermSettings()">💾 Save Term Settings</button>
 </div>
 
-<div id="planTab" style="display:none;">
+	<div id="profilePlanPage" class="container page">
     <h2>📗 Lesson Plan Generator</h2>
 
     <label>Select Term</label>
@@ -599,7 +587,7 @@ Back to Login
     <div id="planOutput" style="margin-top:15px; background:#1f2937; padding:15px; border-radius:10px;"></div>
 </div>
 
-<div id="noteTab" style="display:none;">
+	<div id="profileNotePage" class="container page">
     <h2>📝 Lesson Notes</h2>
 
     <label>Select Term</label>
@@ -622,8 +610,8 @@ Back to Login
 
     </div>
 
-</div>
-</div>
+
+
 
 
 <!-- CONFIRMATION MODAL -->
@@ -662,7 +650,7 @@ Back to Login
     <span>Chat</span>
 </div>
 
-<div class="nav-item" onclick="showProfile()">
+<div class="nav-item" onclick="toggleProfileMenu()">
     <i class="fas fa-user"></i>
     <span>Profile</span>
 </div>
@@ -723,6 +711,35 @@ Back to Login
 
     <div onclick="openAcademicPage('reportsPage')">
         📄 Reports
+    </div>
+
+</div>
+
+<div class="nav-item" onclick="toggleProfileMenu()">
+    <i class="fas fa-user"></i>
+    <span>Profile</span>
+</div>
+
+<div id="profileMobileMenu" class="academics-menu">
+
+    <div onclick="showPage('userProfilePage')">
+        👤 User
+    </div>
+
+    <div onclick="showPage('profileSubjectsPage')">
+        📚 Subjects
+    </div>
+
+    <div onclick="showPage('profileTermPage')">
+        📅 Term Setup
+    </div>
+
+    <div onclick="showPage('profilePlanPage')">
+        📖 Plan
+    </div>
+
+    <div onclick="showPage('profileNotePage')">
+        📝 Note
     </div>
 
 </div>
