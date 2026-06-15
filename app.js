@@ -1029,43 +1029,47 @@ if(!students.find(s => s.name === name && s.studentclass === cls)){
 }
 }
 
-function handleCSV(event){
+async function handleCSV(event){
+
     let file = event.target.files[0];
     if(!file) return;
 
     let reader = new FileReader();
 
-    reader.onload = function(e){
+    reader.onload = async function(e){
+
         let text = e.target.result;
         let lines = text.split("\n");
 
-        let headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        if(lines.length < 2){
+            return alert("CSV file is empty");
+        }
 
-        lines.slice(1).forEach(line=>{
+        let importedStudents = [];
+
+        lines.slice(1).forEach(line => {
+
             if(!line.trim()) return;
 
             let values = line.split(",");
 
+            let student = {
 
-            let rawGender = values[2]?.trim().toLowerCase();
+                name: values[0]?.trim(),
+                studentclass: values[1]?.trim(), // <-- change if needed
+                gender: values[2]?.trim() || "Male",
 
-let gender = "Male"; // default
+                subjects: {},
+                currentTerm: "term1",
+                teacher: currentUser.username,
+                schoolid: currentUser.schoolid
 
-if(rawGender === "female" || rawGender === "f"){
-    gender = "Female";
-}
+            };
 
-let student = {
-    name: values[0]?.trim(),
-    class: values[1]?.trim(),
-    gender: (values[2]?.trim() || "Male"), // ✅ NEW
-    subjects: {},
-    currentTerm: "term1",
-    teacher: currentUser.username
-};
+            subjects.forEach(sub => {
 
-            subjects.forEach(sub=>{
                 student.subjects[sub] = {};
+
                 student.subjects[sub]["term1"] = {
                     test1: 0,
                     test2: 0,
@@ -1073,32 +1077,37 @@ let student = {
                     group: 0,
                     exam: 0
                 };
+
             });
 
-            headers.forEach((header, i)=>{
-                let val = +values[i] || 0;
+            if(student.name && student.studentclass){
+                importedStudents.push(student);
+            }
 
-                subjects.forEach(sub=>{
-                    if(header === sub + "_t1") student.subjects[sub]["term1"].test1 = val;
-                    if(header === sub + "_t2") student.subjects[sub]["term1"].test2 = val;
-                    if(header === sub + "_project") student.subjects[sub]["term1"].project = val;
-                    if(header === sub + "_group") student.subjects[sub]["term1"].group = val;
-                    if(header === sub + "_exam") student.subjects[sub]["term1"].exam = val;
-                });
-            });
-
-if(!student.name || !student.class){
-    return; // skip bad rows
-}
-            students.push(student);
         });
-		
-        saveStudents();
-        populateStudentList();
-        updateDashboard();
-		
 
-        alert("✅ Students + Marks Imported Successfully!");
+        if(importedStudents.length === 0){
+            return alert("No valid students found in CSV");
+        }
+
+        const { error } = await supabaseClient
+            .from("students")
+            .insert(importedStudents);
+
+        if(error){
+
+            console.log(error);
+            return alert("Import failed");
+
+        }
+
+        await loadStudents();
+
+        loadStudentsTable();
+        updateDashboard();
+
+        alert(`✅ ${importedStudents.length} students imported successfully`);
+
     };
 
     reader.readAsText(file);
@@ -1118,7 +1127,7 @@ function populateStudentList(){
 }
 
 
-function editStudent(index){
+async function editStudent(index){
 
     let s = students[index];
 
@@ -1141,7 +1150,7 @@ function editStudent(index){
     s.studentclass = newClass;
     s.gender = newGender;
 
-    saveStudents();
+    await saveStudents();
 
     loadStudentsTable();
     populateStudentList();
@@ -1150,18 +1159,23 @@ function editStudent(index){
     alert("Student updated successfully");
 }
 
-function deleteStudent(index){
+async function deleteStudent(studentid){
 
-    if(currentUser.role === "admin"){
-        return alert("❌ Admin cannot delete students");
+    const { error } = await supabaseClient
+        .from("students")
+        .delete()
+        .eq("id", studentid);
+console.log("Deleting:", studentid);
+console.log("Delete Result:", error);
+    if(error){
+        console.log("Delete Error:", error);
+        return alert("Failed to delete student");
     }
 
-    students.splice(index,1);
-
-    saveStudents();
+    await loadStudents();
     loadStudentsTable();
-    populateStudentList();
-    updateDashboard();
+
+    alert("Student deleted successfully");
 }
 
 function drawCharts(){
@@ -1432,11 +1446,11 @@ function loadStudentsTable(){
                 </button>
 
                 <button
-                    class="action-btn delete-btn"
-                    onclick="deleteStudent(${realIndex})"
-                >
-                    🗑 Delete
-                </button>
+    class="action-btn delete-btn"
+    onclick="deleteStudent('${s.id}')"
+>
+    🗑 Delete
+</button>
 
             </td>
 
