@@ -901,7 +901,7 @@ if(id === "studentsPage"){
         if(chat){
             chat.style.display = 'block';
         }
-
+		await loadUsers();
         displayUsers();
         displayChat();
 
@@ -914,6 +914,16 @@ if(id === "studentsPage"){
             chat.style.display = 'none';
         }
     }
+	
+	let profilepage = document.getElementById(id);
+
+if(page){
+    page.style.display = "block";
+}
+
+if(id === "userProfilePage"){
+    loadProfileData();
+}
 }
 
 function updateDashboard(){
@@ -3131,67 +3141,22 @@ async function refreshCurrentUser() {
 }
 
 async function showProfile(){
-    showPage('profilePage');
-	 await loadUsers();
-	
-    loadProfileData();
-	loadTermSettings();
-	
 
-    if(currentUser.role === "admin"){
-      
-    } else {
+    showPage('userProfilePage');
+
+    await loadUsers();
+
+    loadProfileData();
+    loadTermSettings();
+
+    if(currentUser.role !== "admin"){
         loadSubjectSelection();
     }
-	loadTeacherSubjects();
-	
+
+    loadTeacherSubjects();
 }
 
-async function showProfileTab(tabId){
 
-    showPage("profilePage");
-
-    // Hide all profile tabs
-    [
-        "userTab",
-        "subjectsTab",
-        "termTab",
-        "planTab",
-        "noteTab"
-    ].forEach(id => {
-
-        let el = document.getElementById(id);
-
-        if(el){
-            el.style.display = "none";
-        }
-    });
-
-    // Show selected tab
-    let activeTab = document.getElementById(tabId);
-
-    if(activeTab){
-        activeTab.style.display = "block";
-    }
-
-    // Load data when User tab opens
-    if(tabId === "userTab"){
-		await loadUsers();
-        loadProfileData();
-		
-    }
-
-    // Active menu highlight
-    document
-        .querySelectorAll(".menu-item")
-        .forEach(item =>
-            item.classList.remove("active")
-        );
-
-    if(window.event && window.event.target){
-        window.event.target.classList.add("active");
-    }
-}
 
 function loadProfileData(){
 
@@ -4372,12 +4337,12 @@ function displayUsers(){
         // PROFILE IMAGE OR INITIALS
         let avatar = "";
 
-        if(user.profilePicture){
+        if(user.profilePic){
 
             avatar = `
             <div class="avatar-wrapper">
 
-                <img src="${user.profilePicture}"
+                <img src="${user.profilePic}"
                      class="chat-avatar-img">
 
                 <div class="online-dot
@@ -4449,10 +4414,10 @@ function selectUser(username){
     ? "Online"
     : "Offline";
 
-    if(user.profilePicture){
+    if(user.profilePic){
         document.getElementById(
             "chatUserAvatar"
-        ).src = user.profilePicture;
+        ).src = user.profilePic;
     }
 
     selectedUser = username;
@@ -5173,34 +5138,15 @@ document.addEventListener("click", function(e){
 function toggleProfileMenu(){
 
     let menu =
-        document.getElementById("profileMenu");
+        document.getElementById("profileMobileMenu");
 
     if(menu.style.display === "block"){
+
         menu.style.display = "none";
+
     }else{
+
         menu.style.display = "block";
     }
 }
 
-function openProfileTab(tabId){
-
-    document.getElementById(
-        "profileMenu"
-    ).style.display = "none";
-
-    showProfileTab(tabId);
-}
-
-document.querySelectorAll(".dropbtn").forEach(btn => {
-
-    btn.addEventListener("click", function(e){
-
-        e.preventDefault();
-
-        let dropdown = this.parentElement;
-
-        dropdown.classList.toggle("active");
-
-    });
-
-});
