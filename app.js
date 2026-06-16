@@ -29,6 +29,7 @@ let topChartInstance = null;
 let subjectChartInstance = null;
 let passChartInstance = null;
 let selectedMessageId = null;
+let activeTerm = "term1";
 
 
 // Show signup if no users exist
@@ -364,6 +365,8 @@ document.body.classList.add("logged-in");
         "👋 Welcome, " + currentUser.firstname;
 
     // LOAD DATA
+	
+	await initializeSystem();
     await loadStudents();
     updateDashboard();
     populateStudentList();
@@ -371,7 +374,8 @@ document.body.classList.add("logged-in");
     loadLogo();
 	await displaySchoolName();
     await loadTheme();
-    await loadTermSettings();
+	await loadTermSettings();
+activeTerm = await getCurrentTerm();
     updateOnlineStatus();
 	
 	
@@ -726,7 +730,25 @@ async function loadStudents() {
 
         students = allStudents;
     }
-	updateStudentSuggestions();
+
+    // Sort: Males first, then Females, then alphabetically
+    students.sort((a, b) => {
+
+        const genderA = (a.gender || "").toLowerCase();
+        const genderB = (b.gender || "").toLowerCase();
+
+        if (genderA !== genderB) {
+            if (genderA === "male") return -1;
+            if (genderB === "male") return 1;
+        }
+
+        const nameA = `${a.firstname || ""} ${a.surname || ""}`.trim();
+        const nameB = `${b.firstname || ""} ${b.surname || ""}`.trim();
+
+        return nameA.localeCompare(nameB);
+    });
+
+    updateStudentSuggestions();
 }
 
 async function saveStudents() {
@@ -815,19 +837,42 @@ async function showPage(id){
 
   await loadStudents();
 
-    // ATTENDANCE
-    if(id === "attendancePage"){
+// ATTENDANCE
+if(id === "attendancePage"){
 
-        let attendanceDate =
-        document.getElementById("attendanceDate");
+    let attendanceDate =
+    document.getElementById("attendanceDate");
 
-        if(attendanceDate){
-            attendanceDate.valueAsDate =
-            new Date();
-        }
-
-        loadAttendanceTable();
+    if(attendanceDate){
+        attendanceDate.valueAsDate =
+        new Date();
     }
+
+    document.getElementById(
+        "attendanceTerm"
+    ).value = activeTerm;
+
+    loadAttendanceTable();
+}
+
+// REPORTS
+if(id === "reportsPage"){
+
+    let reportTerm =
+    document.getElementById("reportTerm");
+
+    if(reportTerm){
+        reportTerm.value = activeTerm;
+    }
+}
+
+if(id === "profilePlanPage"){
+    document.getElementById("planTerm").value = activeTerm;
+}
+
+if(id === "profileNotePage"){
+    document.getElementById("noteTerm").value = activeTerm;
+}
 
     // WELCOME TEXT
     let welcomeText =
@@ -2204,15 +2249,59 @@ function selectStudent(index){
     ? (currentUser.subjects || [])
     : subjects;
 
-allowedSubjects.forEach(sub=>{
-        let d=s.subjects?.[sub]?.[term]||{};
-        html+=`<h4>${sub}</h4>
-        <input id="${sub}_test1" value="${d.test1||0}">
-        <input id="${sub}_test2" value="${d.test2||0}">
-        <input id="${sub}_project" value="${d.project||0}">
-        <input id="${sub}_group" value="${d.group||0}">
-        <input id="${sub}_exam" value="${d.exam||0}">`;
-    });
+allowedSubjects.forEach(sub => {
+
+    let d = s.subjects?.[sub]?.[term] || {};
+
+    html += `
+    <h4>${sub}</h4>
+
+    <input
+        type="number"
+        id="${sub}_test1"
+        value="${d.test1 > 0 ? d.test1 : ''}"
+        placeholder="Test 1"
+        min="0"
+        max="30"
+        oninput="if(this.value > 30) this.value = 30; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_test2"
+        value="${d.test2 > 0 ? d.test2 : ''}"
+        placeholder="Test 2"
+        min="0"
+        max="30"
+        oninput="if(this.value > 30) this.value = 30; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_project"
+        value="${d.project > 0 ? d.project : ''}"
+        placeholder="Project"
+        min="0"
+        max="20"
+        oninput="if(this.value > 20) this.value = 20; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_group"
+        value="${d.group > 0 ? d.group : ''}"
+        placeholder="Group Work"
+        min="0"
+        max="20"
+        oninput="if(this.value > 20) this.value = 20; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_exam"
+        value="${d.exam > 0 ? d.exam : ''}"
+        placeholder="Exam"
+        min="0"
+        max="100"
+        oninput="if(this.value > 100) this.value = 100; if(this.value < 0) this.value = 0;">
+    `;
+});
 
 
  html += `
@@ -2284,30 +2373,31 @@ function changeTerm(){
     selectStudent(currentStudentIndex);
 }
 
-async function loadTermSettings() {
+let termSettings = {};
+
+async function loadTermSettings(){
 
     const { data, error } = await supabaseClient
         .from("termsettings")
         .select("*")
         .eq("schoolid", currentUser.schoolid)
-        .maybeSingle();
+        .single();
 
-    if (error) {
-        console.error("Load term settings error:", error);
+    if(error){
+        console.log(error);
         return;
     }
 
     termSettings = data || {};
 
-    // Restore values into inputs
-    document.getElementById("t1start").value = termSettings.t1start || "";
-    document.getElementById("t1end").value = termSettings.t1end || "";
+    document.getElementById("t1start").value = data.t1start || "";
+    document.getElementById("t1end").value   = data.t1end || "";
 
-    document.getElementById("t2start").value = termSettings.t2start || "";
-    document.getElementById("t2end").value = termSettings.t2end || "";
+    document.getElementById("t2start").value = data.t2start || "";
+    document.getElementById("t2end").value   = data.t2end || "";
 
-    document.getElementById("t3start").value = termSettings.t3start || "";
-    document.getElementById("t3end").value = termSettings.t3end || "";
+    document.getElementById("t3start").value = data.t3start || "";
+    document.getElementById("t3end").value   = data.t3end || "";
 }
 
 async function saveTermSettings() {
@@ -2352,6 +2442,7 @@ async function saveTermSettings() {
 
     alert("✅ Term settings saved successfully!");
 }
+
 
 function getTermFromDate(dateStr) {
 
@@ -2435,46 +2526,128 @@ function getNextTermStart(term) {
     return null;
 }
 
+async function getCurrentTerm(){
+
+    const { data, error } = await supabaseClient
+        .from("termsettings")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .single();
+
+    if(error || !data){
+        return "term1";
+    }
+
+    let today = new Date();
+
+    if(
+        today >= new Date(data.t1start) &&
+        today <= new Date(data.t1end)
+    ){
+        return "term1";
+    }
+
+    if(
+        today >= new Date(data.t2start) &&
+        today <= new Date(data.t2end)
+    ){
+        return "term2";
+    }
+
+    if(
+        today >= new Date(data.t3start) &&
+        today <= new Date(data.t3end)
+    ){
+        return "term3";
+    }
+
+    return "term1";
+}
+
+async function initializeSystem(){
+
+    let currentTerm = await getCurrentTerm();
+
+    window.activeTerm = currentTerm;
+
+    console.log(
+        "Current Term:",
+        currentTerm
+    );
+
+}
 
 async function saveMarks(){
 
     let s = students[currentStudentIndex];
-    let term = s.currentTerm || "term1";
+    let term = activeTerm;
 
     let allowedSubjects = currentUser.role === "teacher"
         ? (currentUser.subjects || [])
         : subjects;
 
-    allowedSubjects.forEach(sub => {
+    if(!s.subjects) s.subjects = {};
 
-        if(!s.subjects) s.subjects = {};
+    // Validate and save subject scores
+    for(const sub of allowedSubjects){
+
+        let test1 = Number(document.getElementById(sub+"_test1")?.value || 0);
+        let test2 = Number(document.getElementById(sub+"_test2")?.value || 0);
+        let project = Number(document.getElementById(sub+"_project")?.value || 0);
+        let group = Number(document.getElementById(sub+"_group")?.value || 0);
+        let exam = Number(document.getElementById(sub+"_exam")?.value || 0);
+
+        // Validation
+        if(test1 < 0 || test1 > 30){
+            alert(`${sub}: Test 1 score must be between 0 and 30`);
+            return;
+        }
+
+        if(test2 < 0 || test2 > 30){
+            alert(`${sub}: Test 2 score must be between 0 and 30`);
+            return;
+        }
+
+        if(project < 0 || project > 20){
+            alert(`${sub}: Project score must be between 0 and 20`);
+            return;
+        }
+
+        if(group < 0 || group > 20){
+            alert(`${sub}: Group Work score must be between 0 and 20`);
+            return;
+        }
+
+        if(exam < 0 || exam > 100){
+            alert(`${sub}: Exam score must be between 0 and 100`);
+            return;
+        }
+
         if(!s.subjects[sub]) s.subjects[sub] = {};
 
         s.subjects[sub][term] = {
-            test1: +(document.getElementById(sub+"_test1")?.value || 0),
-            test2: +(document.getElementById(sub+"_test2")?.value || 0),
-            project: +(document.getElementById(sub+"_project")?.value || 0),
-            group: +(document.getElementById(sub+"_group")?.value || 0),
-            exam: +(document.getElementById(sub+"_exam")?.value || 0)
+            test1,
+            test2,
+            project,
+            group,
+            exam
         };
-    });
+    }
 
-
+    // Save assessment data
     s.conduct = s.conduct || {};
     s.attitude = s.attitude || {};
     s.interest = s.interest || {};
     s.teacherRemark = s.teacherRemark || {};
 
-    s.conduct[term] = conduct.value;
-    s.attitude[term] = attitude.value;
-    s.interest[term] = interest.value;
-    s.teacherRemark[term] = teacherRemark.value;
+    s.conduct[term] = document.getElementById("conduct")?.value || "";
+    s.attitude[term] = document.getElementById("attitude")?.value || "";
+    s.interest[term] = document.getElementById("interest")?.value || "";
+    s.teacherRemark[term] = document.getElementById("teacherRemark")?.value || "";
 
-    
-    await saveStudents();
-    
-
+    // Calculate average
     let total = 0;
+    let countedSubjects = 0;
 
     allowedSubjects.forEach(sub => {
 
@@ -2482,25 +2655,27 @@ async function saveMarks(){
         if(!d) return;
 
         let classTotal =
-            d.test1 + d.test2 + d.project + d.group;
+            d.test1 +
+            d.test2 +
+            d.project +
+            d.group;
 
         let classScore = (classTotal / 100) * 50;
         let examScore = (d.exam / 100) * 50;
 
         total += classScore + examScore;
+        countedSubjects++;
     });
 
-    s.average = allowedSubjects.length
-        ? total / allowedSubjects.length
+    s.average = countedSubjects
+        ? +(total / countedSubjects).toFixed(2)
         : 0;
 
-    
+    // Save to database
     await saveStudents();
-    
 
-    
+    // Refresh dashboard
     updateDashboard();
-    
 
     alert("Marks saved successfully ✅");
 }
@@ -2551,7 +2726,6 @@ function confirmReport(){
     generateReportWithTerm(s, term, endDate, nextDate);
 }
 
-let termSettings = {};
 
 
 function formatDate(dateStr){
