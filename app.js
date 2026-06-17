@@ -2404,42 +2404,105 @@ allowedSubjects.forEach(sub => {
 
 
  html += `
-    <hr><h3>Additional Assessment</h3>
+<hr><h3>Additional Assessment</h3>
 
-    <label>Conduct</label>
-    <select id="conduct">
-        <option value="">Select</option>
-        <option value="Excellent" ${s.conduct?.[term] === "Excellent" ? "selected" : ""}>Excellent</option>
-        <option value="Very Good" ${s.conduct?.[term] === "Very Good" ? "selected" : ""}>Very Good</option>
-        <option value="Good" ${s.conduct?.[term] === "Good" ? "selected" : ""}>Good</option>
-        <option value="Needs Improvement" ${s.conduct?.[term] === "Needs Improvement" ? "selected" : ""}>Needs Improvement</option>
-    </select>
+<label>Conduct</label>
+<select id="conduct">
+    <option value="">Select Conduct</option>
 
-    <label>Attitude</label>
-    <select id="attitude">
-        <option value="">Select</option>
-        <option value="Respectful" ${s.attitude?.[term] === "Respectful" ? "selected" : ""}>Respectful</option>
-        <option value="Hardworking" ${s.attitude?.[term] === "Hardworking" ? "selected" : ""}>Hardworking</option>
-        <option value="Cooperative" ${s.attitude?.[term] === "Cooperative" ? "selected" : ""}>Cooperative</option>
-        <option value="Disruptive" ${s.attitude?.[term] === "Disruptive" ? "selected" : ""}>Disruptive</option>
-    </select>
+    <option value="Very respectful and well-behaved." ${s.conduct?.[term] === "Very respectful and well-behaved." ? "selected" : ""}>Very respectful and well-behaved.</option>
 
-    <label>Interest</label>
-    <select id="interest">
-        <option value="">Select</option>
-        <option value="Highly Interested" ${s.interest?.[term] === "Highly Interested" ? "selected" : ""}>Highly Interested</option>
-        <option value="Average" ${s.interest?.[term] === "Average" ? "selected" : ""}>Average</option>
-        <option value="Low" ${s.interest?.[term] === "Low" ? "selected" : ""}>Low</option>
-    </select>
+    <option value="Maintains good discipline at all times." ${s.conduct?.[term] === "Maintains good discipline at all times." ? "selected" : ""}>Maintains good discipline at all times.</option>
 
-    <label>Teacher Remark</label>
-    <select id="teacherRemark">
-        <option value="">Select</option>
-        <option value="Excellent performance" ${s.teacherRemark?.[term] === "Excellent performance" ? "selected" : ""}>Excellent performance</option>
-        <option value="Very good work" ${s.teacherRemark?.[term] === "Very good work" ? "selected" : ""}>Very good work</option>
-        <option value="Good effort" ${s.teacherRemark?.[term] === "Good effort" ? "selected" : ""}>Good effort</option>
-        <option value="Needs improvement" ${s.teacherRemark?.[term] === "Needs improvement" ? "selected" : ""}>Needs improvement</option>
-    </select>
+    <option value="Relates well with teachers and peers." ${s.conduct?.[term] === "Relates well with teachers and peers." ? "selected" : ""}>Relates well with teachers and peers.</option>
+
+    <option value="Obeys school rules and regulations." ${s.conduct?.[term] === "Obeys school rules and regulations." ? "selected" : ""}>Obeys school rules and regulations.</option>
+
+    <option value="Shows good manners and self-control." ${s.conduct?.[term] === "Shows good manners and self-control." ? "selected" : ""}>Shows good manners and self-control.</option>
+
+    <option value="Generally well-behaved and cooperative." ${s.conduct?.[term] === "Generally well-behaved and cooperative." ? "selected" : ""}>Generally well-behaved and cooperative.</option>
+
+    <option value="Accepts correction positively." ${s.conduct?.[term] === "Accepts correction positively." ? "selected" : ""}>Accepts correction positively.</option>
+
+    <option value="Needs improvement in discipline." ${s.conduct?.[term] === "Needs improvement in discipline." ? "selected" : ""}>Needs improvement in discipline.</option>
+
+    <option value="Sometimes disregards classroom rules." ${s.conduct?.[term] === "Sometimes disregards classroom rules." ? "selected" : ""}>Sometimes disregards classroom rules.</option>
+
+    <option value="Requires closer supervision of conduct." ${s.conduct?.[term] === "Requires closer supervision of conduct." ? "selected" : ""}>Requires closer supervision of conduct.</option>
+</select>
+
+<label>Attitude</label>
+<select id="attitude">
+    <option value="">Select Attitude</option>
+
+    <option value="Works hard and completes assignments on time." ${s.attitude?.[term] === "Works hard and completes assignments on time." ? "selected" : ""}>Works hard and completes assignments on time.</option>
+
+    <option value="Shows commitment to academic work." ${s.attitude?.[term] === "Shows commitment to academic work." ? "selected" : ""}>Shows commitment to academic work.</option>
+
+    <option value="Participates actively in class activities." ${s.attitude?.[term] === "Participates actively in class activities." ? "selected" : ""}>Participates actively in class activities.</option>
+
+    <option value="Demonstrates a positive attitude towards learning." ${s.attitude?.[term] === "Demonstrates a positive attitude towards learning." ? "selected" : ""}>Demonstrates a positive attitude towards learning.</option>
+
+    <option value="Is attentive and eager to learn." ${s.attitude?.[term] === "Is attentive and eager to learn." ? "selected" : ""}>Is attentive and eager to learn.</option>
+
+    <option value="Makes good use of instructional time." ${s.attitude?.[term] === "Makes good use of instructional time." ? "selected" : ""}>Makes good use of instructional time.</option>
+
+    <option value="Shows satisfactory effort in class." ${s.attitude?.[term] === "Shows satisfactory effort in class." ? "selected" : ""}>Shows satisfactory effort in class.</option>
+
+    <option value="Needs to put more effort into studies." ${s.attitude?.[term] === "Needs to put more effort into studies." ? "selected" : ""}>Needs to put more effort into studies.</option>
+
+    <option value="Is often reluctant to complete tasks." ${s.attitude?.[term] === "Is often reluctant to complete tasks." ? "selected" : ""}>Is often reluctant to complete tasks.</option>
+
+    <option value="Must develop a more serious approach to work." ${s.attitude?.[term] === "Must develop a more serious approach to work." ? "selected" : ""}>Must develop a more serious approach to work.</option>
+</select>
+
+<label>Interest</label>
+<select id="interest">
+    <option value="">Select Interest</option>
+
+    <option value="Shows keen interest in learning." ${s.interest?.[term] === "Shows keen interest in learning." ? "selected" : ""}>Shows keen interest in learning.</option>
+
+    <option value="Participates actively in lessons." ${s.interest?.[term] === "Participates actively in lessons." ? "selected" : ""}>Participates actively in lessons.</option>
+
+    <option value="Demonstrates enthusiasm for school activities." ${s.interest?.[term] === "Demonstrates enthusiasm for school activities." ? "selected" : ""}>Demonstrates enthusiasm for school activities.</option>
+
+    <option value="Takes interest in class discussions." ${s.interest?.[term] === "Takes interest in class discussions." ? "selected" : ""}>Takes interest in class discussions.</option>
+
+    <option value="Shows a willingness to learn new things." ${s.interest?.[term] === "Shows a willingness to learn new things." ? "selected" : ""}>Shows a willingness to learn new things.</option>
+
+    <option value="Displays good interest in most subjects." ${s.interest?.[term] === "Displays good interest in most subjects." ? "selected" : ""}>Displays good interest in most subjects.</option>
+
+    <option value="Shows satisfactory interest in learning." ${s.interest?.[term] === "Shows satisfactory interest in learning." ? "selected" : ""}>Shows satisfactory interest in learning.</option>
+
+    <option value="Interest is improving steadily." ${s.interest?.[term] === "Interest is improving steadily." ? "selected" : ""}>Interest is improving steadily.</option>
+
+    <option value="Needs encouragement to participate more." ${s.interest?.[term] === "Needs encouragement to participate more." ? "selected" : ""}>Needs encouragement to participate more.</option>
+
+    <option value="Shows limited interest in classroom activities." ${s.interest?.[term] === "Shows limited interest in classroom activities." ? "selected" : ""}>Shows limited interest in classroom activities.</option>
+</select>
+
+<label>Teacher's Remark</label>
+<select id="teacherRemark">
+    <option value="">Select Remark</option>
+
+    <option value="Excellent performance. Keep it up." ${s.teacherRemark?.[term] === "Excellent performance. Keep it up." ? "selected" : ""}>Excellent performance. Keep it up.</option>
+
+    <option value="Very good work. Aim even higher." ${s.teacherRemark?.[term] === "Very good work. Aim even higher." ? "selected" : ""}>Very good work. Aim even higher.</option>
+
+    <option value="A hardworking and promising pupil." ${s.teacherRemark?.[term] === "A hardworking and promising pupil." ? "selected" : ""}>A hardworking and promising pupil.</option>
+
+    <option value="Shows steady academic progress." ${s.teacherRemark?.[term] === "Shows steady academic progress." ? "selected" : ""}>Shows steady academic progress.</option>
+
+    <option value="Continue to work hard for success." ${s.teacherRemark?.[term] === "Continue to work hard for success." ? "selected" : ""}>Continue to work hard for success.</option>
+
+    <option value="Good effort. Maintain the momentum." ${s.teacherRemark?.[term] === "Good effort. Maintain the momentum." ? "selected" : ""}>Good effort. Maintain the momentum.</option>
+
+    <option value="Can perform better with more effort." ${s.teacherRemark?.[term] === "Can perform better with more effort." ? "selected" : ""}>Can perform better with more effort.</option>
+
+    <option value="Needs to pay more attention in class." ${s.teacherRemark?.[term] === "Needs to pay more attention in class." ? "selected" : ""}>Needs to pay more attention in class.</option>
+
+    <option value="Improvement is needed in all areas." ${s.teacherRemark?.[term] === "Improvement is needed in all areas." ? "selected" : ""}>Improvement is needed in all areas.</option>
+</select>
 `;
 
 html += `
