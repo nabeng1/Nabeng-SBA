@@ -1692,6 +1692,41 @@ if(currentUser.role === "teacher"){
          Attendance %: ${termData.percentage}%`;
 }
 
+
+async function getStudentAttendance(studentName){
+
+    const { data, error } = await supabaseClient
+        .from("attendance")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("studentname", studentName);
+
+    if(error){
+        console.log(error);
+        return {
+            totalDays: 0,
+            daysPresent: 0,
+            daysAbsent: 0
+        };
+    }
+
+    let totalDays = data.length;
+
+    let daysPresent =
+        data.filter(r =>
+            r.status === "Present"
+        ).length;
+
+    let daysAbsent =
+        totalDays - daysPresent;
+
+    return {
+        totalDays,
+        daysPresent,
+        daysAbsent
+    };
+}
+
 async function loadAttendanceData() {
 
     const { data, error } = await supabaseClient
@@ -1728,35 +1763,26 @@ async function markAttendance(
     date,
     studentname,
     status
-) {
+){
 
-    // SAVE TO SUPABASE
-    const { error } =
-        await supabaseClient
-            .from("attendance")
-            .upsert([
-                {
-                    schoolid:
-                        currentUser.schoolid,
+    let term = activeTerm || "term1";
 
-                    class:
-                        currentUser.mainClass,
+    // Save attendance record
+    const { error } = await supabaseClient
+        .from("attendance")
+        .upsert([
+            {
+                schoolid: currentUser.schoolid,
+                class: currentUser.mainClass,
+                date: date,
+                term: term,
+                studentname: studentname,
+                status: status,
+                teacher: currentUser.username
+            }
+        ]);
 
-                    date:
-                        date,
-
-                    studentname:
-                        studentname,
-
-                    status:
-                        status,
-
-                    teacher:
-                        currentUser.username
-                }
-            ]);
-
-    if (error) {
+    if(error){
 
         console.log(error);
 
@@ -1765,16 +1791,89 @@ async function markAttendance(
         );
     }
 
-    // LOCAL UPDATE
-    if (!attendanceData[date]) {
-
+    // Local update
+    if(!attendanceData[date]){
         attendanceData[date] = {};
     }
 
     attendanceData[date][studentname] =
         status;
 
+    // Find student
+    let student =
+        students.find(
+            s => s.name === studentname
+        );
+
+    if(student){
+
+        student.totalDays =
+            student.totalDays || {};
+
+        student.daysPresent =
+            student.daysPresent || {};
+
+        // Count attendance from local records
+        let totalDays = 0;
+        let daysPresent = 0;
+
+        Object.keys(attendanceData)
+            .forEach(d => {
+
+                let attendanceStatus =
+                    attendanceData[d][studentname];
+
+                if(attendanceStatus){
+
+                    totalDays++;
+
+                    if(
+                        attendanceStatus ===
+                        "Present"
+                    ){
+                        daysPresent++;
+                    }
+                }
+            });
+
+        student.totalDays[term] =
+            totalDays;
+
+        student.daysPresent[term] =
+            daysPresent;
+
+        await saveStudents();
+    }
+
     loadAttendanceTable();
+}
+
+async function getAttendanceSummary(studentName, term){
+
+    const { data, error } = await supabaseClient
+        .from("attendance")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("studentname", studentName);
+
+    if(error){
+        console.log(error);
+        return {
+            totalDays: 0,
+            daysPresent: 0
+        };
+    }
+
+    let totalDays = data.length;
+
+    let daysPresent = data.filter(
+        r => r.status === "Present"
+    ).length;
+
+    return {
+        totalDays,
+        daysPresent
+    };
 }
 
 function updateAttendanceStats(date) {
@@ -2287,7 +2386,7 @@ allowedSubjects.forEach(sub => {
         type="number"
         id="${sub}_group"
         value="${d.group > 0 ? d.group : ''}"
-        placeholder="Group Work"
+        placeholder="Group"
         min="0"
         max="20"
         oninput="if(this.value > 20) this.value = 20; if(this.value < 0) this.value = 0;">
@@ -2357,6 +2456,10 @@ html += `
 </p>
 `;
     
+	console.log("Selected Student:", s);
+console.log("Current Term:", term);
+console.log("Total Days:", s.totalDays?.[term]);
+console.log("Days Present:", s.daysPresent?.[term]);
 subjectForm.innerHTML=html;
 
 populateStudentList(); // 🔥 refresh list to highlight selected student
@@ -2945,18 +3048,28 @@ allowedSubjects.forEach(sub=>{
 
         html += `<tr>
             <td style="border:1px solid black;">${sub.toUpperCase()}</td>
-            <td style="border:1px solid black;">${classScore.toFixed(2)}</td>
-            <td style="border:1px solid black;">${examScore.toFixed(2)}</td>
-            <td style="border:1px solid black;">${total.toFixed(2)}</td>
-            <td style="border:1px solid black;">${getGrade(total)}</td>
-            <td style="border:1px solid black;">${getRemark(total)}</td>
+            <td style="border:1px solid black;">${Math.round(classScore)}</td>
+            <td style="border:1px solid black;">${Math.round(examScore)}</td>
+            <td style="border:1px solid black;">${Math.round(total)}</td>
+            <td style="border:1px solid black;">${getGrade(Math.round(total))}</td>
+            <td style="border:1px solid black;">${getRemark(Math.round(total))}</td>
         </tr>`;
     });
 
 
-	let totalDays = s.totalDays?.[term] || 0;
-	let daysPresent = s.daysPresent?.[term] || 0;
-	let daysAbsent = totalDays - daysPresent;
+	let attendance =
+    await getStudentAttendance(
+        s.name
+    );
+
+let totalDays =
+    attendance.totalDays;
+
+let daysPresent =
+    attendance.daysPresent;
+
+let daysAbsent =
+    attendance.daysAbsent;
 	
    let teacherName = getClassTeacherName(s.studentclass);
 
@@ -3188,40 +3301,49 @@ async function downloadPDF(){
 
     let element = document.getElementById("printArea");
 
-    html2canvas(document.getElementById("printArea"), {
-    scale: 3,
-    useCORS: true
-	
-}).then(canvas => {
+    let studentname =
+        document.getElementById("reportSearch")
+        .value
+        .trim()
+        .replace(/\s+/g, "_");
 
-    const imgData = canvas.toDataURL('image/png', 1.0);
+    let term =
+        document.getElementById("reportTerm").value;
+
+    term =
+        term.charAt(0).toUpperCase() +
+        term.slice(1);
+
+    let fileName = `${studentname}_${term}.pdf`;
+
+    const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/png", 1.0);
 
     const { jsPDF } = window.jspdf;
-    let doc = new jsPDF('p', 'mm', 'a4');
 
-    let imgWidth = 210;
-    let imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const doc = new jsPDF(
+        "p",
+        "mm",
+        "a4"
+    );
 
-    doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    doc.save("report.pdf");
+    const imgWidth = 210;
+    const imgHeight =
+        (canvas.height * imgWidth) /
+        canvas.width;
 
-});
-    // 🔥 GET STUDENT NAME
-    let studentname = document.getElementById("reportSearch").value.trim();
-
-
-
-    // 🔥 GET TERM
-    let term = document.getElementById("reportTerm").value;
-
-    // Clean name (remove spaces)
-    studentname = studentname.replace(/\s+/g, "_");
-
-    // Capitalize term
-   term = term.charAt(0).toUpperCase() + term.slice(1);
-
-    // 🔥 FINAL FILE NAME
-    let fileName = `${studentname}_${term}.pdf`;
+    doc.addImage(
+        imgData,
+        "PNG",
+        0,
+        0,
+        imgWidth,
+        imgHeight
+    );
 
     doc.save(fileName);
 }
@@ -4233,15 +4355,15 @@ async function loadClassOptions(){
 
     console.log(
         "Dropdown Updated:",
-        document.getElementById("studentClass").innerHTML
+        document.getElementById("studentclass").innerHTML
     );
 }
 
-function getClassTeacherName(studentClass){
+function getClassTeacherName(studentclass){
 
     let teacher = users.find(u =>
         u.role === "teacher" &&
-        (u.classes || []).includes(studentClass)
+        (u.classes || []).includes(studentclass)
     );
 
     if(!teacher){
@@ -4271,14 +4393,14 @@ document.getElementById("installBtn").addEventListener("click", async () => {
   }
 });
 
-async function ensureClassExists(className){
+async function ensureClassExists(classname){
 
-    if(!className) return;
+    if(!classname) return;
 
     const { data } = await supabaseClient
         .from("classes")
         .select("*")
-        .eq("classname", className)
+        .eq("classname", classname)
         .eq("schoolid", currentUser.schoolid)
         .maybeSingle();
 
@@ -4288,7 +4410,7 @@ async function ensureClassExists(className){
         .from("classes")
         .insert([
             {
-                classname: className,
+                classname: classname,
                 schoolid: currentUser.schoolid
             }
         ]);
