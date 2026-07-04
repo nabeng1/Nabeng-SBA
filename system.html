@@ -177,7 +177,7 @@ Already have an account? Login
 
 <input id="fpUsername" placeholder="Enter Username">
 <input id="fpContact" placeholder="Enter Email or Phone">
-<input id="newPassword" type="password" placeholder="New Password">
+
 
 <button onclick="resetPassword()">Reset Password</button>
 
@@ -334,17 +334,37 @@ Back to Login
 </div>
 
 <div id="subjectsPage" class="container page">
+
 <h3>Subjects & Marks</h3>
 
 <select id="classFilter" onchange="filterStudentsByClass()" style="margin-bottom:10px;">
     <option value="">Select Class</option>
 </select>
 
+<!-- NEW -->
+<div id="subjectList" class="cards"></div>
 
-<p>Select a student to fill marks:</p>
+<!-- Existing -->
 <div id="studentsList" class="cards"></div>
+<div id="marksModal" class="marks-modal">
+    <div class="marks-modal-content">
+
+        <button onclick="closeMarksModal()">
+                Close
+            </button>
+
+       <!-- Existing -->
 <div id="subjectForm" class="subjects-section"></div>
-<button id="saveMarksBtn" onclick="saveMarks()">Save Marks</button>
+        <button
+        id="saveMarksBtn"
+        onclick="saveMarks()">
+            💾 Save Marks
+        </button>
+
+    </div>
+
+</div>
+
 
 </div>
 
@@ -751,6 +771,8 @@ Back to Login
     </div>
 
 </div>
+
 </body>
 </html>
+
 
