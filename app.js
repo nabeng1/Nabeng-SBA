@@ -32,6 +32,7 @@ let selectedMessageId = null;
 let activeTerm = "term1";
 
 
+
 // Show signup if no users exist
 if(users.length === 0){
     document.getElementById("signupSection").style.display = "block";
@@ -251,6 +252,8 @@ function backToLogin(){
     document.getElementById("signupSection").style.display = "none";
     document.getElementById("forgotSection").style.display = "none";
 }
+
+
 async function login() {
 
     let email =
@@ -526,25 +529,18 @@ function showForgot(){
 }
 
 
+let generatedOTP = "";
+
 async function resetPassword() {
 
-    let u =
-        document.getElementById("fpUsername")
-        .value.trim();
+    let u = document.getElementById("fpUsername").value.trim();
+    let contact = document.getElementById("fpContact").value.trim();
 
-    let contact =
-        document.getElementById("fpContact")
-        .value.trim();
-
-    let newPass =
-        document.getElementById("newPassword")
-        .value.trim();
-
-    if (!u || !contact || !newPass) {
+    if (!u || !contact) {
         return alert("Fill all fields");
     }
 
-    // Find matching user
+    // Check if user exists
     const { data: user, error } = await supabaseClient
         .from("users")
         .select("*")
@@ -553,28 +549,42 @@ async function resetPassword() {
         .single();
 
     if (error || !user) {
-
-        return alert(
-            "User not found or incorrect details"
-        );
+        return alert("User not found or incorrect details");
     }
 
-    // Update password
-const { error: updateError } =
-await supabaseClient.auth.updateUser({
-    password: newPass
-});
+    // Generate OTP
+    generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
 
-    if (updateError) {
+    alert("Your OTP is: " + generatedOTP);
 
-        console.log(updateError);
+    // Ask user to enter OTP
+    const enteredOTP = prompt("Enter the OTP");
 
-        return alert(
-            "Failed to reset password"
-        );
+    if (enteredOTP !== generatedOTP) {
+        return alert("Incorrect OTP");
     }
 
-    alert("Password reset successful!");
+    // Ask for new password
+    const newPass = prompt("Enter your new password");
+
+    if (!newPass) {
+        return alert("Password cannot be empty");
+    }
+
+    // Send reset email from Supabase
+    const { error: resetError } =
+        await supabaseClient.auth.resetPasswordForEmail(user.email);
+
+    if (resetError) {
+        console.log(resetError);
+        return alert("Failed to send password reset email.");
+    }
+
+    alert(
+        "OTP verified.\n\nA password reset link has been sent to:\n\n" +
+        user.email +
+        "\n\nOpen your email and choose a new password."
+    );
 
     backToLogin();
 }
@@ -1148,6 +1158,7 @@ async function handleCSV(event){
 
         await loadStudents();
 
+
         loadStudentsTable();
         updateDashboard();
 
@@ -1159,16 +1170,17 @@ async function handleCSV(event){
 }
 function populateStudentList(){
 
-   
+    let html = filteredStudents.map((s,i)=>
+    `<div class="card ${i === currentStudent ? 'active-student' : ''}"
+        onclick="selectFilteredStudent(${i})">
 
-    let html = students.map((s,i)=>
-    `<div class="card ${i === currentStudentIndex ? 'active-student' : ''}"
-        onclick="selectStudent(${i})">
         ${s.name}
+
     </div>`
     ).join('');
 
     studentsList.innerHTML = html;
+
 }
 
 
@@ -1693,13 +1705,14 @@ if(currentUser.role === "teacher"){
 }
 
 
-async function getStudentAttendance(studentName){
+async function getStudentAttendance(studentName, term){
 
     const { data, error } = await supabaseClient
         .from("attendance")
         .select("*")
         .eq("schoolid", currentUser.schoolid)
-        .eq("studentname", studentName);
+        .eq("studentname", studentName)
+        .eq("term", term);
 
     if(error){
         console.log(error);
@@ -2328,11 +2341,15 @@ async function toggleTheme() {
         ? "fas fa-sun"
         : "fas fa-moon";
 }
-let currentStudentIndex=null;
+let currentStudent = null;
+let selectedSubject = null;
+let currentSubjectIndex = null;
 
-function selectStudent(index){
-    currentStudentIndex=index;
-    let s=students[index];
+
+async function selectStudent(index, studentArray = students) {
+    let s = studentArray[index];
+	currentStudent = s;
+	console.log("OPENING:", s.name, s.id);
 	if(!s.currentTerm){
     s.currentTerm = "term1";
 }
@@ -2344,15 +2361,15 @@ function selectStudent(index){
     <option value="term3" ${term=="term3"?"selected":""}>Term 3</option>
     </select>`;
 
-   let allowedSubjects = currentUser.role === "teacher"
-    ? (currentUser.subjects || [])
-    : subjects;
 
-allowedSubjects.forEach(sub => {
+let sub = selectedSubject;
 
-    let d = s.subjects?.[sub]?.[term] || {};
-
-    html += `
+let d = s.subjects?.[sub]?.[term] || {};
+console.log("Student:", s.name);
+console.log("Subject:", sub);
+console.log("Term:", term);
+console.log(JSON.stringify(d, null, 2));
+ html += `
     <h4>${sub}</h4>
 
     <input
@@ -2400,7 +2417,7 @@ allowedSubjects.forEach(sub => {
         max="100"
         oninput="if(this.value > 100) this.value = 100; if(this.value < 0) this.value = 0;">
     `;
-});
+;
 
 
  html += `
@@ -2505,30 +2522,178 @@ allowedSubjects.forEach(sub => {
 </select>
 `;
 
-html += `
-<hr><h3>Attendance Summary</h3>
+const totalDays = s.totalDays?.[term] || 0;
+const presentDays = s.daysPresent?.[term] || 0;
+const absentDays = totalDays - presentDays;
 
-<p>
-📅 Total School Days: <b>${s.totalDays?.[term] || 0}</b><br>
-✅ Days Present: <b>${s.daysPresent?.[term] || 0}</b><br>
-❌ Days Absent: <b>${(s.totalDays?.[term] || 0) - (s.daysPresent?.[term] || 0)}</b>
-</p>
+html += `
+<hr>
+<h3>Attendance Summary</h3>
+
+<label>Total School Days</label>
+<input
+type="number"
+id="totalDaysInput"
+value="${totalDays}"
+oninput="previewAttendance()">
+
+<label>Days Present</label>
+<input
+type="number"
+id="daysPresentInput"
+value="${presentDays}"
+oninput="previewAttendance()">
+
+<label>Days Absent</label>
+<input
+type="number"
+id="daysAbsentInput"
+value="${absentDays}"
+readonly
+style="background:#f3f4f6;font-weight:bold;">
 
 <p style="color:#fbbf24;">
-⚠️ Attendance is managed in the Attendance section
+You can edit attendance here if it was not recorded in the Attendance section.
 </p>
 `;
     
-	console.log("Selected Student:", s);
-console.log("Current Term:", term);
-console.log("Total Days:", s.totalDays?.[term]);
-console.log("Days Present:", s.daysPresent?.[term]);
-subjectForm.innerHTML=html;
+if (term === "term3") {
 
-populateStudentList(); // 🔥 refresh list to highlight selected student
+    const promotionClass = s.promotionClass || "";
 
-document.getElementById("subjectForm").insertAdjacentHTML("afterbegin",
-`<h3 style="color:#22c55e;">Editing: ${s.name}</h3>`);
+    const classOptions =
+        await getPromotionClassOptions(promotionClass);
+
+    html += `
+    <hr>
+    <h3>Promotion</h3>
+
+    <label>Promote Student To</label>
+
+    <select id="promotionClass">
+        ${classOptions}
+    </select>
+    `;
+}
+
+
+//showTeacherSubjects();
+//populateStudentList();
+
+html = `
+<h3 style="color:#22c55e;">Editing: ${s.name}</h3>
+` + html;
+
+document.getElementById("subjectForm").innerHTML = html;
+
+document.getElementById("marksModal").style.display = "flex";
+}
+
+async function getPromotionClassOptions(selected = "") {
+
+    let { data: classes, error } = await supabaseClient
+        .from("classes")
+        .select("classname")
+        .eq("schoolid", currentUser.schoolid)
+        .order("classname");
+
+    if (error) {
+        console.error(error);
+        return `<option value="">Select Class</option>`;
+    }
+
+    let options = `<option value="">Select Class</option>`;
+
+    classes.forEach(c => {
+
+        options += `
+        <option value="${c.classname}"
+            ${selected === c.classname ? "selected" : ""}>
+            ${c.classname}
+        </option>`;
+
+    });
+
+    return options;
+}
+
+function closeMarksModal(){
+
+    document.getElementById("marksModal").style.display = "none";
+
+}
+
+function previewAttendance(){
+
+    const total =
+        students[currentStudent]
+        .totalDays?.[
+        students[currentStudent].currentTerm
+        ] || 0;
+
+    let present =
+        parseInt(
+        document.getElementById("daysPresentInput").value
+        ) || 0;
+
+    if(present < 0)
+        present = 0;
+
+    if(present > total)
+        present = total;
+
+    document.getElementById("daysPresentInput").value = present;
+
+    document.getElementById("daysAbsentInput").value =
+        total - present;
+}
+
+
+function selectFilteredStudent(index){
+    currentStudentIndex = index;
+    selectStudent(index, filteredStudents);
+}
+
+function showTeacherSubjects() {
+
+    const container = document.getElementById("subjectList");
+
+    container.innerHTML = "";
+
+    let allowedSubjects =
+        currentUser.role === "teacher"
+        ? currentUser.subjects || []
+        : subjects;
+
+    allowedSubjects.forEach(subject => {
+
+        const card = document.createElement("div");
+
+        card.className = "card";
+
+        card.innerHTML = `
+            <h4>${subject}</h4>
+        `;
+
+        card.onclick = () => selectSubject(subject, card);
+
+        container.appendChild(card);
+
+    });
+
+}
+
+function selectSubject(subject, card){
+
+    selectedSubject = subject;
+
+    document.querySelectorAll("#subjectList .card")
+        .forEach(c => c.classList.remove("active"));
+
+    card.classList.add("active");
+
+    populateStudentList();
+
 }
 
 
@@ -2538,7 +2703,7 @@ async function changeTerm(){
     let term =
     document.getElementById("termSelect").value;
 
-    students[currentStudentIndex].currentTerm = term;
+    students[currentStudent].currentTerm = term;
 
     await saveStudents();
 
@@ -2749,65 +2914,74 @@ async function initializeSystem(){
 
 }
 
-async function saveMarks(){
+async function saveMarks() {
 
-    let s = students[currentStudentIndex];
-   let term =
-document.getElementById("termSelect").value;
-
-    let allowedSubjects = currentUser.role === "teacher"
-        ? (currentUser.subjects || [])
-        : subjects;
-
-    if(!s.subjects) s.subjects = {};
-
-    // Validate and save subject scores
-    for(const sub of allowedSubjects){
-
-        let test1 = Number(document.getElementById(sub+"_test1")?.value || 0);
-        let test2 = Number(document.getElementById(sub+"_test2")?.value || 0);
-        let project = Number(document.getElementById(sub+"_project")?.value || 0);
-        let group = Number(document.getElementById(sub+"_group")?.value || 0);
-        let exam = Number(document.getElementById(sub+"_exam")?.value || 0);
-
-        // Validation
-        if(test1 < 0 || test1 > 30){
-            alert(`${sub}: Test 1 score must be between 0 and 30`);
-            return;
-        }
-
-        if(test2 < 0 || test2 > 30){
-            alert(`${sub}: Test 2 score must be between 0 and 30`);
-            return;
-        }
-
-        if(project < 0 || project > 20){
-            alert(`${sub}: Project score must be between 0 and 20`);
-            return;
-        }
-
-        if(group < 0 || group > 20){
-            alert(`${sub}: Group Work score must be between 0 and 20`);
-            return;
-        }
-
-        if(exam < 0 || exam > 100){
-            alert(`${sub}: Exam score must be between 0 and 100`);
-            return;
-        }
-
-        if(!s.subjects[sub]) s.subjects[sub] = {};
-
-        s.subjects[sub][term] = {
-            test1,
-            test2,
-            project,
-            group,
-            exam
-        };
+    if (currentStudent === null) {
+        alert("Please select a student.");
+        return;
     }
 
-    // Save assessment data
+    if (!selectedSubject) {
+        alert("Please select a subject.");
+        return;
+    }
+
+    // Get selected student from filtered list
+   let s = currentStudent;
+
+    let term = document.getElementById("termSelect").value;
+    let sub = selectedSubject;
+
+    if (!s.subjects) s.subjects = {};
+
+    // Read marks
+    let test1 = Number(document.getElementById(sub + "_test1")?.value || 0);
+    let test2 = Number(document.getElementById(sub + "_test2")?.value || 0);
+    let project = Number(document.getElementById(sub + "_project")?.value || 0);
+    let group = Number(document.getElementById(sub + "_group")?.value || 0);
+    let exam = Number(document.getElementById(sub + "_exam")?.value || 0);
+
+    // Validation
+    if (test1 < 0 || test1 > 30) {
+        alert("Test 1 score must be between 0 and 30");
+        return;
+    }
+
+    if (test2 < 0 || test2 > 30) {
+        alert("Test 2 score must be between 0 and 30");
+        return;
+    }
+
+    if (project < 0 || project > 20) {
+        alert("Project score must be between 0 and 20");
+        return;
+    }
+
+    if (group < 0 || group > 20) {
+        alert("Group Work score must be between 0 and 20");
+        return;
+    }
+
+    if (exam < 0 || exam > 100) {
+        alert("Exam score must be between 0 and 100");
+        return;
+    }
+
+    // Ensure subject exists
+    if (!s.subjects[sub]) {
+        s.subjects[sub] = {};
+    }
+
+    // Save ONLY the selected subject
+    s.subjects[sub][term] = {
+        test1,
+        test2,
+        project,
+        group,
+        exam
+    };
+
+    // Save Additional Assessment
     s.conduct = s.conduct || {};
     s.attitude = s.attitude || {};
     s.interest = s.interest || {};
@@ -2818,39 +2992,56 @@ document.getElementById("termSelect").value;
     s.interest[term] = document.getElementById("interest")?.value || "";
     s.teacherRemark[term] = document.getElementById("teacherRemark")?.value || "";
 
-    // Calculate average
+    // Calculate average using all available subjects
     let total = 0;
     let countedSubjects = 0;
 
-    allowedSubjects.forEach(sub => {
+    Object.keys(s.subjects).forEach(subject => {
 
-        let d = s.subjects?.[sub]?.[term];
-        if(!d) return;
+        let d = s.subjects[subject]?.[term];
 
-        let classTotal =
-            d.test1 +
-            d.test2 +
-            d.project +
-            d.group;
+        if (!d) return;
+
+        let classTotal = d.test1 + d.test2 + d.project + d.group;
 
         let classScore = (classTotal / 100) * 50;
         let examScore = (d.exam / 100) * 50;
 
         total += classScore + examScore;
         countedSubjects++;
+
     });
 
     s.average = countedSubjects
-        ? +(total / countedSubjects).toFixed(2)
+        ? Number((total / countedSubjects).toFixed(2))
         : 0;
 
-    // Save to database
+    // Update the student in the main students array
+    const originalIndex = students.findIndex(st => st.id === s.id);
+
+  if (!s.totalDays) s.totalDays = {};
+if (!s.daysPresent) s.daysPresent = {};
+
+s.totalDays[term] =
+    parseInt(document.getElementById("totalDaysInput").value) || 0;
+
+s.daysPresent[term] =
+    parseInt(document.getElementById("daysPresentInput").value) || 0;
+	
+	
+	if (term === "term3") {
+
+    s.promotionClass =
+        document.getElementById("promotionClass")?.value || "";
+
+}
+    // Save to Supabase
     await saveStudents();
 
-    // Refresh dashboard
     updateDashboard();
+	closeMarksModal();
 
-    alert("Marks saved successfully ✅");
+    alert(`${sub} marks saved successfully ✅`);
 }
 
 // Grades and Remarks functions
@@ -3129,17 +3320,18 @@ allowedSubjects.forEach(sub=>{
 
 	let attendance =
     await getStudentAttendance(
-        s.name
+        s.name,
+        term
     );
 
 let totalDays =
-    attendance.totalDays;
+    s.totalDays?.[term] || 0;
 
 let daysPresent =
-    attendance.daysPresent;
+    s.daysPresent?.[term] || 0;
 
 let daysAbsent =
-    attendance.daysAbsent;
+    totalDays - daysPresent;
 	
    let teacherName = getClassTeacherName(s.studentclass);
 
@@ -3200,7 +3392,197 @@ let daysAbsent =
 	
 	
 }
+const promotionMap = {
 
+    "Nursery 1":"Nursery 2",
+    "Nursery 2":"KG1",
+    "KG1":"KG2",
+    "KG2":"Class 1",
+
+    "1A":"2A",
+    "1B":"2B",
+
+    "2A":"3A",
+    "2B":"3B",
+
+    "3A":"4A",
+    "3B":"4B",
+
+    "4A":"5A",
+    "4B":"5B",
+
+    "5A":"6A",
+    "5B":"6B",
+
+    "6A":"JHS 1",
+    "6B":"JHS 1",
+
+    "JHS 1":"JHS 2",
+    "JHS 2":"JHS 3"
+};
+
+let currentAcademicYear = "2025/2026";
+
+async function promoteStudents(){
+
+    if(
+        !confirm(
+            "Archive records and promote students?"
+        )
+    ) return;
+
+    try{
+
+        for(const student of students){
+
+            // Skip graduates
+            if(student.studentclass === "JHS 3")
+                continue;
+
+            // Archive current record
+            const archiveRecord = {
+
+                studentid: student.id,
+                academic_year: currentAcademicYear,
+
+                student_name: student.name,
+                student_class: student.studentclass,
+
+                subjects: student.subjects || {},
+
+                conduct: student.conduct || {},
+                attitude: student.attitude || {},
+                interest: student.interest || {},
+
+                teacher_remark:
+                    student.teacherRemark || {},
+
+                total_days:
+                    student.totalDays || {},
+
+                days_present:
+                    student.daysPresent || {},
+
+                average:
+                    student.average || 0
+            };
+
+            const { error } =
+                await supabaseClient
+                    .from("student_history")
+                    .insert([archiveRecord]);
+
+            if(error){
+                console.log(error);
+                throw error;
+            }
+			
+if(student.studentclass === "JHS 3"){
+
+    student.graduated = true;
+
+    continue;
+}
+            // Promote class
+            student.studentclass =
+                promotionMap[
+                    student.studentclass
+                ] || student.studentclass;
+
+            // Reset academic data
+            student.subjects = {};
+
+            student.conduct = {};
+            student.attitude = {};
+            student.interest = {};
+
+            student.teacherRemark = {};
+
+            student.totalDays = {};
+            student.daysPresent = {};
+
+            student.average = 0;
+
+            student.currentTerm = "term1";
+        }
+
+        await saveStudents();
+
+        alert(
+            "Promotion completed successfully!"
+        );
+
+    }catch(err){
+
+        console.log(err);
+
+        alert(
+            "Promotion failed."
+        );
+    }
+	
+}
+
+async function restoreFromHistory(){
+
+    const { data: history, error } =
+        await supabaseClient
+            .from("student_history")
+            .select("*");
+
+    if(error){
+        console.error(error);
+        return;
+    }
+
+    history.forEach(record => {
+
+        let student = students.find(
+            s =>
+                s.name.trim().toLowerCase() ===
+                record.student_name.trim().toLowerCase()
+        );
+
+        if(!student){
+            console.log(
+                "Student not found:",
+                record.student_name
+            );
+            return;
+        }
+
+        student.studentclass =
+            record.student_class;
+
+        student.subjects =
+            record.subjects || {};
+
+        student.conduct =
+            record.conduct || {};
+
+        student.attitude =
+            record.attitude || {};
+
+        student.interest =
+            record.interest || {};
+
+        student.teacherRemark =
+            record.teacher_remark || {};
+
+        student.totalDays =
+            record.total_days || {};
+
+        student.daysPresent =
+            record.days_present || {};
+
+        student.average =
+            record.average || 0;
+    });
+
+    await saveStudents();
+
+    alert("Restore complete!");
+}
 function updateStudentSuggestions() {
 
     let search =
@@ -4321,19 +4703,21 @@ async function filterStudentsByClass(){
         return;
     }
 
-    // TEACHER SAFETY
+    // Teacher Safety
     if(currentUser.role === "teacher"){
         filtered = filtered.filter(s =>
             (currentUser.classes || []).includes(s.studentclass)
         );
     }
-		filteredStudents = filtered;
 
-    studentsList.innerHTML = filtered.map((s,index)=>
-    `<div class="card" onclick="selectFilteredStudent(${index})">
-        ${s.name}
-    </div>`
-).join('');
+    filteredStudents = filtered;
+
+    // Clear previous data
+    studentsList.innerHTML = "";
+    subjectForm.innerHTML = "";
+
+    // Show subjects instead of students
+    showTeacherSubjects();
 }
 
 function selectFilteredStudent(index){
@@ -4423,10 +4807,9 @@ async function loadClassOptions(){
 
     document.getElementById("classFilter").innerHTML = html;
 
-    console.log(
-        "Dropdown Updated:",
+
         document.getElementById("studentclass").innerHTML
-    );
+    ;
 }
 
 function getClassTeacherName(studentclass){
