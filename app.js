@@ -11,7 +11,7 @@ window.supabase.createClient(
     supabaseKey
 );
 
-
+toggleTheme()
 let subjects = [
 "English Language","Mathematics","Science","Social Studies","RME",
 "History","ICT","Creative Arts","Physical Education (PE)",
@@ -241,10 +241,15 @@ async function signup() {
 }
 // SHOW SIGNUP
 function showSignup(){
+	
     document.getElementById("loginSection").style.display = "none";
     document.getElementById("signupSection").style.display = "block";
     document.getElementById("forgotSection").style.display = "none";
+
+    
 }
+
+
 
 // BACK TO LOGIN
 function backToLogin(){
@@ -2698,16 +2703,17 @@ function selectSubject(subject, card){
 
 
 
-async function changeTerm(){
+async function changeTerm() {
 
-    let term =
-    document.getElementById("termSelect").value;
+    const term = document.getElementById("termSelect").value;
 
-    students[currentStudent].currentTerm = term;
+    currentStudent.currentTerm = term;
 
     await saveStudents();
 
-    selectStudent(currentStudentIndex);
+    selectStudent(
+        students.findIndex(s => s.id === currentStudent.id)
+    );
 }
 
 let termSettings = {};
@@ -3018,6 +3024,9 @@ async function saveMarks() {
 
     // Update the student in the main students array
     const originalIndex = students.findIndex(st => st.id === s.id);
+	if (originalIndex !== -1) {
+    students[originalIndex] = s;
+}
 
   if (!s.totalDays) s.totalDays = {};
 if (!s.daysPresent) s.daysPresent = {};
@@ -3035,6 +3044,7 @@ s.daysPresent[term] =
         document.getElementById("promotionClass")?.value || "";
 
 }
+
     // Save to Supabase
     await saveStudents();
 
@@ -3171,6 +3181,7 @@ async function generateReportWithTerm(
     nextDate
 ) {
 
+
 let formattedEnd = formatDate(endDate);
 
 let formattedNext = formatDate(nextDate);
@@ -3178,6 +3189,8 @@ let formattedNext = formatDate(nextDate);
 let totalStudents = students.length;
 
 let position = getStudentPosition(s, term);
+ const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
 
 // Fetch school info from Supabase
 const { data: schoolData, error } = await supabaseClient
@@ -3318,38 +3331,42 @@ allowedSubjects.forEach(sub=>{
     });
 
 
-	let attendance =
-    await getStudentAttendance(
-        s.name,
-        term
-    );
-
-let totalDays =
-    s.totalDays?.[term] || 0;
-
-let daysPresent =
-    s.daysPresent?.[term] || 0;
-
-let daysAbsent =
-    totalDays - daysPresent;
 	
-   let teacherName = getClassTeacherName(s.studentclass);
+	
+	let attendance =
+    await getStudentAttendance(s.name, term);
 
+let totalDays = s.totalDays?.[term] || 0;
 
+let daysPresent = s.daysPresent?.[term] || 0;
 
-    html += `</table>
+let daysAbsent = totalDays - daysPresent;
+
+let teacherName = getClassTeacherName(s.studentclass);
+console.log("Report Student:", s);
+console.log("Promotion Class:", s.promotionClass);
+html += `</table>
+
 <p>
-<b>Total Attendance:</b> ${totalDays} 
+<b>Total School Days:</b> ${totalDays}
 &nbsp;&nbsp;&nbsp;&nbsp;
-<b>Student Attendance:</b> ${daysPresent}
+
+<b>Days Present:</b> ${daysPresent}
+&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+${
+term === "term3"
+? `&nbsp;&nbsp;&nbsp;&nbsp;
+<b>Promotion Class:</b> ${s.promotionClass || "Not Set"}`
+: ""
+}
 </p>
 
     <p><b>Conduct:</b> ${s.conduct?.[term]||''}</p>
     <p><b>Attitude:</b> ${s.attitude?.[term]||''}</p>
     <p><b>Interest:</b> ${s.interest?.[term]||''}</p>
-
-    <h3>Teacher's Remark</h3>
-<p>${s.teacherRemark?.[term]||''}</p>
+    <p><b>Teacher's Remark</b>${s.teacherRemark?.[term]||''}</p>
 
 <br><br><br>
 
