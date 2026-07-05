@@ -519,13 +519,13 @@ async function loadTheme() {
 
         document.body.classList.add("light-mode");
 
-        document.getElementById("themeBtn").innerText = "☀️";
+        document.getElementById("themeBtn").innerText = "";
 
     } else {
 
         document.body.classList.remove("light-mode");
 
-        document.getElementById("themeBtn").innerText = "🌙";
+        document.getElementById("themeBtn").innerText = "";
     }
 }
 function showForgot(){
