@@ -21,7 +21,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 
 <body class="sba-system">
@@ -114,14 +115,16 @@
 </div>
 
 
-<div id="loginBox" class="container" style="max-width:400px; text-align:center;">
+
+
+<div id="loginBox"
+     class="container">
 <img
 src=""
 class="login-logo">
 
 <h3>Log In</h3>
 
-<!-- LOGIN -->
 <div id="loginSection">
 <input id="username" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -187,6 +190,7 @@ Back to Login
 </div>
 
 </div>
+
 
 <div id="app" style="display:none;">
 
@@ -293,6 +297,8 @@ Back to Login
 
 </div>
 </div>
+
+
 <div id="studentsPage" class="container page">
 
 <h3>Student Management</h3>
@@ -447,7 +453,7 @@ Back to Login
             <div class="chat-header-user">
 
                 <img id="chatUserAvatar"
-                     src="default-avatar.png"
+                     src=""
                      class="header-avatar">
 
                 <div>
@@ -743,12 +749,9 @@ Back to Login
 
 </div>
 
-<div class="nav-item" onclick="toggleProfileMenu()">
-    <i class="fas fa-user"></i>
-    
-</div>
 
-<div id="profileMobileMenu" class="academics-menu">
+
+<div id="profileMobileMenu" class="academics-menu" style="display:none">
 
     <div onclick="showPage('userProfilePage')">
         👤 User
