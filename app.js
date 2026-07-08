@@ -11,7 +11,6 @@ window.supabase.createClient(
     supabaseKey
 );
 
-toggleTheme()
 let subjects = [
 "English Language","Mathematics","Science","Social Studies","RME",
 "History","ICT","Creative Arts","Physical Education (PE)",
@@ -30,6 +29,7 @@ let subjectChartInstance = null;
 let passChartInstance = null;
 let selectedMessageId = null;
 let activeTerm = "term1";
+let selectedMarkTerm = "term1";
 
 
 
@@ -57,18 +57,38 @@ document.getElementById("roleSelect").addEventListener("change", function(){
     }
 });
 
-async function loadUsers() {
-    const { data, error } =
-    await supabaseClient
-        .from("users")
-        .select("*");
 
-    if (error) {
-        console.error("Error loading users:", error);
+
+async function loadUsers() {
+
+    if (!currentUser) {
+        console.error("currentUser is not available");
+        users = [];
         return [];
     }
 
-    return data;
+    const { data, error } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .order("firstname");
+
+    if (error) {
+        console.error("Load Users Error:", error);
+        users = [];
+        return [];
+    }
+
+    users = data || [];
+
+    console.log("Users Loaded:", users);
+    console.log("Total Users:", users.length);
+
+    if (currentUser.role === "admin") {
+        loadTeachers();
+    }
+
+    return users;
 }
 
 async function signup() {
@@ -1173,21 +1193,103 @@ async function handleCSV(event){
 
     reader.readAsText(file);
 }
-function populateStudentList(){
+function populateStudentList() {
 
-    let html = filteredStudents.map((s,i)=>
-    `<div class="card ${i === currentStudent ? 'active-student' : ''}"
-        onclick="selectFilteredStudent(${i})">
+    let term = activeTerm || document.getElementById("termSelect")?.value || "term1";
 
-        ${s.name}
+    let list = (filteredStudents && filteredStudents.length)
+        ? filteredStudents
+        : students;
 
-    </div>`
-    ).join('');
+
+    let html = list.map((s, i) => {
+
+
+        let teacherSubjects =
+            currentUser.role === "teacher"
+                ? (currentUser.subjects || [])
+                : Object.keys(s.subjects || {});
+
+
+        let totalSubjects = teacherSubjects.length;
+        let completed = 0;
+        let started = 0;
+
+
+        teacherSubjects.forEach(subject => {
+
+            let mark = s.subjects?.[subject]?.[term];
+
+
+            if (!mark) return;
+
+
+            // Check if the subject has saved marks
+            let saved =
+                mark.hasOwnProperty("test1") &&
+                mark.hasOwnProperty("test2") &&
+                mark.hasOwnProperty("project") &&
+                mark.hasOwnProperty("group") &&
+                mark.hasOwnProperty("exam");
+
+
+            if (saved) {
+
+                started++;
+                completed++;
+
+            }
+
+        });
+
+
+        let progress =
+            totalSubjects > 0
+                ? Math.round((completed / totalSubjects) * 100)
+                : 0;
+
+
+        let color =
+            progress === 100
+                ? "#22c55e"
+                : "#f59e0b";
+
+
+        return `
+        <div class="card ${s.id === currentStudent?.id ? 'active-student' : ''}"
+             onclick="selectFilteredStudent(${i})">
+
+            <div style="font-weight:bold;">
+                ${s.name}
+            </div>
+
+
+            ${
+                started > 0
+                ?
+                `
+                <div style="
+                    font-size:12px;
+                    margin-top:4px;
+                    color:${color};
+                    font-weight:bold;
+                ">
+                    ${progress}% Complete
+                </div>
+                `
+                :
+                ""
+            }
+
+        </div>
+        `;
+
+    }).join("");
+
 
     studentsList.innerHTML = html;
 
 }
-
 
 async function editStudent(index){
 
@@ -2306,46 +2408,7 @@ function closeStudentModal(){
     document.getElementById("studentModal").style.display = "none";
 }
 
-async function toggleTheme() {
 
-    // Toggle theme visually
-    document.body.classList.toggle(
-        "light-mode"
-    );
-
-    let isLight =
-        document.body.classList.contains(
-            "light-mode"
-        );
-
-    let newTheme =
-        isLight ? "light" : "dark";
-
-    // Save theme online
-    const { error } = await supabaseClient
-        .from("users")
-        .update({
-            theme: newTheme
-        })
-        .eq("username", currentUser.username);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save theme"
-        );
-    }
-
-    // Update icon
-    document.getElementById(
-        "themeBtn"
-    ).className =
-        isLight
-        ? "fas fa-sun"
-        : "fas fa-moon";
-}
 let currentStudent = null;
 let selectedSubject = null;
 let currentSubjectIndex = null;
@@ -2370,10 +2433,7 @@ async function selectStudent(index, studentArray = students) {
 let sub = selectedSubject;
 
 let d = s.subjects?.[sub]?.[term] || {};
-console.log("Student:", s.name);
-console.log("Subject:", sub);
-console.log("Term:", term);
-console.log(JSON.stringify(d, null, 2));
+
  html += `
     <h4>${sub}</h4>
 
@@ -3045,13 +3105,51 @@ s.daysPresent[term] =
 
 }
 
-    // Save to Supabase
-    await saveStudents();
+// ===============================
+// Calculate Form Completion
+// ===============================
 
-    updateDashboard();
-	closeMarksModal();
+let completed = 0;
 
-    alert(`${sub} marks saved successfully ✅`);
+let studentSubjects = Object.keys(s.subjects || {});
+
+studentSubjects.forEach(subject => {
+
+    let d = s.subjects[subject]?.[term];
+
+    if (!d) return;
+
+    // Count subject if any score has been entered
+    if (
+        d.test1 > 0 ||
+        d.test2 > 0 ||
+        d.project > 0 ||
+        d.group > 0 ||
+        d.exam > 0
+    ) {
+        completed++;
+    }
+
+});
+
+let totalSubjects =
+    currentUser.role === "teacher"
+        ? (currentUser.subjects?.length || studentSubjects.length)
+        : (subjects?.length || studentSubjects.length);
+
+
+
+// ===============================
+// Save to Supabase
+// ===============================
+
+await saveStudents();
+
+populateStudentList();
+updateDashboard();
+closeMarksModal();
+
+alert(`${sub} marks saved successfully ✅`);
 }
 
 // Grades and Remarks functions
@@ -3343,8 +3441,7 @@ let daysPresent = s.daysPresent?.[term] || 0;
 let daysAbsent = totalDays - daysPresent;
 
 let teacherName = getClassTeacherName(s.studentclass);
-console.log("Report Student:", s);
-console.log("Promotion Class:", s.promotionClass);
+
 html += `</table>
 
 <p>
@@ -3358,50 +3455,122 @@ html += `</table>
 ${
 term === "term3"
 ? `&nbsp;&nbsp;&nbsp;&nbsp;
-<b>Promotion Class:</b> ${s.promotionClass || "Not Set"}`
+<b style="
+align-items: center;
+">Promotion Class:</b> ${s.promotionClass || "Not Set"}`
 : ""
 }
 </p>
 
-    <p><b>Conduct:</b> ${s.conduct?.[term]||''}</p>
-    <p><b>Attitude:</b> ${s.attitude?.[term]||''}</p>
-    <p><b>Interest:</b> ${s.interest?.[term]||''}</p>
-    <p><b>Teacher's Remark</b>${s.teacherRemark?.[term]||''}</p>
+    <!-- AFFECTIVE TRAITS -->
 
-<br><br><br>
+<table style="
+width:100%;
+border-collapse:collapse;
+font-size:16px;
+">
+
+<tr style="background:#007fff;color:white;">
+<th style="padding:8px;border:1px solid #007fff;">
+Conduct
+</th><td style="border:1px solid #007fff; background: #fff;color:black; padding:8px;">
+${s.conduct?.[term]||""}
+</td></tr>
+
+<tr style="background:#007fff;color:white;">
+<th style="padding:8px;border:1px solid #007fff;">
+Attitude
+</th><td style="border:1px solid #007fff; background: #fff;color:black; padding:8px;">
+${s.attitude?.[term]||""}
+</td>
+</tr>
+
+<tr style="background:#007fff;color:white;">
+<th style="padding:8px;border:1px solid #007fff;">
+Interest
+</th><td style="border:1px solid #007fff; background: #fff;color:black; padding:8px;">
+${s.interest?.[term]||""}
+</td>
+
+</tr>
 
 
-<!-- SIGNATURE SECTION -->
-<div style="display:flex; justify-content:space-between; margin-top:2px;">
+</table>
 
-    <div style="text-align:center; width:45%;">
-        <div style="border-bottom:1px solid black; height:30px;"></div>
-       <p><b>${teacherName}</b></p>
-	   <p>(Class Teacher)</b></p>
-    </div>
+<br>
 
-    <div style="text-align:center; width:45%;">
-        <div style="border-bottom:1px solid black; height:30px;"></div>
-		<p><b>Head Teacher</b></p>
-    </div>
+<!-- REMARKS -->
+
+<div style="
+border:2px solid #007fff;
+">
+
+<div style="
+background:#007fff;
+color:white;
+padding:8px;
+font-weight:bold;
+">
+CLASS TEACHER'S REMARK
+</div>
+
+<div style="
+padding:8px;
+min-height:15px;
+font-size:16px;
+">
+
+${s.teacherRemark?.[term]||""}
 
 </div>
 
+</div>
 
+<br><br>
 
-  
+<!-- SIGNATURES -->
 
-    <div style="display:flex; justify-content:space-between;">
-      		
-	
-       
-    </div>
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:flex-end;
+margin-top:30px;
+">
 
-   
+<div style="width:40%;text-align:center;">
 
-    </div>
-    </div>; 
-	`
+<div style="
+border-top:1px solid #000;
+padding-top:6px;
+">
+
+<b>${teacherName}</b><br>
+
+Class Teacher
+
+</div>
+
+</div>
+
+<div style="width:40%;text-align:center;">
+
+<div style="
+border-top:1px solid #000;
+padding-top:6px;
+">
+
+<b>Head Teacher</b>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+`;
 	
 
 
@@ -3409,13 +3578,23 @@ term === "term3"
 	
 	
 }
+
 const promotionMap = {
 
-    "Nursery 1":"Nursery 2",
-    "Nursery 2":"KG1",
-    "KG1":"KG2",
-    "KG2":"Class 1",
+    "Nursery 1A":"Nursery 2A",
+	"Nursery 1B":"Nursery 2B",
+	
+    "Nursery 2A":"KG1A",
+	"Nursery 2B":"KG1B",
+	
+    "KG1A":"KG2A",
+	"KG1B":"KG2B",
+	
+    "KG2A":"1A",
+	"KG2B":"1B",
 
+
+	
     "1A":"2A",
     "1B":"2B",
 
@@ -3921,15 +4100,17 @@ async function refreshCurrentUser() {
 
 async function showProfile(){
 
-    showPage('userProfilePage');
+    showPage("userProfilePage");
 
     await loadUsers();
 
     loadProfileData();
     loadTermSettings();
 
-    if(currentUser.role !== "admin"){
-        loadSubjectSelection();
+    loadSubjectSelection();
+
+    if(currentUser.role === "admin"){
+        loadSelectedTeacherSubjects();
     }
 
     loadTeacherSubjects();
@@ -4041,12 +4222,12 @@ async function saveProfile() {
 function closeProfile(){
     document.getElementById("profileModal").style.display = "none";
 }
-function loadSubjectSelection(){
+function loadSubjectSelection(user = currentUser) {
 
     let container = document.getElementById("subjectCheckboxes");
     container.innerHTML = "";
 
-    let selected = currentUser.subjects || [];
+    let selected = user.subjects || [];
 
     subjects.forEach(sub => {
 
@@ -4061,209 +4242,137 @@ function loadSubjectSelection(){
         `;
     });
 
-    // HIDE SAVE BUTTON FOR TEACHER
-    if(currentUser.role === "teacher"){
-        document.getElementById("saveSubjectsBtn").style.display = "none";
-    } else {
-        document.getElementById("saveSubjectsBtn").style.display = "block";
-    }
+    document.getElementById("saveSubjectsBtn").style.display =
+        currentUser.role === "teacher" ? "none" : "block";
 }
-async function saveTeacherSubjects(){
 
-    try{
 
-        let teacherUsername =
-            document.getElementById(
-                "teacherSelect"
-            ).value;
+async function saveTeacherSubjects() {
 
-        if(!teacherUsername){
-            return alert(
-                "Please select a teacher"
-            );
+    try {
+
+        // =========================
+        // GET SELECTED TEACHER
+        // =========================
+
+        const teacherId = document.getElementById("teacherSelect").value;
+
+        if (!teacherId) {
+            alert("Please select a teacher.");
+            return;
         }
 
         // =========================
-        // GET TEACHER
+        // GET SELECTED SUBJECTS
         // =========================
 
-        const {
-            data: teacher,
-            error: teacherError
-        } = await supabaseClient
-            .from("users")
-            .select("*")
-            .eq("username", teacherUsername)
-            .single();
+        const selectedSubjects = [];
 
-        if(teacherError || !teacher){
-
-            console.error(teacherError);
-
-            return alert(
-                "Teacher not found"
-            );
-        }
-
-        // =========================
-        // GET SUBJECTS
-        // =========================
-
-        let selectedSubjects = [];
-
-        document
-            .querySelectorAll(
-                "#subjectCheckboxes input:checked"
-            )
+        document.querySelectorAll("#subjectCheckboxes input:checked")
             .forEach(cb => {
-
-                selectedSubjects.push(
-                    cb.value
-                );
-
+                selectedSubjects.push(cb.value);
             });
 
-        if(selectedSubjects.length === 0){
-
-            return alert(
-                "Select at least one subject"
-            );
+        if (selectedSubjects.length === 0) {
+            alert("Please select at least one subject.");
+            return;
         }
 
         // =========================
-        // GET CLASSES
+        // GET CLASS LIST
         // =========================
 
-        let classInput =
-            document.getElementById(
-                "teacherClass"
-            ).value.trim();
+        const classInput = document
+            .getElementById("teacherClass")
+            .value
+            .trim();
 
-        if(!classInput){
-
-            return alert(
-                "Enter class"
-            );
+        if (!classInput) {
+            alert("Please enter at least one class.");
+            return;
         }
 
-        let classList = classInput
+        const classList = classInput
             .split(",")
             .map(c => c.trim())
-            .filter(c => c);
+            .filter(c => c !== "");
 
-        if(classList.length === 0){
-
-            return alert(
-                "Enter a valid class"
-            );
+        if (classList.length === 0) {
+            alert("Please enter a valid class.");
+            return;
         }
 
         // =========================
-        // AUTO CREATE CLASSES
+        // CREATE CLASSES IF NEEDED
         // =========================
 
-        for(const cls of classList){
+        for (const cls of classList) {
 
-            const {
-                data: existingClass
-            } = await supabaseClient
-                .from("classes")
-                .select("*")
-                .eq(
-                    "classname",
-                    cls
-                )
-                .eq(
-                    "schoolid",
-                    currentUser.schoolid
-                )
-                .maybeSingle();
-
-            if(!existingClass){
-
-                const {
-                    error: classError
-                } = await supabaseClient
+            const { data: existingClass, error: checkError } =
+                await supabaseClient
                     .from("classes")
-                    .insert([
-                        {
+                    .select("id")
+                    .eq("classname", cls)
+                    .eq("schoolid", currentUser.schoolid)
+                    .maybeSingle();
+
+            if (checkError) {
+                console.error(checkError);
+                continue;
+            }
+
+            if (!existingClass) {
+
+                const { error: insertError } =
+                    await supabaseClient
+                        .from("classes")
+                        .insert({
                             classname: cls,
-                            schoolid:
-                                currentUser.schoolid
-                        }
-                    ]);
+                            schoolid: currentUser.schoolid
+                        });
 
-                if(classError){
-
-                    console.error(
-                        classError
-                    );
-
-                    return alert(
-                        `Failed to create class ${cls}`
-                    );
+                if (insertError) {
+                    console.error(insertError);
+                    alert(`Failed to create class "${cls}".`);
+                    return;
                 }
             }
         }
 
         // =========================
-        // MAIN CLASS
-        // =========================
-
-        let mainClass =
-            classList[0];
-
-        // =========================
         // UPDATE TEACHER
         // =========================
 
-        const {
-            error: updateError
-        } = await supabaseClient
-            .from("users")
-            .update({
-                mainClass:
-                    mainClass,
+        const { error: updateError } =
+            await supabaseClient
+                .from("users")
+                .update({
+                    mainClass: classList[0],
+                    classes: classList,
+                    subjects: selectedSubjects
+                })
+                .eq("id", teacherId);
 
-                classes:
-                    classList,
-
-                subjects:
-                    selectedSubjects
-            })
-            .eq(
-                "username",
-                teacherUsername
-            );
-
-        if(updateError){
-
-            console.error(
-                updateError
-            );
-
-            return alert(
-                "Failed to save teacher settings"
-            );
+        if (updateError) {
+            console.error(updateError);
+            alert("Failed to save teacher settings.");
+            return;
         }
 
         // =========================
-        // REFRESH LOCAL DATA
+        // REFRESH DATA
         // =========================
 
         await loadUsers();
+        await loadTeachers();
 
-        alert(
-            "Teacher settings saved successfully ✅"
-        );
+        alert("✅ Teacher class and subjects saved successfully.");
 
-    }catch(err){
+    } catch (err) {
 
         console.error(err);
+        alert("An unexpected error occurred.");
 
-        alert(
-            "An unexpected error occurred"
-        );
     }
 }
 
@@ -4461,91 +4570,125 @@ if (dbError) {
     alert("Profile picture updated ✅");
 });
 
-function loadTeachers(){
+async function loadTeachers() {
 
-    if(currentUser.role !== "admin") return;
+    // Only admins can assign teachers
+    if (!currentUser || currentUser.role !== "admin") return;
 
-    console.log("All Users:", users);
+    const select = document.getElementById("teacherSelect");
 
-    let teachers = users.filter(u =>
-        u.role === "teacher" &&
-        u.schoolid === currentUser.schoolid
-    );
+    if (!select) {
+        console.error("teacherSelect element not found.");
+        return;
+    }
 
-    console.log("Teachers Found:", teachers);
+    // Loading message
+    select.innerHTML = `<option value="">Loading teachers...</option>`;
 
-    let select = document.getElementById("teacherSelect");
+    try {
 
-    select.innerHTML = "";
+        const { data: teachers, error } = await supabaseClient
+            .from("users")
+            .select("id, firstname, surname, username, role, schoolid")
+            .eq("role", "teacher")
+            .eq("schoolid", currentUser.schoolid)
+            .order("firstname", { ascending: true });
 
-    teachers.forEach(t => {
-        select.innerHTML += `
-            <option value="${t.username}">
-                ${t.firstname} ${t.surname}
-            </option>
-        `;
-    });
+        if (error) {
+            console.error("Error loading teachers:", error);
+            select.innerHTML = `<option value="">Failed to load teachers</option>`;
+            return;
+        }
 
-    loadSelectedTeacherSubjects();
-}
+        console.log("Teachers Loaded:", teachers);
 
-function loadSelectedTeacherSubjects(){
-    let teacherUsername = document.getElementById("teacherSelect").value;
+        if (!teachers || teachers.length === 0) {
+            select.innerHTML = `<option value="">No teachers found</option>`;
+            return;
+        }
 
-    let teacher = users.find(u => u.username === teacherUsername);
-	
-	  if(!teacher) return;
+        // Default option
+        select.innerHTML = `<option value="">-- Select Teacher --</option>`;
 
-    // ✅ LOAD SUBJECTS
-    document.querySelectorAll("#subjectCheckboxes input")
-        .forEach(cb => {
-            cb.checked = (teacher.subjects || []).includes(cb.value);
+        teachers.forEach(teacher => {
+
+            const option = document.createElement("option");
+
+            option.value = teacher.id;      // Use ID, not username
+            option.textContent =
+                `${teacher.firstname} ${teacher.surname}`;
+
+            select.appendChild(option);
+
         });
 
-    // ✅ LOAD CLASS
+        // Automatically load the first teacher's details
+        select.selectedIndex = 1;
+
+        await loadSelectedTeacherSubjects();
+
+    } catch (err) {
+
+        console.error("Unexpected error:", err);
+
+        select.innerHTML =
+            `<option value="">Unable to load teachers</option>`;
+
+    }
+}
+async function loadSelectedTeacherSubjects() {
+
+    const teacherId = document.getElementById("teacherSelect").value;
+
+    if (!teacherId) {
+        document.getElementById("teacherClass").value = "";
+        document.getElementById("subjectCheckboxes").innerHTML = "";
+        return;
+    }
+
+    const { data: teacher, error } = await supabaseClient
+        .from("users")
+        .select("classes, subjects")
+        .eq("id", teacherId)
+        .single();
+
+    if (error) {
+        console.error("Error loading teacher:", error);
+        return;
+    }
+
+    // Load assigned classes
     document.getElementById("teacherClass").value =
-        (teacher.classes || [])[0] || "";
+        Array.isArray(teacher.classes)
+            ? teacher.classes.join(", ")
+            : "";
 
-    let savedSubjects = teacher?.subjects || [];
-    
-
+    // Build subject checkboxes
     let html = "";
 
-    subjects.forEach(sub=>{
-        let checked = savedSubjects.includes(sub) ? "checked" : "";
+    subjects.forEach(subject => {
+
+        const checked =
+            Array.isArray(teacher.subjects) &&
+            teacher.subjects.includes(subject)
+                ? "checked"
+                : "";
 
         html += `
-        <label>
-            <input type="checkbox" value="${sub}" ${checked}>
-            ${sub}
-        </label><br>
+            <label style="display:block;margin:5px 0;">
+                <input
+                    type="checkbox"
+                    value="${subject}"
+                    ${checked}
+                >
+                ${subject}
+            </label>
         `;
     });
 
     document.getElementById("subjectCheckboxes").innerHTML = html;
-	
-}
 
-async function loadUsers(){
-	
-
-    const { data, error } = await supabaseClient
-        .from("users")
-        .select("*")
-        .eq("schoolid", currentUser.schoolid);
-
-    if(error){
-        console.log("Load Users Error:", error);
-        return;
-    }
-
-    users = data || [];
-
-
-
-    if(currentUser.role === "admin"){
-        loadTeachers();
-    }
+    console.log("Teacher Loaded:", teacher);
 }
 
 
@@ -5928,5 +6071,46 @@ function toggleProfileMenu(){
 
         menu.style.display = "block";
     }
+}
+
+async function toggleTheme() {
+
+    // Toggle theme visually
+    document.body.classList.toggle(
+        "light-mode"
+    );
+
+    let isLight =
+        document.body.classList.contains(
+            "light-mode"
+        );
+
+    let newTheme =
+        isLight ? "light" : "dark";
+
+    // Save theme online
+    const { error } = await supabaseClient
+        .from("users")
+        .update({
+            theme: newTheme
+        })
+        .eq("username", currentUser.username);
+
+    if (error) {
+
+        console.log(error);
+
+        return alert(
+            "Failed to save theme"
+        );
+    }
+
+    // Update icon
+    document.getElementById(
+        "themeBtn"
+    ).className =
+        isLight
+        ? "fas fa-sun"
+        : "fas fa-moon";
 }
 
