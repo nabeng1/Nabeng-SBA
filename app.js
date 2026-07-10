@@ -91,6 +91,93 @@ async function loadUsers() {
     return users;
 }
 
+
+function calculateSubjectResult(data) {
+
+    let test1 = Number(data.test1 || 0);
+    let test2 = Number(data.test2 || 0);
+    let project = Number(data.project || 0);
+    let group = Number(data.group || 0);
+    let exam = Number(data.exam || 0);
+
+    // Continuous Assessment (100 marks)
+    let classTotal =
+        test1 +
+        test2 +
+        project +
+        group;
+
+    // Convert to 50%
+    let classScore =
+        Number(((classTotal / 100) * 50).toFixed(2));
+
+    // Convert Exam to 50%
+    let examScore =
+        Number(((exam / 100) * 50).toFixed(2));
+
+    // Final score out of 100
+    let totalScore =
+        Number((classScore + examScore).toFixed(2));
+
+    let grade = getGrade(totalScore);
+
+	let remark = getRemark(totalScore);
+
+    return {
+
+        test1,
+        test2,
+        project,
+        group,
+        exam,
+
+        classTotal,
+        classScore,
+        examScore,
+        totalScore,
+
+        grade,
+        remark
+
+    };
+
+}
+
+function calculateStudentAverage(student, term){
+
+    if(!student.subjects){
+
+        student.average = 0;
+        return;
+
+    }
+
+    let total = 0;
+    let count = 0;
+
+    Object.keys(student.subjects).forEach(subject=>{
+
+        let result =
+        student.subjects[subject]?.[term];
+
+        if(!result) return;
+
+        if(result.totalScore === undefined) return;
+
+        total += Number(result.totalScore);
+
+        count++;
+
+    });
+
+    student.average =
+    count
+    ? Number((total / count).toFixed(2))
+    : 0;
+
+}
+
+
 async function signup() {
 
     let firstname =
@@ -820,63 +907,41 @@ function generatePassword(length = 6) {
 async function generateStudentId(){
 
     let newID;
-
-    let exists = true;
-
-
-    while(exists){
+    let found = false;
 
 
-        const {count,error}=
+    while(!found){
 
+        let randomNumber =
+        Math.floor(1000 + Math.random() * 9000);
+
+
+        newID =
+        "SBA26" + randomNumber;
+
+
+
+        const {data,error} =
         await supabaseClient
-
         .from("students")
+        .select("studentid")
+        .eq("studentid", newID);
 
-        .select("*",{
-            count:"exact",
-            head:true
-        })
-
-        .eq(
-            "schoolid",
-            currentUser.schoolid
-        );
 
 
         if(error){
 
             console.log(error);
-
             return null;
 
         }
 
 
-        let number =
-        (count + Math.floor(Math.random()*100))
-        .toString()
-        .padStart(4,"0");
+        if(!data || data.length === 0){
 
+            found = true;
 
-        newID = "SBA26" + number;
-
-
-
-        const {data}=
-
-        await supabaseClient
-
-        .from("students")
-
-        .select("studentid")
-
-        .eq("studentid",newID);
-
-
-
-        exists = data && data.length > 0;
-
+        }
 
     }
 
@@ -1057,28 +1122,31 @@ async function generateStudentPortalAccounts(){
 
 
 
-        if(updateError){
+       if(updateError){
 
-            console.error(
-                "Update error:",
-                updateError
-            );
+    console.error(
+        "Failed:",
+        student.name,
+        updateError
+    );
 
-            continue;
+    continue;
 
-        }
+}
 
 
+generatedAccounts.push({
 
-        generatedAccounts.push({
+    name:
+    student.name,
 
-            name: student.name,
+    id:
+    studentID,
 
-            studentid: studentID,
+    password:
+    tempPassword
 
-            password: tempPassword
-
-        });
+});
 
 
 
@@ -3338,164 +3406,176 @@ async function saveMarks() {
         return;
     }
 
-    // Get selected student from filtered list
-   let s = currentStudent;
+    let s = currentStudent;
 
     let term = document.getElementById("termSelect").value;
     let sub = selectedSubject;
 
-    if (!s.subjects) s.subjects = {};
+    if (!s.subjects) {
+        s.subjects = {};
+    }
 
-    // Read marks
-    let test1 = Number(document.getElementById(sub + "_test1")?.value || 0);
-    let test2 = Number(document.getElementById(sub + "_test2")?.value || 0);
-    let project = Number(document.getElementById(sub + "_project")?.value || 0);
-    let group = Number(document.getElementById(sub + "_group")?.value || 0);
-    let exam = Number(document.getElementById(sub + "_exam")?.value || 0);
+    // ============================
+    // READ MARKS
+    // ============================
 
-    // Validation
+    let test1 =
+        Number(document.getElementById(sub + "_test1")?.value || 0);
+
+    let test2 =
+        Number(document.getElementById(sub + "_test2")?.value || 0);
+
+    let project =
+        Number(document.getElementById(sub + "_project")?.value || 0);
+
+    let group =
+        Number(document.getElementById(sub + "_group")?.value || 0);
+
+    let exam =
+        Number(document.getElementById(sub + "_exam")?.value || 0);
+
+    // ============================
+    // VALIDATION
+    // ============================
+
     if (test1 < 0 || test1 > 30) {
-        alert("Test 1 score must be between 0 and 30");
+        alert("Test 1 score must be between 0 and 30.");
         return;
     }
 
     if (test2 < 0 || test2 > 30) {
-        alert("Test 2 score must be between 0 and 30");
+        alert("Test 2 score must be between 0 and 30.");
         return;
     }
 
     if (project < 0 || project > 20) {
-        alert("Project score must be between 0 and 20");
+        alert("Project score must be between 0 and 20.");
         return;
     }
 
     if (group < 0 || group > 20) {
-        alert("Group Work score must be between 0 and 20");
+        alert("Group Work score must be between 0 and 20.");
         return;
     }
 
     if (exam < 0 || exam > 100) {
-        alert("Exam score must be between 0 and 100");
+        alert("Exam score must be between 0 and 100.");
         return;
     }
 
-    // Ensure subject exists
+    // ============================
+    // ENSURE SUBJECT EXISTS
+    // ============================
+
     if (!s.subjects[sub]) {
         s.subjects[sub] = {};
     }
 
-    // Save ONLY the selected subject
-    s.subjects[sub][term] = {
+    // ============================
+    // CALCULATE RESULT
+    // ============================
+
+    const result = calculateSubjectResult({
+
         test1,
         test2,
         project,
         group,
         exam
-    };
 
-    // Save Additional Assessment
+    });
+
+    // Save full result
+    s.subjects[sub][term] = result;
+
+    // ============================
+    // ADDITIONAL ASSESSMENT
+    // ============================
+
     s.conduct = s.conduct || {};
     s.attitude = s.attitude || {};
     s.interest = s.interest || {};
     s.teacherRemark = s.teacherRemark || {};
 
-    s.conduct[term] = document.getElementById("conduct")?.value || "";
-    s.attitude[term] = document.getElementById("attitude")?.value || "";
-    s.interest[term] = document.getElementById("interest")?.value || "";
-    s.teacherRemark[term] = document.getElementById("teacherRemark")?.value || "";
+    s.conduct[term] =
+        document.getElementById("conduct")?.value || "";
 
-    // Calculate average using all available subjects
-    let total = 0;
-    let countedSubjects = 0;
+    s.attitude[term] =
+        document.getElementById("attitude")?.value || "";
 
-    Object.keys(s.subjects).forEach(subject => {
+    s.interest[term] =
+        document.getElementById("interest")?.value || "";
 
-        let d = s.subjects[subject]?.[term];
+    s.teacherRemark[term] =
+        document.getElementById("teacherRemark")?.value || "";
 
-        if (!d) return;
+    // ============================
+    // ATTENDANCE
+    // ============================
 
-        let classTotal = d.test1 + d.test2 + d.project + d.group;
+    s.totalDays = s.totalDays || {};
+    s.daysPresent = s.daysPresent || {};
 
-        let classScore = (classTotal / 100) * 50;
-        let examScore = (d.exam / 100) * 50;
+    s.totalDays[term] =
+        parseInt(
+            document.getElementById("totalDaysInput")?.value
+        ) || 0;
 
-        total += classScore + examScore;
-        countedSubjects++;
+    s.daysPresent[term] =
+        parseInt(
+            document.getElementById("daysPresentInput")?.value
+        ) || 0;
 
-    });
+    // ============================
+    // PROMOTION
+    // ============================
 
-    s.average = countedSubjects
-        ? Number((total / countedSubjects).toFixed(2))
-        : 0;
+    if (term === "term3") {
 
-    // Update the student in the main students array
-    const originalIndex = students.findIndex(st => st.id === s.id);
-	if (originalIndex !== -1) {
-    students[originalIndex] = s;
-}
+        s.promotionClass =
+            document.getElementById("promotionClass")?.value || "";
 
-  if (!s.totalDays) s.totalDays = {};
-if (!s.daysPresent) s.daysPresent = {};
-
-s.totalDays[term] =
-    parseInt(document.getElementById("totalDaysInput").value) || 0;
-
-s.daysPresent[term] =
-    parseInt(document.getElementById("daysPresentInput").value) || 0;
-	
-	
-	if (term === "term3") {
-
-    s.promotionClass =
-        document.getElementById("promotionClass")?.value || "";
-
-}
-
-// ===============================
-// Calculate Form Completion
-// ===============================
-
-let completed = 0;
-
-let studentSubjects = Object.keys(s.subjects || {});
-
-studentSubjects.forEach(subject => {
-
-    let d = s.subjects[subject]?.[term];
-
-    if (!d) return;
-
-    // Count subject if any score has been entered
-    if (
-        d.test1 > 0 ||
-        d.test2 > 0 ||
-        d.project > 0 ||
-        d.group > 0 ||
-        d.exam > 0
-    ) {
-        completed++;
     }
 
-});
+    // ============================
+    // CALCULATE STUDENT AVERAGE
+    // ============================
 
-let totalSubjects =
-    currentUser.role === "teacher"
-        ? (currentUser.subjects?.length || studentSubjects.length)
-        : (subjects?.length || studentSubjects.length);
+    calculateStudentAverage(s, term);
 
+    // ============================
+    // UPDATE STUDENT ARRAY
+    // ============================
 
+    const index =
+        students.findIndex(st => st.id === s.id);
 
-// ===============================
-// Save to Supabase
-// ===============================
+    if (index !== -1) {
 
-await saveStudents();
+        students[index] = s;
 
-populateStudentList();
-updateDashboard();
-closeMarksModal();
+    }
 
-alert(`${sub} marks saved successfully ✅`);
+    // ============================
+    // SAVE TO SUPABASE
+    // ============================
+
+    await saveStudents();
+
+    // ============================
+    // REFRESH UI
+    // ============================
+
+    populateStudentList();
+
+    updateDashboard();
+
+    closeMarksModal();
+
+    alert(
+        sub + " marks saved successfully ✅"
+    );
+
 }
 
 // Grades and Remarks functions
@@ -3522,7 +3602,7 @@ function getRemark(score){
     if(score >= 40) return "Very Weak";
     return "Fail";
 }
-function confirmReport(){
+async function confirmReport(){
     let name = document.getElementById("reportSearch").value.trim().toLowerCase();
     let term = document.getElementById("reportTerm").value;
 
@@ -3541,7 +3621,7 @@ function confirmReport(){
         return;
     }
 
-    generateReportWithTerm(s, term, endDate, nextDate);
+    await generateReportWithTerm(s, term, endDate, nextDate);
 }
 
 
@@ -3567,51 +3647,208 @@ function formatDate(dateStr){
 }
 async function generateAllReports(){
 
-    if(students.length === 0){
+    if(!students || students.length === 0){
+
         alert("No students available");
         return;
+
     }
 
-    let term = document.getElementById("reportTerm").value;
-    let endDate = getTermEnd(term);
-    let nextDate = getNextTermStart(term);
+
+    let term =
+        document.getElementById("reportTerm").value;
+
+
+    let endDate =
+        getTermEnd(term);
+
+
+    let nextDate =
+        getNextTermStart(term);
+
+
 
     if(!endDate || !nextDate){
-        alert("❌ Set term dates in Profile first!");
+
+        alert(
+            "❌ Set term dates in Profile first!"
+        );
+
         return;
+
     }
 
-    const { jsPDF } = window.jspdf;
-    let pdf = new jsPDF("p", "mm", "a4");
+
+
+    const { jsPDF } =
+        window.jspdf;
+
+
+    let pdf =
+        new jsPDF(
+            "p",
+            "mm",
+            "a4"
+        );
+
+
+
+    // Calculate all averages first
+    students.forEach(s=>{
+
+        calculateStudentAverage(
+            s,
+            term
+        );
+
+    });
+
+
 
     for(let i = 0; i < students.length; i++){
 
-        let s = students[i];
 
-        // ✅ Generate SAME HTML design
-        generateReportWithTerm(s, term, endDate, nextDate);
+        let s =
+            students[i];
 
-        let element = document.getElementById("printArea");
 
-        // wait for rendering
-        await new Promise(resolve => setTimeout(resolve, 300));
+        try{
 
-        let canvas = await html2canvas(element, { scale: 2 });
 
-        let imgData = canvas.toDataURL("image/png");
+            console.log(
+                `Generating report ${i+1}/${students.length}: ${s.name}`
+            );
 
-        let imgWidth = 210; // A4 width
-        let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        // ✅ Add NEW PAGE except first
-        if(i !== 0){
-            pdf.addPage();
+
+            // Generate report HTML only
+            let html =
+            await generateReportWithTerm(
+                s,
+                term,
+                endDate,
+                nextDate,
+                false
+            );
+
+
+
+            // Create hidden report container
+            let element =
+            document.createElement("div");
+
+
+            element.innerHTML = html;
+
+
+            element.style.width = "794px";
+            element.style.position = "absolute";
+            element.style.left = "-9999px";
+            element.style.top = "0";
+
+
+            document.body.appendChild(element);
+
+
+
+            // Convert to image
+            let canvas =
+            await html2canvas(
+                element,
+                {
+                    scale:1.5,
+                    useCORS:true,
+                    logging:false
+                }
+            );
+
+
+
+            // Remove temporary element
+            document.body.removeChild(element);
+
+
+
+            let imgData =
+            canvas.toDataURL(
+                "image/jpeg",
+                0.85
+            );
+
+
+
+            let imgWidth = 210;
+
+
+            let imgHeight =
+            (
+                canvas.height *
+                imgWidth
+            )
+            /
+            canvas.width;
+
+
+
+            if(i !== 0){
+
+                pdf.addPage();
+
+            }
+
+
+
+            pdf.addImage(
+
+                imgData,
+
+                "JPEG",
+
+                0,
+
+                0,
+
+                imgWidth,
+
+                imgHeight
+
+            );
+
+
+
+            // Release memory
+            canvas.width = 1;
+            canvas.height = 1;
+
+
+
+        }
+        catch(error){
+
+
+            console.error(
+                "Report generation failed for:",
+                s.name,
+                error
+            );
+
+
         }
 
-        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+
     }
 
-    pdf.save("All_Student_Reports.pdf");
+
+
+    pdf.save(
+        `All_Student_Reports_${term}.pdf`
+    );
+
+
+    alert(
+        "✅ All student reports generated successfully"
+    );
+
 }
 
 if(currentUser && currentUser.role === "teacher" && (!currentUser.subjects || currentUser.subjects.length === 0)){
@@ -3622,8 +3859,9 @@ async function generateReportWithTerm(
     s,
     term,
     endDate,
-    nextDate
-) {
+    nextDate,
+    showPreview = true
+){
 
 
 let formattedEnd = formatDate(endDate);
@@ -3683,8 +3921,9 @@ ${logo ? `
         left:35px;
         right:35px;
         bottom:35px;
-        border:2px solid #007fff;
+        border:5px solid #00075D;
     "></div>
+	
 	
 	<!-- INNER BORDER (DOUBLE LINE EFFECT) -->
     <div style="
@@ -3693,7 +3932,7 @@ ${logo ? `
         left:20px;
         right:20px;
         bottom:20px;
-        border:5px solid #007fff;
+        border:10px solid #00075D;
     "></div>
 	
 
@@ -3706,7 +3945,7 @@ ${logo ? `
     ${logo ? `<img src="${logo}" style="width:120px; height:120px; object-fit:cover;">` : ""}
 
     <div>
-        <h2 style="margin:0; color:#007fff; font-size:35px;">
+        <h2 style="margin:0; color:#00075D; font-size:35px;">
 		${schoolname}        </h2>
         <p style="margin:0;">STUDENT TERMINAL REPORT - ${term.toUpperCase()}</p>
     </div>
@@ -3716,11 +3955,11 @@ ${logo ? `
 </div>
 
 
-<div style="margin-top:3px; font-size:18px; line-height:1;">
+<div style="margin-top:2px; font-size:18px; line-height:1;">
 
     <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-        <p style="margin:5;"><b>Name:</b> ${s.name}</p>
-        <p style="margin:5;"><b>Position:</b> ${position}</p>
+        <p style="margin:3;"><b>Name:</b> ${s.name}</p>
+        <p style="margin:3;"><b>Position:</b> ${position}</p>
     </div>
 
     <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
@@ -3739,7 +3978,7 @@ ${logo ? `
 				
 
         <table style="width:100%; border-collapse:collapse; text-align:center;">
-            <tr style="background:#007fff; color: white;">
+            <tr style="background:#00075D; color: white;">
                 <th style="border:1px ash;">Subject</th>
                 <th style="border:1px ash;">Class Score (50%)</th>
                 <th style="border:1px ash;">Exams (50%)</th>
@@ -3748,31 +3987,76 @@ ${logo ? `
                 <th style="border:1px ash;">Remarks</th>
             </tr>`;
     
-    let grandTotal = 0;
+   let grandTotal = 0;
 
-    let allowedSubjects = currentUser.role === "teacher"
-    ? (currentUser.subjects || [])
-    : subjects;
+let allowedSubjects =
+    currentUser.role === "teacher"
+        ? (currentUser.subjects || [])
+        : subjects;
 
-allowedSubjects.forEach(sub=>{
-        let d = s.subjects?.[sub]?.[term] || {test1:0,test2:0,project:0,group:0,exam:0};
+allowedSubjects.forEach(sub => {
 
-        let classTotal = d.test1 + d.test2 + d.project + d.group;
-        let classScore = (classTotal/100)*50;
-        let examScore = (d.exam/100)*50;
-        let total = classScore + examScore;
+    let d = s.subjects?.[sub]?.[term];
 
-        grandTotal += total;
+    if (!d) return;
 
-        html += `<tr>
-            <td style="border:1px solid black;">${sub.toUpperCase()}</td>
-            <td style="border:1px solid black;">${Math.round(classScore)}</td>
-            <td style="border:1px solid black;">${Math.round(examScore)}</td>
-            <td style="border:1px solid black;">${Math.round(total)}</td>
-            <td style="border:1px solid black;">${getGrade(Math.round(total))}</td>
-            <td style="border:1px solid black;">${getRemark(Math.round(total))}</td>
-        </tr>`;
-    });
+
+   let classTotal =
+    Number(d.test1 || 0) +
+    Number(d.test2 || 0) +
+    Number(d.project || 0) +
+    Number(d.group || 0);
+
+
+let classScore =
+    d.classScore !== undefined
+    ? Number(d.classScore)
+    : (classTotal / 100) * 50;
+
+
+let examScore =
+    d.examScore !== undefined
+    ? Number(d.examScore)
+    : (Number(d.exam || 0) / 100) * 50;
+
+
+let totalScore =
+    d.totalScore !== undefined
+    ? Number(d.totalScore)
+    : classScore + examScore;
+
+
+    let grade =
+        d.grade || getGrade(totalScore);
+
+
+    let remark =
+        d.remark || getRemark(totalScore);
+
+
+
+    grandTotal += totalScore;
+
+
+
+    html += `
+    
+    <tr>
+
+        <td style="border:1px solid black;">${sub.toUpperCase()}</td>
+        <td style="border:1px solid black;">${Math.round(classScore)}</td>
+		<td style="border:1px solid black;">${Math.round(examScore)}</td>
+		<td style="border:1px solid black;">${Math.round(totalScore)}</td>
+        <td style="border:1px solid black;">${grade}</td>
+        <td style="border:1px solid black;">${remark}</td>
+
+
+    </tr>
+
+    `;
+
+
+});
 
 
 	
@@ -3816,25 +4100,25 @@ border-collapse:collapse;
 font-size:16px;
 ">
 
-<tr style="background:#007fff;color:white;">
-<th style="padding:8px;border:1px solid #007fff;">
+<tr style="background:#00075D;color:white;">
+<th style="padding:8px;border:1px solid #00075D;">
 Conduct
-</th><td style="border:1px solid #007fff; background: #fff;color:black; padding:8px;">
+</th><td style="border:1px solid #00075D; background: #fff;color:black; padding:5px;">
 ${s.conduct?.[term]||""}
 </td></tr>
 
-<tr style="background:#007fff;color:white;">
-<th style="padding:8px;border:1px solid #007fff;">
+<tr style="background:#00075D;color:white;">
+<th style="padding:5px;border:1px solid #00075D;">
 Attitude
-</th><td style="border:1px solid #007fff; background: #fff;color:black; padding:8px;">
+</th><td style="border:1px solid #00075D; background: #fff;color:black; padding:5px;">
 ${s.attitude?.[term]||""}
 </td>
 </tr>
 
-<tr style="background:#007fff;color:white;">
-<th style="padding:8px;border:1px solid #007fff;">
+<tr style="background:#00075D;color:white;">
+<th style="padding:5px;border:1px solid #00075D;">
 Interest
-</th><td style="border:1px solid #007fff; background: #fff;color:black; padding:8px;">
+</th><td style="border:1px solid #00075D; background: #fff;color:black; padding:8px;">
 ${s.interest?.[term]||""}
 </td>
 
@@ -3848,22 +4132,22 @@ ${s.interest?.[term]||""}
 <!-- REMARKS -->
 
 <div style="
-border:2px solid #007fff;
+border:2px solid #00075D;
 ">
 
 <div style="
-background:#007fff;
-color:white;
-padding:8px;
-font-weight:bold;
+background:#00075D;color:white;
+padding:5px;
+border:1px solid #00075D;
 ">
 CLASS TEACHER'S REMARK
 </div>
 
 <div style="
-padding:8px;
-min-height:15px;
-font-size:16px;
+border:1px solid #00075D; 
+background: #fff;
+color:black; 
+padding:5px;
 ">
 
 ${s.teacherRemark?.[term]||""}
@@ -3920,7 +4204,13 @@ padding-top:6px;
 	
 
 
-    document.getElementById("reportOutput").innerHTML = html 
+    if(showPreview){
+
+    document.getElementById("reportOutput").innerHTML = html;
+
+}
+
+return html;
 	
 	
 }
@@ -4187,83 +4477,6 @@ function getReportStudent() {
     );
 }
 
-async function downloadStudentReport(){
-
-    let name = document
-        .getElementById("reportSearch")
-        .value.trim()
-        .toLowerCase();
-
-    let term =
-        document.getElementById("reportTerm").value;
-
-    let s = students.find(
-        x => x.name.toLowerCase() === name
-    );
-
-    if(!s){
-        alert("Student not found");
-        return;
-    }
-
-    let endDate = getTermEnd(term);
-    let nextDate = getNextTermStart(term);
-
-    if(!endDate || !nextDate){
-        alert("❌ Please set term dates first!");
-        return;
-    }
-
-    // Generate report HTML
-    await generateReportWithTerm(
-        s,
-        term,
-        endDate,
-        nextDate
-    );
-
-    // Wait for render
-    await new Promise(
-        resolve => setTimeout(resolve, 300)
-    );
-
-    let element =
-        document.getElementById("printArea");
-
-    const canvas =
-        await html2canvas(element,{
-            scale:3,
-            useCORS:true
-        });
-
-    const imgData =
-        canvas.toDataURL("image/png",1.0);
-
-    const { jsPDF } = window.jspdf;
-
-    let doc =
-        new jsPDF("p","mm","a4");
-
-    let imgWidth = 210;
-
-    let imgHeight =
-        (canvas.height * imgWidth) /
-        canvas.width;
-
-    doc.addImage(
-        imgData,
-        "PNG",
-        0,
-        0,
-        imgWidth,
-        imgHeight
-    );
-
-    let fileName =
-        `${s.name.replace(/\s+/g,"_")}_${term}.pdf`;
-
-    doc.save(fileName);
-}
 function printReport(){
     let content = document.getElementById("printArea").outerHTML;
 
@@ -4289,6 +4502,38 @@ function printReport(){
 
     win.document.close();
     win.print();
+}
+function downloadSingleReport(){
+
+    if(!window.singleReportURL){
+
+        alert("Generate the report first");
+
+        return;
+
+    }
+
+
+    let link =
+    document.createElement("a");
+
+
+    link.href =
+    window.singleReportURL;
+
+
+    link.download =
+    window.singleReportName || "Student_Report.pdf";
+
+
+    document.body.appendChild(link);
+
+
+    link.click();
+
+
+    document.body.removeChild(link);
+
 }
 
 async function downloadPDF(){
@@ -4341,6 +4586,232 @@ async function downloadPDF(){
 
     doc.save(fileName);
 }
+async function downloadStudentReport(){
+
+    // Get student search value
+    let name =
+        document.getElementById("reportSearch")
+        .value
+        .trim()
+        .toLowerCase();
+
+
+    let term =
+        document.getElementById("reportTerm")
+        .value;
+
+
+    // Find student
+    let s =
+        students.find(
+            x =>
+            x.name.toLowerCase() === name
+        );
+
+
+    if(!s){
+
+        alert("Student not found");
+        return;
+
+    }
+
+
+    // Update latest average before report
+    calculateStudentAverage(
+        s,
+        term
+    );
+
+
+    // Get term dates
+    let endDate =
+        getTermEnd(term);
+
+    let nextDate =
+        getNextTermStart(term);
+
+
+    if(!endDate || !nextDate){
+
+        alert(
+            "❌ Please set term dates first!"
+        );
+
+        return;
+
+    }
+
+
+
+    // Generate report preview
+    await generateReportWithTerm(
+
+        s,
+
+        term,
+
+        endDate,
+
+        nextDate
+
+    );
+
+
+
+    // Allow HTML to render
+    await new Promise(
+        resolve =>
+        setTimeout(resolve,300)
+    );
+
+
+
+    let element =
+        document.getElementById(
+            "printArea"
+        );
+
+
+    if(!element){
+
+        alert(
+            "Report area not found!"
+        );
+
+        return;
+
+    }
+
+
+
+    // Convert report to image
+
+    const canvas =
+        await html2canvas(
+            element,
+            {
+                scale:3,
+                useCORS:true
+            }
+        );
+
+
+    const imgData =
+        canvas.toDataURL(
+            "image/png",
+            1.0
+        );
+
+
+
+    const { jsPDF } =
+        window.jspdf;
+
+
+
+    let doc =
+        new jsPDF(
+            "p",
+            "mm",
+            "a4"
+        );
+
+
+
+    let imgWidth = 210;
+
+
+    let imgHeight =
+        (
+            canvas.height *
+            imgWidth
+        )
+        /
+        canvas.width;
+
+
+
+    doc.addImage(
+
+        imgData,
+
+        "PNG",
+
+        0,
+
+        0,
+
+        imgWidth,
+
+        imgHeight
+
+    );
+
+
+
+    let fileName =
+        `${s.name.replace(/\s+/g,"_")}_${term}_Report.pdf`;
+
+
+
+    let pdfBlob = doc.output("blob");
+
+let pdfURL = URL.createObjectURL(pdfBlob);
+
+
+let downloadArea =
+document.getElementById("singleReportDownloadArea");
+
+
+if(downloadArea){
+
+    downloadArea.innerHTML = `
+
+    <div style="
+        margin-top:20px;
+        padding:15px;
+        background:#f1f5f9;
+        border-radius:10px;
+        text-align:center;
+    ">
+
+    <h4>
+    ✅ ${s.name}'s Report Generated
+    </h4>
+
+
+    <button 
+    onclick="downloadSingleReport()"
+    style="
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:12px 25px;
+    border-radius:8px;
+    cursor:pointer;
+    ">
+
+    <i class="fas fa-download"></i>
+    Download Report
+
+    </button>
+
+
+    </div>
+
+    `;
+
+
+    window.singleReportURL = pdfURL;
+
+    window.singleReportName = fileName;
+
+}
+
+
+}
+
 // AUTO LOGIN AFTER REFRESH
 window.onload = async function () {
 
@@ -4370,8 +4841,7 @@ window.onload = async function () {
 
 
             currentUser = user;
-console.log("CURRENT USER:", currentUser);
-console.log("USER ROLE:", currentUser.role);
+
 
 
             // ===============================
@@ -4457,6 +4927,9 @@ console.log("USER ROLE:", currentUser.role);
 
 
             // Load system data
+			await loadUsers();
+			
+			
 
             await loadTermSettings();
 
@@ -4475,7 +4948,7 @@ console.log("USER ROLE:", currentUser.role);
 
             await loadTheme();
 
-
+			loadClassOptions();
 
             updateDashboard();
 
@@ -5122,28 +5595,45 @@ async function loadSelectedTeacherSubjects() {
     console.log("Teacher Loaded:", teacher);
 }
 
+function calculateStudentAverage(student, term){
 
-function getStudentPosition(student, term){
 
-    let classStudents = students.filter(
-        s => s.studentclass === student.studentclass
-    );
+    let total = 0;
+    let count = 0;
 
-    let ranked = classStudents.map(s => {
 
-        let total = 0;
-        let count = 0;
+    let studentSubjects =
+        Object.keys(student.subjects || {});
 
-        let allowedSubjects =
-            currentUser.role === "teacher"
-            ? (currentUser.subjects || [])
-            : subjects;
 
-        allowedSubjects.forEach(sub => {
+    studentSubjects.forEach(sub=>{
 
-            let d = s.subjects?.[sub]?.[term];
 
-            if(!d) return;
+        let d =
+        student.subjects?.[sub]?.[term];
+
+
+        if(!d) return;
+
+
+
+        let subjectTotal;
+
+
+
+        // New saved format
+        if(d.totalScore !== undefined){
+
+
+            subjectTotal =
+            Number(d.totalScore);
+
+
+        }
+
+        // Old saved format
+        else{
+
 
             let classTotal =
                 Number(d.test1 || 0) +
@@ -5151,38 +5641,158 @@ function getStudentPosition(student, term){
                 Number(d.project || 0) +
                 Number(d.group || 0);
 
-            let classScore = (classTotal / 100) * 50;
-            let examScore = (Number(d.exam || 0) / 100) * 50;
 
-            total += classScore + examScore;
-            count++;
 
-        });
+            let classScore =
+                (classTotal / 100) * 50;
 
-        return {
-            name: s.name,
-            avg: count ? total / count : 0
-        };
+
+
+            let examScore =
+                (Number(d.exam || 0) / 100) * 50;
+
+
+
+            subjectTotal =
+                classScore + examScore;
+
+
+        }
+
+
+
+        total += subjectTotal;
+
+        count++;
+
 
     });
 
-    ranked.sort((a,b) => b.avg - a.avg);
 
-    let studentData = ranked.find(
-        x => x.name === student.name
-    );
 
-    if(!studentData) return "-";
+    student.average =
+        count
+        ? Number(
+            (total / count)
+            .toFixed(2)
+          )
+        : 0;
 
-    let position =
-        ranked.filter(
-            x => x.avg > studentData.avg
-        ).length + 1;
 
-    return formatPosition(position);
+
+    return student.average;
 
 }
 
+function getStudentPosition(student, term){
+
+
+    let classStudents =
+    students.filter(
+        s => s.studentclass === student.studentclass
+    );
+
+
+
+    let ranked =
+    classStudents.map(s=>{
+
+
+        let totalScore = 0;
+
+
+
+        // Every subject contributes maximum 100
+        subjects.forEach(sub=>{
+
+
+            let d =
+            s.subjects?.[sub]?.[term];
+
+
+            if(!d){
+                return;
+            }
+
+
+
+            let classTotal =
+                Number(d.test1 || 0) +
+                Number(d.test2 || 0) +
+                Number(d.project || 0) +
+                Number(d.group || 0);
+
+
+
+            let classScore =
+                (classTotal / 100) * 50;
+
+
+
+            let examScore =
+                (Number(d.exam || 0) / 100) * 50;
+
+
+
+            let subjectTotal =
+                classScore + examScore;
+
+
+
+            totalScore += subjectTotal;
+
+
+        });
+
+
+
+        return {
+
+            id:s.id,
+
+            totalScore:Number(
+                totalScore.toFixed(2)
+            )
+
+        };
+
+
+    });
+
+
+
+    // Highest total out of the full subject total
+    ranked.sort(
+        (a,b)=>
+        b.totalScore - a.totalScore
+    );
+
+
+
+    console.table(ranked);
+
+
+
+    let index =
+    ranked.findIndex(
+        x=>x.id === student.id
+    );
+
+
+
+    if(index === -1){
+
+        return "-";
+
+    }
+
+
+
+    return formatPosition(
+        index + 1
+    );
+
+}
 function formatPosition(pos){
     if(pos === 1) return "1st";
     if(pos === 2) return "2nd";
