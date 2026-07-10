@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>SBA Student Portal</title>
+<title>Nabeng-SBA Student Portal</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
 
 <style>
 
@@ -20,11 +22,195 @@
 }
 
 body{
+    background:#f4f6fb;
+}
 
-    background:#e8edf5;
+/* HEADER */
+
+.header{
+    background:#3F51B5;
+    height:180px;
+    position:relative;
+    color:#fff;
+}
+
+.navbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px;
+    font-size:22px;
+}
+
+.navbar h2{
+    font-size:22px;
+    font-weight:500;
+}
+
+/* PROFILE */
+
+.profile{
+    position:absolute;
+    left:50%;
+    bottom:-70px;
+    transform:translateX(-50%);
+    text-align:center;
+}
+
+.profile img{
+    width:130px;
+    height:130px;
+    border-radius:50%;
+    border:5px solid #fff;
+    object-fit:cover;
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
+
+.profile h3{
+    margin-top:12px;
+    color:#222;
+}
+
+.profile p{
+    color:#777;
+    font-size:14px;
+}
+
+/* DASHBOARD */
+
+.dashboard{
+
+    max-width:1200px;
+
+    margin:140px auto 40px;
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+    gap:20px;
+
+    padding:20px;
+
+}
+
+.card{
+
+    background:#fff;
+
+    border-radius:18px;
+
+    padding:25px;
+
+    text-align:center;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+
+}
+
+.card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 15px 30px rgba(63,81,181,.20);
+
+}
+
+.card i{
+
+    width:70px;
+    height:70px;
+
+    border-radius:50%;
+
     display:flex;
     justify-content:center;
     align-items:center;
+
+    margin:auto;
+
+    background:#EEF1FF;
+
+    color:#3F51B5;
+
+    font-size:30px;
+
+}
+
+.card h3{
+
+    margin-top:18px;
+
+    color:#333;
+
+    font-size:19px;
+
+}
+
+.card p{
+
+    margin-top:8px;
+
+    color:#777;
+
+    font-size:14px;
+
+}
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+.header{
+height:170px;
+}
+
+.profile img{
+width:110px;
+height:110px;
+}
+
+.dashboard{
+grid-template-columns:repeat(2,1fr);
+margin-top:120px;
+}
+
+}
+
+@media(max-width:480px){
+
+.dashboard{
+grid-template-columns:1fr;
+}
+
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+
+    background:#f4f6fb;
+    margin:0;
+
+}
+
+#loginPage{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
     min-height:100vh;
 
 }
@@ -200,6 +386,8 @@ button:hover{
 </head>
 <body>
 
+<div id="loginPage">
+
 <div class="login-card">
 
     <div class="logo">
@@ -267,42 +455,186 @@ button:hover{
     </div>
 
 </div>
+</div>
+
+<div id="studentPortal" style="display:none;">
+<div class="header">
+
+<div class="navbar">
+
+<i class="fas fa-bars"></i>
+
+<h2>Home</h2>
+
+<i class="fas fa-bell"></i>
+
+</div>
+
+<div class="profile">
+
+<img src="https://i.pravatar.cc/200?img=12">
+
+<h3 id="studentName"></h3>
+
+<p id="studentClass"></p>
+
+</div>
+
+</div>
+
+<div class="dashboard">
+
+<div class="card">
+<i class="fas fa-user"></i>
+<h3>Profile</h3>
+<p>View your personal information</p>
+</div>
+
+<div class="card">
+<i class="fas fa-book"></i>
+<h3>Homework</h3>
+<p>Assignments and class work</p>
+</div>
+
+<div class="card">
+<i class="fas fa-chart-line"></i>
+<h3>Results</h3>
+<p>Academic performance</p>
+</div>
+
+<div class="card">
+<i class="fas fa-check-circle"></i>
+<h3>Attendance</h3>
+<p>Attendance records</p>
+</div>
+
+<div class="card">
+<i class="fas fa-calendar-alt"></i>
+<h3>Timetable</h3>
+<p>Weekly class schedule</p>
+</div>
+
+<div class="card">
+<i class="fas fa-money-bill-wave"></i>
+<h3>Fees</h3>
+<p>Fee payment status</p>
+</div>
+
+<div class="card">
+<i class="fas fa-book-open"></i>
+<h3>Subjects</h3>
+<p>Registered subjects</p>
+</div>
+
+<div class="card">
+<i class="fas fa-comments"></i>
+<h3>Messages</h3>
+<p>Messages from teachers</p>
+</div>
+
+<div class="card">
+<i class="fas fa-download"></i>
+<h3>Downloads</h3>
+<p>Report cards and files</p>
+</div>
+
+<div class="card">
+<i class="fas fa-cog"></i>
+<h3>Settings</h3>
+<p>Manage your account</p>
+</div>
+
+</div>
+</div>
+
 
 <script>
 
-const password=document.getElementById("password");
-const toggle=document.getElementById("togglePassword");
+const supabaseUrl =
+"https://ftslcifbzohhgljqcgus.supabase.co";
 
-toggle.onclick=function(){
+const supabaseKey =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0c2xjaWZiem9oaGdsanFjZ3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTQ5NjUsImV4cCI6MjA5NTAzMDk2NX0.O6bGKNOdRDH1u2t-MiK8y0ppO-q-P4gggSeDEGsoUrQ";
 
-    if(password.type==="password"){
 
-        password.type="text";
+var supabaseClient =
+window.supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+);
 
+const password = document.getElementById("password");
+const toggle = document.getElementById("togglePassword");
+
+toggle.onclick = function(){
+
+    if(password.type === "password"){
+
+        password.type = "text";
         toggle.classList.replace("fa-eye","fa-eye-slash");
 
     }else{
 
-        password.type="password";
-
+        password.type = "password";
         toggle.classList.replace("fa-eye-slash","fa-eye");
 
     }
 
 };
 
-document.getElementById("loginForm").addEventListener("submit",function(e){
+document.getElementById("loginForm")
+.addEventListener("submit", async function(e){
 
     e.preventDefault();
 
-    let studentid=document.getElementById("studentid").value;
-    let password=document.getElementById("password").value;
+    const studentid =
+        document.getElementById("studentid").value.trim();
 
-    alert("Student ID: "+studentid+"\nPassword: "+password);
+    const password =
+        document.getElementById("password").value.trim();
+
+    const { data: student, error } =
+        await supabaseClient
+            .from("students")
+            .select("*")
+            .eq("studentid", studentid)
+            .eq("studentpassword", password)
+            .single();
+
+    if(error || !student){
+
+        alert("Invalid Student ID or Password");
+        return;
+
+    }
+
+   // Save logged-in student
+localStorage.setItem(
+    "loggedStudent",
+    JSON.stringify(student)
+);
+
+// Load student information
+document.getElementById("studentName").textContent =
+    student.name;
+
+document.getElementById("studentClass").textContent =
+    student.studentclass;
+
+// Student photo
+if(student.photo){
+
+    document.querySelector(".profile img").src =
+        student.photo;
+
+}
+
+// Show dashboard
+document.getElementById("loginPage").style.display = "none";
+document.getElementById("studentPortal").style.display = "block";
 
 });
 
 </script>
-
 </body>
 </html>
