@@ -307,6 +307,22 @@ Back to Login
        placeholder="Search student..."
        onkeyup="searchStudent()">
 
+
+<!-- ADMIN PORTAL ACCOUNT BUTTON -->
+
+<button 
+id="generateAccountsBtn"
+onclick="generateStudentPortalAccounts()"
+style="display:none; margin-bottom:20px;">
+
+<i class="fas fa-user-lock"></i>
+
+Generate Student Portal Accounts
+
+</button>
+
+
+
 <!-- ADD STUDENT -->
 <div id="addStudentSection" style="margin-bottom:20px;">
 
@@ -322,6 +338,7 @@ Back to Login
     <button onclick="addStudentFromPage()">
         Add Student
     </button>
+
 
     <h3>Bulk Import Students</h3>
 
@@ -774,6 +791,7 @@ Back to Login
     </div>
 
 </div>
+
 
 </body>
 </html>
