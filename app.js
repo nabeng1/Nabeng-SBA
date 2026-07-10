@@ -786,21 +786,158 @@ async function loadStudents() {
     updateStudentSuggestions();
 }
 
+function generatePassword(length = 6) {
+
+    const chars =
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+
+    let password="";
+
+
+    for(let i=0;i<6;i++){
+
+
+        password += chars.charAt(
+
+            Math.floor(
+                Math.random()*chars.length
+            )
+
+        );
+
+
+    }
+
+
+    return password;
+
+
+}
+
+
+
+async function generateStudentId(){
+
+    let newID;
+
+    let exists = true;
+
+
+    while(exists){
+
+
+        const {count,error}=
+
+        await supabaseClient
+
+        .from("students")
+
+        .select("*",{
+            count:"exact",
+            head:true
+        })
+
+        .eq(
+            "schoolid",
+            currentUser.schoolid
+        );
+
+
+        if(error){
+
+            console.log(error);
+
+            return null;
+
+        }
+
+
+        let number =
+        (count + Math.floor(Math.random()*100))
+        .toString()
+        .padStart(4,"0");
+
+
+        newID = "SBA26" + number;
+
+
+
+        const {data}=
+
+        await supabaseClient
+
+        .from("students")
+
+        .select("studentid")
+
+        .eq("studentid",newID);
+
+
+
+        exists = data && data.length > 0;
+
+
+    }
+
+
+    return newID;
+
+}
+
+
 async function saveStudents() {
 
     if (!students || students.length === 0) {
         return;
     }
 
-    // Add schoolid to every student
-    let preparedStudents = students.map(s => ({
+    let preparedStudents = await Promise.all(
+
+students.map(async s => {
+
+
+    let studentID = s.studentid;
+
+    let studentPassword = s.studentpassword;
+
+
+    // New student account generation
+    if(!studentID){
+
+        studentID = await generateStudentId();
+
+        studentPassword = generatePassword();
+
+    }
+
+
+    return {
+
         ...s,
+
         schoolid: currentUser.schoolid,
+
+
         teacher:
-            currentUser.role === "admin"
-            ? s.teacher || null
-            : currentUser.username
-    }));
+        currentUser.role === "admin"
+        ? s.teacher || null
+        : currentUser.username,
+
+
+        studentid: studentID,
+
+        studentpassword: studentPassword,
+
+        passwordchanged:
+        s.passwordchanged || false
+
+    };
+
+
+})
+
+);
 
     // Admin saves all
     if (currentUser.role === "admin") {
@@ -830,6 +967,166 @@ console.log("Students saved successfully");
     }
 }
 
+async function generateStudentPortalAccounts(){
+
+
+    // Only admin allowed
+    if(!currentUser || currentUser.role !== "admin"){
+
+        alert("Only admin can generate student portal accounts");
+
+        return;
+
+    }
+
+
+    // Get students without accounts
+    const { data: students, error } = await supabaseClient
+
+        .from("students")
+
+        .select("*")
+
+        .eq("schoolid", currentUser.schoolid)
+
+        .is("studentid", null);
+
+
+
+    if(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+        return;
+
+    }
+
+
+
+    if(!students || students.length === 0){
+
+        alert(
+            "All students already have portal accounts."
+        );
+
+        return;
+
+    }
+
+
+
+    let generatedAccounts = [];
+
+
+
+    for(let student of students){
+
+
+        // Generate student ID
+        let studentID =
+            await generateStudentId();
+
+
+
+        // Generate password
+        let tempPassword =
+            generatePassword();
+
+
+
+        // Update student record
+        const {error:updateError} =
+
+        await supabaseClient
+
+        .from("students")
+
+        .update({
+
+            studentid: studentID,
+
+            studentpassword: tempPassword,
+
+            passwordchanged: false
+
+        })
+
+        .eq("id", student.id);
+
+
+
+        if(updateError){
+
+            console.error(
+                "Update error:",
+                updateError
+            );
+
+            continue;
+
+        }
+
+
+
+        generatedAccounts.push({
+
+            name: student.name,
+
+            studentid: studentID,
+
+            password: tempPassword
+
+        });
+
+
+
+    }
+
+
+
+    // Display results
+
+    let result = 
+    "STUDENT PORTAL ACCOUNTS CREATED\n\n";
+
+
+    generatedAccounts.forEach(account=>{
+
+
+        result +=
+        "Student: " + account.name +
+        "\nStudent ID: " + account.studentid +
+        "\nPassword: " + account.password +
+        "\n\n";
+
+
+    });
+
+
+
+    alert(result);
+
+
+
+    // Reload students list
+    await loadStudents();
+
+
+}
+
+function loadStudentManagement(){
+
+    if(currentUser.role === "admin"){
+
+        document.getElementById(
+        "generateAccountsBtn"
+        ).style.display="block";
+
+    }
+
+}
 
 async function showPage(id){
 
@@ -939,38 +1236,60 @@ if(id === "studentsPage"){
     }
 }
 
-    // SUBJECTS PAGE
-    if(id === "subjectsPage"){
+// STUDENTS PAGE
+if(id === "studentsPage"){
 
-        loadClassFilter();
 
-        let studentsList =
-        document.getElementById("studentsList");
+    loadStudentsTable();
+    loadClassOptions();
 
-        if(studentsList){
-            studentsList.innerHTML = "";
+
+
+    // SHOW GENERATE ACCOUNT BUTTON FOR ADMIN
+
+    let generateBtn =
+    document.getElementById(
+        "generateAccountsBtn"
+    );
+
+
+    if(generateBtn){
+
+        if(
+            currentUser.role &&
+            currentUser.role.toLowerCase() === "admin"
+        ){
+
+            generateBtn.style.display = "block";
+
+        }else{
+
+            generateBtn.style.display = "none";
+
         }
 
-        let btn =
-        document.getElementById("saveMarksBtn");
-
-        if(btn){
-
-            if(currentUser.role === "admin"){
-
-                btn.disabled = true;
-                btn.style.background = "#374151";
-                btn.innerText =
-                "🔒 Admin cannot edit";
-
-            } else {
-
-                btn.disabled = false;
-                btn.style.background = "#2563eb";
-                btn.innerText = "Save Marks";
-            }
-        }
     }
+
+
+
+    // HIDE ADD STUDENT FOR ADMIN
+
+    let addSection =
+    document.getElementById(
+        "addStudentSection"
+    );
+
+
+    if(addSection){
+
+        addSection.style.display =
+        currentUser.role === "admin"
+        ? "none"
+        : "block";
+
+    }
+
+}
 
     // CHAT
     if(id === 'chat'){
@@ -2276,30 +2595,39 @@ function confirmDelete(){
 }
 
 
-async function openStudentModal(index){
+async function openStudentModal(index) {
 
     let student = students[index];
 
-    if(!student){
+    if (!student) {
         alert("Student not found");
         return;
     }
 
-    let term = student.currentTerm || "term1";
+    // Use the currently selected term
+    let term =
+        document.getElementById("termSelect")?.value || "term1";
 
     let resultsHTML = `
-        <h3>📚 Subject Results (${term.toUpperCase()})</h3>
+        <h3 style="margin-bottom:10px;">
+            📚 Subject Results (${term.toUpperCase()})
+        </h3>
 
         <table style="
             width:100%;
             border-collapse:collapse;
-            margin-top:10px;
+            text-align:center;
         ">
-            <tr>
-                <th>Subject</th>
-                <th>Total</th>
-                <th>Grade</th>
-            </tr>
+            <thead>
+                <tr style="background:#f2f2f2;">
+                    <th style="padding:8px;border:1px solid #ccc;">Subject</th>
+                    <th style="padding:8px;border:1px solid #ccc;">Class Score</th>
+                    <th style="padding:8px;border:1px solid #ccc;">Exam</th>
+                    <th style="padding:8px;border:1px solid #ccc;">Total</th>
+                    <th style="padding:8px;border:1px solid #ccc;">Grade</th>
+                </tr>
+            </thead>
+            <tbody>
     `;
 
     let totalScore = 0;
@@ -2309,45 +2637,60 @@ async function openStudentModal(index){
 
         let d = student.subjects?.[sub]?.[term];
 
-        if(!d) return;
+        if (!d) return;
 
         let classTotal =
-            d.test1 +
-            d.test2 +
-            d.project +
-            d.group;
+            (d.test1 || 0) +
+            (d.test2 || 0) +
+            (d.project || 0) +
+            (d.group || 0);
 
         let classScore = (classTotal / 100) * 50;
-        let examScore = (d.exam / 100) * 50;
+        let examScore = ((d.exam || 0) / 100) * 50;
 
-        let finalScore =
-            classScore + examScore;
+        let finalScore = classScore + examScore;
 
         totalScore += finalScore;
         subjectCount++;
 
         let grade = "F";
 
-        if(finalScore >= 80) grade = "A";
-        else if(finalScore >= 70) grade = "B";
-        else if(finalScore >= 60) grade = "C";
-        else if(finalScore >= 50) grade = "D";
-        else if(finalScore >= 40) grade = "E";
+        if (finalScore >= 80) grade = "A";
+        else if (finalScore >= 70) grade = "B";
+        else if (finalScore >= 60) grade = "C";
+        else if (finalScore >= 50) grade = "D";
+        else if (finalScore >= 40) grade = "E";
 
         resultsHTML += `
             <tr>
-                <td>${sub}</td>
-                <td>${finalScore.toFixed(1)}</td>
-                <td>${grade}</td>
+                <td style="padding:6px;border:1px solid #ccc;">${sub}</td>
+                <td style="padding:6px;border:1px solid #ccc;">${classScore.toFixed(1)}</td>
+                <td style="padding:6px;border:1px solid #ccc;">${examScore.toFixed(1)}</td>
+                <td style="padding:6px;border:1px solid #ccc;">${finalScore.toFixed(1)}</td>
+                <td style="padding:6px;border:1px solid #ccc;"><strong>${grade}</strong></td>
             </tr>
         `;
     });
 
-    resultsHTML += "</table>";
+    if (subjectCount === 0) {
+        resultsHTML += `
+            <tr>
+                <td colspan="5" style="padding:15px;">
+                    No results available for this term.
+                </td>
+            </tr>
+        `;
+    }
 
-    let average = subjectCount
-        ? (totalScore / subjectCount).toFixed(1)
-        : 0;
+    resultsHTML += `
+            </tbody>
+        </table>
+    `;
+
+    let average =
+        subjectCount > 0
+            ? (totalScore / subjectCount).toFixed(2)
+            : "0.00";
 
     let conduct =
         student.conduct?.[term] || "-";
@@ -2361,17 +2704,21 @@ async function openStudentModal(index){
     let remark =
         student.teacherRemark?.[term] || "-";
 
-    document.getElementById(
-        "studentModalContent"
-    ).innerHTML = `
+    let totalDays =
+        student.totalDays?.[term] || 0;
 
-        <h2>${student.name}</h2>
+    let daysPresent =
+        student.daysPresent?.[term] || 0;
 
-        <p><strong>Class:</strong>
-        ${student.studentclass}</p>
+    document.getElementById("studentModalContent").innerHTML = `
 
-        <p><strong>Gender:</strong>
-        ${student.gender || "Not Set"}</p>
+        <h2 style="margin-bottom:10px;">
+            ${student.name}
+        </h2>
+
+        <p><strong>Class:</strong> ${student.studentclass}</p>
+
+        <p><strong>Gender:</strong> ${student.gender || "Not Set"}</p>
 
         <hr>
 
@@ -2379,29 +2726,28 @@ async function openStudentModal(index){
 
         <hr>
 
-        <p><strong>Average:</strong>
-        ${average}%</p>
+        <p><strong>Average:</strong> ${average}%</p>
 
-        <p><strong>Conduct:</strong>
-        ${conduct}</p>
+        <p><strong>Attendance:</strong> ${daysPresent} / ${totalDays}</p>
 
-        <p><strong>Attitude:</strong>
-        ${attitude}</p>
+        <p><strong>Conduct:</strong> ${conduct}</p>
 
-        <p><strong>Interest:</strong>
-        ${interest}</p>
+        <p><strong>Attitude:</strong> ${attitude}</p>
 
-        <p><strong>Teacher's Remark:</strong>
-        ${remark}</p>
+        <p><strong>Interest:</strong> ${interest}</p>
 
-       
+        <p><strong>Teacher's Remark:</strong><br>${remark}</p>
+
+        <br>
+
+        <button onclick="closeStudentModal()" class="btn btn-primary">
+            Close
+        </button>
+
     `;
 
-    document.getElementById(
-        "studentModal"
-    ).style.display = "flex";
+    document.getElementById("studentModal").style.display = "flex";
 }
-
 
 
 function closeStudentModal(){
@@ -3998,85 +4344,174 @@ async function downloadPDF(){
 // AUTO LOGIN AFTER REFRESH
 window.onload = async function () {
 
+
     let savedUser = JSON.parse(
         localStorage.getItem("loggedInUser")
     );
 
+
     if (savedUser) {
+
 
         // Fetch latest user data from Supabase
         const { data: user, error } = await supabaseClient
+
             .from("users")
+
             .select("*")
+
             .eq("username", savedUser.username)
+
             .single();
+
+
 
         if (!error && user) {
 
+
             currentUser = user;
+console.log("CURRENT USER:", currentUser);
+console.log("USER ROLE:", currentUser.role);
+
+
+            // ===============================
+            // SHOW / HIDE GENERATE ACCOUNT BUTTON
+            // ===============================
+
+            const generateBtn =
+            document.getElementById(
+                "generateAccountsBtn"
+            );
+
+
+            if(generateBtn){
+
+
+                if(
+    currentUser.role &&
+    currentUser.role.toLowerCase() === "admin"
+){
+
+                    generateBtn.style.display =
+                    "block";
+
+                }else{
+
+                    generateBtn.style.display =
+                    "none";
+
+                }
+
+
+            }
+
+
 
             // Update cached session
             localStorage.setItem(
+
                 "loggedInUser",
+
                 JSON.stringify(user)
+
             );
+
+
 
             document.getElementById(
                 "loginBox"
             ).style.display = "none";
 
+
+
             document.getElementById(
                 "app"
             ).style.display = "block";
+
+
 
             document.getElementById(
                 "topNav"
             ).style.display = "flex";
 
+
+
             document.getElementById(
                 "subHeader"
             ).style.display = "flex";
 
+
+
             document.getElementById(
                 "welcomeUser"
             ).innerText =
+
                 "👋 Welcome, " +
+
                 user.firstname +
+
                 " " +
+
                 user.surname;
 
-            // IMPORTANT
+
+
+            // Load system data
+
             await loadTermSettings();
+
 
             await loadStudents();
 
+
             await loadAttendanceData();
+
 
             await loadLogo();
 
+
             await displaySchoolName();
+
 
             await loadTheme();
 
+
+
             updateDashboard();
+
 
             populateStudentList();
 
+
             showPage("dashboardPage");
+
+
 
         } else {
 
+
             // Invalid session
+
             localStorage.removeItem(
                 "loggedInUser"
             );
+
+
         }
+
+
 
     } else {
 
+
         // Load default theme if no user
+
         loadTheme();
+
+
     }
+
+
 };
 
 async function refreshCurrentUser() {
@@ -4108,10 +4543,6 @@ async function showProfile(){
     loadTermSettings();
 
     loadSubjectSelection();
-
-    if(currentUser.role === "admin"){
-        loadSelectedTeacherSubjects();
-    }
 
     loadTeacherSubjects();
 }
