@@ -1820,3 +1820,155 @@ button{
 
 
 
+
+
+
+
+
+.modal-overlay{
+
+    position:fixed;
+    inset:0;
+
+    background:rgba(0,0,0,.6);
+
+    display:none;
+
+    justify-content:center;
+    align-items:center;
+
+    z-index:99999;
+}
+
+.promotion-modal{
+
+    width:650px;
+    max-width:95%;
+
+    background:white;
+
+    border-radius:12px;
+
+    overflow:hidden;
+
+    animation:pop .25s ease;
+}
+
+@keyframes pop{
+
+    from{
+
+        transform:scale(.9);
+
+        opacity:0;
+    }
+
+    to{
+
+        transform:scale(1);
+
+        opacity:1;
+    }
+}
+
+.promotion-header{
+
+    background:#00075D;
+
+    color:white;
+
+    padding:20px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+}
+
+.promotion-header i{
+
+    font-size:28px;
+
+    color:gold;
+}
+
+.promotion-body{
+
+    padding:20px;
+
+    max-height:400px;
+
+    overflow:auto;
+}
+
+.warning-box{
+
+    margin-top:20px;
+
+    background:#fff4e5;
+
+    border-left:5px solid orange;
+
+    padding:15px;
+}
+
+.warning-box ul{
+
+    margin-top:10px;
+
+    margin-bottom:10px;
+}
+
+.promotion-footer{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:10px;
+
+    padding:15px 20px;
+
+    background:#f3f3f3;
+}
+
+.cancel-btn{
+
+    padding:10px 20px;
+
+    border:none;
+
+    background:#999;
+
+    color:white;
+
+    cursor:pointer;
+
+    border-radius:6px;
+}
+
+.promote-btn{
+
+    padding:10px 20px;
+
+    border:none;
+
+    background:#008000;
+
+    color:white;
+
+    cursor:pointer;
+
+    border-radius:6px;
+}
+
+.promote-btn:hover{
+
+    background:#006600;
+}
+
+.cancel-btn:hover{
+
+    background:#777;
+}
