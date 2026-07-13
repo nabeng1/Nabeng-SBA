@@ -4265,163 +4265,301 @@ let currentAcademicYear = "2025/2026";
 
 async function promoteStudents(){
 
-    if(
-        !confirm(
-            "Archive records and promote students?"
-        )
-    ) return;
+    const confirmed =
+        await showPromotionModal();
+
+    if(!confirmed) return;
 
     try{
 
         for(const student of students){
 
-            // Skip graduates
-            if(student.studentclass === "JHS 3")
+            if(student.graduated)
                 continue;
 
-            // Archive current record
-            const archiveRecord = {
+            const archiveRecord={
 
-                studentid: student.id,
-                academic_year: currentAcademicYear,
+                studentid:student.id,
 
-                student_name: student.name,
-                student_class: student.studentclass,
+                academic_year:currentAcademicYear,
 
-                subjects: student.subjects || {},
+                student_name:student.name,
 
-                conduct: student.conduct || {},
-                attitude: student.attitude || {},
-                interest: student.interest || {},
+                student_class:student.studentclass,
+
+                subjects:student.subjects||{},
+
+                conduct:student.conduct||{},
+
+                attitude:student.attitude||{},
+
+                interest:student.interest||{},
 
                 teacher_remark:
-                    student.teacherRemark || {},
+                    student.teacherRemark||{},
 
                 total_days:
-                    student.totalDays || {},
+                    student.totalDays||{},
 
                 days_present:
-                    student.daysPresent || {},
+                    student.daysPresent||{},
 
                 average:
-                    student.average || 0
+                    student.average||0
             };
 
-            const { error } =
-                await supabaseClient
-                    .from("student_history")
-                    .insert([archiveRecord]);
+            const {error}=await supabaseClient
 
-            if(error){
-                console.log(error);
-                throw error;
+                .from("student_history")
+
+                .insert([archiveRecord]);
+
+            if(error) throw error;
+
+            if(student.studentclass==="JHS 3"){
+
+                student.graduated=true;
+
+                continue;
             }
-			
-if(student.studentclass === "JHS 3"){
 
-    student.graduated = true;
+            student.studentclass=
 
-    continue;
-}
-            // Promote class
-            student.studentclass =
                 promotionMap[
                     student.studentclass
-                ] || student.studentclass;
+                ]||
 
-            // Reset academic data
-            student.subjects = {};
+                student.studentclass;
 
-            student.conduct = {};
-            student.attitude = {};
-            student.interest = {};
+            student.subjects={};
 
-            student.teacherRemark = {};
+            student.conduct={};
 
-            student.totalDays = {};
-            student.daysPresent = {};
+            student.attitude={};
 
-            student.average = 0;
+            student.interest={};
 
-            student.currentTerm = "term1";
+            student.teacherRemark={};
+
+            student.totalDays={};
+
+            student.daysPresent={};
+
+            student.average=0;
+
+            student.currentTerm="term1";
         }
 
         await saveStudents();
 
         alert(
-            "Promotion completed successfully!"
+            "Students promoted successfully!"
         );
 
-    }catch(err){
+    }
+
+    catch(err){
 
         console.log(err);
 
         alert(
             "Promotion failed."
         );
+
     }
-	
+
 }
 
-async function restoreFromHistory(){
 
-    const { data: history, error } =
-        await supabaseClient
-            .from("student_history")
-            .select("*");
+function showPromotionModal(){
 
-    if(error){
-        console.error(error);
-        return;
-    }
-
-    history.forEach(record => {
-
-        let student = students.find(
-            s =>
-                s.name.trim().toLowerCase() ===
-                record.student_name.trim().toLowerCase()
+    const modal =
+        document.getElementById(
+            "promotionModal"
         );
 
-        if(!student){
-            console.log(
-                "Student not found:",
-                record.student_name
+    let html = "<table style='width:100%;border-collapse:collapse'>";
+
+    html += `
+        <tr>
+            <th align="left">Current Class</th>
+            <th></th>
+            <th align="left">Next Class</th>
+        </tr>
+    `;
+
+    Object.keys(promotionMap).forEach(cls=>{
+
+        html+=`
+            <tr>
+                <td>${cls}</td>
+                <td style="text-align:center;">➜</td>
+                <td>${promotionMap[cls]}</td>
+            </tr>
+        `;
+    });
+
+    html+=`
+        <tr>
+            <td>JHS 3</td>
+            <td style="text-align:center;">➜</td>
+            <td>Graduated</td>
+        </tr>
+    `;
+
+    html+="</table>";
+
+    document.getElementById(
+        "promotionSummary"
+    ).innerHTML=html;
+
+    modal.style.display="flex";
+
+    return new Promise(resolve=>{
+
+        promotionResolve=resolve;
+
+    });
+
+}
+
+function closePromotionModal(){
+
+    document.getElementById(
+        "promotionModal"
+    ).style.display="none";
+
+    if(promotionResolve){
+
+        promotionResolve(false);
+
+        promotionResolve=null;
+    }
+
+}
+
+function confirmPromotion(){
+
+    document.getElementById(
+        "promotionModal"
+    ).style.display="none";
+
+    if(promotionResolve){
+
+        promotionResolve(true);
+
+        promotionResolve=null;
+    }
+
+}
+
+async function restoreFromHistory(
+    academicYear = currentAcademicYear
+){
+
+    if(
+        !confirm(
+            `Restore all students from ${academicYear}?\n\nThis will overwrite the current academic records.`
+        )
+    ) return;
+
+    try{
+
+        const { data: history, error } =
+            await supabaseClient
+                .from("student_history")
+                .select("*")
+                .eq("academic_year", academicYear);
+
+        if(error) throw error;
+
+        if(!history.length){
+
+            alert(
+                "No archived records found."
             );
+
             return;
         }
 
-        student.studentclass =
-            record.student_class;
+        history.forEach(record=>{
 
-        student.subjects =
-            record.subjects || {};
+            let student =
+                students.find(
+                    s=>s.id===record.studentid
+                );
 
-        student.conduct =
-            record.conduct || {};
+            // Fallback if old records have no studentid
+            if(!student){
 
-        student.attitude =
-            record.attitude || {};
+                student = students.find(
+                    s=>
+                        s.name.trim().toLowerCase() ===
+                        record.student_name.trim().toLowerCase()
+                );
 
-        student.interest =
-            record.interest || {};
+            }
 
-        student.teacherRemark =
-            record.teacher_remark || {};
+            if(!student){
 
-        student.totalDays =
-            record.total_days || {};
+                console.log(
+                    "Student not found:",
+                    record.student_name
+                );
 
-        student.daysPresent =
-            record.days_present || {};
+                return;
+            }
 
-        student.average =
-            record.average || 0;
-    });
+            student.studentclass =
+                record.student_class;
 
-    await saveStudents();
+            student.subjects =
+                record.subjects || {};
 
-    alert("Restore complete!");
+            student.conduct =
+                record.conduct || {};
+
+            student.attitude =
+                record.attitude || {};
+
+            student.interest =
+                record.interest || {};
+
+            student.teacherRemark =
+                record.teacher_remark || {};
+
+            student.totalDays =
+                record.total_days || {};
+
+            student.daysPresent =
+                record.days_present || {};
+
+            student.average =
+                record.average || 0;
+
+            student.currentTerm = "term3";
+
+            // Student is no longer graduated
+            student.graduated = false;
+
+        });
+
+        await saveStudents();
+
+        alert(
+            "Students restored successfully!"
+        );
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(
+            "Failed to restore students."
+        );
+
+    }
+
 }
 function updateStudentSuggestions() {
 
@@ -4937,22 +5075,15 @@ window.onload = async function () {
             // Load system data
 			await loadUsers();
 			
-			
-
             await loadTermSettings();
-
 
             await loadStudents();
 
-
             await loadAttendanceData();
-
 
             await loadLogo();
 
-
             await displaySchoolName();
-
 
             await loadTheme();
 
