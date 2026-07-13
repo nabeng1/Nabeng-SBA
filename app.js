@@ -1582,79 +1582,86 @@ async function handleCSV(event){
 }
 function populateStudentList() {
 
-    let term = activeTerm || document.getElementById("termSelect")?.value || "term1";
+    const term =
+        activeTerm ||
+        document.getElementById("termSelect")?.value ||
+        "term1";
 
-    let list = (filteredStudents && filteredStudents.length)
-        ? filteredStudents
-        : students;
+    const list =
+        (filteredStudents && filteredStudents.length)
+            ? filteredStudents
+            : students;
 
+    // School subject list (used by Admin)
+    const Subjects =
+        (subjects || []).map(sub =>
+            typeof sub === "string" ? sub : sub.name
+        );
 
-    let html = list.map((s, i) => {
+    const html = list.map((s, i) => {
 
+        // Teacher sees only assigned subjects
+        // Admin sees all school subjects
+        const subjectList =
+    currentUser.role === "teacher"
+        ? [...new Set(currentUser.subjects || [])]
+        : [...new Set(schoolSubjects)];
 
-        let teacherSubjects =
-            currentUser.role === "teacher"
-                ? (currentUser.subjects || [])
-                : Object.keys(s.subjects || {});
+        const totalSubjects = subjectList.length;
 
-
-        let totalSubjects = teacherSubjects.length;
         let completed = 0;
         let started = 0;
 
+        subjectList.forEach(subject => {
 
-        teacherSubjects.forEach(subject => {
-
-            let mark = s.subjects?.[subject]?.[term];
-
+            const mark = s.subjects?.[subject]?.[term];
 
             if (!mark) return;
 
+            started++;
 
-            // Check if the subject has saved marks
-            let saved =
-                mark.hasOwnProperty("test1") &&
-                mark.hasOwnProperty("test2") &&
-                mark.hasOwnProperty("project") &&
-                mark.hasOwnProperty("group") &&
-                mark.hasOwnProperty("exam");
+            const isCompleted =
+                mark.test1 !== undefined &&
+                mark.test2 !== undefined &&
+                mark.project !== undefined &&
+                mark.group !== undefined &&
+                mark.exam !== undefined;
 
-
-            if (saved) {
-
-                started++;
+            if (isCompleted) {
                 completed++;
-
             }
 
         });
 
-
-        let progress =
+        const progress =
             totalSubjects > 0
                 ? Math.round((completed / totalSubjects) * 100)
                 : 0;
 
+        let color = "#ef4444";
 
-        let color =
-            progress === 100
-                ? "#22c55e"
-                : "#f59e0b";
+        if (progress === 100) {
 
+            color = "#22c55e";
+
+        } else if (progress > 0) {
+
+            color = "#f59e0b";
+
+        }
 
         return `
-        <div class="card ${s.id === currentStudent?.id ? 'active-student' : ''}"
+
+        <div class="card ${s.id === currentStudent?.id ? "active-student" : ""}"
              onclick="selectFilteredStudent(${i})">
 
             <div style="font-weight:bold;">
                 ${s.name}
             </div>
 
-
             ${
                 started > 0
-                ?
-                `
+                ? `
                 <div style="
                     font-size:12px;
                     margin-top:4px;
@@ -1664,15 +1671,22 @@ function populateStudentList() {
                     ${progress}% Complete
                 </div>
                 `
-                :
-                ""
+                : `
+                <div style="
+                    font-size:12px;
+                    margin-top:4px;
+                    color:#9ca3af;
+                ">
+                    Not Started
+                </div>
+                `
             }
 
         </div>
+
         `;
 
     }).join("");
-
 
     studentsList.innerHTML = html;
 
@@ -3938,7 +3952,7 @@ ${logo ? `
 
     <!-- CONTENT -->
     <div style="position:relative; z-index:1;">
-        <div style="text-align:center; border-bottom:2px solid black; padding:10px;">
+        <div style="text-align:center; border-bottom:2px solid black; padding:5px;">
     
     <div style="display:flex; align-items:center; justify-content:center; gap:15px;">
     
@@ -3955,14 +3969,14 @@ ${logo ? `
 </div>
 
 
-<div style="margin-top:2px; font-size:18px; line-height:1;">
+<div style="margin-top:1px; font-size:18px; line-height:1;">
 
-    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+    <div style="display:flex; justify-content:space-between; margin:0px;">
         <p style="margin:3;"><b>Name:</b> ${s.name}</p>
         <p style="margin:3;"><b>Position:</b> ${position}</p>
     </div>
 
-    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+    <div style="display:flex; justify-content:space-between; margin:0px;">
         <p style="margin:0;"><b>Class:</b> ${s.studentclass}</p>
         <p style="margin:0;"><b>Total Students:</b> ${totalStudents}</p>
     </div>
@@ -3977,7 +3991,7 @@ ${logo ? `
 
 				
 
-        <table style="width:100%; border-collapse:collapse; text-align:center;">
+        <table style="width:100%; border-collapse:collapse; text-align:center; margin: 2px;">
             <tr style="background:#00075D; color: white;">
                 <th style="border:1px ash;">Subject</th>
                 <th style="border:1px ash;">Class Score (50%)</th>
@@ -4127,35 +4141,29 @@ ${s.interest?.[term]||""}
 
 </table>
 
-<br>
+
+</table>
+
+<div style="height:5px;"></div>
 
 <!-- REMARKS -->
-
-<div style="
-border:2px solid #00075D;
+<table style="
+width:100%;
+border-collapse:collapse;
+font-size:16px;
+margin-top:0;
 ">
 
-<div style="
-background:#00075D;color:white;
-padding:5px;
-border:1px solid #00075D;
-">
+<tr style="background:#00075D;color:white;">
+<th style="padding:5px;border:1px solid #00075D;">
 CLASS TEACHER'S REMARK
-</div>
-
-<div style="
-border:1px solid #00075D; 
-background: #fff;
-color:black; 
-padding:5px;
-">
-
+</th><td style="border:1px solid #00075D; background: #fff;color:black; padding:8px;">
 ${s.teacherRemark?.[term]||""}
+</td>
 
-</div>
+</tr>
 
-</div>
-
+</table>
 <br><br>
 
 <!-- SIGNATURES -->
