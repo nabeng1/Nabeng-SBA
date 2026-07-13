@@ -413,7 +413,9 @@ Generate Student Portal Accounts
     🎓 Promote Students
 </button>
 
-<button onclick="restoreFromHistory()">
+<button onclick="restoreFromHistory(
+    academicYear = currentAcademicYear
+)">
     Restore Promotion
 </button>
 
@@ -793,6 +795,70 @@ Generate Student Portal Accounts
 
 </div>
 
+
+<!-- Promotion Confirmation Modal -->
+<div id="promotionModal" class="modal-overlay">
+
+    <div class="promotion-modal">
+
+        <div class="promotion-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h2>Promote Students</h2>
+        </div>
+
+        <div class="promotion-body">
+
+            <p>
+                You are about to promote all students to their
+                next class.
+            </p>
+
+            <div id="promotionSummary"></div>
+
+            <div class="warning-box">
+
+                <h4>This action will:</h4>
+
+                <ul>
+                    <li>✔ Archive current academic records</li>
+                    <li>✔ Promote students to the next class</li>
+                    <li>✔ Reset marks</li>
+                    <li>✔ Reset attendance</li>
+                    <li>✔ Reset remarks</li>
+                    <li>✔ Set current term to Term 1</li>
+                </ul>
+
+                <strong style="color:red;">
+                    This action cannot be undone.
+                </strong>
+
+            </div>
+
+        </div>
+
+        <div class="promotion-footer">
+
+            <button
+                class="cancel-btn"
+                onclick="closePromotionModal()">
+
+                Cancel
+
+            </button>
+
+            <button
+                class="promote-btn"
+                onclick="confirmPromotion()">
+
+                Promote Students
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>
