@@ -472,7 +472,7 @@ button:hover{
 
 <div class="profile">
 
-<img src="https://i.pravatar.cc/200?img=12">
+<img src="">
 
 <h3 id="studentName"></h3>
 
@@ -484,69 +484,98 @@ button:hover{
 
 <div class="dashboard">
 
-<div class="card">
-<i class="fas fa-user"></i>
-<h3>Profile</h3>
-<p>View your personal information</p>
+<div class="card" onclick="openProfile()">
+    <i class="fas fa-user"></i>
+    <h3>Profile</h3>
+    <p>View your personal information</p>
 </div>
 
-<div class="card">
-<i class="fas fa-book"></i>
-<h3>Homework</h3>
-<p>Assignments and class work</p>
+<div class="card" onclick="openHomework()">
+    <i class="fas fa-book"></i>
+    <h3>Homework</h3>
+    <p>Assignments and class work</p>
 </div>
 
-<div class="card">
-<i class="fas fa-chart-line"></i>
-<h3>Results</h3>
-<p>Academic performance</p>
+<div class="card" onclick="openResults()">
+    <i class="fas fa-chart-line"></i>
+    <h3>Results</h3>
+    <p>Academic performance</p>
 </div>
 
-<div class="card">
-<i class="fas fa-check-circle"></i>
-<h3>Attendance</h3>
-<p>Attendance records</p>
+<div class="card" onclick="openAttendance()">
+    <i class="fas fa-check-circle"></i>
+    <h3>Attendance</h3>
+    <p>Attendance records</p>
 </div>
 
-<div class="card">
-<i class="fas fa-calendar-alt"></i>
-<h3>Timetable</h3>
-<p>Weekly class schedule</p>
+<div class="card" onclick="openTimetable()">
+    <i class="fas fa-calendar-alt"></i>
+    <h3>Timetable</h3>
+    <p>Weekly class schedule</p>
 </div>
 
-<div class="card">
-<i class="fas fa-money-bill-wave"></i>
-<h3>Fees</h3>
-<p>Fee payment status</p>
+<div class="card" onclick="openFees()">
+    <i class="fas fa-money-bill-wave"></i>
+    <h3>Fees</h3>
+    <p>Fee payment status</p>
 </div>
 
-<div class="card">
-<i class="fas fa-book-open"></i>
-<h3>Subjects</h3>
-<p>Registered subjects</p>
+<div class="card" onclick="openSubjects()">
+    <i class="fas fa-book-open"></i>
+    <h3>Subjects</h3>
+    <p>Registered subjects</p>
 </div>
 
-<div class="card">
-<i class="fas fa-comments"></i>
-<h3>Messages</h3>
-<p>Messages from teachers</p>
+<div class="card" onclick="openMessages()">
+    <i class="fas fa-comments"></i>
+    <h3>Messages</h3>
+    <p>Messages from teachers</p>
 </div>
 
-<div class="card">
-<i class="fas fa-download"></i>
-<h3>Downloads</h3>
-<p>Report cards and files</p>
+<div class="card" onclick="openDownloads()">
+    <i class="fas fa-download"></i>
+    <h3>Downloads</h3>
+    <p>Report cards and files</p>
 </div>
 
-<div class="card">
-<i class="fas fa-cog"></i>
-<h3>Settings</h3>
-<p>Manage your account</p>
+<div class="card" onclick="openSettings()">
+    <i class="fas fa-cog"></i>
+    <h3>Settings</h3>
+    <p>Manage your account</p>
 </div>
 
 </div>
 </div>
 
+<div id="resultsPage" style="display:none;padding:20px;">
+
+<button onclick="goHome()">⬅ Back</button>
+
+<h2>Academic Results</h2>
+
+<div id="resultsList"></div>
+
+</div>
+
+<div id="subjectsPage" style="display:none;padding:20px;">
+
+<button onclick="goHome()">⬅ Back</button>
+
+<h2>Subjects</h2>
+
+<div id="subjectsList"></div>
+
+</div>
+
+<div id="messagesPage" style="display:none;padding:20px;">
+
+<button onclick="goHome()">⬅ Back</button>
+
+<h2>Messages</h2>
+
+<div id="messagesList"></div>
+
+</div>
 
 <script>
 
@@ -582,6 +611,7 @@ toggle.onclick = function(){
 
 };
 
+
 document.getElementById("loginForm")
 .addEventListener("submit", async function(e){
 
@@ -607,6 +637,9 @@ document.getElementById("loginForm")
         return;
 
     }
+	
+let currentStudent =
+JSON.parse(localStorage.getItem("loggedStudent"));
 
    // Save logged-in student
 localStorage.setItem(
@@ -635,6 +668,191 @@ document.getElementById("studentPortal").style.display = "block";
 
 });
 
+
+async function openResults(){
+
+    document.getElementById("studentPortal").style.display="none";
+    document.getElementById("resultsPage").style.display="block";
+
+    let student =
+    JSON.parse(localStorage.getItem("loggedStudent"));
+
+    const {data,error}=await supabaseClient
+    .from("students")
+    .select("*")
+    .eq("id",student.id)
+    .single();
+
+    if(error) return;
+
+    let term=data.currentterm;
+
+    let results=data.subjects?.[term] || {};
+
+    let html="";
+
+    Object.entries(results).forEach(([subject,mark])=>{
+
+        html+=`
+        <div class="resultRow">
+            <b>${subject}</b>
+            ${mark.total}
+            ${mark.grade}
+        </div>
+        `;
+
+    });
+
+    document.getElementById("resultsList").innerHTML=html;
+
+}
+
+async function openMessages(){
+
+    document.getElementById("studentPortal").style.display = "none";
+    document.getElementById("messagesPage").style.display = "block";
+
+    let student =
+        JSON.parse(localStorage.getItem("loggedStudent"));
+
+    if(!student) return;
+
+    const {data,error} =
+        await supabaseClient
+        .from("chats")
+        .select("*")
+        .eq("to_user", student.studentid)
+        .eq("to_type","student")
+        .order("time",{ascending:false});
+
+    if(error){
+
+        console.log(error);
+        return;
+
+    }
+
+    let html="";
+
+    data.forEach(msg=>{
+
+        html += `
+            <div style="
+                background:white;
+                padding:15px;
+                margin:10px 0;
+                border-radius:10px;
+            ">
+
+                <b>${msg.from_user}</b>
+
+                <p>${msg.text}</p>
+
+                <small>
+                    ${new Date(msg.time).toLocaleString()}
+                </small>
+
+            </div>
+        `;
+
+    });
+
+    document.getElementById("messagesList").innerHTML =
+        html || "No messages.";
+
+}
+
+async function openAttendance(){
+
+    let student=
+    JSON.parse(localStorage.getItem("loggedStudent"));
+
+    const {data,error}=await supabaseClient
+    .from("attendance")
+    .select("*")
+    .eq("studentid",student.id);
+
+    console.log(data);
+
+}
+
+
+async function openHomework(){
+
+    let student=
+    JSON.parse(localStorage.getItem("loggedStudent"));
+
+    const {data}=await supabaseClient
+    .from("homework")
+    .select("*")
+    .eq("class",student.studentclass);
+
+    console.log(data);
+
+}
+
+
+async function openSubjects(){
+
+    document.getElementById("studentPortal").style.display = "none";
+    document.getElementById("subjectsPage").style.display = "block";
+
+    let student =
+        JSON.parse(localStorage.getItem("loggedStudent"));
+
+    if(!student) return;
+
+    let html = "";
+
+    let subjects =
+        student.subjects?.[student.currentterm] || {};
+
+    Object.keys(subjects).forEach(subject=>{
+
+        html += `
+            <div class="resultRow">
+                ${subject}
+            </div>
+        `;
+
+    });
+
+    document.getElementById("subjectsList").innerHTML =
+        html || "No subjects available.";
+
+}
+
+
+async function openFees(){
+
+    let student=
+    JSON.parse(localStorage.getItem("loggedStudent"));
+
+    const {data}=await supabaseClient
+    .from("fees")
+    .select("*")
+    .eq("studentid",student.id)
+    .single();
+
+    console.log(data);
+
+}
+
+
+function goHome(){
+
+    document.getElementById("studentPortal").style.display = "block";
+
+    document.getElementById("resultsPage").style.display = "none";
+
+    document.getElementById("subjectsPage").style.display = "none";
+
+    document.getElementById("messagesPage").style.display = "none";
+
+}
+
 </script>
+
+
 </body>
 </html>
