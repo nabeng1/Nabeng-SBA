@@ -20,7 +20,6 @@ let subjects = [
 let students = [];
 let users = [];
 let currentUser = null;
-let selectedUser = null;
 let selectedMediaFile = null;
 let filteredStudents = [];
 let gradeChartInstance = null;
@@ -1395,30 +1394,43 @@ if(id === "userProfilePage"){
 
 function updateDashboard(){
 
-    totalStudents.innerText = students.length;
+    if(!Array.isArray(students)) return;
 
-    if(students.length === 0) return;
+    document.getElementById("totalStudents").innerText =
+        students.length;
 
-    let averages = students.map(s => s.average || 0);
+    if(students.length === 0){
 
-    let highest = Math.max(...averages);
-    let avg = averages.reduce((a,b)=>a+b,0)/students.length;
+        document.getElementById("highestScore").innerText = "0%";
+        document.getElementById("avgScore").innerText = "0%";
+        document.getElementById("passRate").innerText = "0%";
 
-    let pass = averages.filter(x => x >= 50).length;
-    let passRate = (pass / students.length) * 100;
+        return;
+    }
+
+    const averages = students.map(s => Number(s.average) || 0);
+
+    const highest = Math.max(...averages);
+
+    const average =
+        averages.reduce((sum,x)=>sum+x,0) /
+        averages.length;
+
+    const passRate =
+        averages.filter(x=>x>=50).length /
+        averages.length * 100;
 
     document.getElementById("highestScore").innerText =
         highest.toFixed(1) + "%";
 
     document.getElementById("avgScore").innerText =
-        avg.toFixed(1) + "%";
+        average.toFixed(1) + "%";
 
     document.getElementById("passRate").innerText =
         passRate.toFixed(0) + "%";
 
-    
     drawCharts();
-    
+
 }
 
 function displayStudents(){
@@ -2677,158 +2689,256 @@ function confirmDelete(){
 }
 
 
-async function openStudentModal(index) {
+function openStudentModal(index) {
 
-    let student = students[index];
-
-    if (!student) {
-        alert("Student not found");
-        return;
-    }
-
-    // Use the currently selected term
-    let term =
-        document.getElementById("termSelect")?.value || "term1";
-
-    let resultsHTML = `
-        <h3 style="margin-bottom:10px;">
-            📚 Subject Results (${term.toUpperCase()})
-        </h3>
-
-        <table style="
-            width:100%;
-            border-collapse:collapse;
-            text-align:center;
-        ">
-            <thead>
-                <tr style="background:#f2f2f2;">
-                    <th style="padding:8px;border:1px solid #ccc;">Subject</th>
-                    <th style="padding:8px;border:1px solid #ccc;">Class Score</th>
-                    <th style="padding:8px;border:1px solid #ccc;">Exam</th>
-                    <th style="padding:8px;border:1px solid #ccc;">Total</th>
-                    <th style="padding:8px;border:1px solid #ccc;">Grade</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    let totalScore = 0;
-    let subjectCount = 0;
-
-    subjects.forEach(sub => {
-
-        let d = student.subjects?.[sub]?.[term];
-
-        if (!d) return;
-
-        let classTotal =
-            (d.test1 || 0) +
-            (d.test2 || 0) +
-            (d.project || 0) +
-            (d.group || 0);
-
-        let classScore = (classTotal / 100) * 50;
-        let examScore = ((d.exam || 0) / 100) * 50;
-
-        let finalScore = classScore + examScore;
-
-        totalScore += finalScore;
-        subjectCount++;
-
-        let grade = "F";
-
-        if (finalScore >= 80) grade = "A";
-        else if (finalScore >= 70) grade = "B";
-        else if (finalScore >= 60) grade = "C";
-        else if (finalScore >= 50) grade = "D";
-        else if (finalScore >= 40) grade = "E";
-
-        resultsHTML += `
-            <tr>
-                <td style="padding:6px;border:1px solid #ccc;">${sub}</td>
-                <td style="padding:6px;border:1px solid #ccc;">${classScore.toFixed(1)}</td>
-                <td style="padding:6px;border:1px solid #ccc;">${examScore.toFixed(1)}</td>
-                <td style="padding:6px;border:1px solid #ccc;">${finalScore.toFixed(1)}</td>
-                <td style="padding:6px;border:1px solid #ccc;"><strong>${grade}</strong></td>
-            </tr>
-        `;
-    });
-
-    if (subjectCount === 0) {
-        resultsHTML += `
-            <tr>
-                <td colspan="5" style="padding:15px;">
-                    No results available for this term.
-                </td>
-            </tr>
-        `;
-    }
-
-    resultsHTML += `
-            </tbody>
-        </table>
-    `;
-
-    let average =
-        subjectCount > 0
-            ? (totalScore / subjectCount).toFixed(2)
-            : "0.00";
-
-    let conduct =
-        student.conduct?.[term] || "-";
-
-    let attitude =
-        student.attitude?.[term] || "-";
-
-    let interest =
-        student.interest?.[term] || "-";
-
-    let remark =
-        student.teacherRemark?.[term] || "-";
-
-    let totalDays =
-        student.totalDays?.[term] || 0;
-
-    let daysPresent =
-        student.daysPresent?.[term] || 0;
+    const s = students[index];
 
     document.getElementById("studentModalContent").innerHTML = `
 
-        <h2 style="margin-bottom:10px;">
-            ${student.name}
-        </h2>
+<div class="student-profile">
 
-        <p><strong>Class:</strong> ${student.studentclass}</p>
+    <!-- Header -->
+    <div class="profile-header">
 
-        <p><strong>Gender:</strong> ${student.gender || "Not Set"}</p>
-
-        <hr>
-
-        ${resultsHTML}
-
-        <hr>
-
-        <p><strong>Average:</strong> ${average}%</p>
-
-        <p><strong>Attendance:</strong> ${daysPresent} / ${totalDays}</p>
-
-        <p><strong>Conduct:</strong> ${conduct}</p>
-
-        <p><strong>Attitude:</strong> ${attitude}</p>
-
-        <p><strong>Interest:</strong> ${interest}</p>
-
-        <p><strong>Teacher's Remark:</strong><br>${remark}</p>
-
-        <br>
-
-        <button onclick="closeStudentModal()" class="btn btn-primary">
-            Close
+        <button class="modal-close"
+            onclick="closeStudentModal()">
+            <i class="fas fa-times"></i>
         </button>
 
-    `;
+        <div class="photo-container">
+
+            <img
+                id="studentPhoto"
+                src="${s.photo || ''}"
+                class="profile-photo"
+                onclick="document.getElementById('photoUpload').click()">
+
+            <div class="photo-hover">
+
+                <i class="fas fa-camera"></i>
+                <span>Upload</span>
+
+            </div>
+
+            <input
+                id="photoUpload"
+                type="file"
+                hidden
+                accept="image/*"
+                onchange="uploadStudentPhoto(${index},this.files[0])">
+
+        </div>
+
+        <h2>${s.name}</h2>
+
+        <p>
+            <i class="fas fa-user-graduate"></i>
+            Class ${s.studentclass}
+        </p>
+
+        <span class="student-status ${
+            s.passwordchanged ? "active" : "warning"
+        }">
+
+            ${
+                s.passwordchanged
+                ? '<i class="fas fa-check-circle"></i> Active'
+                : '<i class="fas fa-clock"></i> Temporary Password'
+            }
+
+        </span>
+
+    </div>
+
+    <!-- Information -->
+
+    <div class="profile-body">
+
+        <!-- Student ID -->
+
+        <div class="info-card">
+
+            <label>
+                <i class="fas fa-id-card"></i>
+                Student ID
+            </label>
+
+            <div class="info-row">
+
+                <span id="studentIDText">
+
+                    ${s.studentid || "Not Generated"}
+
+                </span>
+
+                <button
+                    class="icon-btn"
+                    onclick="copyStudentID()">
+
+                    <i class="fas fa-copy"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- Password -->
+
+        <div class="info-card">
+
+            <label>
+
+                <i class="fas fa-lock"></i>
+
+                Password
+
+            </label>
+
+            <div class="info-row">
+
+                <span id="passwordText">
+
+                    ••••••••
+
+                </span>
+
+                <input
+                    id="studentPassword"
+                    type="hidden"
+                    value="${s.studentpassword || ''}">
+
+                <div class="action-icons">
+
+                    <button
+                        class="icon-btn"
+                        onclick="togglePassword()">
+
+                        <i class="fas fa-eye"></i>
+
+                    </button>
+
+                    <button
+                        class="icon-btn"
+                        onclick="copyStudentPassword()">
+
+                        <i class="fas fa-copy"></i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+
+    <div class="profile-footer">
+
+        <button
+            class="primary-btn"
+            onclick="document.getElementById('photoUpload').click()">
+
+            <i class="fas fa-upload"></i>
+
+            Upload Photo
+
+        </button>
+
+        <button
+            class="secondary-btn"
+            onclick="closeStudentModal()">
+
+            <i class="fas fa-times"></i>
+
+            Close
+
+        </button>
+
+    </div>
+
+</div>
+
+`;
 
     document.getElementById("studentModal").style.display = "flex";
+
+}
+
+async function uploadStudentPhoto(index, file){
+
+    if(!file) return;
+
+    const student = students[index];
+
+    const fileName =
+        `${student.id}-${Date.now()}.${file.name.split('.').pop()}`;
+
+    // Upload to Supabase Storage
+    const { error } = await supabase.storage
+        .from("student-photos")
+        .upload(fileName, file, {
+            upsert: true
+        });
+
+    if(error){
+        alert(error.message);
+        return;
+    }
+
+    const { data } = supabase.storage
+        .from("student-photos")
+        .getPublicUrl(fileName);
+
+    await supabase
+        .from("students")
+        .update({
+            photo: data.publicUrl
+        })
+        .eq("id", student.id);
+
+    student.photo = data.publicUrl;
+
+    openStudentModal(index);
+
+    alert("Student photo updated successfully.");
+}
+
+
+function togglePassword() {
+
+    const hidden = document.getElementById("studentPassword");
+    const text = document.getElementById("passwordText");
+
+    if (text.innerText === "••••••••") {
+        text.innerText = hidden.value;
+    } else {
+        text.innerText = "••••••••";
+    }
+
+}
+
+function copyStudentID() {
+
+    const id = document.getElementById("studentIDText").innerText;
+
+    navigator.clipboard.writeText(id);
+
+    showToast("Student ID copied.");
+
+}
+
+function copyStudentPassword() {
+
+    const password = document.getElementById("studentPassword").value;
+
+    navigator.clipboard.writeText(password);
+
+    showToast("Password copied.");
+
 }
 
 
@@ -4055,15 +4165,15 @@ let totalScore =
 
     html += `
     
-    <tr>
-
+    <tr style="color: solid back;">
+			
         <td style="border:1px solid black;">${sub.toUpperCase()}</td>
         <td style="border:1px solid black;">${Math.round(classScore)}</td>
 		<td style="border:1px solid black;">${Math.round(examScore)}</td>
 		<td style="border:1px solid black;">${Math.round(totalScore)}</td>
         <td style="border:1px solid black;">${grade}</td>
         <td style="border:1px solid black;">${remark}</td>
-
+			
 
     </tr>
 
@@ -6413,49 +6523,163 @@ async function loadPlans(){
 
     document.getElementById("planOutput").innerHTML = html;
 }
+let chatContacts = [];
+
+async function loadChatContacts(){
+
+    chatContacts = [];
+
+    // STAFF
+    let staff = users
+        .filter(u => u.id !== currentUser.id)
+        .map(u => ({
+            id: u.id,
+            name: `${u.firstname} ${u.surname}`,
+            type: "teacher",
+            class: "",
+            photo: u.profilePic
+        }));
+
+    chatContacts.push(...staff);
+
+    // STUDENTS (Teachers only)
+    if(currentUser.role === "teacher"){
+
+        students.forEach(s=>{
+
+            chatContacts.push({
+
+                id: s.id,
+                name: s.name,
+                type: "student",
+                class: s.studentclass,
+                photo: s.photo
+
+            });
+
+        });
+
+    }
+
+    // Students (Admin)
+    if(currentUser.role==="admin"){
+
+        students.forEach(s=>{
+
+            chatContacts.push({
+
+                id:s.id,
+                name:s.name,
+                type:"student",
+                class:s.studentclass,
+                photo:s.photo
+
+            });
+
+        });
+
+    }
+
+}
+
 
 
 
 function displayUsers(){
 
-    let usersList = users.filter(u =>
+    let chatList = [];
+
+    // STAFF
+    users
+    .filter(u =>
         u.username !== currentUser.username &&
         u.schoolid === currentUser.schoolid
-    );
+    )
+    .forEach(user => {
+
+        chatList.push({
+            id: user.username,
+            type: "user",
+            firstname: user.firstname,
+            surname: user.surname,
+            profilePic: user.profilePic,
+            lastSeen: user.lastSeen
+        });
+
+    });
+
+    // STUDENTS
+    if(currentUser.role === "teacher" ||
+       currentUser.role === "admin"){
+
+        students.forEach(student => {
+
+            chatList.push({
+
+    id: student.id,
+
+    type: "student",
+
+    firstname: student.name,
+
+    profilePic: student.photo,
+
+    studentclass: student.studentclass
+
+});
+
+        });
+
+    }
 
     let html = "";
 
-    usersList.forEach(user => {
+    chatList.forEach(person => {
 
-        // USER INITIALS
-        let initials =
-            user.firstname.charAt(0).toUpperCase() +
-            user.surname.charAt(0).toUpperCase();
+           let initials = "";
 
-        // ONLINE STATUS
+        if(person.type === "student"){
+
+            initials =
+                person.firstname
+                .charAt(0)
+                .toUpperCase();
+
+        }else{
+
+            initials =
+                person.firstname.charAt(0).toUpperCase() +
+                person.surname.charAt(0).toUpperCase();
+
+        }
+
         let online =
-            user.lastSeen &&
-            (Date.now() - user.lastSeen < 60000);
+            person.type === "user" &&
+            person.lastSeen &&
+            (Date.now() - person.lastSeen < 60000);
 
-        // PROFILE IMAGE OR INITIALS
         let avatar = "";
 
-        if(user.profilePic){
+        if(person.profilePic){
 
             avatar = `
             <div class="avatar-wrapper">
 
-                <img src="${user.profilePic}"
+                <img src="${person.profilePic}"
                      class="chat-avatar-img">
 
-                <div class="online-dot
-                    ${online ? 'online' : 'offline'}">
-                </div>
+                ${
+                    person.type === "user"
+                    ? `<div class="online-dot
+                        ${online ? 'online' : 'offline'}">
+                       </div>`
+                    : ""
+                }
 
             </div>
             `;
 
-        } else {
+        }else{
 
             avatar = `
             <div class="avatar-wrapper">
@@ -6464,121 +6688,205 @@ function displayUsers(){
                     ${initials}
                 </div>
 
-                <div class="online-dot
-                    ${online ? 'online' : 'offline'}">
-                </div>
+                ${
+                    person.type === "user"
+                    ? `<div class="online-dot
+                        ${online ? 'online' : 'offline'}">
+                       </div>`
+                    : ""
+                }
 
             </div>
             `;
         }
 
-        // USER CARD
         html += `
-        <div class="chat-user
-            ${selectedUser === user.username ? 'active' : ''}"
+        <div class="chat-user"
 
-            onclick="selectUser('${user.username}')">
+            onclick="selectUser(
+                '${person.id}',
+                '${person.type}'
+            )">
 
             ${avatar}
 
             <div class="user-details">
 
-    <div class="chat-name">
-        ${user.firstname} ${user.surname}
-    </div>
+                <div class="chat-name">
 
-    <div class="last-seen">
-        ${online ? "Online" : "Offline"}
-    </div>
+                    ${
+                        person.type === "student"
+                        ? "🎓 " + person.firstname
+                        : person.firstname + " " + person.surname
+                    }
 
-</div>
+                </div>
+
+                <div class="last-seen">
+
+                    ${
+                        person.type === "student"
+                        ? person.studentclass
+                        : (online ? "Online" : "Offline")
+                    }
+
+                </div>
+
+            </div>
 
         </div>
-        `;
-    });
+	`});
 
     document.getElementById("userList").innerHTML = html;
 }
 
 
-function selectUser(username){
+selectedUser = id;
+selectedUserType = type;
 
-    let user = users.find(
-        u => u.username === username
-    );
+function selectUser(id, type){
 
-    document.getElementById("chatUserName")
-    .innerText =
-    `${user.firstname} ${user.surname}`;
+    selectedUser = id;
+    selectedUserType = type;
 
-    document.getElementById("chatUserStatus")
-    .innerText =
-    (Date.now() - user.lastSeen < 60000)
-    ? "Online"
-    : "Offline";
+    let person = null;
 
-    if(user.profilePic){
-        document.getElementById(
-            "chatUserAvatar"
-        ).src = user.profilePic;
+    // ==========================
+    // STAFF
+    // ==========================
+    if(type === "user"){
+
+        person = users.find(
+            u => u.username === id
+        );
+
+        if(!person) return;
+
+        document.getElementById("chatUserName").innerText =
+            `${person.firstname} ${person.surname}`;
+
+        let online =
+            person.lastSeen &&
+            (Date.now() - person.lastSeen < 60000);
+
+        document.getElementById("chatUserStatus").innerText =
+            online ? "Online" : "Offline";
+
+        if(person.profilePic){
+
+            document.getElementById("chatUserAvatar").src =
+                person.profilePic;
+
+        }else{
+
+            document.getElementById("chatUserAvatar").src =
+                "default-avatar.png";   // use your default image
+
+        }
+
     }
 
-    selectedUser = username;
+    // ==========================
+    // STUDENT
+    // ==========================
+    else if(type === "student"){
+
+        person = students.find(
+            s => s.id == id
+        );
+
+        if(!person) return;
+
+        document.getElementById("chatUserName").innerText =
+            person.name;
+
+        document.getElementById("chatUserStatus").innerText =
+            `Student • ${person.studentclass}`;
+
+        if(person.photo){
+
+            document.getElementById("chatUserAvatar").src =
+                person.photo;
+
+        }else{
+
+            document.getElementById("chatUserAvatar").src =
+                "default-student.png"; // or your default avatar
+
+        }
+
+    }
 
     displayUsers();
 
     displayChat();
 
-    // MOBILE ONLY
+    // MOBILE
     if(window.innerWidth <= 768){
 
-        document.getElementById("usersPanel")
-            .style.display = "none";
+        document.getElementById("usersPanel").style.display = "none";
 
-        document.getElementById("conversationPanel")
-            .style.display = "flex";
+        document.getElementById("conversationPanel").style.display = "flex";
+
     }
 
 }
 
-async function sendMessage(){
+async function sendMessage() {
 
-    if(!selectedUser){
-        return alert("Select a user first");
+    // =========================
+    // CHECK CONTACT
+    // =========================
+    if (!selectedUser) {
+        return alert("Select a user or student first.");
     }
 
-    let input = document.getElementById("chatInput");
+    const input = document.getElementById("chatInput");
+    const mediaInput = document.getElementById("mediaInput");
 
-    let mediaInput = document.getElementById("mediaInput");
+    const text = input.value.trim();
+    const file = selectedMediaFile;
 
-    let text = input.value.trim();
+    if (!text && !file) return;
 
-    let file = selectedMediaFile;
+    // =========================
+    // MESSAGE OBJECT
+    // =========================
+    let message = {
 
-    if(!text && !file) return;
+        schoolid: currentUser.schoolid,
 
+        from_user: currentUser.username,
+        from_type: currentUser.role,
+
+        to_user: selectedUser,
+        to_type: selectedUserType,
+
+        text: text,
+
+        type: file ? "media" : "text",
+
+        media: null,
+        mediatype: null,
+        filename: null,
+
+        time: Date.now()
+
+    };
+
+    // =========================
     // TEXT ONLY
-    if(!file){
+    // =========================
+    if (!file) {
 
         const { error } = await supabaseClient
             .from("chats")
-            .insert([
-                {
-                    from_user: currentUser.username,
-                    to_user: selectedUser,
-                    text: text,
-                    type: "text",
-                    time: Date.now(),
-                    schoolid: currentUser.schoolid
-                }
-            ]);
+            .insert([message]);
 
-if(error){
-    console.log(JSON.stringify(error, null, 2));
-    console.error(error);
-    alert(JSON.stringify(error));
-    return;
-}
+        if (error) {
+            console.error(error);
+            return alert("Failed to send message.");
+        }
 
         input.value = "";
 
@@ -6586,76 +6894,52 @@ if(error){
 
         return;
     }
-let recorder;
-let chunks=[];
 
-navigator.mediaDevices
-.getUserMedia({audio:true})
-.then(stream=>{
+    // =========================
+    // MEDIA MESSAGE
+    // =========================
+    const reader = new FileReader();
 
-    recorder =
-        new MediaRecorder(stream);
+    reader.onload = async function (e) {
 
-    recorder.ondataavailable =
-        e=>chunks.push(e.data);
-
-});
-    // MEDIA
-    let reader = new FileReader();
-
-    reader.onload = async function(e){
+        message.media = e.target.result;
+        message.mediatype = file.type;
+        message.filename = file.name;
 
         const { error } = await supabaseClient
-    .from("chats")
-    .insert([
-        {
-            from_user: currentUser.username,
-            to_user: selectedUser,
-            text: text,
-            media: e.target.result,
-            mediatype: file.type,
-            filename: file.name,
-            type: "media",
-            time: Date.now(),
-            schoolid: currentUser.schoolid
-        }
-    ]);
+            .from("chats")
+            .insert([message]);
 
-const { data } = await supabaseClient
-    .from("chats")
-    .select("*")
-    .order("id", { ascending: false })
-    .limit(1);
-
-console.log(JSON.stringify(data[0], null, 2));
-
-        if(error){
+        if (error) {
             console.error(error);
-            return alert("Failed to send media");
+            return alert("Failed to send media.");
         }
 
         input.value = "";
-
         mediaInput.value = "";
 
         selectedMediaFile = null;
-		
-		
 
         displayChat();
+
     };
 
     reader.readAsDataURL(file);
-}
-async function displayChat(){
 
-    if(!selectedUser){
+}
+async function displayChat() {
+
+    if (!selectedUser) {
 
         document.getElementById("chatBox").innerHTML =
-            "<p>Select a user</p>";
+            "<p>Select a user or student</p>";
 
         return;
     }
+
+    // ===============================
+    // LOAD CHAT
+    // ===============================
 
     const { data: chats, error } = await supabaseClient
         .from("chats")
@@ -6663,49 +6947,72 @@ async function displayChat(){
         .eq("schoolid", currentUser.schoolid)
         .order("time", { ascending: true });
 
-    if(error){
+    if (error) {
         console.error(error);
         return;
     }
-	
-	await supabaseClient
-.from("chats")
-.update({
-    delivered:true
-})
-.eq("to_user", currentUser.username)
-.eq("from_user", selectedUser)
-.eq("delivered", false);
 
+    // ===============================
+    // MARK DELIVERED
+    // ===============================
 
-	
-await supabaseClient
-.from("chats")
-.update({
-    seen:true
-})
-.eq("to_user", currentUser.username)
-.eq("from_user", selectedUser)
-.eq("seen", false);
+    await supabaseClient
+        .from("chats")
+        .update({ delivered: true })
+        .eq("to_user", currentUser.username)
+        .eq("from_user", selectedUser)
+        .eq("to_type", currentUser.role)
+        .eq("from_type", selectedUserType)
+        .eq("delivered", false);
 
+    // ===============================
+    // MARK SEEN
+    // ===============================
 
-    let filtered = chats.filter(c =>
-        (c.from_user === currentUser.username &&
-         c.to_user === selectedUser) ||
+    await supabaseClient
+        .from("chats")
+        .update({ seen: true })
+        .eq("to_user", currentUser.username)
+        .eq("from_user", selectedUser)
+        .eq("to_type", currentUser.role)
+        .eq("from_type", selectedUserType)
+        .eq("seen", false);
 
-        (c.from_user === selectedUser &&
-         c.to_user === currentUser.username)
+    // ===============================
+    // FILTER CONVERSATION
+    // ===============================
+
+    let filtered = chats.filter(msg =>
+
+        (
+            msg.from_user === currentUser.username &&
+            msg.from_type === currentUser.role &&
+            msg.to_user === selectedUser &&
+            msg.to_type === selectedUserType
+        )
+
+        ||
+
+        (
+            msg.from_user === selectedUser &&
+            msg.from_type === selectedUserType &&
+            msg.to_user === currentUser.username &&
+            msg.to_type === currentUser.role
+        )
+
     );
 
     let html = "";
 
     filtered.forEach(msg => {
 
-        let mine = msg.from_user === currentUser.username;
+        let mine =
+            msg.from_user === currentUser.username &&
+            msg.from_type === currentUser.role;
 
         html += `
+
 <div
-    <div
     ondblclick="selectMessage(${msg.id})"
     oncontextmenu="
         showContextMenu(event,${msg.id});
@@ -6717,32 +7024,34 @@ await supabaseClient
         cursor:pointer;
     ">
 
+<div style="
+    display:inline-block;
+    padding:10px;
+    border-radius:8px;
+    background:${mine ? "#2563eb" : "#1e293b"};
+    color:white;
+    max-width:300px;
+    overflow:hidden;
+">
 
-            <div style="
-                display:inline-block;
-                padding:10px;
-                border-radius:8px;
-                background:${mine ? "#2563eb" : "#1e293b"};
-                color:white;
-                max-width:300px;
-                overflow:hidden;
-                position:relative;
-            ">
-        `;
+`;
 
-        // DELETED MESSAGE
-       if(msg.deleted){
+        // ==========================
+        // DELETED
+        // ==========================
 
-    html += `
-        <div class="deleted-message">
-            🚫 This message was deleted
-        </div>
-    `;
-}
-        else{
+        if (msg.deleted) {
+
+            html += `
+                <div class="deleted-message">
+                    🚫 This message was deleted
+                </div>
+            `;
+
+        } else {
 
             // TEXT
-            if(msg.text){
+            if (msg.text) {
 
                 html += `
                     <div style="margin-bottom:8px;">
@@ -6752,89 +7061,90 @@ await supabaseClient
             }
 
             // IMAGE
-            if(msg.mediatype &&
-               msg.mediatype.startsWith("image/")){
+            if (
+                msg.mediatype &&
+                msg.mediatype.startsWith("image/")
+            ) {
 
                 html += `
-                    <img src="${msg.media}"
-                         style="
+                    <img
+                        src="${msg.media}"
+                        style="
                             width:100%;
+                            margin-top:8px;
                             border-radius:10px;
-                            margin-top:5px;
-                         ">
+                        ">
                 `;
             }
 
             // VIDEO
-            else if(msg.mediatype &&
-                    msg.mediatype.startsWith("video/")){
+            else if (
+                msg.mediatype &&
+                msg.mediatype.startsWith("video/")
+            ) {
 
                 html += `
                     <video controls
-                           style="
-                                width:100%;
-                                border-radius:10px;
-                                margin-top:5px;
-                           ">
+                        style="
+                            width:100%;
+                            margin-top:8px;
+                            border-radius:10px;
+                        ">
                         <source src="${msg.media}">
                     </video>
                 `;
             }
 
-            // FILES
-            else if(msg.media){
+            // OTHER FILES
+            else if (msg.media) {
 
                 html += `
-                    <a href="${msg.media}"
-                       download="${msg.filename}"
-                       style="
+                    <a
+                        href="${msg.media}"
+                        download="${msg.filename}"
+                        style="
                             color:#93c5fd;
                             text-decoration:none;
-                       ">
+                        ">
                         📄 ${msg.filename}
                     </a>
                 `;
             }
-        }
 
-        // DELETE BUTTON FOR MY MESSAGES ONLY
-        if(mine && !msg.deleted){
-
-            html += `
-                <div style="
-                    margin-top:5px;
-                    text-align:right;
-                ">
-                </div>
-            `;
         }
 
         html += `
-    <div style="
-        text-align:right;
-        font-size:11px;
-        margin-top:5px;
-        color:#cbd5e1;
-    ">
-        ${new Date(msg.time).toLocaleTimeString([],{
-            hour:'2-digit',
-            minute:'2-digit'
-        })}
-        ${mine ? getTicks(msg) : ""}
-    </div>
 
-    </div>
+<div style="
+    margin-top:6px;
+    font-size:11px;
+    text-align:right;
+    color:#cbd5e1;
+">
+
+${new Date(msg.time).toLocaleTimeString([],{
+    hour:"2-digit",
+    minute:"2-digit"
+})}
+
+${mine ? getTicks(msg) : ""}
+
 </div>
+
+</div>
+
+</div>
+
 `;
-		
+
     });
 
     document.getElementById("chatBox").innerHTML = html;
 
     document.getElementById("chatBox").scrollTop =
         document.getElementById("chatBox").scrollHeight;
-}
 
+}
 function selectMessage(messageId){
 
     selectedMessageId = messageId;
