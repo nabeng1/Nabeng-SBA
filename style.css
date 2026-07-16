@@ -1969,3 +1969,268 @@ button{
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+.student-profile{
+    width:100%;
+    max-width:520px;
+    margin:auto;
+    border-radius:22px;
+    overflow:hidden;
+    background:#1f2937;
+    color:#fff;
+    box-shadow:0 25px 60px rgba(0,0,0,.35);
+}
+
+.profile-header{
+
+    background:linear-gradient(135deg,#2563eb,#3b82f6);
+
+    padding:35px 25px;
+
+    text-align:center;
+
+    position:relative;
+
+}
+
+.modal-close{
+
+    position:absolute;
+
+    top:15px;
+
+    right:15px;
+
+    width:38px;
+
+    height:38px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.15);
+
+    color:white;
+
+    cursor:pointer;
+
+}
+
+.photo-container{
+
+    width:130px;
+
+    height:130px;
+
+    margin:auto;
+
+    position:relative;
+
+}
+
+.profile-photo{
+
+    width:100%;
+
+    height:100%;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    border:5px solid white;
+
+    cursor:pointer;
+
+}
+
+.photo-hover{
+
+    position:absolute;
+
+    inset:0;
+
+    border-radius:50%;
+
+    background:rgba(0,0,0,.5);
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    opacity:0;
+
+    transition:.3s;
+
+}
+
+.photo-container:hover .photo-hover{
+
+    opacity:1;
+
+}
+
+.student-status{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:7px 15px;
+
+    border-radius:30px;
+
+    margin-top:12px;
+
+    font-size:13px;
+
+}
+
+.student-status.active{
+
+    background:#22c55e;
+
+}
+
+.student-status.warning{
+
+    background:#f59e0b;
+
+}
+
+.profile-body{
+
+    padding:25px;
+
+    display:grid;
+
+    gap:20px;
+
+}
+
+.info-card{
+
+    background:#2d3748;
+
+    padding:18px;
+
+    border-radius:14px;
+
+}
+
+.info-card label{
+
+    display:block;
+
+    margin-bottom:10px;
+
+    color:#cbd5e1;
+
+}
+
+.info-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.action-icons{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.icon-btn{
+
+    width:40px;
+
+    height:40px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#2563eb;
+
+    color:white;
+
+    cursor:pointer;
+
+    transition:.3s;
+
+}
+
+.icon-btn:hover{
+
+    background:#1d4ed8;
+
+    transform:translateY(-2px);
+
+}
+
+.profile-footer{
+
+    display:flex;
+
+    gap:15px;
+
+    padding:20px;
+
+}
+
+.primary-btn,
+.secondary-btn{
+
+    flex:1;
+
+    padding:13px;
+
+    border:none;
+
+    border-radius:12px;
+
+    font-size:15px;
+
+    cursor:pointer;
+
+}
+
+.primary-btn{
+
+    background:#2563eb;
+
+    color:white;
+
+}
+
+.secondary-btn{
+
+    background:#475569;
+
+    color:white;
+
+}
