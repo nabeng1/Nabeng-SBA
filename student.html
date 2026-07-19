@@ -334,7 +334,7 @@ h2{
 
 button{
 
-    width:100%;
+    width:auto;
 
     padding:16px;
 
@@ -547,15 +547,39 @@ button:hover{
 </div>
 </div>
 
+<div id="profilePage" style="display:none;padding:20px;">
+
+<button onclick="goHome()">⬅ Back</button>
+
+<h2>Student Profile</h2>
+
+<div id="profileDetails"></div>
+
+</div>
+
+
+
 <div id="resultsPage" style="display:none;padding:20px;">
 
 <button onclick="goHome()">⬅ Back</button>
 
 <h2>Academic Results</h2>
 
+<select id="resultTerm" onchange="changeTerm()">
+
+<option value="term1">Term 1</option>
+
+<option value="term2">Term 2</option>
+
+<option value="term3">Term 3</option>
+
+</select>
+
 <div id="resultsList"></div>
 
 </div>
+
+
 
 <div id="subjectsPage" style="display:none;padding:20px;">
 
@@ -569,11 +593,25 @@ button:hover{
 
 <div id="messagesPage" style="display:none;padding:20px;">
 
-<button onclick="goHome()">⬅ Back</button>
+    <button onclick="goHome()">⬅ Back</button>
 
-<h2>Messages</h2>
+    <h2>Messages</h2>
 
-<div id="messagesList"></div>
+    <div id="messagesList"></div>
+
+    <hr>
+
+    <textarea
+        id="replyMessage"
+        placeholder="Type your reply..."
+        style="width:100%;height:120px;">
+    </textarea>
+
+    <br><br>
+
+    <button onclick="sendReply()">
+        Send Reply
+    </button>
 
 </div>
 
@@ -638,6 +676,8 @@ document.getElementById("loginForm")
 
     }
 	
+	
+	
 let currentStudent =
 JSON.parse(localStorage.getItem("loggedStudent"));
 
@@ -669,96 +709,306 @@ document.getElementById("studentPortal").style.display = "block";
 });
 
 
+async function openProfile(){
+
+    document.getElementById("studentPortal").style.display = "none";
+    document.getElementById("profilePage").style.display = "block";
+
+    const loggedStudent =
+    JSON.parse(localStorage.getItem("loggedStudent"));
+
+    const { data, error } = await supabaseClient
+        .from("students")
+        .select("*")
+        .eq("id", loggedStudent.id)
+        .single();
+
+    if(error){
+        alert("Unable to load profile");
+        return;
+    }
+
+    document.getElementById("profileDetails").innerHTML = `
+
+        <div class="profile-card">
+
+            <img src="${data.photo || 'default-user.png'}"
+                 width="120"
+                 style="border-radius:50%;">
+
+            <h3>${data.name}</h3>
+
+            <p><strong>Student ID:</strong> ${data.studentid}</p>
+
+            <p><strong>Class:</strong> ${data.studentclass}</p>
+
+            <p><strong>Gender:</strong> ${data.gender || "-"}</p>
+
+            <p><strong>School:</strong> ${data.schoolid}</p>
+
+        </div>
+
+    `;
+}
+
+
 async function openResults(){
 
     document.getElementById("studentPortal").style.display="none";
     document.getElementById("resultsPage").style.display="block";
 
-    let student =
+    const loggedStudent =
     JSON.parse(localStorage.getItem("loggedStudent"));
 
-    const {data,error}=await supabaseClient
+    const { data: student, error } =
+    await supabaseClient
     .from("students")
     .select("*")
-    .eq("id",student.id)
+    .eq("id", loggedStudent.id)
     .single();
 
-    if(error) return;
+    if(error){
+        alert("Unable to load results");
+        return;
+    }
 
-    let term=data.currentterm;
+    displayResults(student,"term1");
+}
 
-    let results=data.subjects?.[term] || {};
+function displayResults(student,term){
 
-    let html="";
+    let html=`
 
-    Object.entries(results).forEach(([subject,mark])=>{
+    <table border="1" width="100%" cellspacing="0" cellpadding="8">
+
+    <tr>
+
+    <th>Subject</th>
+
+    <th>Class Score</th>
+
+    <th>Exam</th>
+
+    <th>Total</th>
+
+    <th>Grade</th>
+
+    <th>Remark</th>
+
+    </tr>
+
+    `;
+
+    let total=0;
+    let count=0;
+
+    const subjects=student.subjects || {};
+
+    Object.keys(subjects).forEach(subject=>{
+
+        const mark=subjects[subject][term];
+
+        if(!mark) return;
+
+        total+=Number(mark.totalScore||0);
+
+        count++;
 
         html+=`
-        <div class="resultRow">
-            <b>${subject}</b>
-            ${mark.total}
-            ${mark.grade}
-        </div>
+
+        <tr>
+
+        <td>${subject}</td>
+
+        <td>${mark.classScore||0}</td>
+
+        <td>${mark.examScore||0}</td>
+
+        <td>${mark.totalScore||0}</td>
+
+        <td>${mark.grade||"-"}</td>
+
+        <td>${mark.remark||"-"}</td>
+
+        </tr>
+
         `;
 
     });
+
+    let average=
+    count
+    ? (total/count).toFixed(2)
+    :0;
+
+    html+=`
+
+    <tr>
+
+    <td colspan="2"><b>Average</b></td>
+
+    <td colspan="4">
+
+    <b>${average}%</b>
+
+    </td>
+
+    </tr>
+
+    </table>
+
+    `;
 
     document.getElementById("resultsList").innerHTML=html;
 
 }
 
+
+async function changeTerm(){
+
+    const student=
+    JSON.parse(localStorage.getItem("loggedStudent"));
+
+    const term=
+    document.getElementById("resultTerm").value;
+
+    const {data}=await supabaseClient
+
+    .from("students")
+
+    .select("*")
+
+    .eq("id",student.id)
+
+    .single();
+
+    displayResults(data,term);
+
+}
+
 async function openMessages(){
 
-    document.getElementById("studentPortal").style.display = "none";
-    document.getElementById("messagesPage").style.display = "block";
+    document.getElementById("studentPortal").style.display="none";
+    document.getElementById("messagesPage").style.display="block";
 
-    let student =
-        JSON.parse(localStorage.getItem("loggedStudent"));
+    const student =
+    JSON.parse(localStorage.getItem("loggedStudent"));
 
-    if(!student) return;
-
-    const {data,error} =
-        await supabaseClient
-        .from("chats")
-        .select("*")
-        .eq("to_user", student.studentid)
-        .eq("to_type","student")
-        .order("time",{ascending:false});
+    const { data, error } =
+    await supabaseClient
+    .from("messages")
+    .select("*")
+    .or(
+        `receiver.eq.${student.studentid},receiver.eq.ALL`
+    )
+    .order("created_at",{ascending:false});
 
     if(error){
 
         console.log(error);
+
         return;
 
     }
 
+    displayMessages(data || []);
+}
+
+function displayMessages(messages){
+
     let html="";
 
-    data.forEach(msg=>{
+    if(messages.length===0){
 
-        html += `
-            <div style="
-                background:white;
-                padding:15px;
-                margin:10px 0;
-                border-radius:10px;
-            ">
+        html=`
+        <div class="card">
 
-                <b>${msg.from_user}</b>
+            No messages available.
 
-                <p>${msg.text}</p>
+        </div>
+        `;
 
-                <small>
-                    ${new Date(msg.time).toLocaleString()}
-                </small>
+    }
 
-            </div>
+    messages.forEach(msg=>{
+
+        html+=`
+
+        <div class="card" style="margin-bottom:15px;text-align:left;">
+
+            <h3>${msg.title || "Message"}</h3>
+
+            <small>
+
+                From:
+                ${msg.sender}
+
+            </small>
+
+            <p style="margin-top:10px;">
+
+                ${msg.message}
+
+            </p>
+
+            <small>
+
+                ${new Date(msg.created_at).toLocaleString()}
+
+            </small>
+
+        </div>
+
         `;
 
     });
 
-    document.getElementById("messagesList").innerHTML =
-        html || "No messages.";
+    document.getElementById("messagesList").innerHTML=html;
+
+}
+
+async function sendReply(){
+
+    const student =
+    JSON.parse(localStorage.getItem("loggedStudent"));
+
+    const text =
+    document.getElementById("replyMessage").value.trim();
+
+    if(!text){
+
+        return alert("Enter a message");
+
+    }
+
+    const { error } =
+    await supabaseClient
+    .from("messages")
+    .insert([{
+
+        sender: student.studentid,
+
+        receiver: "ADMIN",
+
+        title: "Student Reply",
+
+        message: text,
+
+        schoolid: student.schoolid
+
+    }]);
+
+    if(error){
+
+        console.log(error);
+
+        return alert("Failed to send");
+
+    }
+
+    document.getElementById("replyMessage").value="";
+
+    openMessages();
 
 }
 
@@ -841,15 +1091,15 @@ async function openFees(){
 
 function goHome(){
 
-    document.getElementById("studentPortal").style.display = "block";
+    document.getElementById("profilePage").style.display="none";
+    document.getElementById("resultsPage").style.display="none";
+    document.getElementById("subjectsPage").style.display="none";
+    document.getElementById("messagesPage").style.display="none";
 
-    document.getElementById("resultsPage").style.display = "none";
-
-    document.getElementById("subjectsPage").style.display = "none";
-
-    document.getElementById("messagesPage").style.display = "none";
-
+    document.getElementById("studentPortal").style.display="block";
 }
+
+
 
 </script>
 
