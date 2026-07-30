@@ -32,6 +32,7 @@ let selectedMarkTerm = "term1";
 
 
 
+
 // Show signup if no users exist
 if(users.length === 0){
     document.getElementById("signupSection").style.display = "block";
@@ -619,7 +620,7 @@ async function loadTheme() {
         .eq("username", currentUser.username)
         .single();
 
-    let theme = data?.theme || "dark";
+    let theme = data?.theme || "light";
 
     if (theme === "light") {
 
@@ -1194,6 +1195,7 @@ function loadStudentManagement(){
     }
 
 }
+
 
 async function showPage(id){
 
@@ -6523,6 +6525,7 @@ async function loadPlans(){
 
     document.getElementById("planOutput").innerHTML = html;
 }
+
 let chatContacts = [];
 
 async function loadChatContacts(){
@@ -6585,249 +6588,374 @@ async function loadChatContacts(){
 
 
 
-function displayUsers(){
+function displayUsers() {
 
     let chatList = [];
 
+    // ==========================
     // STAFF
+    // ==========================
     users
-    .filter(u =>
-        u.username !== currentUser.username &&
-        u.schoolid === currentUser.schoolid
-    )
-    .forEach(user => {
+        .filter(user =>
+            user.username !== currentUser.username &&
+            user.schoolid === currentUser.schoolid
+        )
+        .forEach(user => {
 
-        chatList.push({
-            id: user.username,
-            type: "user",
-            firstname: user.firstname,
-            surname: user.surname,
-            profilePic: user.profilePic,
-            lastSeen: user.lastSeen
+            chatList.push({
+                id: user.username,
+                type: "user",
+                firstname: user.firstname || "",
+                surname: user.surname || "",
+                profilePic: user.profilePic || "",
+                lastSeen: user.lastSeen || 0
+            });
+
         });
 
-    });
-
+    // ==========================
     // STUDENTS
-    if(currentUser.role === "teacher" ||
-       currentUser.role === "admin"){
+    // ==========================
+    if (currentUser.role === "teacher" || currentUser.role === "admin") {
 
         students.forEach(student => {
 
             chatList.push({
-
-    id: student.id,
-
-    type: "student",
-
-    firstname: student.name,
-
-    profilePic: student.photo,
-
-    studentclass: student.studentclass
-
-});
+                id: student.id,
+                type: "student",
+                firstname: student.name || "",
+                surname: "",
+                profilePic: student.photo || "",
+                studentclass: student.studentclass || "No Class"
+            });
 
         });
 
     }
+	
+	// STUDENT LOGIN
+if (currentUser.role === "student") {
+
+    users
+        .filter(user =>
+            (user.role === "teacher" || user.role === "admin") &&
+            user.schoolid === currentUser.schoolid
+        )
+        .forEach(user => {
+
+            chatList.push({
+
+                id: user.username,
+                type: "user",
+
+                firstname: user.firstname,
+                surname: user.surname,
+
+                profilePic: user.profilePic,
+
+                lastSeen: user.lastSeen
+
+            });
+
+        });
+
+}
 
     let html = "";
 
     chatList.forEach(person => {
 
-           let initials = "";
+        // --------------------------
+        // Initials
+        // --------------------------
+        let initials = "";
 
-        if(person.type === "student"){
+        if (person.type === "student") {
+
+            initials = (person.firstname.charAt(0) || "?").toUpperCase();
+
+        } else {
 
             initials =
-                person.firstname
-                .charAt(0)
-                .toUpperCase();
-
-        }else{
-
-            initials =
-                person.firstname.charAt(0).toUpperCase() +
-                person.surname.charAt(0).toUpperCase();
+                (person.firstname.charAt(0) || "").toUpperCase() +
+                (person.surname.charAt(0) || "").toUpperCase();
 
         }
 
-        let online =
+        // --------------------------
+        // Online Status
+        // --------------------------
+        const online =
             person.type === "user" &&
             person.lastSeen &&
             (Date.now() - person.lastSeen < 60000);
 
+        // --------------------------
+        // Avatar
+        // --------------------------
         let avatar = "";
 
-        if(person.profilePic){
+        if (person.profilePic) {
 
             avatar = `
-            <div class="avatar-wrapper">
+                <div class="avatar-wrapper">
 
-                <img src="${person.profilePic}"
-                     class="chat-avatar-img">
+                    <img
+                        src="${person.profilePic}"
+                        class="chat-avatar-img"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
 
-                ${
-                    person.type === "user"
-                    ? `<div class="online-dot
-                        ${online ? 'online' : 'offline'}">
-                       </div>`
-                    : ""
-                }
+                    <div class="chat-avatar" style="display:none;">
+                        ${initials}
+                    </div>
 
-            </div>
-            `;
+                    ${
+                        person.type === "user"
+                        ? `<span class="online-dot ${online ? "online" : "offline"}"></span>`
+                        : ""
+                    }
 
-        }else{
-
-            avatar = `
-            <div class="avatar-wrapper">
-
-                <div class="chat-avatar">
-                    ${initials}
                 </div>
-
-                ${
-                    person.type === "user"
-                    ? `<div class="online-dot
-                        ${online ? 'online' : 'offline'}">
-                       </div>`
-                    : ""
-                }
-
-            </div>
             `;
+
+        } else {
+
+            avatar = `
+                <div class="avatar-wrapper">
+
+                    <div class="chat-avatar">
+                        ${initials}
+                    </div>
+
+                    ${
+                        person.type === "user"
+                        ? `<span class="online-dot ${online ? "online" : "offline"}"></span>`
+                        : ""
+                    }
+
+                </div>
+            `;
+
         }
 
+        // --------------------------
+        // Active Chat
+        // --------------------------
+        const active =
+            selectedUser == person.id &&
+            selectedUserType == person.type
+                ? "active"
+                : "";
+
+        // --------------------------
+        // HTML
+        // --------------------------
         html += `
-        <div class="chat-user"
+            <div class="chat-user ${active}"
+                 data-id="${person.id}"
+                 data-type="${person.type}"
+                 onclick="selectUser('${String(person.id).replace(/'/g, "\\'")}','${person.type}')">
 
-            onclick="selectUser(
-                '${person.id}',
-                '${person.type}'
-            )">
+                ${avatar}
 
-            ${avatar}
+                <div class="user-details">
 
-            <div class="user-details">
+                    <div class="chat-name">
+                        ${
+                            person.type === "student"
+                                ? "🎓 " + person.firstname
+                                : `${person.firstname} ${person.surname}`
+                        }
+                    </div>
 
-                <div class="chat-name">
-
-                    ${
-                        person.type === "student"
-                        ? "🎓 " + person.firstname
-                        : person.firstname + " " + person.surname
-                    }
-
-                </div>
-
-                <div class="last-seen">
-
-                    ${
-                        person.type === "student"
-                        ? person.studentclass
-                        : (online ? "Online" : "Offline")
-                    }
+                    <div class="last-seen">
+                        ${
+                            person.type === "student"
+                                ? person.studentclass
+                                : (online ? "🟢 Online" : "⚪ Offline")
+                        }
+                    </div>
 
                 </div>
 
             </div>
+        `;
 
-        </div>
-	`});
+    });
 
     document.getElementById("userList").innerHTML = html;
+
 }
 
 
-selectedUser = id;
-selectedUserType = type;
+// ==============================
+// GLOBAL SELECTED CHAT
+// ==============================
+let selectedUser = null;
+let selectedUserType = null;
 
-function selectUser(id, type){
+// ==============================
+// SELECT USER / OPEN CHAT
+// ==============================
+async function selectUser(id, type) {
 
+    // Save current chat
     selectedUser = id;
     selectedUserType = type;
 
+    // Get Elements
+    const nameEl = document.getElementById("chatUserName");
+    const statusEl = document.getElementById("chatUserStatus");
+    const avatarEl = document.getElementById("chatUserAvatar");
+    const usersPanel = document.getElementById("usersPanel");
+    const conversationPanel = document.getElementById("conversationPanel");
+    const chatBox = document.getElementById("chatBox");
+
+    // Reset Header
+    nameEl.textContent = "Loading...";
+    statusEl.textContent = "";
+    avatarEl.removeAttribute("src");
+    avatarEl.style.display = "none";
+    avatarEl.style.background = "#d9d9d9";
+
     let person = null;
+    let image = "";
+    let status = "";
 
-    // ==========================
+    // =====================================
     // STAFF
-    // ==========================
-    if(type === "user"){
+    // =====================================
+    if (type === "user") {
 
-        person = users.find(
-            u => u.username === id
-        );
+        person = users.find(user => user.username === id);
 
-        if(!person) return;
+        if (!person) {
+            console.error("User not found:", id);
+            return;
+        }
 
-        document.getElementById("chatUserName").innerText =
-            `${person.firstname} ${person.surname}`;
+        nameEl.textContent =
+            `${person.firstname || ""} ${person.surname || ""}`.trim();
 
-        let online =
+        const online =
             person.lastSeen &&
             (Date.now() - person.lastSeen < 60000);
 
-        document.getElementById("chatUserStatus").innerText =
-            online ? "Online" : "Offline";
+        status = online ? "🟢 Online" : "⚪ Offline";
 
-        if(person.profilePic){
-
-            document.getElementById("chatUserAvatar").src =
-                person.profilePic;
-
-        }else{
-
-            document.getElementById("chatUserAvatar").src =
-                "default-avatar.png";   // use your default image
-
-        }
+        image = person.profilePic || "";
 
     }
 
-    // ==========================
+    // =====================================
     // STUDENT
-    // ==========================
-    else if(type === "student"){
+    // =====================================
+    else if (type === "student") {
 
-        person = students.find(
-            s => s.id == id
-        );
+        person = students.find(student => String(student.id) === String(id));
 
-        if(!person) return;
-
-        document.getElementById("chatUserName").innerText =
-            person.name;
-
-        document.getElementById("chatUserStatus").innerText =
-            `Student • ${person.studentclass}`;
-
-        if(person.photo){
-
-            document.getElementById("chatUserAvatar").src =
-                person.photo;
-
-        }else{
-
-            document.getElementById("chatUserAvatar").src =
-                "default-student.png"; // or your default avatar
-
+        if (!person) {
+            console.error("Student not found:", id);
+            return;
         }
+
+        nameEl.textContent = person.name || "Student";
+
+        status =
+            `🎓 Student • ${person.studentclass || "No Class"}`;
+
+        image = person.photo || "";
 
     }
 
-    displayUsers();
+    else {
 
-    displayChat();
+        console.error("Unknown chat type:", type);
+        return;
 
+    }
+
+    statusEl.textContent = status;
+
+    // =====================================
+    // AVATAR
+    // =====================================
+    if (image.trim() !== "") {
+
+        avatarEl.src = image;
+        avatarEl.style.display = "block";
+        avatarEl.style.background = "transparent";
+
+        avatarEl.onerror = function () {
+
+            this.removeAttribute("src");
+            this.style.background = "#d9d9d9";
+            this.style.display = "block";
+
+        };
+
+    }
+
+    // =====================================
+    // HIGHLIGHT SELECTED CHAT
+    // =====================================
+    document.querySelectorAll(".chat-user").forEach(item => {
+        item.classList.remove("active");
+    });
+
+    const selectedChat = document.querySelector(
+        `.chat-user[data-id="${id}"][data-type="${type}"]`
+    );
+
+    if (selectedChat) {
+        selectedChat.classList.add("active");
+    }
+
+    // =====================================
+    // LOAD CHAT
+    // =====================================
+    try {
+
+        await displayChat();
+
+        setTimeout(() => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 100);
+
+    } catch (error) {
+
+        console.error(error);
+
+        chatBox.innerHTML = `
+            <div class="empty-chat">
+                Failed to load conversation.
+            </div>
+        `;
+
+    }
+
+    // =====================================
     // MOBILE
-    if(window.innerWidth <= 768){
+    // =====================================
+    if (window.innerWidth <= 768) {
 
-        document.getElementById("usersPanel").style.display = "none";
+        usersPanel.style.display = "none";
+        conversationPanel.style.display = "flex";
 
-        document.getElementById("conversationPanel").style.display = "flex";
+    } else {
 
+        usersPanel.style.display = "flex";
+        conversationPanel.style.display = "flex";
+
+    }
+
+    // =====================================
+    // CLOSE CONTEXT MENU
+    // =====================================
+    const menu = document.getElementById("contextMenu");
+
+    if (menu) {
+        menu.style.display = "none";
     }
 
 }
@@ -6890,7 +7018,11 @@ async function sendMessage() {
 
         input.value = "";
 
-        displayChat();
+        await displayChat();
+
+scrollChatToBottom();
+
+displayUsers();
 
         return;
     }
@@ -6927,297 +7059,426 @@ async function sendMessage() {
     reader.readAsDataURL(file);
 
 }
-async function displayChat() {
 
-    if (!selectedUser) {
 
-        document.getElementById("chatBox").innerHTML =
-            "<p>Select a user or student</p>";
+async function displayChat(){
 
+    if(!selectedUser){
+
+        showEmptyConversation();
         return;
+
     }
 
-    // ===============================
-    // LOAD CHAT
-    // ===============================
+    showChatLoading();
 
-    const { data: chats, error } = await supabaseClient
-        .from("chats")
-        .select("*")
-        .eq("schoolid", currentUser.schoolid)
-        .order("time", { ascending: true });
+    const messages = await loadConversation();
 
-    if (error) {
-        console.error(error);
+    if(messages.length === 0){
+
+        showEmptyConversation();
         return;
+
     }
 
-    // ===============================
-    // MARK DELIVERED
-    // ===============================
+    document.getElementById("chatBox").innerHTML =
+        buildConversation(messages);
 
-    await supabaseClient
-        .from("chats")
-        .update({ delivered: true })
-        .eq("to_user", currentUser.username)
-        .eq("from_user", selectedUser)
-        .eq("to_type", currentUser.role)
-        .eq("from_type", selectedUserType)
-        .eq("delivered", false);
+    scrollChatToBottom();
 
-    // ===============================
-    // MARK SEEN
-    // ===============================
+}
 
-    await supabaseClient
-        .from("chats")
-        .update({ seen: true })
-        .eq("to_user", currentUser.username)
-        .eq("from_user", selectedUser)
-        .eq("to_type", currentUser.role)
-        .eq("from_type", selectedUserType)
-        .eq("seen", false);
+// ============================================
+// LOAD CONVERSATION
+// ============================================
+async function loadConversation() {
 
-    // ===============================
-    // FILTER CONVERSATION
-    // ===============================
+    if (!selectedUser) return [];
 
-    let filtered = chats.filter(msg =>
+    try {
 
-        (
-            msg.from_user === currentUser.username &&
-            msg.from_type === currentUser.role &&
-            msg.to_user === selectedUser &&
-            msg.to_type === selectedUserType
-        )
+        // =====================================
+        // LOAD ALL MESSAGES
+        // =====================================
+        const { data: chats, error } = await supabaseClient
+            .from("chats")
+            .select("*")
+            .eq("schoolid", currentUser.schoolid)
+            .order("time", { ascending: true });
 
-        ||
+        if (error) throw error;
 
-        (
-            msg.from_user === selectedUser &&
-            msg.from_type === selectedUserType &&
-            msg.to_user === currentUser.username &&
-            msg.to_type === currentUser.role
-        )
+        const allChats = chats || [];
 
-    );
+        console.log("====================================");
+        console.log("Current User:", currentUser.username, currentUser.role);
+        console.log("Selected User:", selectedUser, selectedUserType);
+        console.log("Chats Loaded:", allChats.length);
+        console.log(allChats);
+
+        // =====================================
+        // MARK DELIVERED
+        // =====================================
+        await supabaseClient
+            .from("chats")
+            .update({ delivered: true })
+            .eq("to_user", currentUser.username)
+            .eq("from_user", selectedUser)
+            .eq("to_type", currentUser.role)
+            .eq("from_type", selectedUserType)
+            .eq("delivered", false);
+
+        // =====================================
+        // MARK SEEN
+        // =====================================
+        await supabaseClient
+            .from("chats")
+            .update({ seen: true })
+            .eq("to_user", currentUser.username)
+            .eq("from_user", selectedUser)
+            .eq("to_type", currentUser.role)
+            .eq("from_type", selectedUserType)
+            .eq("seen", false);
+
+        // =====================================
+        // FILTER CONVERSATION
+        // =====================================
+        const conversation = allChats.filter(msg => {
+
+            const sent =
+
+                String(msg.from_user) === String(currentUser.username) &&
+                String(msg.from_type) === String(currentUser.role) &&
+                String(msg.to_user) === String(selectedUser) &&
+                String(msg.to_type) === String(selectedUserType);
+
+            const received =
+
+                String(msg.from_user) === String(selectedUser) &&
+                String(msg.from_type) === String(selectedUserType) &&
+                String(msg.to_user) === String(currentUser.username) &&
+                String(msg.to_type) === String(currentUser.role);
+
+            console.log(
+                "Message:",
+                msg.id,
+                "| From:", msg.from_user, "(" + msg.from_type + ")",
+                "| To:", msg.to_user, "(" + msg.to_type + ")",
+                "| Sent:", sent,
+                "| Received:", received
+            );
+
+            return sent || received;
+
+        });
+
+        console.log("Conversation Messages:", conversation.length);
+        console.log(conversation);
+
+        return conversation;
+
+    } catch (err) {
+
+        console.error("loadConversation Error:", err);
+        return [];
+
+    }
+
+}
+
+
+// ============================================
+// BUILD CHAT HTML
+// ============================================
+function buildConversation(messages){
 
     let html = "";
 
-    filtered.forEach(msg => {
+    messages.forEach(msg=>{
 
-        let mine =
-            msg.from_user === currentUser.username &&
-            msg.from_type === currentUser.role;
-
-        html += `
-
-<div
-    ondblclick="selectMessage(${msg.id})"
-    oncontextmenu="
-        showContextMenu(event,${msg.id});
-        return false;
-    "
-    style="
-        margin:10px 0;
-        text-align:${mine ? "right" : "left"};
-        cursor:pointer;
-    ">
-
-<div style="
-    display:inline-block;
-    padding:10px;
-    border-radius:8px;
-    background:${mine ? "#2563eb" : "#1e293b"};
-    color:white;
-    max-width:300px;
-    overflow:hidden;
-">
-
-`;
-
-        // ==========================
-        // DELETED
-        // ==========================
-
-        if (msg.deleted) {
-
-            html += `
-                <div class="deleted-message">
-                    🚫 This message was deleted
-                </div>
-            `;
-
-        } else {
-
-            // TEXT
-            if (msg.text) {
-
-                html += `
-                    <div style="margin-bottom:8px;">
-                        ${msg.text}
-                    </div>
-                `;
-            }
-
-            // IMAGE
-            if (
-                msg.mediatype &&
-                msg.mediatype.startsWith("image/")
-            ) {
-
-                html += `
-                    <img
-                        src="${msg.media}"
-                        style="
-                            width:100%;
-                            margin-top:8px;
-                            border-radius:10px;
-                        ">
-                `;
-            }
-
-            // VIDEO
-            else if (
-                msg.mediatype &&
-                msg.mediatype.startsWith("video/")
-            ) {
-
-                html += `
-                    <video controls
-                        style="
-                            width:100%;
-                            margin-top:8px;
-                            border-radius:10px;
-                        ">
-                        <source src="${msg.media}">
-                    </video>
-                `;
-            }
-
-            // OTHER FILES
-            else if (msg.media) {
-
-                html += `
-                    <a
-                        href="${msg.media}"
-                        download="${msg.filename}"
-                        style="
-                            color:#93c5fd;
-                            text-decoration:none;
-                        ">
-                        📄 ${msg.filename}
-                    </a>
-                `;
-            }
-
-        }
-
-        html += `
-
-<div style="
-    margin-top:6px;
-    font-size:11px;
-    text-align:right;
-    color:#cbd5e1;
-">
-
-${new Date(msg.time).toLocaleTimeString([],{
-    hour:"2-digit",
-    minute:"2-digit"
-})}
-
-${mine ? getTicks(msg) : ""}
-
-</div>
-
-</div>
-
-</div>
-
-`;
+        html += renderMessage(msg);
 
     });
 
-    document.getElementById("chatBox").innerHTML = html;
-
-    document.getElementById("chatBox").scrollTop =
-        document.getElementById("chatBox").scrollHeight;
+    return html;
 
 }
-function selectMessage(messageId){
+
+
+function renderMessage(msg){
+
+    const mine =
+        msg.from_user === currentUser.username &&
+        msg.from_type === currentUser.role;
+
+    let body = "";
+
+    // Deleted
+    if(msg.deleted){
+
+        body = `
+            <div class="deleted-message">
+                🚫 This message was deleted
+            </div>
+        `;
+
+    }
+
+    else{
+
+        // Text
+        if(msg.text){
+
+            body += `
+                <div class="message-text">
+                    ${escapeHTML(msg.text)}
+                </div>
+            `;
+
+        }
+
+        // Image
+        if(msg.mediatype?.startsWith("image/")){
+
+            body += `
+                <img
+                    src="${msg.media}"
+                    class="chat-image">
+            `;
+
+        }
+
+        // Video
+        else if(msg.mediatype?.startsWith("video/")){
+
+            body += `
+                <video controls class="chat-video">
+                    <source src="${msg.media}">
+                </video>
+            `;
+
+        }
+
+        // File
+        else if(msg.media){
+
+            body += `
+                <a
+                    href="${msg.media}"
+                    download="${msg.filename}"
+                    class="chat-file">
+
+                    📄 ${msg.filename}
+
+                </a>
+            `;
+
+        }
+
+    }
+
+    return `
+
+<div class="message ${mine ? "mine":"theirs"}"
+
+    ondblclick="selectMessage(${msg.id})"
+
+    oncontextmenu="
+        showContextMenu(event,${msg.id});
+        return false;
+    ">
+
+    <div class="bubble">
+
+        ${body}
+
+        <div class="message-time">
+
+            ${formatTime(msg.time)}
+
+            ${mine ? getTicks(msg) : ""}
+
+        </div>
+
+    </div>
+
+</div>
+
+`;
+
+}
+
+
+function escapeHTML(text){
+
+    if(!text) return "";
+
+    return text
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+function formatTime(time){
+
+    return new Date(time).toLocaleTimeString([],{
+
+        hour:"2-digit",
+        minute:"2-digit"
+
+    });
+
+}
+
+function scrollChatToBottom(){
+
+    const chatBox = document.getElementById("chatBox");
+
+    requestAnimationFrame(()=>{
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+    });
+
+}
+
+
+
+function showChatLoading(){
+
+    document.getElementById("chatBox").innerHTML = `
+
+        <div class="chat-loading">
+
+            Loading conversation...
+
+        </div>
+
+    `;
+
+}
+
+
+function showEmptyConversation(){
+
+    document.getElementById("chatBox").innerHTML = `
+
+        <div class="empty-chat">
+
+            No messages yet
+
+        </div>
+
+    `;
+
+}
+
+
+// Select Message
+function selectMessage(messageId) {
 
     selectedMessageId = messageId;
 
-    document.getElementById("messageActions")
-        .style.display = "block";
+    const menu = document.getElementById("messageActions");
+
+    if (menu) {
+        menu.style.display = "block";
+    }
 }
 
-function clearSelection(){
+// Clear Selection
+function clearSelection() {
 
     selectedMessageId = null;
 
-    document.getElementById("messageActions")
-        .style.display = "none";
+    const menu = document.getElementById("messageActions");
+
+    if (menu) {
+        menu.style.display = "none";
+    }
+
+    const contextMenu = document.getElementById("contextMenu");
+
+    if (contextMenu) {
+        contextMenu.style.display = "none";
+    }
+
 }
 
-async function deleteSelectedMessage(){
+// Delete Message
+async function deleteSelectedMessage() {
 
-    if(!selectedMessageId) return;
+    if (!selectedMessageId) return;
 
-    // Get the message first
-    const { data: msg, error: fetchError } =
-        await supabaseClient
-            .from("chats")
-            .select("*")
-            .eq("id", selectedMessageId)
-            .single();
+    const confirmDelete = confirm(
+        "Delete this message?"
+    );
 
-    if(fetchError){
-        console.error(fetchError);
-        return;
-    }
+    if (!confirmDelete) return;
 
-    // Already deleted → remove permanently
-    if(msg.deleted){
+    try {
 
-        const { error } = await supabaseClient
-            .from("chats")
-            .delete()
-            .eq("id", selectedMessageId);
+        // Get message
+        const { data: msg, error: fetchError } =
+            await supabaseClient
+                .from("chats")
+                .select("*")
+                .eq("id", selectedMessageId)
+                .single();
 
-        if(error){
-            console.error(error);
-            return;
+        if (fetchError) throw fetchError;
+
+        if (msg.deleted) {
+
+            // Permanently delete
+            const { error } =
+                await supabaseClient
+                    .from("chats")
+                    .delete()
+                    .eq("id", selectedMessageId);
+
+            if (error) throw error;
+
+        } else {
+
+            // Soft delete
+            const { error } =
+                await supabaseClient
+                    .from("chats")
+                    .update({
+
+                        text: "This message was deleted.",
+
+                        media: null,
+
+                        filename: null,
+
+                        mediatype: null,
+
+                        deleted: true
+
+                    })
+                    .eq("id", selectedMessageId);
+
+            if (error) throw error;
+
         }
+
+        clearSelection();
+
+        await displayChat();
+
+    } catch (err) {
+
+        console.error("Delete failed:", err);
+
+        alert("Unable to delete the message.");
+
     }
 
-    // First delete → show "This message was deleted"
-    else{
-
-        const { error } = await supabaseClient
-            .from("chats")
-            .update({
-                text: null,
-                media: null,
-                filename: null,
-                mediatype: null,
-                deleted: true
-            })
-            .eq("id", selectedMessageId);
-
-        if(error){
-            console.error(error);
-            return;
-        }
-    }
-
-    selectedMessageId = null;
-
-    document.getElementById("messageActions")
-        .style.display = "none";
-
-    displayChat();
 }
 async function updateOnlineStatus(){
 
