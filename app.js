@@ -4081,25 +4081,24 @@ ${logo ? `
 </div>
 
 
-<div style="margin-top:1px; font-size:18px; line-height:1;">
+<div style="margin-top:2px; font-size:18px; line-height:1;">
 
-    <div style="display:flex; justify-content:space-between; margin:0px;">
-        <p style="margin:3;"><b>Name:</b> ${s.name}</p>
-        <p style="margin:3;"><b>Position:</b> ${position}</p>
+    <div style="display:flex; justify-content:space-between; margin:2px; ">
+        <p style="margin:2; padding: 8px;"><b>Name:</b> ${s.name}</p>
+        <p style="margin:2; padding: 8px;"><b>Position:</b> ${position}</p>
     </div>
 
     <div style="display:flex; justify-content:space-between; margin:0px;">
-        <p style="margin:0;"><b>Class:</b> ${s.studentclass}</p>
-        <p style="margin:0;"><b>Total Students:</b> ${totalStudents}</p>
+        <p style="margin:2; padding: 8px;"><b>Class:</b> ${s.studentclass}</p>
+        <p style="margin:2; padding: 8px;"><b>Total Students:</b> ${totalStudents}</p>
     </div>
 
-    <div style="display:flex; justify-content:space-between;">
+    <div style="display:flex; justify-content:space-between; padding: 8px;">
        <p><b>Term Ending:</b> ${formattedEnd}</p>
         <p><b>Next Term Begins:</b> ${formattedNext}</p>
     </div>
 
 </div>
-
 
 				
 
