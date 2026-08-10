@@ -950,6 +950,59 @@ async function generateStudentId(){
 
 }
 
+function copyStudentID() {
+
+    const idElement = document.getElementById("studentIDText");
+
+    if (!idElement) {
+        showToast("Student ID not found.");
+        return;
+    }
+
+    const studentID = idElement.innerText.trim();
+
+    if (!studentID || studentID === "Not Generated") {
+        showToast("Student ID is not available.");
+        return;
+    }
+
+    navigator.clipboard.writeText(studentID)
+        .then(() => {
+            showToast("Student ID copied.");
+        })
+        .catch(error => {
+            console.error("Copy Student ID error:", error);
+            showToast("Failed to copy Student ID.");
+        });
+}
+
+
+function copyStudentPassword() {
+
+    const passwordElement =
+        document.getElementById("studentPassword");
+
+    if (!passwordElement) {
+        showToast("Password not found.");
+        return;
+    }
+
+    const password = passwordElement.value.trim();
+
+    if (!password) {
+        showToast("Student password is not available.");
+        return;
+    }
+
+    navigator.clipboard.writeText(password)
+        .then(() => {
+            showToast("Password copied.");
+        })
+        .catch(error => {
+            console.error("Copy Password error:", error);
+            showToast("Failed to copy password.");
+        });
+}
 
 async function saveStudents() {
 
@@ -1391,6 +1444,7 @@ if(page){
 
 if(id === "userProfilePage"){
     loadProfileData();
+loadSignature();
 }
 }
 
@@ -2835,6 +2889,8 @@ function openStudentModal(index) {
         </div>
 
     </div>
+	
+	
 
     <!-- Footer -->
 
@@ -4100,6 +4156,7 @@ ${logo ? `
 
 </div>
 
+
 				
 
         <table style="width:100%; border-collapse:collapse; text-align:center; margin: 2px;">
@@ -4197,6 +4254,33 @@ let daysAbsent = totalDays - daysPresent;
 
 let teacherName = getClassTeacherName(s.studentclass);
 
+// Load teacher signature
+let teacherSignature = "";
+
+const { data: teacher } = await supabaseClient
+    .from("users")
+    .select("signature")
+    .eq("fullname", teacherName)      // or username if that's what getClassTeacherName() returns
+    .single();
+
+if (teacher) {
+    teacherSignature = teacher.signature || "";
+}
+
+// Load headteacher signature
+let headSignature = "";
+
+const { data: head } = await supabaseClient
+    .from("users")
+    .select("signature")
+    .eq("role", "admin")
+    .eq("schoolid", currentUser.schoolid)
+    .single();
+
+if (head) {
+    headSignature = head.signature || "";
+}
+
 html += `</table>
 
 <p>
@@ -4283,32 +4367,34 @@ ${s.teacherRemark?.[term]||""}
 display:flex;
 justify-content:space-between;
 align-items:flex-end;
-margin-top:30px;
+margin-top:5px;
+
 ">
 
 <div style="width:40%;text-align:center;">
 
-<div style="
-border-top:1px solid #000;
-padding-top:6px;
-">
+<div class="report-signatures">
 
-<b>${teacherName}</b><br>
+    <div>
+        <img src="${teacherSignature}"
+style="width:180px;height:70px;object-fit:contain;">
+        <hr>
+        <b>${teacherName}</b><br>
 
 Class Teacher
-
+    </div>
 </div>
 
 </div>
 
 <div style="width:40%;text-align:center;">
 
-<div style="
-border-top:1px solid #000;
-padding-top:6px;
-">
-
-<b>Head Teacher</b>
+<div>
+        <img src="${headSignature}"
+style="width:180px;height:70px;object-fit:contain;">
+        <hr>
+        <b>Headteacher</b>
+    </div>
 
 </div>
 
@@ -4481,6 +4567,238 @@ async function promoteStudents(){
 
 }
 
+// ==========================================
+// CLICK SIGNATURE TO SELECT A FILE
+// ==========================================
+function uploadSignature() {
+
+    document.getElementById("signatureInput").click();
+
+}
+
+
+// ==========================================
+// HANDLE SELECTED SIGNATURE
+// ==========================================
+async function handleSignatureUpload(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+
+    // Only allow images
+    if (!file.type.startsWith("image/")) {
+
+        alert("Please select an image file.");
+
+        event.target.value = "";
+
+        return;
+    }
+
+
+    // Optional size limit: 2MB
+    if (file.size > 2 * 1024 * 1024) {
+
+        alert("Signature image must be less than 2MB.");
+
+        event.target.value = "";
+
+        return;
+    }
+
+
+    // Make sure user is logged in
+    if (!currentUser || !currentUser.id) {
+
+        alert("User information not available.");
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // SHOW PREVIEW IMMEDIATELY
+    // ------------------------------------------
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+
+        const preview =
+            document.getElementById("signaturePreview");
+
+        const placeholder =
+            document.getElementById("signaturePlaceholder");
+
+        preview.src = e.target.result;
+
+        preview.style.display = "block";
+
+        placeholder.style.display = "none";
+    };
+
+    reader.readAsDataURL(file);
+
+
+    // ------------------------------------------
+    // UPLOAD TO SUPABASE
+    // ------------------------------------------
+
+    const fileName =
+        `${currentUser.id}-${Date.now()}.${file.name.split(".").pop()}`;
+
+
+    const { error: uploadError } =
+        await supabaseClient.storage
+            .from("signatures")
+            .upload(fileName, file, {
+                cacheControl: "3600",
+                upsert: false
+            });
+
+
+    if (uploadError) {
+
+        console.error(uploadError);
+
+        alert("Signature upload failed: " + uploadError.message);
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // GET PUBLIC URL
+    // ------------------------------------------
+
+    const { data } =
+        supabaseClient.storage
+            .from("signatures")
+            .getPublicUrl(fileName);
+
+
+    const signatureUrl =
+        data.publicUrl;
+
+
+    // ------------------------------------------
+    // SAVE URL TO USERS TABLE
+    // ------------------------------------------
+
+    const { error: dbError } =
+        await supabaseClient
+            .from("users")
+            .update({
+                signature: signatureUrl
+            })
+            .eq("id", currentUser.id);
+
+
+    if (dbError) {
+
+        console.error(dbError);
+
+        alert(
+            "Signature uploaded, but could not be saved to your profile: " +
+            dbError.message
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // DISPLAY ACTUAL SUPABASE SIGNATURE
+    // ------------------------------------------
+
+    const preview =
+        document.getElementById("signaturePreview");
+
+    const placeholder =
+        document.getElementById("signaturePlaceholder");
+
+
+    preview.src =
+        signatureUrl;
+
+    preview.style.display =
+        "block";
+
+    placeholder.style.display =
+        "none";
+
+
+    // Reset input so the same file
+    // can be selected again if necessary
+    event.target.value = "";
+
+
+    console.log(
+        "Signature uploaded:",
+        signatureUrl
+    );
+
+}
+
+
+// ==========================================
+// LOAD SAVED SIGNATURE
+// ==========================================
+async function loadSignature() {
+
+    if (!currentUser || !currentUser.id) return;
+
+
+    const { data, error } =
+        await supabaseClient
+            .from("users")
+            .select("signature")
+            .eq("id", currentUser.id)
+            .single();
+
+
+    if (error) {
+
+        console.error(
+            "Error loading signature:",
+            error
+        );
+
+        return;
+    }
+
+
+    const preview =
+        document.getElementById("signaturePreview");
+
+    const placeholder =
+        document.getElementById("signaturePlaceholder");
+
+
+    if (data?.signature) {
+
+        preview.src =
+            data.signature;
+
+        preview.style.display =
+            "block";
+
+        placeholder.style.display =
+            "none";
+
+    } else {
+
+        preview.src = "";
+
+        preview.style.display =
+            "none";
+
+        placeholder.style.display =
+            "flex";
+    }
+}
 
 function showPromotionModal(){
 
