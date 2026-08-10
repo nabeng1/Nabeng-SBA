@@ -803,27 +803,60 @@ Generate Student Portal Accounts
 
 
 
-        <!-- USER INFO -->
         <div id="userProfilePage" class="container page">
-            <div class="profile-card">
-            <img id="profilePic" onclick="uploadProfilePic()" style="cursor:pointer;">
-<input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+    <div class="profile-card">
+
+        <!-- PROFILE PICTURE -->
+        <img
+            id="profilePic"
+            onclick="uploadProfilePic()"
+            style="cursor:pointer;"
+        >
+
+        <div class="form-grid">
+            <input id="pFirstName" placeholder="First Name">
+            <input id="pSurname" placeholder="Surname">
+            <input id="pUsername" placeholder="Username" disabled>
+            <input id="pEmail" placeholder="Email" disabled>
+            <input id="pPhone" placeholder="Phone">
+            <input id="pRole" placeholder="Role" disabled>
         </div>
-			<h2>User Information</h2>
-			
 
-            <div class="form-grid">
-                <input id="pFirstName" placeholder="First Name">
-                <input id="pSurname" placeholder="Surname">
-                <input id="pUsername" placeholder="Username" disabled>
-                <input id="pEmail" placeholder="Email">
-                <input id="pPhone" placeholder="Phone">
-                <input id="pRole" placeholder="Role" disabled>
+        <!-- DIGITAL SIGNATURE -->
+     <!-- DIGITAL SIGNATURE -->
+<h3>Digital Signature</h3>
 
-            </div>
+<div class="signature-wrapper">
 
-            <button onclick="saveProfile()">💾 Save Changes</button>
-        </div>
+    <img
+        id="signaturePreview"
+        src=""
+        alt="Digital Signature"
+        onclick="uploadSignature()"
+    >
+
+    <div
+        id="signaturePlaceholder"
+        onclick="uploadSignature()"
+    >
+        ✍️
+        <span>Click to add signature</span>
+    </div>
+
+</div>
+
+<input
+    type="file"
+    id="signatureInput"
+    accept="image/png,image/jpeg,image/jpg"
+    style="display:none;"
+    onchange="handleSignatureUpload(event)"
+>
+
+        <button onclick="saveProfile()">💾 Save Changes</button>
+
+    </div>
+</div>
 
         <!-- SUBJECTS -->
 		<div id="profileSubjectsPage" class="container page">    <h3>Assign Class</h3>
