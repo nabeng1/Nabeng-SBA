@@ -2214,7 +2214,7 @@ button:hover{
 
 <div class="profile">
 
-<img src="">
+<img id="portalStudentPhoto" src="" alt="Student Photo">
 
 <h3 id="studentName"></h3>
 
@@ -2250,12 +2250,6 @@ button:hover{
     <p>Attendance records</p>
 </div>
 
-<div class="card" onclick="openTimetable()">
-    <i class="fas fa-calendar-alt"></i>
-    <h3>Timetable</h3>
-    <p>Weekly class schedule</p>
-</div>
-
 <div class="card" onclick="openFees()">
     <i class="fas fa-money-bill-wave"></i>
     <h3>Fees</h3>
@@ -2280,11 +2274,6 @@ button:hover{
     <p>Report cards and files</p>
 </div>
 
-<div class="card" onclick="openSettings()">
-    <i class="fas fa-cog"></i>
-    <h3>Settings</h3>
-    <p>Manage your account</p>
-</div>
 
 </div>
 </div>
@@ -2632,27 +2621,39 @@ const supabaseUrl =
 const supabaseKey =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0c2xjaWZiem9oaGdsanFjZ3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTQ5NjUsImV4cCI6MjA5NTAzMDk2NX0.O6bGKNOdRDH1u2t-MiK8y0ppO-q-P4gggSeDEGsoUrQ";
 
-
 var supabaseClient =
 window.supabase.createClient(
     supabaseUrl,
     supabaseKey
 );
 
-const password = document.getElementById("password");
-const toggle = document.getElementById("togglePassword");
+
+const passwordInput =
+document.getElementById("password");
+
+const toggle =
+document.getElementById("togglePassword");
+
 
 toggle.onclick = function(){
 
-    if(password.type === "password"){
+    if(passwordInput.type === "password"){
 
-        password.type = "text";
-        toggle.classList.replace("fa-eye","fa-eye-slash");
+        passwordInput.type = "text";
+
+        toggle.classList.replace(
+            "fa-eye",
+            "fa-eye-slash"
+        );
 
     }else{
 
-        password.type = "password";
-        toggle.classList.replace("fa-eye-slash","fa-eye");
+        passwordInput.type = "password";
+
+        toggle.classList.replace(
+            "fa-eye-slash",
+            "fa-eye"
+        );
 
     }
 
@@ -2665,224 +2666,297 @@ document.getElementById("loginForm")
     e.preventDefault();
 
     const studentid =
-        document.getElementById("studentid").value.trim();
+        document
+        .getElementById("studentid")
+        .value
+        .trim();
 
     const password =
-        document.getElementById("password").value.trim();
+        document
+        .getElementById("password")
+        .value
+        .trim();
 
-    const { data: student, error } =
-        await supabaseClient
-            .from("students")
-            .select("*")
-            .eq("studentid", studentid)
-            .eq("studentpassword", password)
-            .single();
 
-    if(error || !student){
+    if(!studentid || !password){
 
-        alert("Invalid Student ID or Password");
+        alert("Enter Student ID and Password");
+
         return;
 
     }
-	
-	
-	
-let currentStudent =
-JSON.parse(localStorage.getItem("loggedStudent"));
 
-   // Save logged-in student
-localStorage.setItem(
-    "loggedStudent",
-    JSON.stringify(student)
-);
 
-// Load student information
-document.getElementById("studentName").textContent =
-    student.name;
+    const { data: student, error } =
+        await supabaseClient
+        .from("students")
+        .select("*")
+        .eq("studentid", studentid)
+        .eq("studentpassword", password)
+        .single();
 
-document.getElementById("studentClass").textContent =
-    student.studentclass;
 
-// Student photo
-if(student.photo){
+    if(error || !student){
 
-    document.querySelector(".profile img").src =
-        student.photo;
+        console.error("Student Login Error:", error);
 
-}
+        alert("Invalid Student ID or Password");
 
-// Show dashboard
-document.getElementById("loginPage").style.display = "none";
-document.getElementById("studentPortal").style.display = "block";
+        return;
+
+    }
+
+
+    // Save logged-in student
+    localStorage.setItem(
+        "loggedStudent",
+        JSON.stringify(student)
+    );
+
+
+    // Load student name
+    document.getElementById("studentName")
+        .textContent =
+        student.name || "";
+
+
+    // Load student class
+    document.getElementById("studentClass")
+        .textContent =
+        student.studentclass || "";
+
+
+    // Load student photo
+    const studentPhoto =
+        document.querySelector(".profile img");
+
+
+    if(studentPhoto){
+
+        if(student["student-photos"]){
+
+            studentPhoto.src =
+                student["student-photos"];
+
+            studentPhoto.style.display =
+                "block";
+
+        }else{
+
+            studentPhoto.src =
+                "default-user.png";
+
+            studentPhoto.style.display =
+                "block";
+
+        }
+
+    }
+
+
+    // Show dashboard
+    document.getElementById("loginPage")
+        .style.display = "none";
+
+    document.getElementById("studentPortal")
+        .style.display = "block";
 
 });
 
 
 async function openProfile(){
 
-    document.getElementById("studentPortal").style.display = "none";
-    document.getElementById("profilePage").style.display = "block";
+    document.getElementById("studentPortal")
+        .style.display = "none";
+
+    document.getElementById("profilePage")
+        .style.display = "block";
+
 
     const loggedStudent =
-    JSON.parse(localStorage.getItem("loggedStudent"));
+        JSON.parse(
+            localStorage.getItem("loggedStudent")
+        );
 
-    const { data, error } = await supabaseClient
+
+    if(!loggedStudent){
+
+        alert("Student session not found.");
+
+        return;
+
+    }
+
+
+    const { data, error } =
+        await supabaseClient
         .from("students")
         .select("*")
         .eq("id", loggedStudent.id)
         .single();
 
+
     if(error){
+
+        console.error(
+            "Profile Error:",
+            error
+        );
+
         alert("Unable to load profile");
+
         return;
+
     }
 
-    document.getElementById("profileDetails").innerHTML = `
 
-    <div class="student-profile-card">
+    document.getElementById("profileDetails")
+    .innerHTML = `
 
-        <!-- PROFILE HEADER -->
-        <div class="student-profile-top">
+        <div class="student-profile-card">
 
-            <div class="student-photo-wrapper">
+            <div class="student-profile-top">
 
-                <img
-                    src="${data.photo || 'default-user.png'}"
-                    class="student-profile-photo"
-                    onerror="this.src='default-user.png';"
-                    alt="Student Photo"
-                >
+                <div class="student-photo-wrapper">
+
+                    <img
+                        src="${
+                            data["student-photos"]
+                            || "default-user.png"
+                        }"
+                        class="student-profile-photo"
+                        onerror="
+                            this.src='default-user.png';
+                        "
+                        alt="Student Photo"
+                    >
+
+                </div>
+
+
+                <h3 class="student-profile-name">
+                    ${data.name || "Student"}
+                </h3>
+
+
+                <div class="student-profile-id">
+                    ${data.studentid || "No Student ID"}
+                </div>
+
+
+                <div class="student-status">
+
+                    <span class="student-status-dot"></span>
+
+                    Active Student
+
+                </div>
 
             </div>
 
 
-            <h3 class="student-profile-name">
-                ${data.name || "Student"}
-            </h3>
+            <div class="student-info-section">
+
+                <h3 class="student-info-title">
+                    Student Information
+                </h3>
 
 
-            <div class="student-profile-id">
-                ${data.studentid || "No Student ID"}
-            </div>
+                <div class="student-info-grid">
 
 
-            <div class="student-status">
+                    <div class="student-info-item">
 
-                <span class="student-status-dot"></span>
+                        <div class="student-info-icon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
 
-                Active Student
+                        <div>
+
+                            <span class="student-info-label">
+                                Student ID
+                            </span>
+
+                            <span class="student-info-value">
+                                ${data.studentid || "-"}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="student-info-item">
+
+                        <div class="student-info-icon">
+                            <i class="fas fa-school"></i>
+                        </div>
+
+                        <div>
+
+                            <span class="student-info-label">
+                                Class
+                            </span>
+
+                            <span class="student-info-value">
+                                ${data.studentclass || "-"}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="student-info-item">
+
+                        <div class="student-info-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+
+                        <div>
+
+                            <span class="student-info-label">
+                                Gender
+                            </span>
+
+                            <span class="student-info-value">
+                                ${data.gender || "-"}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="student-info-item">
+
+                        <div class="student-info-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+
+                        <div>
+
+                            <span class="student-info-label">
+                                School
+                            </span>
+
+                            <span class="student-info-value">
+                                ${data.schoolid || "-"}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
 
             </div>
 
         </div>
 
+    `;
 
-        <!-- INFORMATION -->
-        <div class="student-info-section">
-
-            <h3 class="student-info-title">
-                Student Information
-            </h3>
-
-
-            <div class="student-info-grid">
-
-
-                <!-- STUDENT ID -->
-                <div class="student-info-item">
-
-                    <div class="student-info-icon">
-                        <i class="fas fa-id-card"></i>
-                    </div>
-
-                    <div>
-
-                        <span class="student-info-label">
-                            Student ID
-                        </span>
-
-                        <span class="student-info-value">
-                            ${data.studentid || "-"}
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- CLASS -->
-                <div class="student-info-item">
-
-                    <div class="student-info-icon">
-                        <i class="fas fa-school"></i>
-                    </div>
-
-                    <div>
-
-                        <span class="student-info-label">
-                            Class
-                        </span>
-
-                        <span class="student-info-value">
-                            ${data.studentclass || "-"}
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- GENDER -->
-                <div class="student-info-item">
-
-                    <div class="student-info-icon">
-                        <i class="fas fa-user"></i>
-                    </div>
-
-                    <div>
-
-                        <span class="student-info-label">
-                            Gender
-                        </span>
-
-                        <span class="student-info-value">
-                            ${data.gender || "-"}
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- SCHOOL -->
-                <div class="student-info-item">
-
-                    <div class="student-info-icon">
-                        <i class="fas fa-building"></i>
-                    </div>
-
-                    <div>
-
-                        <span class="student-info-label">
-                            School
-                        </span>
-
-                        <span class="student-info-value">
-                            ${data.schoolid || "-"}
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-            </div>
-
-        </div>
-
-    </div>
-
-`;
 }
 
 
@@ -4325,89 +4399,43 @@ async function getPortalTermDates(
    GENERATE TERM REPORT
    ============================================================ */
 
-async function generateStudentTermReport(
-    term
-) {
+async function generateStudentTermReport(term) {
 
     const status =
-        document.getElementById(
-            "downloadStatus"
-        );
+        document.getElementById("downloadStatus");
 
 
     try {
 
-        /* --------------------------------------
-           VALIDATE TERM
-        -------------------------------------- */
-
-        if (
-            ![
-                "term1",
-                "term2",
-                "term3"
-            ].includes(term)
-        ) {
-
-            alert(
-                "Invalid term selected."
-            );
-
-            return;
-        }
+        status.innerHTML = `
+            <div class="download-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                Generating ${term.toUpperCase()} report...
+            </div>
+        `;
 
 
-        /* --------------------------------------
-           STATUS
-        -------------------------------------- */
+        // ==========================================
+        // GET LOGGED-IN STUDENT
+        // ==========================================
 
-        if (status) {
-
-            status.innerHTML = `
-
-                <div class="download-loading">
-
-                    <i class="
-                        fas
-                        fa-spinner
-                        fa-spin
-                    "></i>
-
-                    Preparing your
-                    ${term.toUpperCase()}
-                    report...
-
-                </div>
-
-            `;
-
-        }
-
-
-        /* --------------------------------------
-           GET LOGGED-IN STUDENT
-        -------------------------------------- */
-
-        let loggedStudent =
+        const loggedStudent =
             JSON.parse(
-                localStorage.getItem(
-                    "loggedStudent"
-                )
+                localStorage.getItem("loggedStudent")
             );
 
 
         if (!loggedStudent) {
 
-            throw new Error(
-                "Student session not found."
-            );
+            alert("Student session not found.");
 
+            return;
         }
 
 
-        /* --------------------------------------
-           GET FRESH STUDENT RECORD
-        -------------------------------------- */
+        // ==========================================
+        // GET FRESH STUDENT DATA
+        // ==========================================
 
         const {
             data: student,
@@ -4418,288 +4446,232 @@ async function generateStudentTermReport(
 
             .select("*")
 
-            .eq(
-                "id",
-                loggedStudent.id
-            )
+            .eq("id", loggedStudent.id)
 
             .single();
 
 
-        if (
-            studentError ||
-            !student
-        ) {
+        if (studentError || !student) {
 
-            console.error(
-                studentError
-            );
+            console.error(studentError);
 
-            throw new Error(
-                "Unable to load student information."
-            );
+            alert("Unable to load student information.");
 
+            return;
         }
 
 
-        /* --------------------------------------
-           CHECK RESULTS
-        -------------------------------------- */
+        // ==========================================
+        // CHECK WHETHER RESULTS EXIST
+        // ==========================================
 
         const studentSubjects =
             student.subjects || {};
 
+        let hasResults = false;
 
-        const resultSubjects =
-            Object.keys(
-                studentSubjects
-            )
-            .filter(
-                subject =>
-                    studentSubjects[
-                        subject
-                    ]?.[term]
-            );
+        Object.keys(studentSubjects).forEach(subject => {
 
+            if (
+                studentSubjects[subject]?.[term]
+            ) {
 
-        if (
-            resultSubjects.length === 0
-        ) {
+                hasResults = true;
 
-            if (status) {
-                status.innerHTML = "";
             }
+
+        });
+
+
+        if (!hasResults) {
+
+            status.innerHTML = "";
 
             alert(
                 `${term.toUpperCase()} results are not available yet.`
             );
 
             return;
-
         }
 
 
-        /* --------------------------------------
-           SCHOOL INFORMATION
-        -------------------------------------- */
+        // ==========================================
+        // SCHOOL INFORMATION
+        // ==========================================
 
         const {
-            data: school,
-            error: schoolError
+            data: school
         } = await supabaseClient
 
             .from("schools")
 
-            .select(
-                "schoolname,schoolLogo"
-            )
+            .select("schoolname, schoolLogo")
 
-            .eq(
-                "schoolid",
-                student.schoolid
-            )
+            .eq("schoolid", student.schoolid)
 
             .single();
-
-
-        if (schoolError) {
-
-            console.warn(
-                "School information:",
-                schoolError
-            );
-
-        }
 
 
         const schoolName =
             school?.schoolname ||
             "Your School";
 
-
         const schoolLogo =
-            school?.schoolLogo ||
-            "";
+            school?.schoolLogo || "";
 
 
-        /* --------------------------------------
-           TERM DATES
-        -------------------------------------- */
-
-        const termDates =
-            await getPortalTermDates(
-                student.schoolid,
-                term
-            );
-
-
-        /* --------------------------------------
-           GET CLASSMATES
-        -------------------------------------- */
+        // ==========================================
+        // TERM SETTINGS
+        // ==========================================
 
         const {
-            data: classmatesData,
-            error: classmatesError
+            data: termSettings
         } = await supabaseClient
 
-            .from("students")
+            .from("termsettings")
 
-            .select(
-                "id,name,studentclass,subjects"
-            )
+            .select("*")
 
-            .eq(
-                "schoolid",
-                student.schoolid
-            )
+            .eq("schoolid", student.schoolid)
 
-            .eq(
-                "studentclass",
-                student.studentclass
-            );
+            .single();
 
 
-        if (classmatesError) {
+        let termEnd = "";
+        let nextTerm = "";
 
-            console.error(
-                classmatesError
-            );
 
-            throw new Error(
-                "Unable to load class students."
-            );
+        if (term === "term1") {
+
+            termEnd =
+                termSettings?.t1end;
+
+            nextTerm =
+                termSettings?.t2start;
+
+        }
+
+        if (term === "term2") {
+
+            termEnd =
+                termSettings?.t2end;
+
+            nextTerm =
+                termSettings?.t3start;
+
+        }
+
+        if (term === "term3") {
+
+            termEnd =
+                termSettings?.t3end;
+
+            nextTerm =
+                termSettings?.t1start;
 
         }
 
 
-        const classmates =
-            classmatesData || [];
+        // ==========================================
+        // TEACHER
+        // ==========================================
+
+        let teacherName =
+            "Class Teacher";
+
+        let teacherSignature =
+            "";
 
 
-        /* --------------------------------------
-           BUILD SUBJECT LIST
-           Same subjects represented by the class.
-        -------------------------------------- */
+        const {
+            data: teachers
+        } = await supabaseClient
 
-        const subjectSet =
-            new Set();
+            .from("users")
+
+            .select(
+                "fullname, username, classes, signature"
+            )
+
+            .eq("schoolid", student.schoolid)
+
+            .eq("role", "teacher");
 
 
-        classmates.forEach(
-            s => {
+        const classTeacher =
+            (teachers || []).find(t =>
 
-                Object.keys(
-                    s.subjects || {}
+                Array.isArray(t.classes) &&
+                t.classes.includes(
+                    student.studentclass
                 )
-                .forEach(
-                    subject =>
-                        subjectSet.add(
-                            subject
-                        )
-                );
 
-            }
-        );
-
-
-        /*
-         * Make sure the logged-in student's
-         * subjects are included too.
-         */
-
-        Object.keys(
-            studentSubjects
-        )
-        .forEach(
-            subject =>
-                subjectSet.add(
-                    subject
-                )
-        );
-
-
-        const subjectList =
-            Array.from(
-                subjectSet
             );
 
 
-        /* --------------------------------------
-           POSITION
-        -------------------------------------- */
+        if (classTeacher) {
 
-        const position =
-            calculatePortalPosition(
-                student,
-                classmates,
-                term,
-                subjectList
-            );
+            teacherName =
+                classTeacher.fullname ||
+                classTeacher.username ||
+                "Class Teacher";
 
+            teacherSignature =
+                classTeacher.signature || "";
 
-        const totalStudents =
-            classmates.length;
+        }
 
 
-        /* --------------------------------------
-           AVERAGE
-        -------------------------------------- */
+        // ==========================================
+        // HEADTEACHER
+        // ==========================================
 
-        const average =
-            calculatePortalStudentAverage(
-                student,
-                term
-            );
+        let headSignature = "";
 
 
-        /* --------------------------------------
-           ATTENDANCE
-        -------------------------------------- */
+        const {
+            data: head
+        } = await supabaseClient
+
+            .from("users")
+
+            .select("signature")
+
+            .eq("schoolid", student.schoolid)
+
+            .eq("role", "admin")
+
+            .maybeSingle();
+
+
+        if (head) {
+
+            headSignature =
+                head.signature || "";
+
+        }
+
+
+        // ==========================================
+        // ATTENDANCE
+        // ==========================================
 
         const totalDays =
-            Number(
-                student.totalDays?.[term] || 0
-            );
-
+            student.totalDays?.[term] || 0;
 
         const daysPresent =
-            Number(
-                student.daysPresent?.[term] || 0
-            );
-
+            student.daysPresent?.[term] || 0;
 
         const daysAbsent =
             Math.max(
                 0,
-                totalDays -
-                daysPresent
+                totalDays - daysPresent
             );
 
 
-        /* --------------------------------------
-           TEACHER
-        -------------------------------------- */
-
-        const classTeacher =
-            await getPortalClassTeacher(
-                student.schoolid,
-                student.studentclass
-            );
-
-
-        /* --------------------------------------
-           HEADTEACHER
-        -------------------------------------- */
-
-        const headteacher =
-            await getPortalHeadteacher(
-                student.schoolid
-            );
-
-
-        /* --------------------------------------
-           SUBJECT ROWS
-        -------------------------------------- */
+        // ==========================================
+        // GENERATE SUBJECT ROWS
+        // ==========================================
 
         let rows = "";
 
@@ -4708,29 +4680,63 @@ async function generateStudentTermReport(
         let subjectCount = 0;
 
 
-        resultSubjects.forEach(
-            subject => {
+        Object.keys(studentSubjects)
+            .forEach(subject => {
 
-                const data =
-                    studentSubjects[
-                        subject
-                    ]?.[term];
+                const d =
+                    studentSubjects[subject]?.[term];
 
 
-                if (!data) {
-                    return;
-                }
+                if (!d) return;
 
 
-                const result =
-                    getStudentReportSubjectResult(
-                        data
-                    );
+                const classTotal =
+
+                    Number(d.test1 || 0) +
+
+                    Number(d.test2 || 0) +
+
+                    Number(d.project || 0) +
+
+                    Number(d.group || 0);
+
+
+                const classScore =
+                    d.classScore !== undefined
+
+                    ? Number(d.classScore)
+
+                    : (classTotal / 100) * 50;
+
+
+                const examScore =
+                    d.examScore !== undefined
+
+                    ? Number(d.examScore)
+
+                    : (Number(d.exam || 0) / 100) * 50;
+
+
+                const totalScore =
+                    d.totalScore !== undefined
+
+                    ? Number(d.totalScore)
+
+                    : classScore + examScore;
+
+
+                const grade =
+                    d.grade ||
+                    getStudentGrade(totalScore);
+
+
+                const remark =
+                    d.remark ||
+                    getStudentRemark(totalScore);
 
 
                 grandTotal +=
-                    result.totalScore;
-
+                    totalScore;
 
                 subjectCount++;
 
@@ -4739,73 +4745,38 @@ async function generateStudentTermReport(
 
                     <tr>
 
-                        <td style="
-                            border:1px solid #000;
-                            padding:6px;
-                            text-align:left;
-                        ">
+                        <td>
                             ${subject.toUpperCase()}
                         </td>
 
-
-                        <td style="
-                            border:1px solid #000;
-                            padding:6px;
-                        ">
-                            ${Math.round(
-                                result.classScore
-                            )}
+                        <td>
+                            ${Math.round(classScore)}
                         </td>
 
-
-                        <td style="
-                            border:1px solid #000;
-                            padding:6px;
-                        ">
-                            ${Math.round(
-                                result.examScore
-                            )}
+                        <td>
+                            ${Math.round(examScore)}
                         </td>
 
-
-                        <td style="
-                            border:1px solid #000;
-                            padding:6px;
-                        ">
-                            ${Math.round(
-                                result.totalScore
-                            )}
+                        <td>
+                            ${Math.round(totalScore)}
                         </td>
 
-
-                        <td style="
-                            border:1px solid #000;
-                            padding:6px;
-                        ">
-                            ${result.grade}
+                        <td>
+                            ${grade}
                         </td>
 
-
-                        <td style="
-                            border:1px solid #000;
-                            padding:6px;
-                        ">
-                            ${result.remark}
+                        <td>
+                            ${remark}
                         </td>
 
                     </tr>
 
                 `;
 
-            }
-        );
+            });
 
 
-        /* --------------------------------------
-           AVERAGE
-        -------------------------------------- */
-
-        const reportAverage =
+        const average =
             subjectCount
 
             ? (
@@ -4816,830 +4787,474 @@ async function generateStudentTermReport(
             : "0.00";
 
 
-        /* --------------------------------------
-           SIGNATURE HTML
-        -------------------------------------- */
+        // ==========================================
+        // FORMAT DATES
+        // ==========================================
 
-        const teacherSignatureHTML =
+        const formatReportDate =
+            date => {
 
-            classTeacher.signature
+                if (!date) return "-";
 
-            ? `
+                return new Date(date)
+                    .toLocaleDateString(
+                        "en-GB",
+                        {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric"
+                        }
+                    );
 
-                <img
-                    src="${classTeacher.signature}"
-                    crossorigin="anonymous"
-                    style="
-                        width:180px;
-                        height:70px;
-                        object-fit:contain;
-                    "
-                >
-
-            `
-
-            : `
-
-                <div style="
-                    height:70px;
-                "></div>
-
-            `;
+            };
 
 
-        const headSignatureHTML =
+        // ==========================================
+        // BUILD REPORT
+        // ==========================================
 
-            headteacher.signature
+        const report = document.createElement("div");
 
-            ? `
-
-                <img
-                    src="${headteacher.signature}"
-                    crossorigin="anonymous"
-                    style="
-                        width:180px;
-                        height:70px;
-                        object-fit:contain;
-                    "
-                >
-
-            `
-
-            : `
-
-                <div style="
-                    height:70px;
-                "></div>
-
-            `;
-
-
-        /* --------------------------------------
-           LOGO HTML
-        -------------------------------------- */
-
-        const watermark =
-
-            schoolLogo
-
-            ? `
-
-                <img
-                    src="${schoolLogo}"
-                    crossorigin="anonymous"
-                    style="
-                        position:absolute;
-                        top:50%;
-                        left:50%;
-                        transform:
-                            translate(
-                                -50%,
-                                -50%
-                            );
-                        width:500px;
-                        height:500px;
-                        object-fit:contain;
-                        opacity:.08;
-                        z-index:0;
-                    "
-                >
-
-            `
-
-            : "";
-
-
-        const logoHTML =
-
-            schoolLogo
-
-            ? `
-
-                <img
-                    src="${schoolLogo}"
-                    crossorigin="anonymous"
-                    style="
-                        width:120px;
-                        height:120px;
-                        object-fit:contain;
-                    "
-                >
-
-            `
-
-            : "";
-
-
-        /* --------------------------------------
-           CREATE REPORT
-        -------------------------------------- */
-
-        const report =
-            document.createElement(
-                "div"
-            );
-
-
-        report.id =
-            "studentPortalReport";
-
-
-        report.style.position =
-            "absolute";
-
-
-        report.style.left =
-            "-10000px";
-
-
-        report.style.top =
-            "0";
-
-
-        report.style.width =
-            "794px";
-
-
-        report.style.background =
-            "#ffffff";
+        report.id = "studentDownloadReport";
 
 
         report.innerHTML = `
 
+        <div style="
+            width:794px;
+            min-height:1123px;
+            padding:45px;
+            box-sizing:border-box;
+            background:white;
+            color:#000;
+            font-family:'Times New Roman',serif;
+        ">
+
+
+            <!-- SCHOOL HEADER -->
+
             <div style="
-
-                font-family:
-                    'Times New Roman',
-                    Times,
-                    serif;
-
-                font-size:13px;
-
-                color:#000;
-
-                width:794px;
-
-                min-height:1123px;
-
-                background:#fff;
-
-                position:relative;
-
-                padding:50px;
-
-                box-sizing:border-box;
-
+                text-align:center;
+                border-bottom:2px solid #000;
+                padding-bottom:10px;
             ">
 
+                ${
+                    schoolLogo
 
-                ${watermark}
+                    ? `
 
+                    <img
+                        src="${schoolLogo}"
+                        style="
+                            width:100px;
+                            height:100px;
+                            object-fit:contain;
+                        "
+                    >
 
-                <!-- OUTER BORDER -->
+                    `
 
-                <div style="
-                    position:absolute;
-                    top:20px;
-                    left:20px;
-                    right:20px;
-                    bottom:20px;
-                    border:
-                        10px solid #00075D;
-                    z-index:1;
-                "></div>
+                    : ""
 
-
-                <!-- INNER BORDER -->
-
-                <div style="
-                    position:absolute;
-                    top:35px;
-                    left:35px;
-                    right:35px;
-                    bottom:35px;
-                    border:
-                        5px solid #00075D;
-                    z-index:1;
-                "></div>
+                }
 
 
-                <!-- REPORT CONTENT -->
-
-                <div style="
-                    position:relative;
-                    z-index:2;
+                <h1 style="
+                    margin:5px 0;
+                    color:#00075D;
+                    font-size:30px;
                 ">
 
+                    ${schoolName}
 
-                    <!-- SCHOOL HEADER -->
+                </h1>
 
-                    <div style="
-                        text-align:center;
-                        border-bottom:
-                            2px solid #000;
-                        padding:5px;
-                    ">
 
+                <div style="
+                    font-size:17px;
+                    font-weight:bold;
+                ">
 
-                        <div style="
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            gap:15px;
-                        ">
+                    STUDENT TERMINAL REPORT
 
-                            ${logoHTML}
+                </div>
 
 
-                            <div>
+                <div style="
+                    font-size:15px;
+                    margin-top:5px;
+                ">
 
-                                <h2 style="
-                                    margin:0;
-                                    color:#00075D;
-                                    font-size:35px;
-                                ">
-
-                                    ${schoolName}
-
-                                </h2>
-
-
-                                <p style="
-                                    margin:0;
-                                    font-size:15px;
-                                ">
-
-                                    STUDENT TERMINAL REPORT
-                                    -
-                                    ${term.toUpperCase()}
-
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-
-                    <!-- STUDENT INFORMATION -->
-
-                    <div style="
-                        margin-top:2px;
-                        font-size:18px;
-                        line-height:1;
-                    ">
-
-
-                        <div style="
-                            display:flex;
-                            justify-content:
-                                space-between;
-                            margin:2px;
-                        ">
-
-                            <p style="
-                                margin:2px;
-                                padding:8px;
-                            ">
-
-                                <b>Name:</b>
-                                ${student.name || "-"}
-
-                            </p>
-
-
-                            <p style="
-                                margin:2px;
-                                padding:8px;
-                            ">
-
-                                <b>Position:</b>
-                                ${position}
-
-                            </p>
-
-                        </div>
-
-
-
-                        <div style="
-                            display:flex;
-                            justify-content:
-                                space-between;
-                            margin:0;
-                        ">
-
-                            <p style="
-                                margin:2px;
-                                padding:8px;
-                            ">
-
-                                <b>Class:</b>
-                                ${student.studentclass || "-"}
-
-                            </p>
-
-
-                            <p style="
-                                margin:2px;
-                                padding:8px;
-                            ">
-
-                                <b>Total Students:</b>
-                                ${totalStudents}
-
-                            </p>
-
-                        </div>
-
-
-
-                        <div style="
-                            display:flex;
-                            justify-content:
-                                space-between;
-                            padding:8px;
-                        ">
-
-                            <p>
-
-                                <b>Term Ending:</b>
-
-                                ${formatStudentReportDate(
-                                    termDates.endDate
-                                )}
-
-                            </p>
-
-
-                            <p>
-
-                                <b>
-                                    Next Term Begins:
-                                </b>
-
-                                ${formatStudentReportDate(
-                                    termDates.nextDate
-                                )}
-
-                            </p>
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <!-- RESULTS TABLE -->
-
-                    <table style="
-                        width:100%;
-                        border-collapse:
-                            collapse;
-                        text-align:center;
-                        margin:2px;
-                        font-size:13px;
-                    ">
-
-
-                        <tr style="
-                            background:#00075D;
-                            color:white;
-                        ">
-
-                            <th style="
-                                border:
-                                    1px solid #000;
-                                padding:6px;
-                            ">
-                                Subject
-                            </th>
-
-
-                            <th style="
-                                border:
-                                    1px solid #000;
-                                padding:6px;
-                            ">
-                                Class Score (50%)
-                            </th>
-
-
-                            <th style="
-                                border:
-                                    1px solid #000;
-                                padding:6px;
-                            ">
-                                Exam (50%)
-                            </th>
-
-
-                            <th style="
-                                border:
-                                    1px solid #000;
-                                padding:6px;
-                            ">
-                                Total (100%)
-                            </th>
-
-
-                            <th style="
-                                border:
-                                    1px solid #000;
-                                padding:6px;
-                            ">
-                                Grade
-                            </th>
-
-
-                            <th style="
-                                border:
-                                    1px solid #000;
-                                padding:6px;
-                            ">
-                                Remark
-                            </th>
-
-                        </tr>
-
-
-                        ${rows}
-
-
-                        <tr>
-
-                            <td
-                                colspan="2"
-                                style="
-                                    border:
-                                        1px solid #000;
-                                    padding:7px;
-                                    text-align:left;
-                                "
-                            >
-
-                                <b>Average</b>
-
-                            </td>
-
-
-                            <td
-                                colspan="4"
-                                style="
-                                    border:
-                                        1px solid #000;
-                                    padding:7px;
-                                    text-align:left;
-                                "
-                            >
-
-                                <b>
-                                    ${reportAverage}%
-                                </b>
-
-                            </td>
-
-                        </tr>
-
-
-                    </table>
-
-
-
-                    <!-- ATTENDANCE -->
-
-                    <p style="
-                        font-size:14px;
-                        margin-top:10px;
-                    ">
-
-                        <b>
-                            Total School Days:
-                        </b>
-
-                        ${totalDays}
-
-
-                        &nbsp;&nbsp;&nbsp;&nbsp;
-
-
-                        <b>
-                            Days Present:
-                        </b>
-
-                        ${daysPresent}
-
-
-                        &nbsp;&nbsp;&nbsp;&nbsp;
-
-
-                        <b>
-                            Days Absent:
-                        </b>
-
-                        ${daysAbsent}
-
-
-                        ${
-                            term === "term3"
-
-                            ? `
-
-                            &nbsp;&nbsp;&nbsp;&nbsp;
-
-                            <b>
-                                Promotion Class:
-                            </b>
-
-                            ${
-                                student.promotionClass ||
-                                "Not Set"
-                            }
-
-                            `
-
-                            : ""
-
-                        }
-
-                    </p>
-
-
-
-                    <!-- AFFECTIVE TRAITS -->
-
-                    <table style="
-                        width:100%;
-                        border-collapse:
-                            collapse;
-                        font-size:15px;
-                    ">
-
-
-                        <tr>
-
-                            <th style="
-                                width:20%;
-                                background:#00075D;
-                                color:white;
-                                padding:7px;
-                                border:
-                                    1px solid #00075D;
-                            ">
-                                Conduct
-                            </th>
-
-
-                            <td style="
-                                border:
-                                    1px solid #000;
-                                padding:7px;
-                            ">
-
-                                ${
-                                    student.conduct?.[term] ||
-                                    ""
-                                }
-
-                            </td>
-
-                        </tr>
-
-
-
-                        <tr>
-
-                            <th style="
-                                background:#00075D;
-                                color:white;
-                                padding:7px;
-                                border:
-                                    1px solid #00075D;
-                            ">
-                                Attitude
-                            </th>
-
-
-                            <td style="
-                                border:
-                                    1px solid #000;
-                                padding:7px;
-                            ">
-
-                                ${
-                                    student.attitude?.[term] ||
-                                    ""
-                                }
-
-                            </td>
-
-                        </tr>
-
-
-
-                        <tr>
-
-                            <th style="
-                                background:#00075D;
-                                color:white;
-                                padding:7px;
-                                border:
-                                    1px solid #00075D;
-                            ">
-                                Interest
-                            </th>
-
-
-                            <td style="
-                                border:
-                                    1px solid #000;
-                                padding:7px;
-                            ">
-
-                                ${
-                                    student.interest?.[term] ||
-                                    ""
-                                }
-
-                            </td>
-
-                        </tr>
-
-
-                    </table>
-
-
-
-                    <!-- TEACHER REMARK -->
-
-                    <table style="
-                        width:100%;
-                        border-collapse:
-                            collapse;
-                        font-size:15px;
-                        margin-top:6px;
-                    ">
-
-
-                        <tr>
-
-                            <th style="
-                                width:35%;
-                                background:#00075D;
-                                color:white;
-                                padding:7px;
-                                border:
-                                    1px solid #00075D;
-                            ">
-
-                                CLASS TEACHER'S REMARK
-
-                            </th>
-
-
-                            <td style="
-                                border:
-                                    1px solid #000;
-                                padding:7px;
-                            ">
-
-                                ${
-                                    student.teacherRemark?.[term] ||
-                                    ""
-                                }
-
-                            </td>
-
-                        </tr>
-
-
-                    </table>
-
-
-
-                    <!-- SIGNATURES -->
-
-                    <div style="
-                        display:flex;
-                        justify-content:
-                            space-between;
-                        align-items:
-                            flex-end;
-                        margin-top:35px;
-                    ">
-
-
-                        <!-- CLASS TEACHER -->
-
-                        <div style="
-                            width:40%;
-                            text-align:center;
-                        ">
-
-                            ${teacherSignatureHTML}
-
-
-                            <hr style="
-                                margin:2px 0;
-                            ">
-
-
-                            <b>
-                                ${classTeacher.name}
-                            </b>
-
-                            <br>
-
-                            Class Teacher
-
-                        </div>
-
-
-
-                        <!-- HEADTEACHER -->
-
-                        <div style="
-                            width:40%;
-                            text-align:center;
-                        ">
-
-                            ${headSignatureHTML}
-
-
-                            <hr style="
-                                margin:2px 0;
-                            ">
-
-
-                            <b>
-                                ${headteacher.name}
-                            </b>
-
-                            <br>
-
-                            Headteacher
-
-                        </div>
-
-
-                    </div>
-
+                    ${term.toUpperCase()}
 
                 </div>
 
             </div>
 
+
+
+            <!-- STUDENT INFORMATION -->
+
+            <table style="
+                width:100%;
+                margin-top:15px;
+                border-collapse:collapse;
+                font-size:15px;
+            ">
+
+                <tr>
+
+                    <td style="padding:6px;">
+                        <b>Name:</b>
+                        ${student.name}
+                    </td>
+
+                    <td style="
+                        padding:6px;
+                        text-align:right;
+                    ">
+                        <b>Student ID:</b>
+                        ${student.studentid || "-"}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td style="padding:6px;">
+                        <b>Class:</b>
+                        ${student.studentclass}
+                    </td>
+
+                    <td style="
+                        padding:6px;
+                        text-align:right;
+                    ">
+                        <b>Term Ending:</b>
+                        ${formatReportDate(termEnd)}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td style="padding:6px;">
+                        <b>Total Students:</b>
+                        -
+                    </td>
+
+                    <td style="
+                        padding:6px;
+                        text-align:right;
+                    ">
+                        <b>Next Term Begins:</b>
+                        ${formatReportDate(nextTerm)}
+                    </td>
+
+                </tr>
+
+            </table>
+
+
+
+            <!-- RESULTS -->
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                text-align:center;
+                margin-top:12px;
+                font-size:13px;
+            ">
+
+                <tr style="
+                    background:#00075D;
+                    color:white;
+                ">
+
+                    <th style="
+                        border:1px solid #00075D;
+                        padding:7px;
+                    ">
+                        Subject
+                    </th>
+
+                    <th style="
+                        border:1px solid #00075D;
+                        padding:7px;
+                    ">
+                        Class Score
+                    </th>
+
+                    <th style="
+                        border:1px solid #00075D;
+                        padding:7px;
+                    ">
+                        Exam
+                    </th>
+
+                    <th style="
+                        border:1px solid #00075D;
+                        padding:7px;
+                    ">
+                        Total
+                    </th>
+
+                    <th style="
+                        border:1px solid #00075D;
+                        padding:7px;
+                    ">
+                        Grade
+                    </th>
+
+                    <th style="
+                        border:1px solid #00075D;
+                        padding:7px;
+                    ">
+                        Remark
+                    </th>
+
+                </tr>
+
+                ${rows}
+
+
+                <tr>
+
+                    <td
+                        colspan="2"
+                        style="
+                            text-align:left;
+                            padding:8px;
+                            border:1px solid #000;
+                        "
+                    >
+                        <b>Average</b>
+                    </td>
+
+                    <td
+                        colspan="4"
+                        style="
+                            text-align:left;
+                            padding:8px;
+                            border:1px solid #000;
+                        "
+                    >
+                        <b>${average}%</b>
+                    </td>
+
+                </tr>
+
+            </table>
+
+
+
+            <!-- ATTENDANCE -->
+
+            <p style="
+                margin-top:12px;
+                font-size:14px;
+            ">
+
+                <b>Total School Days:</b>
+                ${totalDays}
+
+                &nbsp;&nbsp;&nbsp;&nbsp;
+
+                <b>Days Present:</b>
+                ${daysPresent}
+
+                &nbsp;&nbsp;&nbsp;&nbsp;
+
+                <b>Days Absent:</b>
+                ${daysAbsent}
+
+                ${
+                    term === "term3"
+
+                    ? `
+
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+
+                    <b>Promotion Class:</b>
+                    ${student.promotionClass || "Not Set"}
+
+                    `
+
+                    : ""
+
+                }
+
+            </p>
+
+
+
+            <!-- AFFECTIVE TRAITS -->
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                font-size:14px;
+                margin-top:10px;
+            ">
+
+                <tr>
+
+                    <th style="
+                        background:#00075D;
+                        color:white;
+                        border:1px solid #00075D;
+                        padding:7px;
+                        text-align:left;
+                    ">
+                        Conduct
+                    </th>
+
+                    <td style="
+                        border:1px solid #000;
+                        padding:7px;
+                    ">
+                        ${student.conduct?.[term] || ""}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <th style="
+                        background:#00075D;
+                        color:white;
+                        border:1px solid #00075D;
+                        padding:7px;
+                        text-align:left;
+                    ">
+                        Attitude
+                    </th>
+
+                    <td style="
+                        border:1px solid #000;
+                        padding:7px;
+                    ">
+                        ${student.attitude?.[term] || ""}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <th style="
+                        background:#00075D;
+                        color:white;
+                        border:1px solid #00075D;
+                        padding:7px;
+                        text-align:left;
+                    ">
+                        Interest
+                    </th>
+
+                    <td style="
+                        border:1px solid #000;
+                        padding:7px;
+                    ">
+                        ${student.interest?.[term] || ""}
+                    </td>
+
+                </tr>
+
+            </table>
+
+
+
+            <!-- TEACHER REMARK -->
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                margin-top:10px;
+                font-size:14px;
+            ">
+
+                <tr>
+
+                    <th style="
+                        width:35%;
+                        background:#00075D;
+                        color:white;
+                        border:1px solid #00075D;
+                        padding:8px;
+                    ">
+                        CLASS TEACHER'S REMARK
+                    </th>
+
+                    <td style="
+                        border:1px solid #000;
+                        padding:8px;
+                    ">
+                        ${student.teacherRemark?.[term] || ""}
+                    </td>
+
+                </tr>
+
+            </table>
+
+
+
+      
+
+     
+
+
+            </div>
+
+
+        
+
         `;
 
 
-        document.body.appendChild(
-            report
-        );
+        /*
+         * Keep it outside the visible portal
+         * while html2canvas processes it.
+         */
+
+        report.style.position =
+            "absolute";
+
+        report.style.left =
+            "-10000px";
+
+        report.style.top =
+            "0";
+
+        document.body.appendChild(report);
 
 
-        /* --------------------------------------
-           WAIT FOR IMAGES
-        -------------------------------------- */
-
-        await waitForPortalReportImages(
-            report
-        );
-
-
-        /* --------------------------------------
-           CONVERT TO CANVAS
-        -------------------------------------- */
+        // ==========================================
+        // CONVERT TO CANVAS
+        // ==========================================
 
         const canvas =
             await html2canvas(
                 report,
                 {
                     scale: 2,
-
                     useCORS: true,
-
-                    allowTaint: false,
-
-                    backgroundColor:
-                        "#ffffff",
-
-                    logging: false,
-
-                    imageTimeout: 15000
+                    backgroundColor: "#ffffff"
                 }
             );
 
 
-        /* --------------------------------------
-           CREATE PDF
-        -------------------------------------- */
+        // ==========================================
+        // CREATE PDF
+        // ==========================================
 
-        const {
-            jsPDF
-        } = window.jspdf;
+        const { jsPDF } =
+            window.jspdf;
 
 
         const pdf =
@@ -5650,16 +5265,18 @@ async function generateStudentTermReport(
             );
 
 
+        const imgData =
+            canvas.toDataURL(
+                "image/png",
+                1.0
+            );
+
+
         const pageWidth =
             210;
 
-
         const pageHeight =
             297;
-
-
-        const margin =
-            0;
 
 
         const imgWidth =
@@ -5667,342 +5284,91 @@ async function generateStudentTermReport(
 
 
         const imgHeight =
-
-            canvas.height *
-            imgWidth /
+            (canvas.height *
+             imgWidth) /
             canvas.width;
 
 
-        const imgData =
-            canvas.toDataURL(
-                "image/jpeg",
-                0.95
-            );
-
-
         /*
-         * The report is designed to fit
-         * one A4 page.
+         * If report is one A4 page,
+         * fit it normally.
          */
 
-        if (
-            imgHeight <= pageHeight
-        ) {
-
-            pdf.addImage(
-                imgData,
-                "JPEG",
-                margin,
-                margin,
-                imgWidth,
-                imgHeight
-            );
-
-        }
-
-        else {
-
-            /*
-             * Scale down instead of cropping.
-             */
-
-            const scale =
-                pageHeight /
-                imgHeight;
+        pdf.addImage(
+            imgData,
+            "PNG",
+            0,
+            0,
+            imgWidth,
+            Math.min(
+                imgHeight,
+                pageHeight
+            )
+        );
 
 
-            const fittedWidth =
-                imgWidth *
-                scale;
-
-
-            const fittedHeight =
-                pageHeight;
-
-
-            const x =
-                (
-                    pageWidth -
-                    fittedWidth
-                ) / 2;
-
-
-            pdf.addImage(
-                imgData,
-                "JPEG",
-                x,
-                0,
-                fittedWidth,
-                fittedHeight
-            );
-
-        }
-
-
-        /* --------------------------------------
-           FILE NAME
-        -------------------------------------- */
+        // ==========================================
+        // FILE NAME
+        // ==========================================
 
         const safeName =
-            (
-                student.name ||
-                "Student"
-            )
-            .replace(
-                /[^a-z0-9]/gi,
-                "_"
-            )
-            .replace(
-                /_+/g,
-                "_"
-            );
+            student.name
+                .replace(/[^a-z0-9]/gi, "_");
 
 
         const fileName =
             `${safeName}_${term}_Report.pdf`;
 
 
-        /* --------------------------------------
-           DOWNLOAD
-        -------------------------------------- */
+        // ==========================================
+        // DOWNLOAD
+        // ==========================================
 
-        pdf.save(
-            fileName
-        );
+        pdf.save(fileName);
 
 
-        /* --------------------------------------
-           CLEAN UP
-        -------------------------------------- */
+        // Remove temporary report
 
         document.body.removeChild(
             report
         );
 
 
-        if (status) {
+        status.innerHTML = `
 
-            status.innerHTML = `
+            <div class="download-loading">
 
-                <div class="
-                    download-loading
-                ">
+                <i class="fas fa-check-circle"
+                   style="color:#16a34a;">
+                </i>
 
-                    <i
-                        class="
-                            fas
-                            fa-check-circle
-                        "
-                        style="
-                            color:#16a34a;
-                        "
-                    ></i>
+                ${term.toUpperCase()} report downloaded successfully.
 
-                    ${term.toUpperCase()}
-                    report downloaded
-                    successfully.
+            </div>
 
-                </div>
-
-            `;
+        `;
 
 
-            setTimeout(
-                () => {
+        setTimeout(() => {
 
-                    status.innerHTML =
-                        "";
+            status.innerHTML = "";
 
-                },
-                4000
-            );
-
-        }
+        }, 4000);
 
 
-    } catch (error) {
+    } catch(error) {
 
         console.error(
-            "Student report generation error:",
+            "Report generation error:",
             error
         );
 
 
-        const report =
-            document.getElementById(
-                "studentPortalReport"
-            );
-
-
-        if (report) {
-
-            report.remove();
-
-        }
-
-
-        if (status) {
-
-            status.innerHTML =
-                "";
-
-        }
+        status.innerHTML = "";
 
 
         alert(
-            "Unable to generate the report.\n\n" +
-            (
-                error?.message ||
-                "Please try again."
-            )
-        );
-
-    }
-
-}
-
-
-/* ============================================================
-   WAIT FOR REPORT IMAGES
-   This prevents missing school logos/signatures.
-   ============================================================ */
-
-async function waitForPortalReportImages(
-    container
-) {
-
-    const images =
-        Array.from(
-            container.querySelectorAll(
-                "img"
-            )
-        );
-
-
-    if (
-        images.length === 0
-    ) {
-
-        return;
-
-    }
-
-
-    await Promise.all(
-
-        images.map(
-            img => {
-
-                return new Promise(
-                    resolve => {
-
-                        if (
-                            img.complete
-                        ) {
-
-                            resolve();
-
-                            return;
-
-                        }
-
-
-                        img.onload =
-                            resolve;
-
-                        img.onerror =
-                            resolve;
-
-
-                        setTimeout(
-                            resolve,
-                            15000
-                        );
-
-                    }
-                );
-
-            }
-        )
-
-    );
-
-}
-
-
-/* ============================================================
-   OPTIONAL:
-   GENERATE ONLY THE CURRENT TERM
-   ============================================================ */
-
-async function downloadCurrentTermReport() {
-
-    try {
-
-        const loggedStudent =
-            JSON.parse(
-                localStorage.getItem(
-                    "loggedStudent"
-                )
-            );
-
-
-        if (!loggedStudent) {
-
-            alert(
-                "Student session not found."
-            );
-
-            return;
-
-        }
-
-
-        const {
-            data: student,
-            error
-        } = await supabaseClient
-
-            .from("students")
-
-            .select("currentTerm")
-
-            .eq(
-                "id",
-                loggedStudent.id
-            )
-
-            .single();
-
-
-        if (
-            error ||
-            !student
-        ) {
-
-            alert(
-                "Unable to determine current term."
-            );
-
-            return;
-
-        }
-
-
-        await generateStudentTermReport(
-            student.currentTerm ||
-            "term1"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            error
-        );
-
-        alert(
-            "Unable to generate report."
+            "Unable to generate the report. Please try again."
         );
 
     }
