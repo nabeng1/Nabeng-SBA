@@ -2765,7 +2765,7 @@ function openStudentModal(index) {
 
             <img
                 id="studentPhoto"
-                src="${s.photo || ''}"
+                src="${s["student-photos"] || ''}"
                 class="profile-photo"
                 onclick="document.getElementById('photoUpload').click()">
 
@@ -2921,48 +2921,117 @@ function openStudentModal(index) {
 </div>
 
 `;
-
+console.log("SELECTED STUDENT:", s);
+console.log("STUDENT PHOTO VALUE:", s["student-photos"]);
     document.getElementById("studentModal").style.display = "flex";
 
 }
 
-async function uploadStudentPhoto(index, file){
+async function uploadStudentPhoto(index, file) {
 
-    if(!file) return;
+    if (!file) return;
 
     const student = students[index];
 
-    const fileName =
-        `${student.id}-${Date.now()}.${file.name.split('.').pop()}`;
-
-    // Upload to Supabase Storage
-    const { error } = await supabase.storage
-        .from("student-photos")
-        .upload(fileName, file, {
-            upsert: true
-        });
-
-    if(error){
-        alert(error.message);
+    if (!student || !student.id) {
+        alert("Student information not found.");
         return;
     }
 
-    const { data } = supabase.storage
-        .from("student-photos")
-        .getPublicUrl(fileName);
+    // Allow only images
+    if (!file.type.startsWith("image/")) {
+        alert("Please select an image file.");
+        return;
+    }
 
-    await supabase
-        .from("students")
-        .update({
-            photo: data.publicUrl
-        })
-        .eq("id", student.id);
+    try {
 
-    student.photo = data.publicUrl;
+        const extension =
+            file.name.split(".").pop().toLowerCase();
 
-    openStudentModal(index);
+        const fileName =
+            `${student.id}-${Date.now()}.${extension}`;
 
-    alert("Student photo updated successfully.");
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } =
+            await supabaseClient.storage
+                .from("student-photos")
+                .upload(fileName, file, {
+                    upsert: true,
+                    contentType: file.type
+                });
+
+        if (uploadError) {
+            console.error(
+                "Student Photo Upload Error:",
+                uploadError
+            );
+
+            alert(
+                "Photo upload failed: " +
+                uploadError.message
+            );
+
+            return;
+        }
+
+        // Get public URL
+        const { data: urlData } =
+            supabaseClient.storage
+                .from("student-photos")
+                .getPublicUrl(fileName);
+
+        const photoUrl =
+            urlData?.publicUrl;
+
+        if (!photoUrl) {
+            alert("Could not get the uploaded photo URL.");
+            return;
+        }
+
+        // Save photo URL to student record
+        const { error: dbError } =
+            await supabaseClient
+                .from("students")
+                .update({
+    "student-photos": photoUrl
+})
+                .eq("id", student.id);
+
+        if (dbError) {
+
+            console.error(
+                "Student Photo Database Error:",
+                dbError
+            );
+
+            alert(
+                "Photo uploaded, but could not save it: " +
+                dbError.message
+            );
+
+            return;
+        }
+
+        // Update local student object
+        student.photo = photoUrl;
+
+        // Reopen profile with new photo
+        openStudentModal(index);
+
+        alert("Student photo updated successfully.");
+
+    } catch (error) {
+
+        console.error(
+            "Student Photo Error:",
+            error
+        );
+
+        alert(
+            "An error occurred while uploading the photo."
+        );
+    }
 }
 
 
