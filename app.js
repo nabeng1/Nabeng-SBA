@@ -8251,3 +8251,8 @@ async function toggleTheme() {
         : "fas fa-moon";
 }
 
+
+
+function openWhatsApp() {
+    window.open("https://wa.me/233599581301", "_blank");
+}
