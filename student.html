@@ -5437,6 +5437,14 @@ async function openMessages() {
    LOAD STUDENT CHAT CONTACTS
 ============================================================ */
 
+/* ============================================================
+   LOAD STUDENT CHAT CONTACTS
+   Shows:
+   - Administrator
+   - All teachers
+   - Classmates
+============================================================ */
+
 async function loadStudentChatContacts() {
 
     const student =
@@ -5446,109 +5454,155 @@ async function loadStudentChatContacts() {
 
 
     const schoolid =
-        student.schoolid;
+        student.schoolid ||
+        student.schoolId;
 
     const studentClass =
-        student.studentclass;
+        student.studentclass ||
+        student.studentClass ||
+        "";
 
 
-    console.log(
-        "Student school:",
-        schoolid
-    );
+    if (!schoolid) {
 
-    console.log(
-        "Student class:",
-        studentClass
-    );
+        console.error(
+            "Student school ID not found."
+        );
+
+        return;
+
+    }
 
 
     const contacts = [];
 
 
     /* ========================================================
-       CLASS TEACHER
+       LOAD ALL STAFF
     ======================================================== */
 
     const {
-        data: teachers,
-        error: teacherError
+        data: staff,
+        error: staffError
     } =
         await supabaseClient
 
             .from("users")
 
             .select(
-                "id,firstname,surname,fullname,username,profilePic,classes,role,schoolid"
-            )
+    "id,firstname,surname,username,profilePic,classes,role,schoolid"
+)
 
             .eq(
                 "schoolid",
                 schoolid
-            )
-
-            .eq(
-                "role",
-                "teacher"
             );
 
 
-    if (teacherError) {
+    if (staffError) {
 
         console.error(
-            "Class teacher error:",
-            teacherError
+            "❌ STAFF CONTACT ERROR:",
+            staffError
         );
 
-    }
+    } else {
+
+        console.log(
+            "✅ ALL STAFF FROM USERS:",
+            staff
+        );
 
 
-    const classTeacher =
-        (teachers || []).find(
-            teacher => {
+        (staff || []).forEach(user => {
 
-                return (
-                    Array.isArray(
-                        teacher.classes
-                    ) &&
-                    teacher.classes.includes(
-                        studentClass
-                    )
-                );
+            const role =
+                String(
+                    user.role || ""
+                ).toLowerCase().trim();
+
+
+            /*
+             * Ignore anything that isn't
+             * admin or teacher.
+             */
+
+            if (
+                role !== "admin" &&
+                role !== "teacher"
+            ) {
+
+                return;
 
             }
-        );
 
 
-    if (classTeacher) {
+            /*
+             * Never add the same person
+             * as the logged-in student.
+             */
 
-        const teacherName =
-            classTeacher.fullname ||
-            `${classTeacher.firstname || ""} ${classTeacher.surname || ""}`.trim() ||
-            classTeacher.username ||
-            "Class Teacher";
+            const name =
+                user.fullname ||
+                `${user.firstname || ""} ${user.surname || ""}`.trim() ||
+                user.username ||
+                "User";
 
 
-        contacts.push({
+            /*
+             * Determine class teacher.
+             */
 
-            id:
-                classTeacher.username,
+            let isClassTeacher = false;
 
-            type:
-                "user",
 
-            role:
-                "teacher",
+            if (
+                role === "teacher" &&
+                Array.isArray(user.classes)
+            ) {
 
-            name:
-                teacherName,
+                isClassTeacher =
+                    user.classes.some(
+                        assignedClass =>
+                            String(
+                                assignedClass
+                            ).trim().toLowerCase() ===
+                            String(
+                                studentClass
+                            ).trim().toLowerCase()
+                    );
 
-            photo:
-                classTeacher.profilePic ||
-                "",
+            }
 
-            isTeacher:
-                true
+
+            contacts.push({
+
+                id:
+                    user.username,
+
+                type:
+                    "user",
+
+                role:
+                    role,
+
+                name:
+                    name,
+
+                photo:
+                    user.profilePic ||
+                    "",
+
+                isAdmin:
+                    role === "admin",
+
+                isTeacher:
+                    role === "teacher",
+
+                isClassTeacher:
+                    isClassTeacher
+
+            });
 
         });
 
@@ -5556,19 +5610,19 @@ async function loadStudentChatContacts() {
 
 
     /* ========================================================
-       CLASSMATES
+       LOAD CLASSMATES
     ======================================================== */
 
     const {
         data: classmates,
-        error: studentError
+        error: classmatesError
     } =
         await supabaseClient
 
             .from("students")
 
             .select(
-                "id,name,studentid,studentclass,schoolid,\"student-photos\""
+                'id,name,studentid,studentclass,schoolid,"student-photos"'
             )
 
             .eq(
@@ -5582,62 +5636,104 @@ async function loadStudentChatContacts() {
             );
 
 
-    if (studentError) {
+    if (classmatesError) {
 
         console.error(
-            "Classmates error:",
-            studentError
+            "❌ CLASSMATES ERROR:",
+            classmatesError
         );
 
-        return;
+    } else {
+
+        console.log(
+            "✅ CLASSMATES:",
+            classmates
+        );
+
+
+        (classmates || []).forEach(
+            classmate => {
+
+                if (
+                    String(classmate.id) ===
+                    String(student.id)
+                ) {
+
+                    return;
+
+                }
+
+
+                contacts.push({
+
+                    id:
+                        classmate.id,
+
+                    type:
+                        "student",
+
+                    role:
+                        "student",
+
+                    name:
+                        classmate.name ||
+                        "Student",
+
+                    studentid:
+                        classmate.studentid,
+
+                    photo:
+                        classmate["student-photos"] ||
+                        "",
+
+                    isAdmin:
+                        false,
+
+                    isTeacher:
+                        false,
+
+                    isClassTeacher:
+                        false
+
+                });
+
+            }
+        );
 
     }
 
 
-    (classmates || []).forEach(
-        classmate => {
+    /* ========================================================
+       SORT
+    ======================================================== */
 
-            /*
-             * Do not show the logged-in
-             * student in their own list.
-             */
+    contacts.sort(
+        (a, b) => {
 
-            if (
-                String(classmate.id) ===
-                String(student.id)
-            ) {
+            const priority =
+                contact => {
 
-                return;
+                    if (
+                        contact.isAdmin
+                    ) return 1;
 
-            }
+                    if (
+                        contact.isClassTeacher
+                    ) return 2;
+
+                    if (
+                        contact.isTeacher
+                    ) return 3;
+
+                    return 4;
+
+                };
 
 
-            contacts.push({
-
-                id:
-                    classmate.id,
-
-                type:
-                    "student",
-
-                role:
-                    "student",
-
-                name:
-                    classmate.name ||
-                    "Student",
-
-                studentid:
-                    classmate.studentid,
-
-                photo:
-                    classmate["student-photos"] ||
-                    "",
-
-                isTeacher:
-                    false
-
-            });
+            return (
+                priority(a) -
+                priority(b)
+            );
 
         }
     );
@@ -5647,13 +5743,38 @@ async function loadStudentChatContacts() {
         contacts;
 
 
-    document
-        .getElementById(
+    console.log(
+        "===================================="
+    );
+
+    console.log(
+        "FINAL STUDENT CHAT CONTACTS:",
+        studentChatContacts
+    );
+
+    console.log(
+        "TOTAL CONTACTS:",
+        studentChatContacts.length
+    );
+
+    console.log(
+        "===================================="
+    );
+
+
+    const className =
+        document.getElementById(
             "studentChatClassName"
-        )
-        .textContent =
-        studentClass ||
-        "My Class";
+        );
+
+
+    if (className) {
+
+        className.textContent =
+            studentClass ||
+            "My Class";
+
+    }
 
 
     renderStudentChatContacts();
@@ -5685,7 +5806,7 @@ function renderStudentChatContacts() {
                 <i class="fas fa-users"></i>
 
                 <p>
-                    No classmates or teacher found.
+                    No classmates, teachers or administrator found.
                 </p>
 
             </div>
@@ -5795,9 +5916,16 @@ function renderStudentChatContacts() {
                         <span>
 
                             ${
-                                contact.isTeacher
-                                    ? "Class Teacher"
-                                    : "Classmate"
+                                contact.isAdmin
+                                    ? "Administrator"
+
+                                    : contact.isClassTeacher
+                                        ? "Class Teacher"
+
+                                        : contact.isTeacher
+                                            ? "Teacher"
+
+                                            : "Classmate"
                             }
 
                         </span>
@@ -5816,6 +5944,255 @@ function renderStudentChatContacts() {
         html;
 
 }
+
+
+
+
+/* ============================================================
+   SEND STUDENT CHAT MESSAGE
+============================================================ */
+
+async function sendStudentReply() {
+
+    const student =
+        getLoggedStudent();
+
+
+    if (!student) {
+
+        alert(
+            "Student session not found. Please log in again."
+        );
+
+        return;
+
+    }
+
+
+    if (!selectedStudentChatUser) {
+
+        alert(
+            "Please select a person to message."
+        );
+
+        return;
+
+    }
+
+
+    const input =
+        document.getElementById(
+            "studentReply"
+        );
+
+
+    if (!input) {
+
+        console.error(
+            "studentReply input not found."
+        );
+
+        return;
+
+    }
+
+
+    const text =
+        input.value.trim();
+
+
+    if (!text) {
+
+        return;
+
+    }
+
+
+    /*
+     * Determine sender.
+     *
+     * Students use their database ID.
+     */
+
+    const fromUser =
+        String(student.id);
+
+
+    const fromType =
+        "student";
+
+
+    /*
+     * selectedStudentChatUser is:
+     *
+     * - username for staff
+     * - id for students
+     */
+
+    const toUser =
+        String(
+            selectedStudentChatUser
+        );
+
+
+    const toType =
+        selectedStudentChatType ===
+        "user"
+            ? "user"
+            : "student";
+
+
+    const newMessage = {
+
+        schoolid:
+            student.schoolid,
+
+        from_user:
+            fromUser,
+
+        from_type:
+            fromType,
+
+        to_user:
+            toUser,
+
+        to_type:
+            toType,
+
+        text:
+            text,
+
+        media:
+            null
+
+    };
+
+
+    console.log(
+        "SENDING STUDENT MESSAGE:",
+        newMessage
+    );
+
+
+    const button =
+        document.querySelector(
+            ".send-message-btn"
+        );
+
+
+    if (button) {
+
+        button.disabled = true;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+
+                .from("chats")
+
+                .insert(
+                    newMessage
+                )
+
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "❌ STUDENT CHAT INSERT ERROR:",
+                error
+            );
+
+            alert(
+                "Failed to send message:\n\n" +
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        console.log(
+            "✅ STUDENT MESSAGE SENT:",
+            data
+        );
+
+
+        /*
+         * Add message immediately.
+         */
+
+        if (data) {
+
+            const exists =
+                studentChatMessages.some(
+                    msg =>
+                        String(msg.id) ===
+                        String(data.id)
+                );
+
+
+            if (!exists) {
+
+                studentChatMessages.push(
+                    data
+                );
+
+            }
+
+        }
+
+
+        /*
+         * Clear input.
+         */
+
+        input.value = "";
+
+        input.style.height =
+            "auto";
+
+
+        /*
+         * Render immediately.
+         */
+
+        renderStudentConversation();
+
+
+    } catch (error) {
+
+        console.error(
+            "❌ STUDENT SEND ERROR:",
+            error
+        );
+
+        alert(
+            "Unable to send message."
+        );
+
+    } finally {
+
+        if (button) {
+
+            button.disabled = false;
+
+        }
+
+    }
+
+}
+
 
 /* ============================================================
    SELECT STUDENT CHAT CONTACT
