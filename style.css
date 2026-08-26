@@ -2207,7 +2207,7 @@ body::before{
 
     width: 100%;
 
-    margin: 7px 0;
+    margin: 2px 0;
 
     padding: 0;
 
@@ -2248,7 +2248,7 @@ body::before{
 
     min-width: 0;
 
-    padding: 11px 13px;
+    padding: 5px 7px;
 
     border-radius: 16px;
 
@@ -8833,4 +8833,242 @@ body.dark-mode #noticesPage .notices-empty-state {
 .notice-delete-btn:hover {
     transform: translateY(-1px);
     opacity: 0.85;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   DEVELOPER FEEDBACK POPUP
+============================================================ */
+
+.feedback-modal-overlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    z-index: 99999;
+
+    padding: 20px;
+
+}
+
+
+.feedback-modal {
+
+    position: relative;
+
+    width: 100%;
+
+    max-width: 420px;
+
+    background: #ffffff;
+
+    border-radius: 20px;
+
+    padding: 30px 25px;
+
+    text-align: center;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.25);
+
+    animation:
+        feedbackModalIn
+        0.3s ease;
+
+}
+
+
+@keyframes feedbackModalIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(20px)
+            scale(0.95);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+}
+
+
+.feedback-close {
+
+    position: absolute;
+
+    top: 12px;
+
+    right: 15px;
+
+    border: none;
+
+    background: transparent;
+
+    font-size: 28px;
+
+    cursor: pointer;
+
+    color: #777;
+
+}
+
+
+.feedback-icon {
+
+    width: 65px;
+
+    height: 65px;
+
+    margin: 5px auto 18px;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #e8f5e9;
+
+    color: #25D366;
+
+    font-size: 28px;
+
+}
+
+
+.feedback-modal h3 {
+
+    margin: 0 0 10px;
+
+    font-size: 23px;
+
+}
+
+
+.feedback-modal p {
+
+    margin: 0 auto 25px;
+
+    color: #666;
+
+    line-height: 1.6;
+
+    font-size: 15px;
+
+}
+
+
+.feedback-actions {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+}
+
+
+.feedback-send-btn {
+
+    border: none;
+
+    border-radius: 10px;
+
+    padding: 13px 18px;
+
+    background: #25D366;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+}
+
+
+.feedback-send-btn i {
+
+    margin-right: 7px;
+
+}
+
+
+.feedback-later-btn {
+
+    border: none;
+
+    background: transparent;
+
+    color: #777;
+
+    padding: 10px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+}
+
+
+.feedback-later-btn:hover {
+
+    color: #333;
+
 }
