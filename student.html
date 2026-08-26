@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
 <title>Nabeng-SBA Student Portal</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1487,6 +1487,21 @@ button:hover{
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* =====================================================
    STUDENT MESSAGES
 ===================================================== */
@@ -2123,6 +2138,1065 @@ button:hover{
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   STUDENT NOTIFICATIONS
+========================================================= */
+
+.student-notification-bell {
+    position: relative;
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease,
+        transform .2s ease;
+}
+
+.student-notification-bell i {
+    font-size: 20px;
+}
+
+.student-notification-bell:hover {
+    background: rgba(0,0,0,.06);
+    transform: translateY(-1px);
+}
+
+
+/* UNREAD BADGE */
+
+.student-notification-badge {
+
+    position: absolute;
+
+    top: 2px;
+    right: 1px;
+
+    min-width: 18px;
+    height: 18px;
+
+    padding: 0 5px;
+
+    border-radius: 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #ef4444;
+    color: #fff;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    border: 2px solid #fff;
+}
+
+
+/* PAGE */
+
+.student-notifications-page {
+    width: 100%;
+    min-height: 100%;
+}
+
+.notifications-container {
+
+    width: min(100%, 1000px);
+
+    margin: 0 auto;
+
+    padding: 25px 20px 50px;
+}
+
+
+/* TOP BAR */
+
+.notifications-topbar {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 20px;
+
+    margin-bottom: 25px;
+}
+
+.notifications-back-btn {
+
+    border: none;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+}
+
+.notifications-heading {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+.notifications-heading-icon {
+
+    width: 48px;
+    height: 48px;
+
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(37,99,235,.10);
+
+    color: #2563eb;
+
+    font-size: 20px;
+}
+
+.notifications-heading h2 {
+
+    margin: 0;
+
+    font-size: 24px;
+}
+
+.notifications-heading p {
+
+    margin: 4px 0 0;
+
+    font-size: 13px;
+
+    opacity: .65;
+}
+
+
+/* FILTER */
+
+.notifications-filter {
+
+    display: flex;
+
+    gap: 8px;
+
+    margin-bottom: 18px;
+
+    border-bottom: 1px solid rgba(0,0,0,.08);
+
+    padding-bottom: 12px;
+}
+
+.notification-filter-btn {
+
+    border: none;
+
+    background: transparent;
+
+    padding: 8px 16px;
+
+    border-radius: 20px;
+
+    cursor: pointer;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+.notification-filter-btn.active {
+
+    background: #2563eb;
+
+    color: white;
+}
+
+
+/* NOTIFICATION CARD */
+
+.student-notification-card {
+
+    position: relative;
+
+    display: flex;
+
+    gap: 15px;
+
+    padding: 18px;
+
+    margin-bottom: 12px;
+
+    border-radius: 16px;
+
+    background: #fff;
+
+    border: 1px solid rgba(0,0,0,.07);
+
+    box-shadow:
+        0 4px 15px rgba(0,0,0,.04);
+
+    cursor: pointer;
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.student-notification-card:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.08);
+}
+
+
+/* UNREAD */
+
+.student-notification-card.unread {
+
+    border-left: 4px solid #2563eb;
+
+    background: #f8fbff;
+}
+
+
+/* ICON */
+
+.notification-card-icon {
+
+    flex: 0 0 44px;
+
+    width: 44px;
+    height: 44px;
+
+    border-radius: 13px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(37,99,235,.10);
+
+    color: #2563eb;
+}
+
+
+/* CONTENT */
+
+.notification-card-content {
+
+    flex: 1;
+
+    min-width: 0;
+}
+
+.notification-card-top {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 12px;
+}
+
+.notification-card-title {
+
+    margin: 0;
+
+    font-size: 15px;
+
+    font-weight: 700;
+}
+
+.notification-card-date {
+
+    font-size: 11px;
+
+    opacity: .55;
+
+    white-space: nowrap;
+}
+
+.notification-card-message {
+
+    margin: 7px 0 10px;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+
+    opacity: .78;
+}
+
+
+/* SENDER */
+
+.notification-card-sender {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    font-size: 11px;
+
+    opacity: .65;
+}
+
+
+/* PRIORITY */
+
+.notification-priority {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 3px 8px;
+
+    border-radius: 20px;
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    margin-left: 8px;
+}
+
+.notification-priority.normal {
+
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.notification-priority.important {
+
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+.notification-priority.urgent {
+
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+
+/* EMPTY */
+
+.notifications-empty {
+
+    padding: 60px 20px;
+
+    text-align: center;
+
+    border-radius: 18px;
+
+    background: rgba(0,0,0,.025);
+}
+
+.notifications-empty-icon {
+
+    width: 65px;
+    height: 65px;
+
+    margin: 0 auto 15px;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 25px;
+
+    background: rgba(37,99,235,.08);
+
+    color: #2563eb;
+}
+
+.notifications-empty h3 {
+
+    margin: 0 0 5px;
+
+    font-size: 17px;
+}
+
+.notifications-empty p {
+
+    margin: 0;
+
+    font-size: 13px;
+
+    opacity: .6;
+}
+
+
+/* LOADING */
+
+.notifications-loading {
+
+    padding: 50px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 10px;
+
+    font-size: 13px;
+
+    opacity: .65;
+}
+
+
+/* MOBILE */
+
+@media(max-width:600px){
+
+    .notifications-container {
+        padding: 18px 12px 40px;
+    }
+
+    .notifications-heading h2 {
+        font-size: 20px;
+    }
+
+    .notifications-heading p {
+        font-size: 11px;
+    }
+
+    .student-notification-card {
+        padding: 14px;
+    }
+
+    .notification-card-top {
+        display: block;
+    }
+
+    .notification-card-date {
+        display: block;
+        margin-top: 4px;
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   STUDENT CHAT LAYOUT
+============================================================ */
+
+.student-chat-layout {
+
+    width: 100%;
+
+    max-width: 1100px;
+
+    height: calc(100vh - 150px);
+
+    min-height: 500px;
+
+    margin: 0 auto;
+
+    background: #fff;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 18px;
+
+    overflow: hidden;
+
+    display: grid;
+
+    grid-template-columns: 280px 1fr;
+
+    box-shadow:
+        0 15px 40px
+        rgba(15,23,42,.08);
+
+}
+
+
+/* ============================================================
+   CONTACTS
+============================================================ */
+
+.student-chat-contacts {
+
+    border-right:
+        1px solid #e5e7eb;
+
+    background: #fff;
+
+    overflow-y: auto;
+
+}
+
+
+.student-contacts-header {
+
+    padding: 18px;
+
+    border-bottom:
+        1px solid #edf0f5;
+
+}
+
+
+.student-contacts-header h3 {
+
+    margin: 0 0 5px;
+
+    font-size: 17px;
+
+}
+
+
+.student-contacts-header span {
+
+    font-size: 12px;
+
+    color: #6b7280;
+
+}
+
+
+/* ============================================================
+   CONTACT LIST
+============================================================ */
+
+.student-chat-contact-list {
+
+    padding: 8px;
+
+}
+
+
+.student-chat-contact {
+
+    width: 100%;
+
+    border: none;
+
+    background: transparent;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 11px;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    text-align: left;
+
+}
+
+
+.student-chat-contact:hover {
+
+    background: #f5f7fb;
+
+}
+
+
+.student-chat-contact.active {
+
+    background: #eef4ff;
+
+}
+
+
+.student-contact-avatar {
+
+    width: 43px;
+
+    height: 43px;
+
+    flex-shrink: 0;
+
+}
+
+
+.student-contact-avatar img,
+.student-contact-avatar > div {
+
+    width: 43px;
+
+    height: 43px;
+
+    border-radius: 50%;
+
+}
+
+
+.student-contact-avatar img {
+
+    object-fit: cover;
+
+}
+
+
+.student-contact-initials {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #2f80ed;
+
+    color: white;
+
+    font-weight: 600;
+
+}
+
+
+.student-contact-details {
+
+    min-width: 0;
+
+}
+
+
+.student-contact-details strong {
+
+    display: block;
+
+    font-size: 14px;
+
+    color: #1f2937;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+
+.student-contact-details span {
+
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 11px;
+
+    color: #6b7280;
+
+}
+
+
+/* ============================================================
+   CONVERSATION
+============================================================ */
+
+.student-conversation {
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    background: #f8f9fc;
+
+}
+
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.student-conversation-header {
+
+    height: 70px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 0 18px;
+
+    background: white;
+
+    border-bottom:
+        1px solid #e5e7eb;
+
+}
+
+
+.student-conversation-avatar {
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #2f80ed;
+
+    color: white;
+
+}
+
+
+.student-conversation-header h3 {
+
+    margin: 0 0 3px;
+
+    font-size: 15px;
+
+}
+
+
+.student-conversation-header span {
+
+    font-size: 11px;
+
+    color: #16a34a;
+
+}
+
+
+/* ============================================================
+   EMPTY CHAT
+============================================================ */
+
+.student-chat-empty {
+
+    margin: auto;
+
+    text-align: center;
+
+    color: #9ca3af;
+
+}
+
+
+.student-chat-empty i {
+
+    font-size: 42px;
+
+    margin-bottom: 12px;
+
+    color: #cbd5e1;
+
+}
+
+
+.student-chat-empty h3 {
+
+    margin: 0 0 5px;
+
+    color: #4b5563;
+
+}
+
+
+.student-chat-empty p {
+
+    margin: 0;
+
+    font-size: 13px;
+
+}
+
+
+/* ============================================================
+   MESSAGE BUBBLES
+============================================================ */
+
+.student-message {
+
+    display: flex;
+
+    width: 100%;
+
+}
+
+
+.student-message.sent {
+
+    justify-content: flex-end;
+
+}
+
+
+.student-message.received {
+
+    justify-content: flex-start;
+
+}
+
+
+.student-message-bubble {
+
+    max-width: 70%;
+
+    padding: 9px 12px;
+
+    border-radius: 15px;
+
+    font-size: 14px;
+
+    line-height: 1.45;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+.student-message-bubble.mine {
+
+    background: #2f80ed;
+
+    color: white;
+
+    border-bottom-right-radius: 5px;
+
+}
+
+
+.student-message-bubble.theirs {
+
+    background: white;
+
+    color: #1f2937;
+
+    border:
+        1px solid #e1e5eb;
+
+    border-bottom-left-radius: 5px;
+
+}
+
+
+.student-message-time {
+
+    margin-top: 4px;
+
+    text-align: right;
+
+    font-size: 10px;
+
+    opacity: .65;
+
+}
+
+
+/* ============================================================
+   COMPOSER
+============================================================ */
+
+.student-message-composer {
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: flex-end;
+
+    gap: 10px;
+
+    padding: 10px;
+
+    background: white;
+
+    border-top:
+        1px solid #e5e7eb;
+
+}
+
+
+#studentReply {
+
+    flex: 1;
+
+    min-height: 42px;
+
+    max-height: 130px;
+
+    resize: none;
+
+    border:
+        1px solid #d9dee8;
+
+    border-radius: 20px;
+
+    padding: 11px 15px;
+
+    outline: none;
+
+    font-family: inherit;
+
+}
+
+
+#studentReply:focus {
+
+    border-color: #2f80ed;
+
+}
+
+
+.student-chat-loading,
+.student-chat-no-contacts {
+
+    padding: 30px 15px;
+
+    text-align: center;
+
+    color: #9ca3af;
+
+    font-size: 13px;
+
+}
+
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media(max-width:700px) {
+
+    .student-chat-layout {
+
+        grid-template-columns: 1fr;
+
+        height: calc(100vh - 120px);
+
+    }
+
+
+    .student-chat-contacts {
+
+        border-right: none;
+
+        border-bottom:
+            1px solid #e5e7eb;
+
+        max-height: 190px;
+
+    }
+
+
+    .student-chat-contact-list {
+
+        display: flex;
+
+        overflow-x: auto;
+
+        gap: 5px;
+
+    }
+
+
+    .student-chat-contact {
+
+        min-width: 150px;
+
+    }
+
+
+    .student-message-bubble {
+
+        max-width: 82%;
+
+    }
+
+}
 </style>
 
 </head>
@@ -2204,12 +3278,25 @@ button:hover{
 
 <div class="navbar">
 
-<i class="fas fa-bars"></i>
+    <h2>Home</h2>
 
-<h2>Home</h2>
+    <div
+    class="student-notification-bell"
+    onclick="openStudentNotifications()"
+    title="Notifications"
+>
 
-<i class="fas fa-bell"></i>
+    <i class="fas fa-bell"></i>
 
+    <span
+        id="studentNotificationBadge"
+        class="student-notification-badge"
+        style="display:none;"
+    >
+        0
+    </span>
+
+</div>
 </div>
 
 <div class="profile">
@@ -2276,6 +3363,84 @@ button:hover{
 
 
 </div>
+</div>
+
+
+
+<!-- =========================================================
+     STUDENT NOTIFICATIONS PAGE
+========================================================= -->
+
+<div
+    id="notificationsPage"
+    class="student-notifications-page"
+    style="display:none;"
+>
+
+    <div class="notifications-container">
+
+        <!-- TOP BAR -->
+        <div class="notifications-topbar">
+
+            <button
+                class="notifications-back-btn"
+                onclick="goHome()"
+            >
+                <i class="fas fa-arrow-left"></i>
+                <span>Back</span>
+            </button>
+
+            <div class="notifications-heading">
+
+                <div class="notifications-heading-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+
+                <div>
+                    <h2>Notifications</h2>
+                    <p>Messages and announcements from your school</p>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- NOTIFICATION FILTER -->
+        <div class="notifications-filter">
+
+            <button
+                class="notification-filter-btn active"
+                onclick="filterStudentNotifications('all', this)"
+            >
+                All
+            </button>
+
+            <button
+                class="notification-filter-btn"
+                onclick="filterStudentNotifications('unread', this)"
+            >
+                Unread
+            </button>
+
+        </div>
+
+
+        <!-- NOTIFICATIONS -->
+        <div id="studentNotificationsList">
+
+            <div class="notifications-loading">
+
+                <i class="fas fa-spinner fa-spin"></i>
+
+                <span>Loading notifications...</span>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
 
 <div id="profilePage" class="student-profile-page" style="display:none;">
@@ -2353,103 +3518,182 @@ button:hover{
 
 </div>
 
-<!-- ================================
-     MESSAGES PAGE
-================================ -->
+<!-- =========================================================
+     STUDENT MESSAGES
+========================================================= -->
 
-<div id="messagesPage" class="portal-page" style=" display:none;">
+<div
+    id="messagesPage"
+    class="portal-page"
+    style="display:none;"
+>
 
-    <!-- TOP BAR -->
-    <div class="messages-topbar">
+    <div class="student-messages-page">
 
-        <button
-            class="back-btn"
-            onclick="goHome()"
-        >
-            ← Back
-        </button>
+        <!-- ================================================
+             TOP BAR
+        ================================================= -->
 
-        <h2>
-            Messages
-        </h2>
-
-        <div class="messages-top-space"></div>
-
-    </div>
-
-
-    <!-- CHAT CONTAINER -->
-    <div class="student-chat-container">
-
-
-        <!-- CHAT HEADER -->
-        <div class="student-chat-header">
-
-            <div class="chat-teacher-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-
-            <div class="chat-teacher-info">
-
-                <h3 id="messageRecipient">
-                    Teacher
-                </h3>
-
-                <span>
-                    <i class="fas fa-circle"></i>
-                    School Messages
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <!-- MESSAGES -->
-        <div
-            id="studentMessages"
-            class="student-messages"
-        >
-
-            <div class="empty-chat">
-
-                <div class="empty-chat-icon">
-                    <i class="far fa-comments"></i>
-                </div>
-
-                <h3>No messages yet</h3>
-
-                <p>
-                    Your conversations with your
-                    teachers will appear here.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <!-- MESSAGE COMPOSER -->
-        <div class="student-message-composer">
-
-            <textarea
-                id="studentReply"
-                placeholder="Write a message..."
-                rows="1"
-                oninput="autoResizeStudentMessage(this)"
-                onkeydown="handleStudentMessageKey(event)"
-            ></textarea>
-
+        <div class="messages-topbar">
 
             <button
-                class="send-message-btn"
-                onclick="sendStudentReply()"
-                title="Send message"
+                class="back-btn"
+                onclick="goHome()"
             >
-
-                <i class="fas fa-paper-plane"></i>
-
+                <i class="fas fa-arrow-left"></i>
+                <span>Back</span>
             </button>
+
+            <h2>
+                Messages
+            </h2>
+
+            <div></div>
+
+        </div>
+
+
+        <!-- ================================================
+             CHAT LAYOUT
+        ================================================= -->
+
+        <div class="student-chat-layout">
+
+
+            <!-- ============================================
+                 CONTACTS
+            ============================================= -->
+
+            <aside class="student-chat-contacts">
+
+                <div class="student-contacts-header">
+
+                    <h3>
+                        Conversations
+                    </h3>
+
+                    <span
+                        id="studentChatClassName"
+                    >
+                        Loading...
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="studentChatContacts"
+                    class="student-chat-contact-list"
+                >
+
+                    <div class="student-chat-loading">
+
+                        <i class="fas fa-spinner fa-spin"></i>
+
+                        Loading contacts...
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+
+            <!-- ============================================
+                 CHAT
+            ============================================= -->
+
+            <section class="student-conversation">
+
+
+                <!-- CHAT HEADER -->
+
+                <header
+                    class="student-conversation-header"
+                >
+
+                    <div
+                        id="studentConversationAvatar"
+                        class="student-conversation-avatar"
+                    >
+
+                        <i class="fas fa-user"></i>
+
+                    </div>
+
+
+                    <div>
+
+                        <h3
+                            id="studentConversationName"
+                        >
+                            Select a conversation
+                        </h3>
+
+                        <span
+                            id="studentConversationType"
+                        >
+                            No conversation selected
+                        </span>
+
+                    </div>
+
+                </header>
+
+
+                <!-- MESSAGES -->
+
+                <div
+                    id="studentMessages"
+                    class="student-messages"
+                >
+
+                    <div class="student-chat-empty">
+
+                        <i class="far fa-comments"></i>
+
+                        <h3>
+                            Start a conversation
+                        </h3>
+
+                        <p>
+                            Select your class teacher
+                            or a classmate.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- COMPOSER -->
+
+                <div
+                    class="student-message-composer"
+                >
+
+                    <textarea
+                        id="studentReply"
+                        placeholder="Write a message..."
+                        rows="1"
+                        oninput="autoResizeStudentMessage(this)"
+                        onkeydown="handleStudentMessageKey(event)"
+                    ></textarea>
+
+
+                    <button
+                        class="send-message-btn"
+                        onclick="sendStudentReply()"
+                        title="Send message"
+                    >
+
+                        <i class="fas fa-paper-plane"></i>
+
+                    </button>
+
+                </div>
+
+            </section>
 
         </div>
 
@@ -2760,8 +4004,811 @@ document.getElementById("loginForm")
 
     document.getElementById("studentPortal")
         .style.display = "block";
+		
+		startStudentChatRealtime();
 
 });
+
+/* =========================================================
+   STUDENT NOTIFICATIONS
+========================================================= */
+
+let studentNotifications = [];
+let currentNotificationFilter = "all";
+
+
+/* =========================================================
+   GET LOGGED-IN STUDENT
+========================================================= */
+
+function getLoggedStudent() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem("loggedStudent")
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Unable to read logged student:",
+            error
+        );
+
+        return null;
+    }
+}
+
+
+/* =========================================================
+   OPEN NOTIFICATIONS
+========================================================= */
+
+async function openStudentNotifications() {
+
+    /* Hide all existing portal pages */
+
+    document
+        .getElementById("studentPortal")
+        .style.display = "none";
+
+    const pages = [
+        "profilePage",
+        "resultsPage",
+        "subjectsPage",
+        "messagesPage",
+        "downloadsPage",
+        "notificationsPage"
+    ];
+
+    pages.forEach(id => {
+
+        const page =
+            document.getElementById(id);
+
+        if (page) {
+
+            page.style.display =
+                id === "notificationsPage"
+                    ? "block"
+                    : "none";
+        }
+
+    });
+
+
+    /* Load notifications */
+
+    await loadStudentNotifications();
+}
+
+
+/* =========================================================
+   LOAD NOTIFICATIONS
+========================================================= */
+
+async function loadStudentNotifications() {
+
+    const student = getLoggedStudent();
+
+    const container =
+        document.getElementById("studentNotificationsList");
+
+    if (!container) return;
+
+    if (!student) {
+
+        container.innerHTML = `
+            <div class="notifications-empty">
+                <div class="notifications-empty-icon">
+                    <i class="fas fa-user-lock"></i>
+                </div>
+
+                <h3>Session not found</h3>
+
+                <p>
+                    Please log in again to view your notifications.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="notifications-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Loading notifications...</span>
+        </div>
+    `;
+
+    try {
+
+        const schoolid =
+            student.schoolid ||
+            student.schoolid ||
+            student.schoolID;
+
+        const studentClass =
+            student.studentclass ||
+            student.studentClass ||
+            student.class ||
+            "";
+
+        const studentId =
+            student.schoolid ||
+            student.studentId ||
+            "";
+
+        console.log("STUDENT NOTICE INFO:", {
+            schoolid,
+            studentClass,
+            studentId
+        });
+
+        if (!schoolid) {
+
+            throw new Error(
+                "Student school ID was not found."
+            );
+
+        }
+
+        /*
+         * IMPORTANT:
+         * Use the SAME column names used by app.js
+         */
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+
+            .from("notices")
+
+            .select("*")
+
+            .eq("schoolid", schoolid)
+
+            .order("date", {
+                ascending: false
+            });
+
+
+        if (error) {
+
+            console.error(
+                "Notification loading error:",
+                error
+            );
+
+            throw error;
+        }
+
+
+        console.log(
+            "All school notices:",
+            data
+        );
+
+
+        /*
+         * FILTER NOTICES
+         */
+
+        studentNotifications =
+            (data || []).filter(notice => {
+
+                const recipientType =
+                    String(
+                        notice.recipienttype ||
+                        notice.recipientType ||
+                        "school"
+                    ).toLowerCase().trim();
+
+
+                const recipientClass =
+                    String(
+                        notice.recipientclass ||
+                        notice.recipientClass ||
+                        ""
+                    ).trim();
+
+
+                /*
+                 * SCHOOL-WIDE NOTICE
+                 */
+
+                if (
+                    recipientType === "school"
+                ) {
+
+                    return true;
+
+                }
+
+
+                /*
+                 * CLASS NOTICE
+                 */
+
+                if (
+                    recipientType === "class" ||
+                    recipientType === "teacher_class"
+                ) {
+
+                    return (
+                        recipientClass &&
+                        studentClass &&
+                        recipientClass.toLowerCase() ===
+                        String(studentClass)
+                            .toLowerCase()
+                            .trim()
+                    );
+
+                }
+
+
+                /*
+                 * INDIVIDUAL STUDENT
+                 *
+                 * Included for future support.
+                 */
+
+                if (
+                    recipientType === "student"
+                ) {
+
+                    const noticeStudentId =
+                        notice.recipientstudentid ||
+                        notice.recipientStudentId ||
+                        notice.recipient_student_id ||
+                        "";
+
+                    return (
+                        String(noticeStudentId) ===
+                        String(studentId)
+                    );
+
+                }
+
+
+                return false;
+
+            });
+
+
+        console.log(
+            "Student visible notices:",
+            studentNotifications
+        );
+
+
+        /*
+         * DISPLAY
+         */
+
+        renderStudentNotifications();
+
+        updateStudentNotificationBadge();
+
+
+    } catch (error) {
+
+        console.error(
+            "Notification error:",
+            error
+        );
+
+        container.innerHTML = `
+            <div class="notifications-empty">
+
+                <div class="notifications-empty-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+
+                <h3>Unable to load notifications</h3>
+
+                <p>
+                    ${escapeNotificationText(
+                        error.message ||
+                        "Please try again later."
+                    )}
+                </p>
+
+            </div>
+        `;
+
+    }
+
+}
+
+/* =========================================================
+   RENDER NOTIFICATIONS
+========================================================= */
+
+function renderStudentNotifications() {
+
+    const container =
+        document.getElementById(
+            "studentNotificationsList"
+        );
+
+    if (!container) return;
+
+
+    let notifications =
+        [...studentNotifications];
+
+
+    /* FILTER */
+
+    if (
+        currentNotificationFilter ===
+        "unread"
+    ) {
+
+        notifications =
+            notifications.filter(
+                notification =>
+                    !isNotificationRead(
+                        notification
+                    )
+            );
+    }
+
+
+    /* EMPTY */
+
+    if (
+        notifications.length === 0
+    ) {
+
+        container.innerHTML = `
+
+            <div class="notifications-empty">
+
+                <div class="notifications-empty-icon">
+
+                    <i class="fas fa-bell-slash"></i>
+
+                </div>
+
+                <h3>
+                    No notifications
+                </h3>
+
+                <p>
+                    You're all caught up.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    let html = "";
+
+
+    notifications.forEach(
+        notification => {
+
+            const read =
+                isNotificationRead(
+                    notification
+                );
+
+
+            const priority =
+                (
+                    notification.priority ||
+                    "normal"
+                ).toLowerCase();
+
+
+            const sender =
+                notification.sender_name ||
+                (
+                    notification.sender_role ===
+                    "admin"
+                        ? "School Administration"
+                        : "Class Teacher"
+                );
+
+
+            html += `
+
+                <div
+                    class="
+                        student-notification-card
+                        ${read ? "" : "unread"}
+                    "
+                    onclick="
+                        openStudentNotification(
+                            '${notification.id}'
+                        )
+                    "
+                >
+
+                    <div class="notification-card-icon">
+
+                        <i class="fas fa-bell"></i>
+
+                    </div>
+
+
+                    <div class="notification-card-content">
+
+                        <div class="notification-card-top">
+
+                            <h3 class="notification-card-title">
+
+                                ${escapeNotificationText(
+                                    notification.title ||
+                                    "School Notification"
+                                )}
+
+                            </h3>
+
+
+                            <span
+                                class="notification-card-date"
+                            >
+
+                                ${formatNotificationDate(
+                                    notification.created_at ||
+                                    notification.date
+                                )}
+
+                            </span>
+
+                        </div>
+
+
+                        <p
+                            class="
+                                notification-card-message
+                            "
+                        >
+
+                            ${escapeNotificationText(
+                                notification.message ||
+                                ""
+                            )}
+
+                        </p>
+
+
+                        <div
+                            class="
+                                notification-card-sender
+                            "
+                        >
+
+                            <i class="fas fa-user"></i>
+
+                            <span>
+                                ${escapeNotificationText(
+                                    sender
+                                )}
+                            </span>
+
+                            <span
+                                class="
+                                    notification-priority
+                                    ${priority}
+                                "
+                            >
+                                ${priority}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    container.innerHTML = html;
+
+}
+
+
+/* =========================================================
+   OPEN ONE NOTIFICATION
+========================================================= */
+
+async function openStudentNotification(
+    notificationId
+) {
+
+    const notification =
+        studentNotifications.find(
+            n =>
+                String(n.id) ===
+                String(notificationId)
+        );
+
+
+    if (!notification) return;
+
+
+    await markStudentNotificationRead(
+        notification
+    );
+
+
+    /*
+     * Refresh badge.
+     */
+
+    updateStudentNotificationBadge();
+
+
+    /*
+     * Refresh current view.
+     */
+
+    renderStudentNotifications();
+
+}
+
+
+/* =========================================================
+   CHECK IF READ
+========================================================= */
+
+function isNotificationRead(
+    notification
+) {
+
+    const student =
+        getLoggedStudent();
+
+    if (!student) return false;
+
+
+    const readBy =
+        Array.isArray(
+            notification.read_by
+        )
+            ? notification.read_by
+            : [];
+
+
+    return readBy.includes(
+        student.studentid
+    );
+}
+
+
+/* =========================================================
+   MARK READ
+========================================================= */
+
+async function markStudentNotificationRead(
+    notification
+) {
+
+    const student =
+        getLoggedStudent();
+
+    if (!student) return;
+
+
+    const readBy =
+        Array.isArray(
+            notification.read_by
+        )
+            ? [...notification.read_by]
+            : [];
+
+
+    if (
+        readBy.includes(
+            student.studentid
+        )
+    ) {
+
+        return;
+    }
+
+
+    readBy.push(
+        student.studentid
+    );
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+
+        .from("notices")
+
+        .update({
+            read_by: readBy
+        })
+
+        .eq(
+            "id",
+            notification.id
+        )
+
+        .select()
+        .single();
+
+
+    if (error) {
+
+        console.error(
+            "Unable to mark notification read:",
+            error
+        );
+
+        return;
+    }
+
+
+    /*
+     * Update local copy.
+     */
+
+    notification.read_by =
+        data?.read_by ||
+        readBy;
+
+}
+
+
+/* =========================================================
+   NOTIFICATION BADGE
+========================================================= */
+
+async function updateStudentNotificationBadge() {
+
+    const badge =
+        document.getElementById(
+            "studentNotificationBadge"
+        );
+
+    if (!badge) return;
+
+
+    const unreadCount =
+        studentNotifications.filter(
+            notification =>
+                !isNotificationRead(
+                    notification
+                )
+        ).length;
+
+
+    if (unreadCount <= 0) {
+
+        badge.style.display =
+            "none";
+
+        badge.textContent = "0";
+
+        return;
+    }
+
+
+    badge.style.display =
+        "flex";
+
+
+    badge.textContent =
+        unreadCount > 99
+            ? "99+"
+            : unreadCount;
+
+}
+
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+function filterStudentNotifications(
+    filter,
+    button
+) {
+
+    currentNotificationFilter =
+        filter;
+
+
+    document
+        .querySelectorAll(
+            ".notification-filter-btn"
+        )
+        .forEach(btn => {
+
+            btn.classList.remove(
+                "active"
+            );
+
+        });
+
+
+    if (button) {
+
+        button.classList.add(
+            "active"
+        );
+    }
+
+
+    renderStudentNotifications();
+}
+
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
+function formatNotificationDate(
+    date
+) {
+
+    if (!date) return "";
+
+
+    const d =
+        new Date(date);
+
+
+    if (isNaN(d.getTime())) {
+
+        return "";
+    }
+
+
+    return d.toLocaleString(
+        [],
+        {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ESCAPE TEXT
+========================================================= */
+
+function escapeNotificationText(
+    text
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        text ?? "";
+
+
+    return div.innerHTML;
+}
 
 
 async function openProfile(){
@@ -3267,32 +5314,973 @@ async function changeTerm(){
 
 }
 
-async function openMessages(){
+/* ============================================================
+   STUDENT CHAT STATE
+============================================================ */
 
-    document.getElementById("studentPortal").style.display="none";
-    document.getElementById("messagesPage").style.display="block";
+let studentChatContacts = [];
+
+let selectedStudentChatUser = null;
+
+let selectedStudentChatType = null;
+
+let studentChatMessages = [];
+
+
+/* ============================================================
+   GET STUDENT
+============================================================ */
+
+function getLoggedStudent() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "loggedStudent"
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Student session error:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/* ============================================================
+   OPEN MESSAGES
+============================================================ */
+
+async function openMessages() {
 
     const student =
-    JSON.parse(localStorage.getItem("loggedStudent"));
+        getLoggedStudent();
 
-    const { data, error } =
-    await supabaseClient
-    .from("messages")
-    .select("*")
-    .or(
-        `receiver.eq.${student.studentid},receiver.eq.ALL`
-    )
-    .order("created_at",{ascending:false});
+    if (!student) {
 
-    if(error){
-
-        console.log(error);
+        alert(
+            "Student session not found."
+        );
 
         return;
 
     }
 
-    displayMessages(data || []);
+
+    document
+        .getElementById("studentPortal")
+        .style.display = "none";
+
+
+    document
+        .getElementById("messagesPage")
+        .style.display = "block";
+
+
+    selectedStudentChatUser = null;
+
+    selectedStudentChatType = null;
+
+
+    document
+        .getElementById(
+            "studentMessages"
+        )
+        .innerHTML = `
+
+            <div class="student-chat-empty">
+
+                <i class="far fa-comments"></i>
+
+                <h3>
+                    Start a conversation
+                </h3>
+
+                <p>
+                    Select your class teacher
+                    or a classmate.
+                </p>
+
+            </div>
+        `;
+
+
+    document
+        .getElementById(
+            "studentConversationName"
+        )
+        .textContent =
+        "Select a conversation";
+
+
+    document
+        .getElementById(
+            "studentConversationType"
+        )
+        .textContent =
+        "No conversation selected";
+
+
+    await loadStudentChatContacts();
+
+}
+
+/* ============================================================
+   LOAD STUDENT CHAT CONTACTS
+============================================================ */
+
+async function loadStudentChatContacts() {
+
+    const student =
+        getLoggedStudent();
+
+    if (!student) return;
+
+
+    const schoolid =
+        student.schoolid;
+
+    const studentClass =
+        student.studentclass;
+
+
+    console.log(
+        "Student school:",
+        schoolid
+    );
+
+    console.log(
+        "Student class:",
+        studentClass
+    );
+
+
+    const contacts = [];
+
+
+    /* ========================================================
+       CLASS TEACHER
+    ======================================================== */
+
+    const {
+        data: teachers,
+        error: teacherError
+    } =
+        await supabaseClient
+
+            .from("users")
+
+            .select(
+                "id,firstname,surname,fullname,username,profilePic,classes,role,schoolid"
+            )
+
+            .eq(
+                "schoolid",
+                schoolid
+            )
+
+            .eq(
+                "role",
+                "teacher"
+            );
+
+
+    if (teacherError) {
+
+        console.error(
+            "Class teacher error:",
+            teacherError
+        );
+
+    }
+
+
+    const classTeacher =
+        (teachers || []).find(
+            teacher => {
+
+                return (
+                    Array.isArray(
+                        teacher.classes
+                    ) &&
+                    teacher.classes.includes(
+                        studentClass
+                    )
+                );
+
+            }
+        );
+
+
+    if (classTeacher) {
+
+        const teacherName =
+            classTeacher.fullname ||
+            `${classTeacher.firstname || ""} ${classTeacher.surname || ""}`.trim() ||
+            classTeacher.username ||
+            "Class Teacher";
+
+
+        contacts.push({
+
+            id:
+                classTeacher.username,
+
+            type:
+                "user",
+
+            role:
+                "teacher",
+
+            name:
+                teacherName,
+
+            photo:
+                classTeacher.profilePic ||
+                "",
+
+            isTeacher:
+                true
+
+        });
+
+    }
+
+
+    /* ========================================================
+       CLASSMATES
+    ======================================================== */
+
+    const {
+        data: classmates,
+        error: studentError
+    } =
+        await supabaseClient
+
+            .from("students")
+
+            .select(
+                "id,name,studentid,studentclass,schoolid,\"student-photos\""
+            )
+
+            .eq(
+                "schoolid",
+                schoolid
+            )
+
+            .eq(
+                "studentclass",
+                studentClass
+            );
+
+
+    if (studentError) {
+
+        console.error(
+            "Classmates error:",
+            studentError
+        );
+
+        return;
+
+    }
+
+
+    (classmates || []).forEach(
+        classmate => {
+
+            /*
+             * Do not show the logged-in
+             * student in their own list.
+             */
+
+            if (
+                String(classmate.id) ===
+                String(student.id)
+            ) {
+
+                return;
+
+            }
+
+
+            contacts.push({
+
+                id:
+                    classmate.id,
+
+                type:
+                    "student",
+
+                role:
+                    "student",
+
+                name:
+                    classmate.name ||
+                    "Student",
+
+                studentid:
+                    classmate.studentid,
+
+                photo:
+                    classmate["student-photos"] ||
+                    "",
+
+                isTeacher:
+                    false
+
+            });
+
+        }
+    );
+
+
+    studentChatContacts =
+        contacts;
+
+
+    document
+        .getElementById(
+            "studentChatClassName"
+        )
+        .textContent =
+        studentClass ||
+        "My Class";
+
+
+    renderStudentChatContacts();
+
+}
+
+/* ============================================================
+   RENDER STUDENT CHAT CONTACTS
+============================================================ */
+
+function renderStudentChatContacts() {
+
+    const container =
+        document.getElementById(
+            "studentChatContacts"
+        );
+
+    if (!container) return;
+
+
+    if (
+        studentChatContacts.length === 0
+    ) {
+
+        container.innerHTML = `
+
+            <div class="student-chat-no-contacts">
+
+                <i class="fas fa-users"></i>
+
+                <p>
+                    No classmates or teacher found.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = "";
+
+
+    studentChatContacts.forEach(
+        contact => {
+
+            const active =
+                String(
+                    selectedStudentChatUser
+                ) ===
+                String(contact.id) &&
+                selectedStudentChatType ===
+                contact.type
+                    ? "active"
+                    : "";
+
+
+            const initials =
+                contact.name
+                    .split(" ")
+                    .map(
+                        name =>
+                            name.charAt(0)
+                    )
+                    .join("")
+                    .substring(0, 2)
+                    .toUpperCase();
+
+
+            const avatar =
+                contact.photo
+
+                    ? `
+                        <img
+                            src="${escapeStudentMessage(contact.photo)}"
+                            class="student-contact-avatar"
+                            onerror="
+                                this.style.display='none';
+                                this.nextElementSibling.style.display='flex';
+                            "
+                        >
+
+                        <div
+                            class="student-contact-initials"
+                            style="display:none;"
+                        >
+                            ${initials}
+                        </div>
+                    `
+
+                    : `
+                        <div
+                            class="student-contact-initials"
+                        >
+                            ${initials}
+                        </div>
+                    `;
+
+
+            html += `
+
+                <button
+                    type="button"
+                    class="
+                        student-chat-contact
+                        ${active}
+                    "
+                    onclick="
+                        selectStudentChatContact(
+                            '${String(contact.id).replace(/'/g, "\\'")}',
+                            '${contact.type}'
+                        )
+                    "
+                >
+
+                    <div class="student-contact-avatar">
+
+                        ${avatar}
+
+                    </div>
+
+
+                    <div
+                        class="student-contact-details"
+                    >
+
+                        <strong>
+
+                            ${escapeStudentMessage(
+                                contact.name
+                            )}
+
+                        </strong>
+
+
+                        <span>
+
+                            ${
+                                contact.isTeacher
+                                    ? "Class Teacher"
+                                    : "Classmate"
+                            }
+
+                        </span>
+
+                    </div>
+
+                </button>
+
+            `;
+
+        }
+    );
+
+
+    container.innerHTML =
+        html;
+
+}
+
+/* ============================================================
+   SELECT STUDENT CHAT CONTACT
+============================================================ */
+
+async function selectStudentChatContact(
+    userId,
+    userType
+) {
+
+    selectedStudentChatUser =
+        userId;
+
+    selectedStudentChatType =
+        userType;
+
+
+    const contact =
+        studentChatContacts.find(
+            item =>
+                String(item.id) ===
+                String(userId) &&
+                item.type ===
+                userType
+        );
+
+
+    if (!contact) return;
+
+
+    document
+        .getElementById(
+            "studentConversationName"
+        )
+        .textContent =
+        contact.name;
+
+
+    document
+        .getElementById(
+            "studentConversationType"
+        )
+        .textContent =
+        contact.isTeacher
+            ? "Class Teacher"
+            : "Classmate";
+
+
+    renderStudentChatContacts();
+
+
+    await loadStudentConversation();
+
+}
+
+
+/* ============================================================
+   LOAD STUDENT CONVERSATION
+============================================================ */
+
+async function loadStudentConversation() {
+
+    const student =
+        getLoggedStudent();
+
+    if (
+        !student ||
+        !selectedStudentChatUser
+    ) {
+
+        return;
+
+    }
+
+
+    const myId =
+        String(student.id);
+
+    const otherId =
+        String(selectedStudentChatUser);
+
+
+    console.log(
+        "Loading conversation:",
+        myId,
+        "<->",
+        otherId
+    );
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+
+            .from("chats")
+
+            .select("*")
+
+            .eq(
+                "schoolid",
+                student.schoolid
+            )
+
+            .or(
+                `and(from_user.eq.${myId},to_user.eq.${otherId}),and(from_user.eq.${otherId},to_user.eq.${myId})`
+            )
+
+            .order(
+                "created_at",
+                {
+                    ascending: true
+                }
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Student chat loading error:",
+            error
+        );
+
+        document
+            .getElementById(
+                "studentMessages"
+            )
+            .innerHTML = `
+
+                <div class="student-chat-empty">
+
+                    <i class="fas fa-exclamation-circle"></i>
+
+                    <h3>
+                        Unable to load messages
+                    </h3>
+
+                    <p>
+                        Please try again.
+                    </p>
+
+                </div>
+            `;
+
+        return;
+
+    }
+
+
+    studentChatMessages =
+        data || [];
+
+
+    renderStudentConversation();
+
+}
+
+
+/* ============================================================
+   STUDENT CHAT REALTIME
+============================================================ */
+
+let studentChatRealtimeChannel = null;
+
+
+function startStudentChatRealtime() {
+
+    if (
+        studentChatRealtimeChannel
+    ) {
+
+        return;
+
+    }
+
+
+    studentChatRealtimeChannel =
+        supabaseClient
+
+            .channel(
+                "student-chat-realtime"
+            )
+
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "chats"
+                },
+                async payload => {
+
+                    const student =
+                        getLoggedStudent();
+
+                    if (!student) return;
+
+
+                    const message =
+                        payload.new;
+
+
+                    if (!message) return;
+
+
+                    /*
+                     * Only our school.
+                     */
+
+                    if (
+                        String(
+                            message.schoolid
+                        ) !==
+                        String(
+                            student.schoolid
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const myId =
+                        String(student.id);
+
+
+                    const from =
+                        String(
+                            message.from_user
+                        );
+
+
+                    const to =
+                        String(
+                            message.to_user
+                        );
+
+
+                    /*
+                     * Is this message
+                     * related to me?
+                     */
+
+                    const belongsToMe =
+                        from === myId ||
+                        to === myId;
+
+
+                    if (!belongsToMe) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * If this is the currently
+                     * opened conversation,
+                     * add it immediately.
+                     */
+
+                    if (
+
+                        selectedStudentChatUser &&
+
+                        (
+                            (
+                                from === myId &&
+                                to === String(
+                                    selectedStudentChatUser
+                                )
+                            )
+
+                            ||
+
+                            (
+                                to === myId &&
+                                from === String(
+                                    selectedStudentChatUser
+                                )
+                            )
+                        )
+
+                    ) {
+
+                        const exists =
+                            studentChatMessages.some(
+                                msg =>
+                                    String(msg.id) ===
+                                    String(message.id)
+                            );
+
+
+                        if (!exists) {
+
+                            studentChatMessages.push(
+                                message
+                            );
+
+                            renderStudentConversation();
+
+                        }
+
+                    }
+
+                }
+            )
+
+            .subscribe(
+                status => {
+
+                    console.log(
+                        "Student chat realtime:",
+                        status
+                    );
+
+                }
+            );
+
+}
+
+/* ============================================================
+   RENDER STUDENT CONVERSATION
+============================================================ */
+
+function renderStudentConversation() {
+
+    const container =
+        document.getElementById(
+            "studentMessages"
+        );
+
+    if (!container) return;
+
+
+    const student =
+        getLoggedStudent();
+
+    if (!student) return;
+
+
+    if (
+        studentChatMessages.length === 0
+    ) {
+
+        container.innerHTML = `
+
+            <div class="student-chat-empty">
+
+                <i class="far fa-comments"></i>
+
+                <h3>
+                    No messages yet
+                </h3>
+
+                <p>
+                    Start the conversation.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = "";
+
+
+    studentChatMessages.forEach(
+        message => {
+
+            const mine =
+                String(
+                    message.from_user
+                ) ===
+                String(student.id);
+
+
+            const time =
+                message.created_at
+                    ? new Date(
+                        message.created_at
+                    ).toLocaleTimeString(
+                        [],
+                        {
+                            hour: "2-digit",
+                            minute: "2-digit"
+                        }
+                    )
+                    : "";
+
+
+            html += `
+
+                <div
+                    class="
+                        student-message
+                        ${mine ? "sent" : "received"}
+                    "
+                >
+
+                    <div
+                        class="
+                            student-message-bubble
+                            ${mine ? "mine" : "theirs"}
+                        "
+                    >
+
+                        ${
+                            message.text
+                                ? `
+                                    <div>
+                                        ${escapeStudentMessage(
+                                            message.text
+                                        )}
+                                    </div>
+                                `
+                                : ""
+                        }
+
+
+                        ${
+                            message.media
+                                ? `
+                                    <a
+                                        href="${escapeStudentMessage(message.media)}"
+                                        target="_blank"
+                                        class="student-chat-media"
+                                    >
+                                        <i class="fas fa-paperclip"></i>
+                                        Attachment
+                                    </a>
+                                `
+                                : ""
+                        }
+
+
+                        <div class="student-message-time">
+
+                            ${time}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    container.innerHTML =
+        html;
+
+
+    container.scrollTop =
+        container.scrollHeight;
+
 }
 
 function displayMessages(messages){
@@ -3539,25 +6527,36 @@ async function openFees(){
 }
 
 
-function goHome(){
+function goHome() {
 
-    document.getElementById("profilePage").style.display =
-        "none";
+    const pages = [
+        "profilePage",
+        "resultsPage",
+        "subjectsPage",
+        "messagesPage",
+        "downloadsPage",
+        "notificationsPage"
+    ];
 
-    document.getElementById("resultsPage").style.display =
-        "none";
 
-    document.getElementById("subjectsPage").style.display =
-        "none";
+    pages.forEach(id => {
 
-    document.getElementById("messagesPage").style.display =
-        "none";
+        const page =
+            document.getElementById(id);
 
-    document.getElementById("downloadsPage").style.display =
-        "none";
+        if (page) {
 
-    document.getElementById("studentPortal").style.display =
-        "block";
+            page.style.display =
+                "none";
+        }
+
+    });
+
+
+    document.getElementById(
+        "studentPortal"
+    ).style.display = "block";
+
 }
 
 async function openDownloads(){
