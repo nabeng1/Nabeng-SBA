@@ -53,70 +53,124 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
     <div class="nav-center">
 
-    <button onclick="showPage('dashboardPage')">
-        Dashboard
-    </button>
-
-    <div class="dropdown">
-
-        <button class="dropbtn">
-            Academics▼
+        <!-- DASHBOARD -->
+        <button onclick="showPage('dashboardPage')">
+            Dashboard
         </button>
 
-        <div class="dropdown-content">
-            <a href="#" onclick="showPage('studentsPage')">Students</a>
-            <a href="#" onclick="showPage('subjectsPage')">Subjects</a>
-            <a href="#" onclick="showPage('reportsPage')">Reports</a>
+
+        <!-- ACADEMICS DROPDOWN -->
+        <div class="dropdown">
+
+            <button class="dropbtn">
+                Academics▼
+            </button>
+
+            <div class="dropdown-content">
+
+                <a href="#"
+                   onclick="showPage('studentsPage'); return false;">
+                    Students
+                </a>
+
+                <a href="#"
+                   onclick="showPage('subjectsPage'); return false;">
+                    Subjects
+                </a>
+
+                <a href="#"
+                   onclick="showPage('reportsPage'); return false;">
+                    Reports
+                </a>
+
+            </div>
+
         </div>
 
-    </div>
 
-    <button onclick="showPage('attendancePage')">
-        Attendance
-    </button>
-
-    <button onclick="showPage('chat')">
-        Chat
-    </button>
-
+        <!-- SCHOOL DROPDOWN -->
 <div class="dropdown">
 
     <button class="dropbtn">
-        Profile▼
+        School▼
     </button>
 
     <div class="dropdown-content">
 
-    <a href="#"
-       onclick="showPage('userProfilePage'); return false;">
-       User
-    </a>
+        <a href="#"
+           onclick="showPage('attendancePage'); return false;">
+            <i class="fas fa-clipboard-check"></i>
+            Attendance
+        </a>
 
-    <a href="#"
-       onclick="showPage('profileSubjectsPage'); return false;">
-       Subjects
-    </a>
+        <a href="#"
+           onclick="showPage('homeworkPage'); return false;">
+            <i class="fas fa-book-open"></i>
+            Home Work
+        </a>
 
-    <a href="#"
-       onclick="showPage('profileTermPage'); return false;">
-       Term Setup
-    </a>
+        <a href="#"
+           onclick="showPage('feesPage'); return false;">
+            <i class="fas fa-money-bill-wave"></i>
+            Fees
+        </a>
 
-    <a href="#"
-       onclick="showPage('profilePlanPage'); return false;">
-       Plan
-    </a>
+        <a href="#"
+           onclick="showPage('noticesPage'); return false;">
+            <i class="fas fa-bullhorn"></i>
+            Notices
+        </a>
 
-    <a href="#"
-       onclick="showPage('profileNotePage'); return false;">
-       Note
-    </a>
-
-</div>
-
-</div>
+    </div>
 
 </div>
+
+
+        <!-- CHAT -->
+        <button onclick="showPage('chat')">
+            Chat
+        </button>
+
+
+        <!-- PROFILE DROPDOWN -->
+        <div class="dropdown">
+
+            <button class="dropbtn">
+                Profile▼
+            </button>
+
+            <div class="dropdown-content">
+
+                <a href="#"
+                   onclick="showPage('userProfilePage'); return false;">
+                    User
+                </a>
+
+                <a href="#"
+                   onclick="showPage('profileSubjectsPage'); return false;">
+                    Subjects
+                </a>
+
+                <a href="#"
+                   onclick="showPage('profileTermPage'); return false;">
+                    Term Setup
+                </a>
+
+                <a href="#"
+                   onclick="showPage('profilePlanPage'); return false;">
+                    Plan
+                </a>
+
+                <a href="#"
+                   onclick="showPage('profileNotePage'); return false;">
+                    Note
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 </div>
@@ -455,6 +509,1466 @@ Generate Student Portal Accounts
     <div id="attendanceTable"></div>
 </div>
 
+
+
+
+
+
+
+
+
+<!-- =========================================================
+     MODERN HOMEWORK PAGE
+========================================================= -->
+<div id="homeworkPage" class="container page" style="display:none;">
+
+    <!-- =====================================================
+         HOMEWORK HEADER
+    ====================================================== -->
+    <div class="hw-page-header">
+
+        <div class="hw-header-left">
+            <div class="hw-header-icon">
+                <i class="fas fa-book-open"></i>
+            </div>
+
+            <div>
+                <span class="hw-eyebrow">ACADEMIC WORK</span>
+
+                <h1>Home Work</h1>
+
+                <p>
+                    Create, manage and track digital homework assignments.
+                </p>
+            </div>
+        </div>
+
+        <div class="hw-header-action">
+            <button
+                class="hw-create-btn"
+                onclick="document.getElementById('homeworkCreateCard').scrollIntoView({behavior:'smooth'})"
+            >
+                <i class="fas fa-plus"></i>
+                <span>Create Homework</span>
+            </button>
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         HOMEWORK STATISTICS
+    ====================================================== -->
+    <div class="hw-stats-grid">
+
+        <div class="hw-stat-card">
+            <div class="hw-stat-icon">
+                <i class="fas fa-book"></i>
+            </div>
+
+            <div>
+                <span>Total Homework</span>
+                <strong id="homeworkTotalCount">0</strong>
+            </div>
+        </div>
+
+
+        <div class="hw-stat-card">
+            <div class="hw-stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+
+            <div>
+                <span>Pending</span>
+                <strong id="homeworkPendingCount">0</strong>
+            </div>
+        </div>
+
+
+        <div class="hw-stat-card">
+            <div class="hw-stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <div>
+                <span>Submitted</span>
+                <strong id="homeworkSubmittedCount">0</strong>
+            </div>
+        </div>
+
+
+        <div class="hw-stat-card">
+            <div class="hw-stat-icon">
+                <i class="fas fa-calendar-times"></i>
+            </div>
+
+            <div>
+                <span>Overdue</span>
+                <strong id="homeworkOverdueCount">0</strong>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TEACHER / ADMIN HOMEWORK AREA
+    ====================================================== -->
+    <div id="teacherHomeworkArea">
+
+
+        <!-- =================================================
+             CREATE HOMEWORK
+        ================================================== -->
+        <div class="hw-main-card" id="homeworkCreateCard">
+
+            <div class="hw-card-heading">
+
+                <div class="hw-heading-icon">
+                    <i class="fas fa-pen"></i>
+                </div>
+
+                <div>
+                    <h2>Create New Homework</h2>
+
+                    <p>
+                        Prepare and publish an assignment for your students.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="hw-form">
+
+                <!-- CLASS -->
+                <div class="hw-form-group">
+
+                    <label for="homeworkClass">
+                        <i class="fas fa-users"></i>
+                        Class
+                    </label>
+
+                    <div class="hw-input-wrapper">
+                        <select id="homeworkClass">
+
+                            <option value="">
+                                Select Class
+                            </option>
+
+                        </select>
+
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+
+                </div>
+
+
+                <!-- SUBJECT -->
+                <div class="hw-form-group">
+
+                    <label for="homeworkSubject">
+                        <i class="fas fa-book"></i>
+                        Subject
+                    </label>
+
+                    <div class="hw-input-wrapper">
+                        <select id="homeworkSubject">
+
+                            <option value="">
+                                Select Subject
+                            </option>
+
+                        </select>
+
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+
+                </div>
+
+
+                <!-- TITLE -->
+                <div class="hw-form-group hw-full">
+
+                    <label for="homeworkTitle">
+                        <i class="fas fa-heading"></i>
+                        Homework Title
+                    </label>
+
+                    <input
+                        type="text"
+                        id="homeworkTitle"
+                        placeholder="e.g. Mathematics Exercise 1"
+                    >
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+                <div class="hw-form-group hw-full">
+
+                    <label for="homeworkDescription">
+                        <i class="fas fa-align-left"></i>
+                        Instructions / Questions
+                    </label>
+
+                    <textarea
+                        id="homeworkDescription"
+                        rows="8"
+                        placeholder="Write the homework questions or instructions here..."
+                    ></textarea>
+
+                    <div class="hw-field-footer">
+                        <span>
+                            <i class="fas fa-info-circle"></i>
+                            Give clear instructions to your students.
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <!-- DATE GIVEN -->
+                <div class="hw-form-group">
+
+                    <label for="homeworkDate">
+                        <i class="fas fa-calendar-alt"></i>
+                        Date Given
+                    </label>
+
+                    <div class="hw-date-input">
+                        <i class="fas fa-calendar"></i>
+
+                        <input
+                            type="date"
+                            id="homeworkDate"
+                        >
+                    </div>
+
+                </div>
+
+
+                <!-- DEADLINE -->
+                <div class="hw-form-group">
+
+                    <label for="homeworkDeadline">
+                        <i class="fas fa-calendar-check"></i>
+                        Submission Deadline
+                    </label>
+
+                    <div class="hw-date-input">
+                        <i class="fas fa-calendar"></i>
+
+                        <input
+                            type="date"
+                            id="homeworkDeadline"
+                        >
+                    </div>
+
+                </div>
+
+
+                <!-- ATTACHMENT -->
+                <div class="hw-form-group hw-full">
+
+                    <label>
+                        <i class="fas fa-paperclip"></i>
+                        Attachment
+                        <span class="hw-optional">Optional</span>
+                    </label>
+
+                    <label
+                        for="homeworkAttachment"
+                        class="hw-upload-box"
+                    >
+
+                        <div class="hw-upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+
+                        <div class="hw-upload-text">
+
+                            <strong>
+                                Click to upload a file
+                            </strong>
+
+                            <span>
+                                PDF, Word document, JPG or PNG
+                            </span>
+
+                        </div>
+
+                        <i class="fas fa-plus hw-upload-plus"></i>
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="homeworkAttachment"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        style="display:none;"
+                    >
+
+                    <div
+                        id="homeworkFileName"
+                        class="hw-selected-file"
+                        style="display:none;"
+                    ></div>
+
+                </div>
+
+            </div>
+
+
+            <!-- FORM ACTIONS -->
+            <div class="hw-form-actions">
+
+                <button
+                    type="button"
+                    class="hw-clear-btn"
+                    onclick="clearHomeworkForm()"
+                >
+                    <i class="fas fa-undo"></i>
+                    Clear
+                </button>
+
+                <button
+                    type="button"
+                    class="hw-publish-btn"
+                    onclick="createHomework()"
+                >
+                    <i class="fas fa-paper-plane"></i>
+                    Publish Homework
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             PUBLISHED HOMEWORK
+        ================================================== -->
+        <div class="hw-main-card">
+
+            <div class="hw-section-header">
+
+                <div class="hw-card-heading">
+
+                    <div class="hw-heading-icon purple">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+
+                    <div>
+                        <h2>Published Homework</h2>
+
+                        <p>
+                            Manage assignments given to your students.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="hw-filter">
+
+                    <i class="fas fa-filter"></i>
+
+                    <select id="homeworkFilter">
+
+                        <option value="all">
+                            All Homework
+                        </option>
+
+                        <option value="active">
+                            Active
+                        </option>
+
+                        <option value="overdue">
+                            Overdue
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div id="teacherHomeworkList" class="hw-card-list">
+
+                <!-- Homework cards will be inserted here -->
+
+                <div class="hw-empty-state">
+
+                    <div class="hw-empty-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+
+                    <h3>No Homework Published</h3>
+
+                    <p>
+                        Homework you publish will appear here.
+                    </p>
+
+                    <button
+                        onclick="document.getElementById('homeworkCreateCard').scrollIntoView({behavior:'smooth'})"
+                    >
+                        <i class="fas fa-plus"></i>
+                        Create Homework
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         STUDENT HOMEWORK AREA
+    ====================================================== -->
+    <div id="studentHomeworkArea">
+
+        <div class="hw-main-card">
+
+            <div class="hw-section-header">
+
+                <div class="hw-card-heading">
+
+                    <div class="hw-heading-icon green">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+
+                    <div>
+                        <h2>My Homework</h2>
+
+                        <p>
+                            View and complete homework assigned to you.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="hw-filter">
+
+                    <i class="fas fa-filter"></i>
+
+                    <select id="studentHomeworkFilter">
+
+                        <option value="all">
+                            All
+                        </option>
+
+                        <option value="pending">
+                            Pending
+                        </option>
+
+                        <option value="submitted">
+                            Submitted
+                        </option>
+
+                        <option value="overdue">
+                            Overdue
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div id="studentHomeworkList" class="hw-card-list">
+
+                <div class="hw-empty-state">
+
+                    <div class="hw-empty-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+
+                    <h3>No Homework Available</h3>
+
+                    <p>
+                        New homework assigned to you will appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     FEES PAGE
+========================================================= -->
+<div id="feesPage" class="container page" style="display:none;">
+
+    <!-- PAGE HEADER -->
+    <div class="fees-page-header">
+
+        <div class="fees-header-left">
+
+            <div class="fees-header-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+
+            <div>
+                <span class="fees-eyebrow">FINANCE MANAGEMENT</span>
+
+                <h1>School Fees</h1>
+
+                <p>
+                    Manage student fees, payments and fee statements.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ADMIN AREA
+    ====================================================== -->
+    <div id="adminFeesArea">
+
+
+        <!-- =================================================
+             FEE STATISTICS
+        ================================================== -->
+        <div class="fees-stats-grid">
+
+            <div class="fees-stat-card">
+
+                <div class="fees-stat-icon blue">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+
+                <div>
+                    <span>Total Statements</span>
+                    <strong id="feeTotalStatements">0</strong>
+                </div>
+
+            </div>
+
+
+            <div class="fees-stat-card">
+
+                <div class="fees-stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+
+                <div>
+                    <span>Total Paid</span>
+                    <strong id="feeTotalPaid">GHS 0.00</strong>
+                </div>
+
+            </div>
+
+
+            <div class="fees-stat-card">
+
+                <div class="fees-stat-icon orange">
+                    <i class="fas fa-clock"></i>
+                </div>
+
+                <div>
+                    <span>Outstanding</span>
+                    <strong id="feeTotalOutstanding">GHS 0.00</strong>
+                </div>
+
+            </div>
+
+
+            <div class="fees-stat-card">
+
+                <div class="fees-stat-icon red">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+
+                <div>
+                    <span>Overdue</span>
+                    <strong id="feeOverdueCount">0</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             CREATE FEE STATEMENT
+        ================================================== -->
+        <div class="fees-main-card">
+
+            <div class="fees-card-header">
+
+                <div class="fees-card-title">
+
+                    <div class="fees-title-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+
+                    <div>
+
+                        <h2>Create Fee Statement</h2>
+
+                        <p>
+                            Create and send a fee statement to a student.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="fees-form">
+
+
+                <!-- STUDENT -->
+                <div class="fees-form-group fees-full">
+
+                    <label for="feeStudent">
+                        <i class="fas fa-user-graduate"></i>
+                        Student
+                    </label>
+
+                    <div class="fees-select-wrapper">
+
+                        <select id="feeStudent">
+
+                            <option value="">
+                                Select Student
+                            </option>
+
+                        </select>
+
+                        <i class="fas fa-chevron-down"></i>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TERM -->
+                <div class="fees-form-group">
+
+                    <label for="feeTerm">
+                        <i class="fas fa-layer-group"></i>
+                        Term
+                    </label>
+
+                    <div class="fees-select-wrapper">
+
+                        <select id="feeTerm">
+
+                            <option value="term1">
+                                Term 1
+                            </option>
+
+                            <option value="term2">
+                                Term 2
+                            </option>
+
+                            <option value="term3">
+                                Term 3
+                            </option>
+
+                        </select>
+
+                        <i class="fas fa-chevron-down"></i>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DUE DATE -->
+                <div class="fees-form-group">
+
+                    <label for="feeDueDate">
+                        <i class="fas fa-calendar-alt"></i>
+                        Due Date
+                    </label>
+
+                    <div class="fees-date-wrapper">
+
+                        <i class="fas fa-calendar"></i>
+
+                        <input
+                            type="date"
+                            id="feeDueDate"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- TUITION -->
+                <div class="fees-form-group">
+
+                    <label for="feeTuition">
+                        <i class="fas fa-graduation-cap"></i>
+                        Tuition
+                    </label>
+
+                    <div class="fees-money-input">
+
+                        <span>GHS</span>
+
+                        <input
+                            type="number"
+                            id="feeTuition"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- BOOKS -->
+                <div class="fees-form-group">
+
+                    <label for="feeBooks">
+                        <i class="fas fa-book"></i>
+                        Books
+                    </label>
+
+                    <div class="fees-money-input">
+
+                        <span>GHS</span>
+
+                        <input
+                            type="number"
+                            id="feeBooks"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- ICT -->
+                <div class="fees-form-group">
+
+                    <label for="feeICT">
+                        <i class="fas fa-laptop"></i>
+                        ICT
+                    </label>
+
+                    <div class="fees-money-input">
+
+                        <span>GHS</span>
+
+                        <input
+                            type="number"
+                            id="feeICT"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- OTHER -->
+                <div class="fees-form-group">
+
+                    <label for="feeOther">
+                        <i class="fas fa-plus-circle"></i>
+                        Other Fees
+                    </label>
+
+                    <div class="fees-money-input">
+
+                        <span>GHS</span>
+
+                        <input
+                            type="number"
+                            id="feeOther"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- NOTES -->
+                <div class="fees-form-group fees-full">
+
+                    <label for="feeNotes">
+                        <i class="fas fa-sticky-note"></i>
+                        Notes
+                    </label>
+
+                    <textarea
+                        id="feeNotes"
+                        rows="4"
+                        placeholder="Add any additional information about these fees..."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+
+            <!-- TOTAL -->
+            <div class="fees-total-box">
+
+                <div>
+
+                    <span>Total Fee</span>
+
+                    <small>
+                        Amount to be paid
+                    </small>
+
+                </div>
+
+                <strong id="feeTotalPreview">
+                    GHS 0.00
+                </strong>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="fees-form-actions">
+
+                <button
+                    type="button"
+                    class="fees-clear-btn"
+                    onclick="clearFeeForm()"
+                >
+                    <i class="fas fa-undo"></i>
+                    Clear
+                </button>
+
+
+                <button
+                    type="button"
+                    class="fees-save-btn"
+                    onclick="saveFeeStatement()"
+                >
+                    <i class="fas fa-paper-plane"></i>
+                    Send Fee Statement
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             FEE RECORDS
+        ================================================== -->
+        <div class="fees-main-card">
+
+            <div class="fees-section-header">
+
+                <div class="fees-card-title">
+
+                    <div class="fees-title-icon purple">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+
+                    <div>
+
+                        <h2>Fee Records</h2>
+
+                        <p>
+                            View and manage student fee statements.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="fees-filter">
+
+                    <i class="fas fa-filter"></i>
+
+                    <select id="feeRecordFilter">
+
+                        <option value="all">
+                            All Records
+                        </option>
+
+                        <option value="paid">
+                            Paid
+                        </option>
+
+                        <option value="partial">
+                            Partially Paid
+                        </option>
+
+                        <option value="unpaid">
+                            Unpaid
+                        </option>
+
+                        <option value="overdue">
+                            Overdue
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div id="feeRecordsList" class="fees-records-list">
+
+                <div class="fees-empty-state">
+
+                    <div class="fees-empty-icon">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+
+                    <h3>No Fee Statements</h3>
+
+                    <p>
+                        Fee statements you create will appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+            <!-- STUDENT BALANCE -->
+            <div class="student-fees-summary">
+
+                <div class="student-fees-balance">
+
+                    <span>Outstanding Balance</span>
+
+                    <strong id="studentOutstandingBalance">
+                        GHS 0.00
+                    </strong>
+
+                </div>
+
+
+                <div class="student-fees-status">
+
+                    <span>Payment Status</span>
+
+                    <strong id="studentPaymentStatus">
+                        No Records
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div id="studentFeesList" class="fees-records-list">
+
+                <div class="fees-empty-state">
+
+                    <div class="fees-empty-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+
+                    <h3>No Fee Statement</h3>
+
+                    <p>
+                        Your fee statement will appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     NOTICES PAGE
+========================================================= -->
+<div id="noticesPage" class="container page" style="display:none;">
+
+    <!-- PAGE HEADER -->
+    <div class="notices-page-header">
+
+        <div class="notices-header-left">
+
+            <div class="notices-header-icon">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+
+            <div>
+
+                <span class="notices-eyebrow">
+                    SCHOOL COMMUNICATION
+                </span>
+
+                <h1>School Notices</h1>
+
+                <p>
+                    Create and share important announcements with students.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="notices-create-btn"
+            onclick="document.getElementById('noticeTitle')?.focus()"
+        >
+            <i class="fas fa-plus"></i>
+            Create Notice
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         NOTICE STATISTICS
+    ====================================================== -->
+    <div class="notices-stats-grid">
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon blue">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+
+            <div>
+                <span>Total Notices</span>
+                <strong id="noticeTotalCount">0</strong>
+            </div>
+
+        </div>
+
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <div>
+                <span>Normal</span>
+                <strong id="noticeNormalCount">0</strong>
+            </div>
+
+        </div>
+
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon orange">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+
+            <div>
+                <span>Important</span>
+                <strong id="noticeImportantCount">0</strong>
+            </div>
+
+        </div>
+
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon red">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+
+            <div>
+                <span>Urgent</span>
+                <strong id="noticeUrgentCount">0</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ADMIN / TEACHER AREA
+    ====================================================== -->
+    <div id="teacherNoticeArea">
+
+
+        <!-- =================================================
+             CREATE NOTICE
+        ================================================== -->
+        <div class="notices-main-card">
+
+            <div class="notices-card-header">
+
+                <div class="notices-card-title">
+
+                    <div class="notices-title-icon">
+                        <i class="fas fa-pen-to-square"></i>
+                    </div>
+
+                    <div>
+
+                        <h2>Create New Notice</h2>
+
+                        <p>
+                            Prepare and publish an announcement for your school.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="notices-form">
+
+
+                <!-- TITLE -->
+                <div class="notices-form-group notices-full">
+
+                    <label for="noticeTitle">
+                        <i class="fas fa-heading"></i>
+                        Notice Title
+                    </label>
+
+                    <input
+                        type="text"
+                        id="noticeTitle"
+                        placeholder="e.g. School Reopening"
+                    >
+
+                </div>
+
+
+                <!-- MESSAGE -->
+                <div class="notices-form-group notices-full">
+
+                    <label for="noticeMessage">
+                        <i class="fas fa-align-left"></i>
+                        Notice Message
+                    </label>
+
+                    <textarea
+                        id="noticeMessage"
+                        rows="7"
+                        placeholder="Write your announcement here..."
+                    ></textarea>
+
+                    <div class="notice-character-count">
+                        <span id="noticeCharacterCount">0</span>
+                        characters
+                    </div>
+
+                </div>
+
+
+                <!-- DATE -->
+                <div class="notices-form-group">
+
+                    <label for="noticeDate">
+                        <i class="fas fa-calendar"></i>
+                        Notice Date
+                    </label>
+
+                    <div class="notice-date-wrapper">
+
+                        <i class="fas fa-calendar-days"></i>
+
+                        <input
+                            type="date"
+                            id="noticeDate"
+                        >
+
+                    </div>
+
+                </div>
+
+		<div
+    id="noticeRecipientSection"
+    class="notice-form-group"
+>
+
+    <label for="noticeRecipientType">
+
+        <i class="fas fa-users"></i>
+
+        Send Notice To
+
+    </label>
+
+
+    <select
+        id="noticeRecipientType"
+        class="notice-input"
+    >
+
+        <option value="school">
+            Everyone
+        </option>
+
+        <option value="class">
+            Specific Class
+        </option>
+
+    </select>
+
+
+    <!-- CLASS -->
+
+    <div
+        id="noticeClassWrapper"
+        style="display:none; margin-top:12px;"
+    >
+
+        <label for="noticeRecipientClass">
+
+            <i class="fas fa-graduation-cap"></i>
+
+            Select Class
+
+        </label>
+
+
+        <select
+            id="noticeRecipientClass"
+            class="notice-input"
+        >
+
+            <option value="">
+                Select Class
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- PREVIEW -->
+
+    <div
+        id="noticeRecipientPreview"
+        class="notice-recipient-preview"
+    >
+
+        <i class="fas fa-users"></i>
+
+        <span>
+            This notice will be sent to everyone.
+        </span>
+
+    </div>
+
+</div>
+
+                <!-- PRIORITY -->
+                <div class="notices-form-group">
+
+                    <label for="noticePriority">
+                        <i class="fas fa-flag"></i>
+                        Priority
+                    </label>
+
+                    <div class="notice-priority-wrapper">
+
+                        <select id="noticePriority">
+
+                            <option value="normal">
+                                Normal
+                            </option>
+
+                            <option value="important">
+                                Important
+                            </option>
+
+                            <option value="urgent">
+                                Urgent
+                            </option>
+
+                        </select>
+
+                        <i class="fas fa-chevron-down"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+<!-- =====================================================
+     NOTICE RECIPIENT
+===================================================== -->
+
+
+
+            <!-- PRIORITY PREVIEW -->
+            <div
+                id="noticePriorityPreview"
+                class="notice-priority-preview normal"
+            >
+
+                <div class="notice-preview-icon">
+                    <i class="fas fa-info"></i>
+                </div>
+
+                <div>
+
+                    <strong>Normal Notice</strong>
+
+                    <p>
+                        This announcement will be displayed as a regular school notice.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="notices-form-actions">
+
+                <button
+                    type="button"
+                    class="notice-clear-btn"
+                    onclick="clearNoticeForm()"
+                >
+                    <i class="fas fa-undo"></i>
+                    Clear
+                </button>
+
+
+                <button
+    class="primary-btn notice-publish-btn"
+    onclick="publishNotice()"
+>
+    <i class="fas fa-bullhorn"></i>
+    Publish Notice
+</button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             PUBLISHED NOTICES
+        ================================================== -->
+        <div class="notices-main-card">
+
+            <div class="notices-section-header">
+
+                <div class="notices-card-title">
+
+                    <div class="notices-title-icon purple">
+                        <i class="fas fa-list"></i>
+                    </div>
+
+                    <div>
+
+                        <h2>Published Notices</h2>
+
+                        <p>
+                            Manage announcements that have been published.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="notice-filter">
+
+                    <i class="fas fa-filter"></i>
+
+                    <select id="noticeFilter">
+
+                        <option value="all">
+                            All Notices
+                        </option>
+
+                        <option value="normal">
+                            Normal
+                        </option>
+
+                        <option value="important">
+                            Important
+                        </option>
+
+                        <option value="urgent">
+                            Urgent
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div id="adminNoticeList" class="notices-list">
+
+                <div class="notices-empty-state">
+
+                    <div class="notices-empty-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+
+                    <h3>No Notices Yet</h3>
+
+                    <p>
+                        Published school announcements will appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
 <!-- ==========================================
      CHAT PAGE
 ========================================== -->
@@ -474,10 +1988,6 @@ Generate Student Portal Accounts
 
                     <h2>Messages</h2>
 
-                    <button class="new-chat-btn" title="New Chat">
-                        <i class="fas fa-edit"></i>
-                    </button>
-
                 </div>
 
                 <!-- Search -->
@@ -493,26 +2003,7 @@ Generate Student Portal Accounts
 
                 </div>
 
-                <!-- Filters -->
-                <div class="chat-filters">
-
-                    <button class="chat-filter active">
-                        All
-                    </button>
-
-                    <button class="chat-filter">
-                        Unread
-                    </button>
-
-                    <button class="chat-filter">
-                        Teachers
-                    </button>
-
-                    <button class="chat-filter">
-                        Students
-                    </button>
-
-                </div>
+             
 
             </div>
 
@@ -562,10 +2053,6 @@ Generate Student Portal Accounts
 
                         </div>
 
-                        <span
-                            id="headerOnlineDot"
-                            class="online-indicator">
-                        </span>
 
                     </div>
 
@@ -584,22 +2071,6 @@ Generate Student Portal Accounts
                         </span>
 
                     </div>
-
-                </div>
-
-                <div class="header-actions">
-
-                    <button title="Voice Call">
-                        <i class="fas fa-phone"></i>
-                    </button>
-
-                    <button title="Video Call">
-                        <i class="fas fa-video"></i>
-                    </button>
-
-                    <button title="Information">
-                        <i class="fas fa-circle-info"></i>
-                    </button>
 
                 </div>
 
@@ -696,18 +2167,18 @@ Generate Student Portal Accounts
 
             <div class="chat-input-container">
 
-                <label
-                    class="attach-btn">
+                <label class="attach-btn">
 
-                    <i class="fas fa-paperclip"></i>
+    <i class="fas fa-paperclip"></i>
 
-                    <input
-                        hidden
-                        id="mediaInput"
-                        type="file"
-                        accept="image/*,video/*,.pdf,.doc,.docx,.xlsx,.ppt,.pptx">
+    <input
+        hidden
+        id="mediaInput"
+        type="file"
+        accept="image/*,video/*,.pdf,.doc,.docx,.xlsx,.ppt,.pptx"
+        onchange="previewMedia(event)">
 
-                </label>
+</label>
 
                 <input
                     id="chatInput"
@@ -717,12 +2188,6 @@ Generate Student Portal Accounts
                     placeholder="Write a message..."
                     onkeypress="if(event.key==='Enter')sendMessage();">
 
-                <button
-                    class="emoji-btn">
-
-                    😊
-
-                </button>
 
                 <button
                     class="send-btn"
@@ -986,9 +2451,9 @@ Generate Student Portal Accounts
     <span>Academics</span>
 </div>
 
-<div class="nav-item" onclick="showPage('attendancePage')">
-    <i class="fas fa-check-circle"></i>
-    <span>Attendance</span>
+ <div class="nav-item" onclick="toggleSchoolMenu()">
+    <i class="fas fa-school"></i>
+    <span>School</span>
 </div>
 
 <div class="nav-item" onclick="openChatPage()">
@@ -1084,6 +2549,37 @@ Generate Student Portal Accounts
     <div onclick="showPage('profileNotePage')">
         📝 Note
     </div>
+
+</div>
+
+
+
+        <!-- SCHOOL DROPDOWN -->
+<div id="SchoolMenu" class="academics-menu">
+
+       <div onclick="showPage('attendancePage')">
+            <i class="fas fa-clipboard-check"></i>
+            Attendance
+        </div>
+
+        <div onclick="showPage('homeworkPage')">
+            <i class="fas fa-book-open"></i>
+            Home Work
+        </div>
+
+         <div
+           onclick="showPage('feesPage')">
+            <i class="fas fa-money-bill-wave"></i>
+            Fees
+        </div>
+
+         <div
+           onclick="showPage('noticesPage')">
+            <i class="fas fa-bullhorn"></i>
+            Notices
+         </div>
+
+    
 
 </div>
 
