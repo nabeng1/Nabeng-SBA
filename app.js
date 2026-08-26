@@ -499,6 +499,15 @@ document.body.classList.add("logged-in");
 activeTerm = await getCurrentTerm();
     updateOnlineStatus();
 	await loadNotices();
+
+/* ============================================================
+   DEVELOPER FEEDBACK POPUP
+   Show after successful login
+============================================================ */
+
+setTimeout(() => {
+    showDeveloperFeedback();
+}, 800);
 	
 	
 }
@@ -9603,6 +9612,67 @@ function openWhatsApp() {
 }
 
 
+
+/* ============================================================
+   DEVELOPER FEEDBACK
+============================================================ */
+
+function showDeveloperFeedback() {
+
+    const modal =
+        document.getElementById(
+            "developerFeedbackModal"
+        );
+
+    if (!modal) {
+        console.error(
+            "Developer feedback modal not found."
+        );
+        return;
+    }
+
+    modal.style.display = "flex";
+}
+
+
+function closeDeveloperFeedback() {
+
+    const modal =
+        document.getElementById(
+            "developerFeedbackModal"
+        );
+
+    if (!modal) return;
+
+    modal.style.display = "none";
+}
+
+
+function sendDeveloperFeedback() {
+
+    const name =
+        currentUser?.firstname ||
+        currentUser?.username ||
+        "User";
+
+    const role =
+        currentUser?.role ||
+        "User";
+
+    const message =
+        `Hello, I am ${name} (${role}) using the Nabeng-SBA system. I would like to give some feedback about the software.`;
+
+    const whatsappURL =
+        "https://wa.me/233599581301?text=" +
+        encodeURIComponent(message);
+
+    window.open(
+        whatsappURL,
+        "_blank"
+    );
+
+    closeDeveloperFeedback();
+}
 
 
 
