@@ -2650,7 +2650,56 @@ Generate Student Portal Accounts
 
 
 
+<!-- ============================================================
+     DEVELOPER FEEDBACK POPUP
+============================================================ -->
 
+<div id="developerFeedbackModal"
+     class="feedback-modal-overlay">
+
+    <div class="feedback-modal">
+
+        <button
+            class="feedback-close"
+            onclick="closeDeveloperFeedback()">
+            &times;
+        </button>
+
+        <div class="feedback-icon">
+            <i class="fas fa-comment-dots"></i>
+        </div>
+
+        <h3>How are we doing?</h3>
+
+        <p>
+            Is there any feedback, suggestion or issue
+            you'd like to send to the software developer?
+        </p>
+
+        <div class="feedback-actions">
+
+            <button
+                class="feedback-send-btn"
+                onclick="sendDeveloperFeedback()">
+
+                <i class="fab fa-whatsapp"></i>
+                Send Feedback
+
+            </button>
+
+            <button
+                class="feedback-later-btn"
+                onclick="closeDeveloperFeedback()">
+
+                Maybe Later
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>
