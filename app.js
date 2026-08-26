@@ -29,6 +29,12 @@ let passChartInstance = null;
 let selectedMessageId = null;
 let activeTerm = "term1";
 let selectedMarkTerm = "term1";
+let selectedUser = null;
+let selectedUserType = null;
+let chatCache = [];
+let chatCacheLoaded = false;
+let chatCacheLoading = false;
+let chatContacts = [];
 
 
 
@@ -492,6 +498,7 @@ document.body.classList.add("logged-in");
 	await loadTermSettings();
 activeTerm = await getCurrentTerm();
     updateOnlineStatus();
+	await loadNotices();
 	
 	
 }
@@ -1424,7 +1431,7 @@ if(id === "studentsPage"){
         }
 		await loadUsers();
         displayUsers();
-        displayChat();
+        
 
     } else {
 
@@ -1445,6 +1452,20 @@ if(page){
 if(id === "userProfilePage"){
     loadProfileData();
 loadSignature();
+}
+
+// SCHOOL PAGES
+if(
+    id === "homeworkPage" ||
+    id === "feesPage" ||
+    id === "noticesPage"
+){
+
+    setupSchoolPages();
+
+}
+if (id === "noticesPage") {
+    await loadNotices();
 }
 }
 
@@ -6646,7 +6667,7 @@ async function loadClassOptions(){
     document.getElementById("classFilter").innerHTML = html;
 
 
-        document.getElementById("studentclass").innerHTML
+        document.getElementById("studentClass").innerHTML
     ;
 }
 
@@ -6912,75 +6933,42 @@ async function loadPlans(){
     document.getElementById("planOutput").innerHTML = html;
 }
 
-let chatContacts = [];
+/* ============================================================
+   CHAT SYSTEM
+   ============================================================
 
-async function loadChatContacts(){
+   Required existing globals:
+   currentUser
+   users
+   students
+   supabaseClient
+
+   Existing chat state:
+   selectedUser
+   selectedUserType
+   selectedMessageId
+   selectedMediaFile
+   chatCache
+   chatCacheLoading
+   chatCacheLoaded
+   ============================================================ */
+
+
+/* ============================================================
+   1. CHAT CONTACTS
+   ============================================================ */
+
+
+function loadChatContacts() {
+
+    if (!currentUser) return [];
 
     chatContacts = [];
 
+    // ==========================================
     // STAFF
-    let staff = users
-        .filter(u => u.id !== currentUser.id)
-        .map(u => ({
-            id: u.id,
-            name: `${u.firstname} ${u.surname}`,
-            type: "teacher",
-            class: "",
-            photo: u.profilePic
-        }));
+    // ==========================================
 
-    chatContacts.push(...staff);
-
-    // STUDENTS (Teachers only)
-    if(currentUser.role === "teacher"){
-
-        students.forEach(s=>{
-
-            chatContacts.push({
-
-                id: s.id,
-                name: s.name,
-                type: "student",
-                class: s.studentclass,
-                photo: s.photo
-
-            });
-
-        });
-
-    }
-
-    // Students (Admin)
-    if(currentUser.role==="admin"){
-
-        students.forEach(s=>{
-
-            chatContacts.push({
-
-                id:s.id,
-                name:s.name,
-                type:"student",
-                class:s.studentclass,
-                photo:s.photo
-
-            });
-
-        });
-
-    }
-
-}
-
-
-
-
-function displayUsers() {
-
-    let chatList = [];
-
-    // ==========================
-    // STAFF
-    // ==========================
     users
         .filter(user =>
             user.username !== currentUser.username &&
@@ -6988,178 +6976,232 @@ function displayUsers() {
         )
         .forEach(user => {
 
-            chatList.push({
+            chatContacts.push({
+
                 id: user.username,
+
                 type: "user",
+
                 firstname: user.firstname || "",
+
                 surname: user.surname || "",
+
+                name:
+                    `${user.firstname || ""} ${user.surname || ""}`.trim(),
+
                 profilePic: user.profilePic || "",
+
+                photo: user.profilePic || "",
+
                 lastSeen: user.lastSeen || 0
+
             });
 
         });
 
-    // ==========================
+
+    // ==========================================
     // STUDENTS
-    // ==========================
-    if (currentUser.role === "teacher" || currentUser.role === "admin") {
+    // Teachers and Admin
+    // ==========================================
+
+    if (
+        currentUser.role === "teacher" ||
+        currentUser.role === "admin"
+    ) {
 
         students.forEach(student => {
 
-            chatList.push({
+            chatContacts.push({
+
                 id: student.id,
+
                 type: "student",
-                firstname: student.name || "",
+
+                firstname:
+                    student.name || "",
+
                 surname: "",
-                profilePic: student.photo || "",
-                studentclass: student.studentclass || "No Class"
+
+                name:
+                    student.name || "Student",
+
+                profilePic:
+                    student.photo || "",
+
+                photo:
+                    student.photo || "",
+
+                studentclass:
+                    student.studentclass || "No Class",
+
+                class:
+                    student.studentclass || "No Class",
+
+                lastSeen: 0
+
             });
 
         });
 
     }
-	
-	// STUDENT LOGIN
-if (currentUser.role === "student") {
 
-    users
-        .filter(user =>
-            (user.role === "teacher" || user.role === "admin") &&
-            user.schoolid === currentUser.schoolid
-        )
-        .forEach(user => {
 
-            chatList.push({
-
-                id: user.username,
-                type: "user",
-
-                firstname: user.firstname,
-                surname: user.surname,
-
-                profilePic: user.profilePic,
-
-                lastSeen: user.lastSeen
-
-            });
-
-        });
+    return chatContacts;
 
 }
 
+
+/* ============================================================
+   2. CONTACT HELPERS
+   ============================================================ */
+
+function getChatContact(id, type) {
+
+    if (type === "user") {
+
+        return users.find(user =>
+            String(user.username) === String(id)
+        );
+
+    }
+
+    if (type === "student") {
+
+        return students.find(student =>
+            String(student.id) === String(id)
+        );
+
+    }
+
+    return null;
+}
+
+
+function getContactName(id, type) {
+
+    const person = getChatContact(id, type);
+
+    if (!person) return "Unknown";
+
+    if (type === "student") {
+        return person.name || "Student";
+    }
+
+    return `${person.firstname || ""} ${person.surname || ""}`.trim();
+}
+
+
+function getContactPhoto(id, type) {
+
+    const person = getChatContact(id, type);
+
+    if (!person) return "";
+
+    return type === "student"
+        ? person.photo || ""
+        : person.profilePic || "";
+}
+
+
+function isUserOnline(user) {
+
+    return Boolean(
+        user &&
+        user.lastSeen &&
+        Date.now() - user.lastSeen < 60000
+    );
+
+}
+
+
+/* ============================================================
+   3. DISPLAY CHAT USERS
+   ============================================================ */
+
+function displayUsers() {
+
+    if (!currentUser) return;
+
+    loadChatContacts();
+
+    const userList =
+        document.getElementById("userList");
+
+    if (!userList) return;
+
     let html = "";
 
-    chatList.forEach(person => {
+    chatContacts.forEach(person => {
 
-        // --------------------------
-        // Initials
-        // --------------------------
-        let initials = "";
+        const isStudent =
+            person.type === "student";
 
-        if (person.type === "student") {
+        const firstname =
+            person.firstname || "";
 
-            initials = (person.firstname.charAt(0) || "?").toUpperCase();
+        const surname =
+            person.surname || "";
 
-        } else {
+        const displayName =
+            isStudent
+                ? firstname
+                : `${firstname} ${surname}`.trim();
 
-            initials =
-                (person.firstname.charAt(0) || "").toUpperCase() +
-                (person.surname.charAt(0) || "").toUpperCase();
+        const initials =
+            isStudent
+                ? (firstname.charAt(0) || "?").toUpperCase()
+                : (
+                    (firstname.charAt(0) || "") +
+                    (surname.charAt(0) || "")
+                ).toUpperCase() || "?";
 
-        }
-
-        // --------------------------
-        // Online Status
-        // --------------------------
         const online =
-            person.type === "user" &&
+            !isStudent &&
             person.lastSeen &&
-            (Date.now() - person.lastSeen < 60000);
+            Date.now() - person.lastSeen < 60000;
 
-        // --------------------------
-        // Avatar
-        // --------------------------
-        let avatar = "";
-
-        if (person.profilePic) {
-
-            avatar = `
-                <div class="avatar-wrapper">
-
-                    <img
-                        src="${person.profilePic}"
-                        class="chat-avatar-img"
-                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-
-                    <div class="chat-avatar" style="display:none;">
-                        ${initials}
-                    </div>
-
-                    ${
-                        person.type === "user"
-                        ? `<span class="online-dot ${online ? "online" : "offline"}"></span>`
-                        : ""
-                    }
-
-                </div>
-            `;
-
-        } else {
-
-            avatar = `
-                <div class="avatar-wrapper">
-
-                    <div class="chat-avatar">
-                        ${initials}
-                    </div>
-
-                    ${
-                        person.type === "user"
-                        ? `<span class="online-dot ${online ? "online" : "offline"}"></span>`
-                        : ""
-                    }
-
-                </div>
-            `;
-
-        }
-
-        // --------------------------
-        // Active Chat
-        // --------------------------
         const active =
-            selectedUser == person.id &&
-            selectedUserType == person.type
+            String(selectedUser) === String(person.id) &&
+            selectedUserType === person.type
                 ? "active"
                 : "";
 
-        // --------------------------
-        // HTML
-        // --------------------------
+        const avatar = buildAvatar(
+            person.profilePic || person.photo || "",
+            initials,
+            !isStudent,
+            online
+        );
+
+        const status =
+            isStudent
+                ? `🎓 ${person.studentclass || "No Class"}`
+                : online
+                    ? "🟢 Online"
+                    : "⚪ Offline";
+
         html += `
-            <div class="chat-user ${active}"
-                 data-id="${person.id}"
-                 data-type="${person.type}"
-                 onclick="selectUser('${String(person.id).replace(/'/g, "\\'")}','${person.type}')">
+            <div
+                class="chat-user ${active}"
+                data-id="${escapeAttribute(person.id)}"
+                data-type="${escapeAttribute(person.type)}"
+                onclick="selectUser(
+                    '${escapeJS(person.id)}',
+                    '${escapeJS(person.type)}'
+                )"
+            >
 
                 ${avatar}
 
                 <div class="user-details">
 
                     <div class="chat-name">
-                        ${
-                            person.type === "student"
-                                ? "🎓 " + person.firstname
-                                : `${person.firstname} ${person.surname}`
-                        }
+                        ${escapeHTML(displayName)}
                     </div>
 
                     <div class="last-seen">
-                        ${
-                            person.type === "student"
-                                ? person.studentclass
-                                : (online ? "🟢 Online" : "⚪ Offline")
-                        }
+                        ${escapeHTML(status)}
                     </div>
 
                 </div>
@@ -7169,104 +7211,158 @@ if (currentUser.role === "student") {
 
     });
 
-    document.getElementById("userList").innerHTML = html;
+    userList.innerHTML = html;
 
 }
 
 
-// ==============================
-// GLOBAL SELECTED CHAT
-// ==============================
-let selectedUser = null;
-let selectedUserType = null;
+/* ============================================================
+   4. AVATAR BUILDER
+   ============================================================ */
 
-// ==============================
-// SELECT USER / OPEN CHAT
-// ==============================
+function buildAvatar(photo, initials, showOnline = false, online = false) {
+
+    const onlineDot =
+        showOnline
+            ? `
+                <span class="online-dot ${online ? "online" : "offline"}"></span>
+              `
+            : "";
+
+    if (photo) {
+
+        return `
+            <div class="avatar-wrapper">
+
+                <img
+                    src="${escapeAttribute(photo)}"
+                    class="chat-avatar-img"
+                    onerror="
+                        this.style.display='none';
+                        this.nextElementSibling.style.display='flex';
+                    "
+                >
+
+                <div
+                    class="chat-avatar"
+                    style="display:none;"
+                >
+                    ${escapeHTML(initials)}
+                </div>
+
+                ${onlineDot}
+
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="avatar-wrapper">
+
+            <div class="chat-avatar">
+                ${escapeHTML(initials)}
+            </div>
+
+            ${onlineDot}
+
+        </div>
+    `;
+
+}
+
+
+/* ============================================================
+   5. OPEN / SELECT CHAT
+   ============================================================ */
+
 async function selectUser(id, type) {
 
-    // Save current chat
     selectedUser = id;
     selectedUserType = type;
 
-    // Get Elements
-    const nameEl = document.getElementById("chatUserName");
-    const statusEl = document.getElementById("chatUserStatus");
-    const avatarEl = document.getElementById("chatUserAvatar");
-    const usersPanel = document.getElementById("usersPanel");
-    const conversationPanel = document.getElementById("conversationPanel");
-    const chatBox = document.getElementById("chatBox");
+    const person = getChatContact(id, type);
 
-    // Reset Header
-    nameEl.textContent = "Loading...";
-    statusEl.textContent = "";
-    avatarEl.removeAttribute("src");
-    avatarEl.style.display = "none";
-    avatarEl.style.background = "#d9d9d9";
+    if (!person) {
 
-    let person = null;
-    let image = "";
-    let status = "";
+        console.error("Chat contact not found:", id, type);
 
-    // =====================================
-    // STAFF
-    // =====================================
-    if (type === "user") {
-
-        person = users.find(user => user.username === id);
-
-        if (!person) {
-            console.error("User not found:", id);
-            return;
-        }
-
-        nameEl.textContent =
-            `${person.firstname || ""} ${person.surname || ""}`.trim();
-
-        const online =
-            person.lastSeen &&
-            (Date.now() - person.lastSeen < 60000);
-
-        status = online ? "🟢 Online" : "⚪ Offline";
-
-        image = person.profilePic || "";
-
-    }
-
-    // =====================================
-    // STUDENT
-    // =====================================
-    else if (type === "student") {
-
-        person = students.find(student => String(student.id) === String(id));
-
-        if (!person) {
-            console.error("Student not found:", id);
-            return;
-        }
-
-        nameEl.textContent = person.name || "Student";
-
-        status =
-            `🎓 Student • ${person.studentclass || "No Class"}`;
-
-        image = person.photo || "";
-
-    }
-
-    else {
-
-        console.error("Unknown chat type:", type);
         return;
 
     }
 
+    updateChatHeader(person, type);
+    highlightSelectedUser(id, type);
+    closeChatMenus();
+    updateMobileChatView(true);
+
+    try {
+
+        // Only load the complete cache if it has not been loaded yet.
+        await preloadChats();
+
+        refreshCurrentChat();
+
+        await markConversationSeen();
+
+    } catch (error) {
+
+        console.error("Failed to open conversation:", error);
+
+        showChatError();
+
+    }
+
+}
+
+
+/* ============================================================
+   6. UPDATE CHAT HEADER
+   ============================================================ */
+
+function updateChatHeader(person, type) {
+
+    const nameEl =
+        document.getElementById("chatUserName");
+
+    const statusEl =
+        document.getElementById("chatUserStatus");
+
+    const avatarEl =
+        document.getElementById("chatUserAvatar");
+
+    if (!nameEl || !statusEl || !avatarEl) return;
+
+    const isStudent = type === "student";
+
+    const name =
+        isStudent
+            ? person.name || "Student"
+            : `${person.firstname || ""} ${person.surname || ""}`.trim();
+
+    const online =
+        !isStudent && isUserOnline(person);
+
+    const status =
+        isStudent
+            ? `🎓 Student • ${person.studentclass || "No Class"}`
+            : online
+                ? "🟢 Online"
+                : "⚪ Offline";
+
+    const image =
+        isStudent
+            ? person.photo || ""
+            : person.profilePic || "";
+
+    nameEl.textContent = name;
     statusEl.textContent = status;
 
-    // =====================================
-    // AVATAR
-    // =====================================
-    if (image.trim() !== "") {
+    avatarEl.removeAttribute("src");
+    avatarEl.style.display = "none";
+    avatarEl.style.background = "#d9d9d9";
+
+    if (image) {
 
         avatarEl.src = image;
         avatarEl.style.display = "block";
@@ -7276,97 +7372,599 @@ async function selectUser(id, type) {
 
             this.removeAttribute("src");
             this.style.background = "#d9d9d9";
-            this.style.display = "block";
 
         };
 
     }
 
-    // =====================================
-    // HIGHLIGHT SELECTED CHAT
-    // =====================================
-    document.querySelectorAll(".chat-user").forEach(item => {
-        item.classList.remove("active");
-    });
+}
 
-    const selectedChat = document.querySelector(
-        `.chat-user[data-id="${id}"][data-type="${type}"]`
+
+/* ============================================================
+   7. HIGHLIGHT SELECTED CONTACT
+   ============================================================ */
+
+function highlightSelectedUser(id, type) {
+
+    document
+        .querySelectorAll(".chat-user")
+        .forEach(item => {
+
+            item.classList.remove("active");
+
+        });
+
+    const selected = Array.from(
+        document.querySelectorAll(".chat-user")
+    ).find(item =>
+        String(item.dataset.id) === String(id) &&
+        item.dataset.type === type
     );
 
-    if (selectedChat) {
-        selectedChat.classList.add("active");
-    }
+    if (selected) {
 
-    // =====================================
-    // LOAD CHAT
-    // =====================================
-    try {
+        selected.classList.add("active");
 
-        await displayChat();
-
-        setTimeout(() => {
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }, 100);
-
-    } catch (error) {
-
-        console.error(error);
-
-        chatBox.innerHTML = `
-            <div class="empty-chat">
-                Failed to load conversation.
-            </div>
-        `;
-
-    }
-
-    // =====================================
-    // MOBILE
-    // =====================================
-    if (window.innerWidth <= 768) {
-
-        usersPanel.style.display = "none";
-        conversationPanel.style.display = "flex";
-
-    } else {
-
-        usersPanel.style.display = "flex";
-        conversationPanel.style.display = "flex";
-
-    }
-
-    // =====================================
-    // CLOSE CONTEXT MENU
-    // =====================================
-    const menu = document.getElementById("contextMenu");
-
-    if (menu) {
-        menu.style.display = "none";
     }
 
 }
 
-async function sendMessage() {
 
-    // =========================
-    // CHECK CONTACT
-    // =========================
-    if (!selectedUser) {
-        return alert("Select a user or student first.");
+/* ============================================================
+   8. PRELOAD CHAT CACHE
+   ============================================================ */
+
+async function preloadChats() {
+
+    if (!currentUser) return [];
+
+    if (chatCacheLoaded) {
+
+        return chatCache;
+
     }
 
-    const input = document.getElementById("chatInput");
-    const mediaInput = document.getElementById("mediaInput");
+    if (chatCacheLoading) {
 
-    const text = input.value.trim();
-    const file = selectedMediaFile;
+        return waitForChatCache();
 
-    if (!text && !file) return;
+    }
 
-    // =========================
-    // MESSAGE OBJECT
-    // =========================
-    let message = {
+    chatCacheLoading = true;
+
+    try {
+
+        const { data, error } = await supabaseClient
+            .from("chats")
+            .select("*")
+            .eq("schoolid", currentUser.schoolid)
+            .order("time", {
+                ascending: true
+            });
+
+        if (error) throw error;
+
+        chatCache = data || [];
+        chatCacheLoaded = true;
+
+        console.log(
+            "Chat cache loaded:",
+            chatCache.length
+        );
+
+        return chatCache;
+
+    } catch (error) {
+
+        console.error(
+            "Chat cache error:",
+            error
+        );
+
+        return [];
+
+    } finally {
+
+        chatCacheLoading = false;
+
+    }
+
+}
+
+
+/* ============================================================
+   9. WAIT FOR CACHE
+   ============================================================ */
+
+function waitForChatCache() {
+
+    return new Promise(resolve => {
+
+        const check = () => {
+
+            if (!chatCacheLoading) {
+
+                resolve(chatCache || []);
+
+                return;
+
+            }
+
+            setTimeout(check, 50);
+
+        };
+
+        check();
+
+    });
+
+}
+
+
+/* ============================================================
+   10. GET CURRENT CONVERSATION
+   ============================================================ */
+
+function getCurrentConversation() {
+
+    if (!selectedUser || !currentUser) {
+        return [];
+    }
+
+    const myId =
+        String(currentUser.username);
+
+    const otherId =
+        String(selectedUser);
+
+    return (chatCache || []).filter(message => {
+
+        const from =
+            String(message.from_user);
+
+        const to =
+            String(message.to_user);
+
+        // I SENT TO SELECTED USER
+        const sent =
+            from === myId &&
+            to === otherId;
+
+        // SELECTED USER SENT TO ME
+        const received =
+            from === otherId &&
+            to === myId;
+
+        return sent || received;
+
+    });
+
+}
+
+
+/*
+   Keep this old function name available in case another
+   part of your app already calls loadConversation().
+*/
+
+function loadConversation() {
+
+    return getCurrentConversation();
+
+}
+
+
+/* ============================================================
+   11. REFRESH CURRENT CHAT
+   ============================================================ */
+
+function refreshCurrentChat(scroll = true) {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    const messages =
+        getCurrentConversation();
+
+    if (!selectedUser) {
+
+        showEmptyConversation();
+
+        return;
+
+    }
+
+    if (!messages.length) {
+
+        showEmptyConversation();
+
+        return;
+
+    }
+
+    chatBox.innerHTML =
+        buildConversation(messages);
+
+    if (scroll) {
+
+        scrollChatToBottom();
+
+    }
+
+}
+
+
+/* ============================================================
+   12. DISPLAY CHAT
+   ============================================================ */
+
+async function displayChat() {
+
+    if (!selectedUser) {
+
+        showEmptyConversation();
+
+        return;
+
+    }
+
+    await preloadChats();
+
+    refreshCurrentChat();
+
+    await markConversationSeen();
+
+}
+
+
+/* ============================================================
+   13. SEND MESSAGE
+   ============================================================ */
+
+/* ============================================================
+   SEND MESSAGE
+   ============================================================ */
+
+async function sendMessage() {
+
+    if (!currentUser) {
+        alert("You are not logged in.");
+        return;
+    }
+
+    if (!selectedUser) {
+        alert("Select a user or student first.");
+        return;
+    }
+
+
+    const input =
+        document.getElementById("chatInput");
+
+    const text =
+        input?.value.trim() || "";
+
+    const file =
+        selectedMediaFile || null;
+
+
+    // Nothing to send
+    if (!text && !file) {
+        return;
+    }
+
+
+    const sendBtn =
+        document.querySelector(".send-btn");
+
+
+    if (sendBtn) {
+        sendBtn.disabled = true;
+    }
+
+
+    let uploadedPath = null;
+
+
+    try {
+
+        /* =====================================================
+           1. UPLOAD MEDIA
+           ===================================================== */
+
+        let mediaUrl = null;
+
+
+        if (file) {
+
+            console.log(
+                "Starting media upload:",
+                file.name
+            );
+
+
+            const schoolId =
+                currentUser.schoolid ||
+                "school";
+
+
+            const cleanName =
+                file.name
+                    .replace(/\s+/g, "_")
+                    .replace(
+                        /[^a-zA-Z0-9._-]/g,
+                        ""
+                    );
+
+
+            const fileName =
+                `${Date.now()}_${crypto.randomUUID()}_${cleanName}`;
+
+
+            uploadedPath =
+                `${schoolId}/${fileName}`;
+
+
+            console.log(
+                "Uploading to:",
+                uploadedPath
+            );
+
+
+            const {
+                data: uploadData,
+                error: uploadError
+            } =
+                await supabaseClient
+                    .storage
+                    .from("chat-media")
+                    .upload(
+                        uploadedPath,
+                        file,
+                        {
+                            cacheControl: "3600",
+                            upsert: false,
+                            contentType:
+                                file.type ||
+                                "application/octet-stream"
+                        }
+                    );
+
+
+            if (uploadError) {
+
+                console.error(
+                    "❌ STORAGE UPLOAD FAILED:",
+                    uploadError
+                );
+
+                throw new Error(
+                    uploadError.message
+                );
+            }
+
+
+            console.log(
+                "✅ STORAGE UPLOAD SUCCESS:",
+                uploadData
+            );
+
+
+            /* =================================================
+               2. GET PUBLIC URL
+               ================================================= */
+
+            const {
+                data: urlData
+            } =
+                supabaseClient
+                    .storage
+                    .from("chat-media")
+                    .getPublicUrl(
+                        uploadedPath
+                    );
+
+
+            mediaUrl =
+                urlData?.publicUrl;
+
+
+            if (!mediaUrl) {
+
+                throw new Error(
+                    "Could not generate media URL."
+                );
+
+            }
+
+
+            console.log(
+                "✅ MEDIA URL:",
+                mediaUrl
+            );
+        }
+
+
+        /* =====================================================
+           3. CREATE CHAT MESSAGE
+           ===================================================== */
+
+        const newMessage = {
+
+            schoolid:
+                currentUser.schoolid,
+
+            from_user:
+                currentUser.username,
+
+            from_type:
+                currentUser.role,
+
+            to_user:
+                selectedUser,
+
+            to_type:
+                selectedUserType,
+
+            text:
+                text || null,
+
+            media:
+                mediaUrl
+
+        };
+
+
+        console.log(
+            "Saving chat message:",
+            newMessage
+        );
+
+
+        /* =====================================================
+           4. INSERT INTO CHATS
+           ===================================================== */
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("chats")
+                .insert(newMessage)
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "❌ CHAT INSERT FAILED:",
+                error
+            );
+
+
+            // Remove uploaded file if DB insert failed
+            if (uploadedPath) {
+
+                await supabaseClient
+                    .storage
+                    .from("chat-media")
+                    .remove([
+                        uploadedPath
+                    ]);
+
+            }
+
+
+            throw new Error(
+                error.message
+            );
+        }
+
+
+        console.log(
+            "✅ MESSAGE SAVED:",
+            data
+        );
+
+
+        /* =====================================================
+           5. ADD TO LOCAL CACHE
+           ===================================================== */
+
+        if (data) {
+
+            const exists =
+                chatCache.some(
+                    msg =>
+                        String(msg.id) ===
+                        String(data.id)
+                );
+
+
+            if (!exists) {
+
+                chatCache.push(data);
+
+            }
+        }
+
+
+        /* =====================================================
+           6. CLEAR MESSAGE INPUT
+           ===================================================== */
+
+        if (input) {
+
+            input.value = "";
+
+        }
+
+
+        /* =====================================================
+           7. CLEAR ATTACHMENT
+           ===================================================== */
+
+        removePreview();
+
+
+        /* =====================================================
+           8. REFRESH CURRENT CHAT
+           ===================================================== */
+
+        refreshCurrentChat(false);
+
+
+        /* =====================================================
+           9. UPDATE USER LIST
+           ===================================================== */
+
+        displayUsers();
+
+
+        console.log(
+            "✅ MESSAGE SENT SUCCESSFULLY"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "❌ SEND MESSAGE ERROR:",
+            error
+        );
+
+
+        alert(
+            "Failed to send message:\n\n" +
+            error.message
+        );
+
+    }
+
+    finally {
+
+        if (sendBtn) {
+
+            sendBtn.disabled = false;
+
+        }
+
+    }
+}
+
+
+/* ============================================================
+   14. CREATE + SAVE MESSAGE
+   ============================================================ */
+
+async function createMessage(text, file = null) {
+
+    const message = {
 
         schoolid: currentUser.schoolid,
 
@@ -7376,7 +7974,7 @@ async function sendMessage() {
         to_user: selectedUser,
         to_type: selectedUserType,
 
-        text: text,
+        text: text || "",
 
         type: file ? "media" : "text",
 
@@ -7388,219 +7986,133 @@ async function sendMessage() {
 
     };
 
-    // =========================
-    // TEXT ONLY
-    // =========================
-    if (!file) {
+    // Convert media to Base64 if necessary
+    if (file) {
 
-        const { error } = await supabaseClient
-            .from("chats")
-            .insert([message]);
+        message.media =
+            await readFileAsDataURL(file);
 
-        if (error) {
-            console.error(error);
-            return alert("Failed to send message.");
-        }
+        message.mediatype =
+            file.type;
 
-        input.value = "";
-
-        await displayChat();
-
-scrollChatToBottom();
-
-displayUsers();
-
-        return;
-    }
-
-    // =========================
-    // MEDIA MESSAGE
-    // =========================
-    const reader = new FileReader();
-
-    reader.onload = async function (e) {
-
-        message.media = e.target.result;
-        message.mediatype = file.type;
-        message.filename = file.name;
-
-        const { error } = await supabaseClient
-            .from("chats")
-            .insert([message]);
-
-        if (error) {
-            console.error(error);
-            return alert("Failed to send media.");
-        }
-
-        input.value = "";
-        mediaInput.value = "";
-
-        selectedMediaFile = null;
-
-        displayChat();
-
-    };
-
-    reader.readAsDataURL(file);
-
-}
-
-
-async function displayChat(){
-
-    if(!selectedUser){
-
-        showEmptyConversation();
-        return;
+        message.filename =
+            file.name;
 
     }
 
-    showChatLoading();
+    /*
+       select().single() gives us the database-generated ID.
+       This is useful for double-click/context-menu/delete.
+    */
 
-    const messages = await loadConversation();
-
-    if(messages.length === 0){
-
-        showEmptyConversation();
-        return;
-
-    }
-
-    document.getElementById("chatBox").innerHTML =
-        buildConversation(messages);
-
-    scrollChatToBottom();
-
-}
-
-// ============================================
-// LOAD CONVERSATION
-// ============================================
-async function loadConversation() {
-
-    if (!selectedUser) return [];
-
-    try {
-
-        // =====================================
-        // LOAD ALL MESSAGES
-        // =====================================
-        const { data: chats, error } = await supabaseClient
-            .from("chats")
-            .select("*")
-            .eq("schoolid", currentUser.schoolid)
-            .order("time", { ascending: true });
-
-        if (error) throw error;
-
-        const allChats = chats || [];
-
-        console.log("====================================");
-        console.log("Current User:", currentUser.username, currentUser.role);
-        console.log("Selected User:", selectedUser, selectedUserType);
-        console.log("Chats Loaded:", allChats.length);
-        console.log(allChats);
-
-        // =====================================
-        // MARK DELIVERED
-        // =====================================
+    const { data, error } =
         await supabaseClient
             .from("chats")
-            .update({ delivered: true })
-            .eq("to_user", currentUser.username)
-            .eq("from_user", selectedUser)
-            .eq("to_type", currentUser.role)
-            .eq("from_type", selectedUserType)
-            .eq("delivered", false);
+            .insert([message])
+            .select()
+            .single();
 
-        // =====================================
-        // MARK SEEN
-        // =====================================
-        await supabaseClient
-            .from("chats")
-            .update({ seen: true })
-            .eq("to_user", currentUser.username)
-            .eq("from_user", selectedUser)
-            .eq("to_type", currentUser.role)
-            .eq("from_type", selectedUserType)
-            .eq("seen", false);
+    if (error) {
 
-        // =====================================
-        // FILTER CONVERSATION
-        // =====================================
-        const conversation = allChats.filter(msg => {
+        console.error(
+            "Message insert error:",
+            error
+        );
 
-            const sent =
-
-                String(msg.from_user) === String(currentUser.username) &&
-                String(msg.from_type) === String(currentUser.role) &&
-                String(msg.to_user) === String(selectedUser) &&
-                String(msg.to_type) === String(selectedUserType);
-
-            const received =
-
-                String(msg.from_user) === String(selectedUser) &&
-                String(msg.from_type) === String(selectedUserType) &&
-                String(msg.to_user) === String(currentUser.username) &&
-                String(msg.to_type) === String(currentUser.role);
-
-            console.log(
-                "Message:",
-                msg.id,
-                "| From:", msg.from_user, "(" + msg.from_type + ")",
-                "| To:", msg.to_user, "(" + msg.to_type + ")",
-                "| Sent:", sent,
-                "| Received:", received
-            );
-
-            return sent || received;
-
-        });
-
-        console.log("Conversation Messages:", conversation.length);
-        console.log(conversation);
-
-        return conversation;
-
-    } catch (err) {
-
-        console.error("loadConversation Error:", err);
-        return [];
+        throw error;
 
     }
+
+    return data || message;
 
 }
 
 
-// ============================================
-// BUILD CHAT HTML
-// ============================================
-function buildConversation(messages){
+/* ============================================================
+   15. READ MEDIA FILE
+   ============================================================ */
 
-    let html = "";
+function readFileAsDataURL(file) {
 
-    messages.forEach(msg=>{
+    return new Promise((resolve, reject) => {
 
-        html += renderMessage(msg);
+        const reader =
+            new FileReader();
+
+        reader.onload =
+            event => resolve(event.target.result);
+
+        reader.onerror =
+            error => reject(error);
+
+        reader.readAsDataURL(file);
 
     });
 
-    return html;
+}
+
+
+/* ============================================================
+   16. CLEAR MESSAGE INPUT
+   ============================================================ */
+
+function clearMessageInput() {
+
+    const input =
+        document.getElementById("chatInput");
+
+    const mediaInput =
+        document.getElementById("mediaInput");
+
+    if (input) {
+
+        input.value = "";
+
+    }
+
+    if (mediaInput) {
+
+        mediaInput.value = "";
+
+    }
+
+    selectedMediaFile = null;
+
+    hideMediaPreview();
 
 }
 
 
-function renderMessage(msg){
+/* ============================================================
+   17. BUILD CONVERSATION
+   ============================================================ */
+
+function buildConversation(messages) {
+
+    return messages
+        .map(renderMessage)
+        .join("");
+
+}
+
+
+/* ============================================================
+   18. RENDER MESSAGE
+   ============================================================ */
+
+function renderMessage(msg) {
 
     const mine =
-        msg.from_user === currentUser.username &&
-        msg.from_type === currentUser.role;
+        String(msg.from_user) ===
+            String(currentUser.username) &&
+
+        String(msg.from_type) ===
+            String(currentUser.role);
 
     let body = "";
 
-    // Deleted
-    if(msg.deleted){
+    // DELETED
+    if (msg.deleted) {
 
         body = `
             <div class="deleted-message">
@@ -7608,12 +8120,10 @@ function renderMessage(msg){
             </div>
         `;
 
-    }
+    } else {
 
-    else{
-
-        // Text
-        if(msg.text){
+        // TEXT
+        if (msg.text) {
 
             body += `
                 <div class="message-text">
@@ -7623,39 +8133,52 @@ function renderMessage(msg){
 
         }
 
-        // Image
-        if(msg.mediatype?.startsWith("image/")){
+        // IMAGE
+        if (
+            msg.media &&
+            msg.mediatype?.startsWith("image/")
+        ) {
 
             body += `
                 <img
-                    src="${msg.media}"
-                    class="chat-image">
+                    src="${escapeAttribute(msg.media)}"
+                    class="chat-image"
+                    alt="${escapeAttribute(msg.filename || "Image")}"
+                >
             `;
 
         }
 
-        // Video
-        else if(msg.mediatype?.startsWith("video/")){
+        // VIDEO
+        else if (
+            msg.media &&
+            msg.mediatype?.startsWith("video/")
+        ) {
 
             body += `
-                <video controls class="chat-video">
-                    <source src="${msg.media}">
+                <video
+                    controls
+                    class="chat-video"
+                >
+                    <source
+                        src="${escapeAttribute(msg.media)}"
+                        type="${escapeAttribute(msg.mediatype)}"
+                    >
                 </video>
             `;
 
         }
 
-        // File
-        else if(msg.media){
+        // OTHER FILE
+        else if (msg.media) {
 
             body += `
                 <a
-                    href="${msg.media}"
-                    download="${msg.filename}"
-                    class="chat-file">
-
-                    📄 ${msg.filename}
-
+                    href="${escapeAttribute(msg.media)}"
+                    download="${escapeAttribute(msg.filename || "file")}"
+                    class="chat-file"
+                >
+                    📄 ${escapeHTML(msg.filename || "File")}
                 </a>
             `;
 
@@ -7663,163 +8186,502 @@ function renderMessage(msg){
 
     }
 
+    const id =
+        msg.id ?? "";
+
     return `
+        <div
+            class="message ${mine ? "mine" : "theirs"}"
+            ondblclick="selectMessage('${escapeJS(id)}')"
+            oncontextmenu="
+                showContextMenu(event,'${escapeJS(id)}');
+                return false;
+            "
+        >
 
-<div class="message ${mine ? "mine":"theirs"}"
+            <div class="bubble">
 
-    ondblclick="selectMessage(${msg.id})"
+                ${body}
 
-    oncontextmenu="
-        showContextMenu(event,${msg.id});
-        return false;
-    ">
+                <div class="message-time">
 
-    <div class="bubble">
+                    ${formatTime(msg.time)}
 
-        ${body}
+                    ${mine ? getTicks(msg) : ""}
 
-        <div class="message-time">
+                </div>
 
-            ${formatTime(msg.time)}
-
-            ${mine ? getTicks(msg) : ""}
-
-        </div>
-
-    </div>
-
-</div>
-
-`;
-
-}
-
-
-function escapeHTML(text){
-
-    if(!text) return "";
-
-    return text
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-
-}
-
-function formatTime(time){
-
-    return new Date(time).toLocaleTimeString([],{
-
-        hour:"2-digit",
-        minute:"2-digit"
-
-    });
-
-}
-
-function scrollChatToBottom(){
-
-    const chatBox = document.getElementById("chatBox");
-
-    requestAnimationFrame(()=>{
-
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-    });
-
-}
-
-
-
-function showChatLoading(){
-
-    document.getElementById("chatBox").innerHTML = `
-
-        <div class="chat-loading">
-
-            Loading conversation...
+            </div>
 
         </div>
-
     `;
 
 }
 
 
-function showEmptyConversation(){
+/* ============================================================
+   19. MESSAGE STATUS / TICKS
+   ============================================================ */
 
-    document.getElementById("chatBox").innerHTML = `
+function getTicks(msg) {
 
-        <div class="empty-chat">
+    if (msg.seen) {
 
-            No messages yet
+        return `
+            <span style="color:#53bdeb">
+                ✓✓
+            </span>
+        `;
 
-        </div>
+    }
 
+    if (msg.delivered) {
+
+        return `
+            <span style="color:#8696a0">
+                ✓✓
+            </span>
+        `;
+
+    }
+
+    return `
+        <span style="color:#8696a0">
+            ✓
+        </span>
     `;
 
 }
 
 
-// Select Message
+/* ============================================================
+   20. MARK CONVERSATION SEEN
+   ============================================================ */
+
+async function markConversationSeen() {
+
+    if (!selectedUser || !currentUser) return;
+
+    try {
+
+        await Promise.all([
+
+            supabaseClient
+                .from("chats")
+                .update({
+                    delivered: true
+                })
+                .eq("schoolid", currentUser.schoolid)
+                .eq("to_user", currentUser.username)
+                .eq("from_user", selectedUser)
+                .eq("to_type", currentUser.role)
+                .eq("from_type", selectedUserType)
+                .eq("delivered", false),
+
+            supabaseClient
+                .from("chats")
+                .update({
+                    seen: true
+                })
+                .eq("schoolid", currentUser.schoolid)
+                .eq("to_user", currentUser.username)
+                .eq("from_user", selectedUser)
+                .eq("to_type", currentUser.role)
+                .eq("from_type", selectedUserType)
+                .eq("seen", false)
+
+        ]);
+
+        // Keep local cache status synchronized
+        chatCache = chatCache.map(msg => {
+
+            const isIncoming =
+                String(msg.from_user) ===
+                    String(selectedUser) &&
+
+                String(msg.from_type) ===
+                    String(selectedUserType) &&
+
+                String(msg.to_user) ===
+                    String(currentUser.username) &&
+
+                String(msg.to_type) ===
+                    String(currentUser.role);
+
+            if (!isIncoming) return msg;
+
+            return {
+                ...msg,
+                delivered: true,
+                seen: true
+            };
+
+        });
+
+        refreshCurrentChat(false);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to update message status:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   MEDIA PREVIEW
+   ============================================================ */
+/* ============================================================
+   MEDIA PREVIEW
+   ============================================================ */
+
+function previewMedia(event) {
+
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    console.log("Selected file:", file);
+
+
+    // Store file for sendMessage()
+    selectedMediaFile = file;
+
+
+    // Existing HTML IDs
+    const container =
+        document.getElementById("previewContainer");
+
+    const preview =
+        document.getElementById("previewContent");
+
+
+    if (!container || !preview) {
+
+        console.error(
+            "Media preview elements not found."
+        );
+
+        return;
+    }
+
+
+    // Remove previous preview URL
+    if (window.currentMediaPreviewUrl) {
+
+        URL.revokeObjectURL(
+            window.currentMediaPreviewUrl
+        );
+
+    }
+
+
+    // Create temporary browser URL
+    const previewUrl =
+        URL.createObjectURL(file);
+
+    window.currentMediaPreviewUrl =
+        previewUrl;
+
+
+    let html = "";
+
+
+    // ========================================================
+    // IMAGE
+    // ========================================================
+
+    if (file.type.startsWith("image/")) {
+
+        html = `
+            <div class="media-preview-item">
+
+                <img
+                    src="${escapeAttribute(previewUrl)}"
+                    alt="Selected image"
+                    class="media-preview-image">
+
+                <div class="media-preview-name">
+                    ${escapeHTML(file.name)}
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    // ========================================================
+    // VIDEO
+    // ========================================================
+
+    else if (file.type.startsWith("video/")) {
+
+        html = `
+            <div class="media-preview-item">
+
+                <video
+                    controls
+                    class="media-preview-video">
+
+                    <source
+                        src="${escapeAttribute(previewUrl)}"
+                        type="${escapeAttribute(file.type)}">
+
+                </video>
+
+                <div class="media-preview-name">
+                    ${escapeHTML(file.name)}
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    // ========================================================
+    // PDF
+    // ========================================================
+
+    else if (
+        file.type === "application/pdf"
+    ) {
+
+        html = `
+            <div class="media-preview-file">
+
+                <i class="fas fa-file-pdf"></i>
+
+                <span>
+                    ${escapeHTML(file.name)}
+                </span>
+
+            </div>
+        `;
+    }
+
+
+    // ========================================================
+    // OTHER DOCUMENTS
+    // ========================================================
+
+    else {
+
+        html = `
+            <div class="media-preview-file">
+
+                <i class="fas fa-file"></i>
+
+                <span>
+                    ${escapeHTML(file.name)}
+                </span>
+
+            </div>
+        `;
+    }
+
+
+    // Put preview into existing container
+    preview.innerHTML = html;
+
+    container.style.display = "flex";
+
+
+    console.log(
+        "Media preview displayed successfully."
+    );
+}
+
+
+function removePreview() {
+
+    selectedMediaFile = null;
+
+
+    const mediaInput =
+        document.getElementById("mediaInput");
+
+    if (mediaInput) {
+
+        mediaInput.value = "";
+
+    }
+
+
+    if (window.currentMediaPreviewUrl) {
+
+        URL.revokeObjectURL(
+            window.currentMediaPreviewUrl
+        );
+
+        window.currentMediaPreviewUrl = null;
+
+    }
+
+
+    const container =
+        document.getElementById("previewContainer");
+
+    const preview =
+        document.getElementById("previewContent");
+
+
+    if (preview) {
+
+        preview.innerHTML = "";
+
+    }
+
+
+    if (container) {
+
+        container.style.display = "none";
+
+    }
+
+}
+
+/* ============================================================
+   HIDE MEDIA PREVIEW
+   ============================================================ */
+
+function hideMediaPreview() {
+
+    const container =
+        document.getElementById("mediaPreview");
+
+    const preview =
+        document.getElementById("previewContent");
+
+
+    if (preview) {
+
+        preview.innerHTML = "";
+
+    }
+
+
+    if (container) {
+
+        container.style.display = "none";
+
+        container.classList.remove("active");
+
+    }
+}
+
+
+/* ============================================================
+   22. MESSAGE SELECTION / CONTEXT MENU
+   ============================================================ */
+
 function selectMessage(messageId) {
 
     selectedMessageId = messageId;
 
-    const menu = document.getElementById("messageActions");
+    const menu =
+        document.getElementById("messageActions");
 
     if (menu) {
+
         menu.style.display = "block";
+
     }
+
 }
 
-// Clear Selection
+
+function showContextMenu(event, messageId) {
+
+    event.preventDefault();
+
+    selectedMessageId = messageId;
+
+    const menu =
+        document.getElementById("contextMenu");
+
+    if (!menu) return;
+
+    menu.style.left =
+        `${event.pageX}px`;
+
+    menu.style.top =
+        `${event.pageY}px`;
+
+    menu.style.display = "block";
+
+}
+
+
 function clearSelection() {
 
     selectedMessageId = null;
 
-    const menu = document.getElementById("messageActions");
+    const actions =
+        document.getElementById("messageActions");
 
-    if (menu) {
-        menu.style.display = "none";
+    const context =
+        document.getElementById("contextMenu");
+
+    if (actions) {
+
+        actions.style.display = "none";
+
     }
 
-    const contextMenu = document.getElementById("contextMenu");
+    if (context) {
 
-    if (contextMenu) {
-        contextMenu.style.display = "none";
+        context.style.display = "none";
+
     }
 
 }
 
-// Delete Message
+
+function closeChatMenus() {
+
+    clearSelection();
+
+}
+
+
+/* ============================================================
+   23. DELETE MESSAGE
+   ============================================================ */
+
 async function deleteSelectedMessage() {
 
     if (!selectedMessageId) return;
 
-    const confirmDelete = confirm(
-        "Delete this message?"
-    );
+    if (!confirm("Delete this message?")) {
 
-    if (!confirmDelete) return;
+        return;
+
+    }
 
     try {
 
-        // Get message
-        const { data: msg, error: fetchError } =
-            await supabaseClient
-                .from("chats")
-                .select("*")
-                .eq("id", selectedMessageId)
-                .single();
+        const {
+            data: message,
+            error: fetchError
+        } = await supabaseClient
+            .from("chats")
+            .select("*")
+            .eq("id", selectedMessageId)
+            .single();
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
 
-        if (msg.deleted) {
+            throw fetchError;
 
-            // Permanently delete
+        }
+
+        // SECOND DELETE = PERMANENT
+        if (message.deleted) {
+
             const { error } =
                 await supabaseClient
                     .from("chats")
@@ -7828,321 +8690,788 @@ async function deleteSelectedMessage() {
 
             if (error) throw error;
 
-        } else {
+            chatCache =
+                chatCache.filter(msg =>
+                    String(msg.id) !==
+                    String(selectedMessageId)
+                );
 
-            // Soft delete
+        }
+
+        // FIRST DELETE = SOFT DELETE
+        else {
+
+            const deletedData = {
+
+                text: "This message was deleted.",
+
+                media: null,
+
+                filename: null,
+
+                mediatype: null,
+
+                deleted: true
+
+            };
+
             const { error } =
                 await supabaseClient
                     .from("chats")
-                    .update({
-
-                        text: "This message was deleted.",
-
-                        media: null,
-
-                        filename: null,
-
-                        mediatype: null,
-
-                        deleted: true
-
-                    })
+                    .update(deletedData)
                     .eq("id", selectedMessageId);
 
             if (error) throw error;
+
+            chatCache =
+                chatCache.map(msg => {
+
+                    if (
+                        String(msg.id) !==
+                        String(selectedMessageId)
+                    ) {
+
+                        return msg;
+
+                    }
+
+                    return {
+                        ...msg,
+                        ...deletedData
+                    };
+
+                });
 
         }
 
         clearSelection();
 
-        await displayChat();
+        refreshCurrentChat();
 
-    } catch (err) {
+    } catch (error) {
 
-        console.error("Delete failed:", err);
-
-        alert("Unable to delete the message.");
-
-    }
-
-}
-async function updateOnlineStatus(){
-
-    const { error } = await supabaseClient
-        .from("users")
-        .update({
-            lastSeen: Date.now()
-        })
-        .eq("username", currentUser.username);
-
-    if(error){
-        console.error("Error updating online status:", error);
-    }
-}
-
-document.getElementById("mediaInput")
-.addEventListener("change", previewMedia);
-
-
-function previewMedia(e){
-
-    let file = e.target.files[0];
-
-    if(!file) return;
-
-    selectedMediaFile = file;
-
-    let reader = new FileReader();
-
-    reader.onload = function(event){
-
-        let preview =
-            document.getElementById("previewContent");
-
-        let html = "";
-
-        // IMAGE
-        if(file.type.startsWith("image/")){
-
-            html = `
-                <img src="${event.target.result}">
-            `;
-        }
-
-        // VIDEO
-        else if(file.type.startsWith("video/")){
-
-            html = `
-                <video controls>
-                    <source src="${event.target.result}">
-                </video>
-            `;
-        }
-
-        // OTHER FILES
-        else {
-
-            html = `
-                <div class="preview-file">
-                    📄 ${file.name}
-                </div>
-            `;
-        }
-
-        preview.innerHTML = html;
-
-        document.getElementById("mediaPreview")
-            .style.display = "block";
-    };
-
-    reader.readAsDataURL(file);
-}
-
-function removePreview(){
-
-    selectedMediaFile = null;
-
-    document.getElementById("mediaInput").value = "";
-
-    document.getElementById("mediaPreview")
-        .style.display = "none";
-
-    document.getElementById("previewContent")
-        .innerHTML = "";
-}
-
-function updateUnreadCounts(){
-
-    users.forEach(u=>{
-
-        let count = messages.filter(m =>
-            m.receiver === currentUser.username &&
-            m.sender === u.username &&
-            !m.seen
-        ).length;
-
-        let badge = document.getElementById(
-            "unread_" + u.username
+        console.error(
+            "Delete failed:",
+            error
         );
 
-        if(badge){
+        alert(
+            "Unable to delete the message."
+        );
 
-            badge.innerText = count;
+    }
 
-            badge.style.display =
-                count > 0 ? "flex" : "none";
-        }
-    });
 }
 
 
-let typingTimeout;
+/* ============================================================
+   24. ONLINE STATUS
+   ============================================================ */
 
-document.getElementById("chatInput")
-.addEventListener("input", async () => {
+async function updateOnlineStatus() {
 
-    await supabaseClient
-        .from("typing_status")
-        .upsert({
-            username: currentUser.username,
-            is_typing: true,
-            updated_at: new Date()
-        });
+    if (!currentUser) return;
 
-    clearTimeout(typingTimeout);
+    const { error } =
+        await supabaseClient
+            .from("users")
+            .update({
+                lastSeen: Date.now()
+            })
+            .eq(
+                "username",
+                currentUser.username
+            );
 
-    typingTimeout = setTimeout(async () => {
+    if (error) {
 
+        console.error(
+            "Error updating online status:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   25. TYPING STATUS
+   ============================================================ */
+
+let typingTimeout = null;
+
+async function setTypingStatus(isTyping) {
+
+    if (!currentUser) return;
+
+    const { error } =
         await supabaseClient
             .from("typing_status")
             .upsert({
                 username: currentUser.username,
-                is_typing: false,
+                is_typing: isTyping,
                 updated_at: new Date()
             });
 
-    }, 1500);
+    if (error) {
 
-});
+        console.error(
+            "Typing status error:",
+            error
+        );
 
-supabaseClient.channel("typing-status")
-.on(
-    "postgres_changes",
-    {
-        event: "*",
-        schema: "public",
-        table: "typing_status"
-    },
-    (payload) => {
+    }
 
-        if (
-            selectedUser &&
-            payload.new.username === selectedUser.username
-        ) {
+}
 
-            document.getElementById(
-                "typingIndicator"
-            ).innerText =
-                payload.new.is_typing
-                ? selectedUser.firstname + " is typing..."
-                : "";
+
+function handleTyping() {
+
+    clearTimeout(typingTimeout);
+
+    setTypingStatus(true);
+
+    typingTimeout =
+        setTimeout(() => {
+
+            setTypingStatus(false);
+
+        }, 1500);
+
+}
+
+
+/* ============================================================
+   26. REALTIME CHAT UPDATE
+   ============================================================ */
+
+function handleRealtimeChat(payload) {
+
+    const message = payload.new || payload.old;
+
+    if (!message) return;
+
+    console.log("REALTIME CHAT:", message);
+
+    // ==========================================
+    // SCHOOL CHECK
+    // ==========================================
+
+    if (
+        currentUser &&
+        message.schoolid &&
+        String(message.schoolid) !==
+        String(currentUser.schoolid)
+    ) {
+        return;
+    }
+
+
+    // ==========================================
+    // INSERT
+    // ==========================================
+
+    if (payload.eventType === "INSERT") {
+
+        // Prevent duplicate
+        const exists = chatCache.some(msg =>
+            String(msg.id) === String(message.id)
+        );
+
+        if (!exists) {
+            chatCache.push(message);
         }
 
-    }
-)
-.subscribe();
 
-function getTicks(msg){
+        // ======================================
+        // IS THIS THE CURRENT CONVERSATION?
+        // ======================================
 
-    if(msg.seen){
-        return `
-            <span style="color:#53bdeb">
-                ✓✓
-            </span>
-        `;
-    }
+        const isCurrentChat =
+            isMessageInCurrentConversation(message);
 
-    if(msg.delivered){
-        return `
-            <span style="color:#8696a0">
-                ✓✓
-            </span>
-        `;
-    }
+        console.log("Current chat?", isCurrentChat);
 
-    return `
-        <span style="color:#8696a0">
-            ✓
-        </span>
-    `;
-}
+        console.log("Current user:", {
+            id: currentUser.username,
+            type: currentUser.role
+        });
 
-async function test(){
+        console.log("Selected user:", {
+            id: selectedUser,
+            type: selectedUserType
+        });
 
-    const { data } =
-    await supabaseClient.from("users").select("*");
+        console.log("Message:", {
+            from_user: message.from_user,
+            from_type: message.from_type,
+            to_user: message.to_user,
+            to_type: message.to_type
+        });
 
-}
-supabaseClient
-.channel("chat-room")
-.on(
-    "postgres_changes",
-    {
-        event: "*",
-        schema: "public",
-        table: "chats"
-    },
-    () => {
 
-        displayChat();
+        if (isCurrentChat) {
+
+            refreshCurrentChat();
+
+        }
+
+
+        // ======================================
+        // UPDATE SIDEBAR
+        // ======================================
+
         displayUsers();
 
+        updateUnreadCounts();
+
+        return;
     }
-)
-.subscribe();
-
-function showContextMenu(e,messageId){
-
-    e.preventDefault();
-
-    selectedMessageId = messageId;
-
-    let menu =
-        document.getElementById("contextMenu");
-
-    menu.style.left = e.pageX + "px";
-    menu.style.top = e.pageY + "px";
-
-    menu.style.display = "block";
-	
-	document.addEventListener("click", () => {
-
-    document.getElementById("contextMenu")
-        .style.display = "none";
-
-});
-}
-
-function replyMessage(){
-
-    alert("Reply feature coming soon");
-
-}
-
-function forwardMessage(){
-
-    alert("Forward feature coming soon");
-
-}
 
 
-function setupMobileChat(){
+    // ==========================================
+    // UPDATE
+    // ==========================================
 
-    if(window.innerWidth <= 768){
+    if (payload.eventType === "UPDATE") {
 
-        document.getElementById("usersPanel")
-            .style.display = "block";
+        chatCache = chatCache.map(msg =>
+            String(msg.id) === String(message.id)
+                ? message
+                : msg
+        );
 
-        document.getElementById("conversationPanel")
-            .style.display = "none";
+        if (
+            isMessageInCurrentConversation(message)
+        ) {
+
+            refreshCurrentChat(false);
+
+        }
+
+        return;
+    }
+
+
+    // ==========================================
+    // DELETE
+    // ==========================================
+
+    if (payload.eventType === "DELETE") {
+
+        chatCache = chatCache.filter(msg =>
+            String(msg.id) !== String(message.id)
+        );
+
+        refreshCurrentChat(false);
+
+        displayUsers();
+
+        return;
     }
 
 }
 
-function backToUsers(){
-	 
 
-    if(window.innerWidth <= 768){
+function isMessageInCurrentConversation(message) {
 
-        document.getElementById("usersPanel")
-            .style.display = "block";
+    if (
+        !message ||
+        !currentUser ||
+        !selectedUser
+    ) {
+        return false;
+    }
 
-        document.getElementById("conversationPanel")
-            .style.display = "none";
+    const myId =
+        String(currentUser.username);
+
+    const otherId =
+        String(selectedUser);
+
+    const from =
+        String(message.from_user);
+
+    const to =
+        String(message.to_user);
+
+    const sent =
+        from === myId &&
+        to === otherId;
+
+    const received =
+        from === otherId &&
+        to === myId;
+
+    console.log("CHAT MATCH:", {
+        sent,
+        received,
+        from,
+        to,
+        myId,
+        otherId
+    });
+
+    return sent || received;
+
+}
+
+
+/* ============================================================
+   27. TYPING REALTIME
+   ============================================================ */
+
+function handleRealtimeTyping(payload) {
+
+    if (!currentUser || !selectedUser) return;
+
+    const typingUser =
+        payload.new?.username;
+
+    // Only respond when the selected person
+    // is the one who is typing.
+    if (
+        String(typingUser) !==
+        String(selectedUser)
+    ) {
+        return;
+    }
+
+    const indicator =
+        document.getElementById("typingIndicator");
+
+    if (!indicator) return;
+
+
+    // ==========================================
+    // FIND THE PERSON
+    // ==========================================
+
+    let person =
+        getChatContact(
+            selectedUser,
+            selectedUserType
+        );
+
+
+    // If getChatContact() does not find the
+    // person because of type differences,
+    // search the users array directly.
+    if (!person && typeof users !== "undefined") {
+
+        person = users.find(user =>
+            String(user.username) ===
+            String(selectedUser)
+        );
+
+    }
+
+
+    // ==========================================
+    // GET NAME
+    // ==========================================
+
+    let name = "User";
+
+    if (person) {
+
+        name =
+            `${person.firstname || ""} ${person.surname || ""}`
+                .trim();
+
+    }
+
+
+    // ==========================================
+    // SHOW / HIDE TYPING
+    // ==========================================
+
+    if (payload.new?.is_typing) {
+
+        indicator.innerText =
+            `${name} is typing...`;
+
+        indicator.style.display = "block";
+
+    } else {
+
+        indicator.innerText = "";
+
+        indicator.style.display = "none";
 
     }
 
 }
+
+
+/* ============================================================
+   28. MOBILE CHAT
+   ============================================================ */
+
+function updateMobileChatView(openConversation) {
+
+    const usersPanel =
+        document.getElementById("usersPanel");
+
+    const conversationPanel =
+        document.getElementById("conversationPanel");
+
+    if (!usersPanel || !conversationPanel) return;
+
+    if (window.innerWidth <= 768) {
+
+        if (openConversation) {
+
+            usersPanel.style.display = "none";
+            conversationPanel.style.display = "flex";
+
+        } else {
+
+            usersPanel.style.display = "block";
+            conversationPanel.style.display = "none";
+
+        }
+
+    } else {
+
+        usersPanel.style.display = "flex";
+        conversationPanel.style.display = "flex";
+
+    }
+
+}
+
+
+function setupMobileChat() {
+
+    updateMobileChatView(false);
+
+}
+
+
+function backToUsers() {
+
+    updateMobileChatView(false);
+
+}
+
+
+/* ============================================================
+   29. CHAT UI HELPERS
+   ============================================================ */
+
+function scrollChatToBottom() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    requestAnimationFrame(() => {
+
+        chatBox.scrollTop =
+            chatBox.scrollHeight;
+
+    });
+
+}
+
+
+function showChatLoading() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    chatBox.innerHTML = `
+        <div class="chat-loading">
+            Loading conversation...
+        </div>
+    `;
+
+}
+
+
+function showEmptyConversation() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    chatBox.innerHTML = `
+        <div class="empty-chat">
+            No messages yet
+        </div>
+    `;
+
+}
+
+
+function showChatError() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    chatBox.innerHTML = `
+        <div class="empty-chat">
+            Failed to load conversation.
+        </div>
+    `;
+
+}
+
+
+/* ============================================================
+   30. GENERAL UTILITIES
+   ============================================================ */
+
+function escapeHTML(value) {
+
+    if (value === null || value === undefined) {
+
+        return "";
+
+    }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+function escapeAttribute(value) {
+
+    return escapeHTML(value);
+
+}
+
+
+function escapeJS(value) {
+
+    return String(value ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\r/g, "\\r")
+        .replace(/\n/g, "\\n");
+
+}
+
+
+function formatTime(time) {
+
+    return new Date(time)
+        .toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+
+}
+
+
+/* ============================================================
+   31. UNREAD COUNTS
+   ============================================================ */
+
+function updateUnreadCounts() {
+
+    if (!currentUser) return;
+
+    const unread = {};
+
+    (chatCache || []).forEach(message => {
+
+        const isIncoming =
+            String(message.to_user) ===
+                String(currentUser.username) &&
+
+            String(message.to_type) ===
+                String(currentUser.role) &&
+
+            !message.seen;
+
+        if (!isIncoming) return;
+
+        const key =
+            `${message.from_type}_${message.from_user}`;
+
+        unread[key] =
+            (unread[key] || 0) + 1;
+
+    });
+
+    document
+        .querySelectorAll("[id^='unread_']")
+        .forEach(badge => {
+
+            const id =
+                badge.id.replace("unread_", "");
+
+            const count =
+                unread[`user_${id}`] ||
+                unread[`student_${id}`] ||
+                0;
+
+            badge.innerText = count;
+
+            badge.style.display =
+                count > 0
+                    ? "flex"
+                    : "none";
+
+        });
+
+}
+
+
+/* ============================================================
+   32. REPLY / FORWARD
+   ============================================================ */
+
+function replyMessage() {
+
+    alert(
+        "Reply feature coming soon"
+    );
+
+}
+
+
+function forwardMessage() {
+
+    alert(
+        "Forward feature coming soon"
+    );
+
+}
+
+
+/* ============================================================
+   33. EVENT LISTENERS
+   ============================================================ */
+
+const mediaInput =
+    document.getElementById("mediaInput");
+
+if (mediaInput) {
+
+    mediaInput.addEventListener(
+        "change",
+        previewMedia
+    );
+
+}
+
+
+const chatInput =
+    document.getElementById("chatInput");
+
+if (chatInput) {
+
+    chatInput.addEventListener(
+        "input",
+        handleTyping
+    );
+
+}
+
+
+/* ============================================================
+   34. REALTIME CHANNELS
+   ============================================================ */
+
+/*
+   CHAT REALTIME
+   ------------------------------------------------------------
+   IMPORTANT:
+   We no longer call displayChat() every time Supabase
+   sends an event.
+
+   The realtime event updates chatCache instead.
+*/
+
+if (supabaseClient) {
+
+    supabaseClient
+        .channel("chat-room")
+
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "chats"
+            },
+            handleRealtimeChat
+        )
+
+        .subscribe();
+
+
+    /*
+       TYPING REALTIME
+    */
+
+    supabaseClient
+        .channel("typing-status")
+
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "typing_status"
+            },
+            handleRealtimeTyping
+        )
+
+        .subscribe();
+
+}
+
+
+/* ============================================================
+   35. INITIAL CHAT SETUP
+   ============================================================ */
+
+async function initializeChat() {
+
+    try {
+
+        await preloadChats();
+
+        loadChatContacts();
+
+        displayUsers();
+
+        updateUnreadCounts();
+
+        setupMobileChat();
+
+    } catch (error) {
+
+        console.error(
+            "Chat initialization failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   END CHAT SYSTEM
+   ============================================================ */
 
 
 function openChatPage(){
@@ -8210,6 +9539,22 @@ function toggleProfileMenu(){
     }
 }
 
+
+function toggleSchoolMenu(){
+
+    let menu =
+        document.getElementById("SchoolMenu");
+
+    if(menu.style.display === "block"){
+
+        menu.style.display = "none";
+
+    }else{
+
+        menu.style.display = "block";
+    }
+}
+
 async function toggleTheme() {
 
     // Toggle theme visually
@@ -8255,4 +9600,2741 @@ async function toggleTheme() {
 
 function openWhatsApp() {
     window.open("https://wa.me/233599581301", "_blank");
+}
+
+
+
+
+
+function setupSchoolPages(){
+
+    const role = currentUser?.role;
+
+    const teacherHomework =
+        document.getElementById("teacherHomeworkArea");
+
+    const studentHomework =
+        document.getElementById("studentHomeworkArea");
+
+    const adminFees =
+        document.getElementById("adminFeesArea");
+
+    const studentFees =
+        document.getElementById("studentFeesArea");
+
+    const teacherNotice =
+        document.getElementById("teacherNoticeArea");
+
+    const studentNotice =
+        document.getElementById("studentNoticeArea");
+
+
+    // Hide everything first
+    [
+        teacherHomework,
+        studentHomework,
+        adminFees,
+        studentFees,
+        teacherNotice,
+        studentNotice
+    ].forEach(el => {
+
+        if(el){
+            el.style.display = "none";
+        }
+
+    });
+
+
+    // ==============================
+    // ADMIN / TEACHER
+    // ==============================
+
+    if(
+        role === "admin" ||
+        role === "teacher"
+    ){
+
+        if(teacherHomework)
+            teacherHomework.style.display = "block";
+
+        if(adminFees)
+            adminFees.style.display = "block";
+
+        if(teacherNotice)
+            teacherNotice.style.display = "block";
+
+    }
+
+}
+
+
+
+
+/* Show selected attachment name */
+    const homeworkAttachmentInput =
+        document.getElementById("homeworkAttachment");
+
+    if (homeworkAttachmentInput) {
+
+        homeworkAttachmentInput.addEventListener("change", function () {
+
+            const file = this.files[0];
+
+            const fileName =
+                document.getElementById("homeworkFileName");
+
+            if (!file) {
+
+                fileName.style.display = "none";
+
+                fileName.innerHTML = "";
+
+                return;
+            }
+
+            fileName.style.display = "block";
+
+            fileName.innerHTML = `
+                <i class="fas fa-paperclip"></i>
+                ${file.name}
+            `;
+
+        });
+
+    }
+
+
+    /* Clear homework form */
+    function clearHomeworkForm() {
+
+        const fields = [
+            "homeworkClass",
+            "homeworkSubject",
+            "homeworkTitle",
+            "homeworkDescription",
+            "homeworkDate",
+            "homeworkDeadline",
+            "homeworkAttachment"
+        ];
+
+        fields.forEach(function(id) {
+
+            const element =
+                document.getElementById(id);
+
+            if (!element) return;
+
+            if (element.type === "file") {
+
+                element.value = "";
+
+            } else {
+
+                element.value = "";
+
+            }
+
+        });
+
+
+        const fileName =
+            document.getElementById("homeworkFileName");
+
+        if (fileName) {
+
+            fileName.style.display = "none";
+
+            fileName.innerHTML = "";
+
+        }
+
+    }
+	
+	
+	
+	
+	
+	/* =========================================================
+   FEES MANAGEMENT
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   CALCULATE TOTAL FEE
+--------------------------------------------------------- */
+
+function calculateFeeTotal() {
+
+    const tuition =
+        parseFloat(
+            document.getElementById("feeTuition")?.value
+        ) || 0;
+
+    const books =
+        parseFloat(
+            document.getElementById("feeBooks")?.value
+        ) || 0;
+
+    const ict =
+        parseFloat(
+            document.getElementById("feeICT")?.value
+        ) || 0;
+
+    const other =
+        parseFloat(
+            document.getElementById("feeOther")?.value
+        ) || 0;
+
+
+    const total =
+        tuition +
+        books +
+        ict +
+        other;
+
+
+    const preview =
+        document.getElementById("feeTotalPreview");
+
+
+    if (preview) {
+
+        preview.textContent =
+            "GHS " +
+            total.toLocaleString(
+                "en-GH",
+                {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }
+            );
+
+    }
+
+
+    return total;
+}
+
+
+/* ---------------------------------------------------------
+   FEE INPUT LISTENERS
+--------------------------------------------------------- */
+
+function initFeeCalculations() {
+
+    const fields = [
+        "feeTuition",
+        "feeBooks",
+        "feeICT",
+        "feeOther"
+    ];
+
+
+    fields.forEach(function(id) {
+
+        const input =
+            document.getElementById(id);
+
+        if (!input) return;
+
+
+        input.addEventListener(
+            "input",
+            calculateFeeTotal
+        );
+
+    });
+
+}
+
+
+/* ---------------------------------------------------------
+   CLEAR FEE FORM
+--------------------------------------------------------- */
+
+function clearFeeForm() {
+
+    const fields = [
+        "feeStudent",
+        "feeTerm",
+        "feeDueDate",
+        "feeTuition",
+        "feeBooks",
+        "feeICT",
+        "feeOther",
+        "feeNotes"
+    ];
+
+
+    fields.forEach(function(id) {
+
+        const element =
+            document.getElementById(id);
+
+        if (!element) return;
+
+
+        if (id === "feeTerm") {
+
+            element.value = "term1";
+
+        } else {
+
+            element.value = "";
+
+        }
+
+    });
+
+
+    calculateFeeTotal();
+
+}
+
+
+/* ---------------------------------------------------------
+   FORMAT GHANA CURRENCY
+--------------------------------------------------------- */
+
+function formatGHS(amount) {
+
+    amount =
+        parseFloat(amount) || 0;
+
+
+    return (
+        "GHS " +
+        amount.toLocaleString(
+            "en-GH",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        )
+    );
+
+}
+
+
+/* ---------------------------------------------------------
+   INITIALIZE FEES PAGE
+--------------------------------------------------------- */
+
+function initializeFeesPage() {
+
+    initFeeCalculations();
+
+    calculateFeeTotal();
+
+}
+
+
+/* ---------------------------------------------------------
+   FEE PAGE INITIALIZATION
+--------------------------------------------------------- */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        initializeFeesPage();
+
+    }
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   NOTICES MANAGEMENT
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   CHARACTER COUNTER
+--------------------------------------------------------- */
+
+function initNoticeCharacterCounter() {
+
+    const message =
+        document.getElementById("noticeMessage");
+
+    const counter =
+        document.getElementById("noticeCharacterCount");
+
+    if (!message || !counter) return;
+
+
+    function updateCounter() {
+
+        counter.textContent =
+            message.value.length;
+
+    }
+
+
+    message.addEventListener(
+        "input",
+        updateCounter
+    );
+
+
+    updateCounter();
+
+}
+
+
+/* ---------------------------------------------------------
+   PRIORITY PREVIEW
+--------------------------------------------------------- */
+
+function initNoticePriorityPreview() {
+
+    const priority =
+        document.getElementById("noticePriority");
+
+    const preview =
+        document.getElementById("noticePriorityPreview");
+
+    if (!priority || !preview) return;
+
+
+    function updatePreview() {
+
+        const value =
+            priority.value || "normal";
+
+
+        preview.className =
+            "notice-priority-preview " + value;
+
+
+        const icon =
+            preview.querySelector(
+                ".notice-preview-icon i"
+            );
+
+        const title =
+            preview.querySelector(
+                "strong"
+            );
+
+        const message =
+            preview.querySelector(
+                "p"
+            );
+
+
+        if (value === "urgent") {
+
+            if (icon)
+                icon.className =
+                    "fas fa-triangle-exclamation";
+
+            if (title)
+                title.textContent =
+                    "Urgent Notice";
+
+            if (message)
+                message.textContent =
+                    "This announcement will be highlighted as an urgent school notice.";
+
+        }
+
+        else if (value === "important") {
+
+            if (icon)
+                icon.className =
+                    "fas fa-exclamation";
+
+            if (title)
+                title.textContent =
+                    "Important Notice";
+
+            if (message)
+                message.textContent =
+                    "This announcement will be highlighted as an important school notice.";
+
+        }
+
+        else {
+
+            if (icon)
+                icon.className =
+                    "fas fa-info";
+
+            if (title)
+                title.textContent =
+                    "Normal Notice";
+
+            if (message)
+                message.textContent =
+                    "This announcement will be displayed as a regular school notice.";
+
+        }
+
+    }
+
+
+    priority.addEventListener(
+        "change",
+        updatePreview
+    );
+
+
+    updatePreview();
+
+}
+
+
+/* ---------------------------------------------------------
+   CLEAR NOTICE FORM
+--------------------------------------------------------- */
+
+function clearNoticeForm() {
+
+    const title =
+        document.getElementById("noticeTitle");
+
+    const message =
+        document.getElementById("noticeMessage");
+
+    const date =
+        document.getElementById("noticeDate");
+
+    const priority =
+        document.getElementById("noticePriority");
+
+
+    if (title)
+        title.value = "";
+
+
+    if (message)
+        message.value = "";
+
+
+    if (date)
+        date.value = "";
+
+
+    if (priority)
+        priority.value = "normal";
+
+
+    const counter =
+        document.getElementById(
+            "noticeCharacterCount"
+        );
+
+
+    if (counter)
+        counter.textContent = "0";
+
+
+    const event =
+        new Event(
+            "change",
+            {
+                bubbles: true
+            }
+        );
+
+
+    if (priority)
+        priority.dispatchEvent(event);
+
+}
+
+
+/* ---------------------------------------------------------
+   FILTER PUBLISHED NOTICES
+--------------------------------------------------------- */
+
+function filterNotices() {
+
+    const filter =
+        document.getElementById(
+            "noticeFilter"
+        );
+
+
+    if (!filter) return;
+
+
+    const selected =
+        filter.value;
+
+
+    const cards =
+        document.querySelectorAll(
+            "#adminNoticeList .notice-card"
+        );
+
+
+    cards.forEach(function(card) {
+
+        if (selected === "all") {
+
+            card.style.display = "";
+
+            return;
+
+        }
+
+
+        if (
+            card.classList.contains(
+                selected
+            )
+        ) {
+
+            card.style.display = "";
+
+        } else {
+
+            card.style.display = "none";
+
+        }
+
+    });
+
+}
+
+
+/* ---------------------------------------------------------
+   NOTICE STATISTICS
+--------------------------------------------------------- */
+
+function updateNoticeStatistics() {
+
+    const cards =
+        document.querySelectorAll(
+            "#adminNoticeList .notice-card"
+        );
+
+
+    let normal = 0;
+    let important = 0;
+    let urgent = 0;
+
+
+    cards.forEach(function(card) {
+
+        if (
+            card.classList.contains(
+                "normal"
+            )
+        ) {
+
+            normal++;
+
+        }
+
+
+        if (
+            card.classList.contains(
+                "important"
+            )
+        ) {
+
+            important++;
+
+        }
+
+
+        if (
+            card.classList.contains(
+                "urgent"
+            )
+        ) {
+
+            urgent++;
+
+        }
+
+    });
+
+
+    const total =
+        normal +
+        important +
+        urgent;
+
+
+    const totalElement =
+        document.getElementById(
+            "noticeTotalCount"
+        );
+
+
+    const normalElement =
+        document.getElementById(
+            "noticeNormalCount"
+        );
+
+
+    const importantElement =
+        document.getElementById(
+            "noticeImportantCount"
+        );
+
+
+    const urgentElement =
+        document.getElementById(
+            "noticeUrgentCount"
+        );
+
+
+    if (totalElement)
+        totalElement.textContent = total;
+
+
+    if (normalElement)
+        normalElement.textContent = normal;
+
+
+    if (importantElement)
+        importantElement.textContent = important;
+
+
+    if (urgentElement)
+        urgentElement.textContent = urgent;
+
+}
+
+
+
+/* =========================================================
+   PUBLISH NOTICE
+========================================================= */
+
+async function publishNotice() {
+
+    const title =
+        document.getElementById("noticeTitle")?.value.trim();
+
+    const message =
+        document.getElementById("noticeMessage")?.value.trim();
+
+    const date =
+        document.getElementById("noticeDate")?.value;
+
+    const priority =
+        document.getElementById("noticePriority")?.value ||
+        "normal";
+
+
+    /* ---------------------------------------------------------
+       USER
+    --------------------------------------------------------- */
+
+    if (!currentUser) {
+
+        alert(
+            "Your session could not be found. Please log in again."
+        );
+
+        return;
+    }
+
+
+    const role =
+        String(currentUser.role || "").toLowerCase();
+
+
+    const schoolId =
+        currentUser.schoolid ||
+        currentUser.schoolId ||
+        currentUser.schoolID;
+
+
+    const teacherClass =
+        currentUser.mainClass ||
+        currentUser.mainclass ||
+        "";
+
+
+    /* ---------------------------------------------------------
+       ADMIN RECIPIENT SELECTION
+    --------------------------------------------------------- */
+
+    let recipientType = "school";
+    let recipientClass = null;
+
+
+    if (role === "admin") {
+
+        recipientType =
+            document.getElementById(
+                "noticeRecipientType"
+            )?.value || "school";
+
+
+        if (recipientType === "class") {
+
+            recipientClass =
+                document.getElementById(
+                    "noticeRecipientClass"
+                )?.value.trim();
+
+
+            if (!recipientClass) {
+
+                alert(
+                    "Please select the class that should receive this notice."
+                );
+
+                return;
+            }
+
+        }
+
+    }
+
+
+    /* ---------------------------------------------------------
+       TEACHER
+    --------------------------------------------------------- */
+
+    if (role === "teacher") {
+
+        if (!teacherClass) {
+
+            alert(
+                "Your assigned class has not been set.\n\n" +
+                "Please contact the administrator."
+            );
+
+            return;
+        }
+
+
+        recipientType =
+            "teacher_class";
+
+
+        recipientClass =
+            teacherClass;
+
+    }
+
+
+    /* ---------------------------------------------------------
+       VALIDATION
+    --------------------------------------------------------- */
+
+    if (!title) {
+
+        alert(
+            "Please enter the notice title."
+        );
+
+        return;
+    }
+
+
+    if (!message) {
+
+        alert(
+            "Please enter the notice message."
+        );
+
+        return;
+    }
+
+
+    if (!date) {
+
+        alert(
+            "Please select the notice date."
+        );
+
+        return;
+    }
+
+
+    if (!schoolId) {
+
+        alert(
+            "Your school ID could not be found."
+        );
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       CREATOR NAME
+    --------------------------------------------------------- */
+
+    const creatorName =
+
+        [
+            currentUser.firstname,
+            currentUser.surname
+        ]
+        .filter(Boolean)
+        .join(" ") ||
+
+        currentUser.username ||
+
+        "Unknown";
+
+
+    /* ---------------------------------------------------------
+       NOTICE DATA
+    --------------------------------------------------------- */
+
+    const noticeData = {
+
+        schoolid: schoolId,
+
+        title: title,
+
+        message: message,
+
+        date: date,
+
+        priority: priority,
+
+        createdby:
+            currentUser.id ||
+            currentUser.username ||
+            "",
+
+        createdbyname:
+            creatorName,
+
+        senderrole:
+            role,
+
+        recipienttype:
+            recipientType,
+
+        recipientclass:
+            recipientClass
+
+    };
+
+
+    console.log(
+        "Publishing notice:",
+        noticeData
+    );
+
+
+    /* ---------------------------------------------------------
+       BUTTON
+    --------------------------------------------------------- */
+
+    const button =
+        document.querySelector(
+            ".notice-publish-btn"
+        );
+
+
+    const originalHTML =
+        button?.innerHTML || "";
+
+
+    if (button) {
+
+        button.disabled = true;
+
+        button.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+
+            .from("notices")
+
+            .insert([
+                noticeData
+            ])
+
+            .select();
+
+
+        if (error) {
+
+            console.error(
+                "Notice publish error:",
+                error
+            );
+
+
+            alert(
+                "Notice could not be published.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "Notice published:",
+            data
+        );
+
+
+        /* -----------------------------------------------------
+           CLEAR FORM
+        ----------------------------------------------------- */
+
+        document.getElementById(
+            "noticeTitle"
+        ).value = "";
+
+
+        document.getElementById(
+            "noticeMessage"
+        ).value = "";
+
+
+        document.getElementById(
+            "noticeDate"
+        ).value = "";
+
+
+        document.getElementById(
+            "noticePriority"
+        ).value = "normal";
+
+
+        /* -----------------------------------------------------
+           RELOAD
+        ----------------------------------------------------- */
+
+        await loadNotices();
+
+
+        alert(
+            "Notice published successfully! ✅"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Publish notice error:",
+            error
+        );
+
+
+        alert(
+            "Something went wrong.\n\n" +
+            error.message
+        );
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled = false;
+
+            button.innerHTML =
+                originalHTML ||
+                '<i class="fas fa-bullhorn"></i> Publish Notice';
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   CLEAR NOTICE FORM
+========================================================= */
+
+function clearNoticeForm() {
+
+    const title =
+        document.getElementById("noticeTitle");
+
+    const message =
+        document.getElementById("noticeMessage");
+
+    const date =
+        document.getElementById("noticeDate");
+
+    const priority =
+        document.getElementById("noticePriority");
+
+
+    if (title) {
+        title.value = "";
+    }
+
+    if (message) {
+        message.value = "";
+    }
+
+    if (date) {
+        date.value = "";
+    }
+
+    if (priority) {
+        priority.value = "normal";
+    }
+
+}
+
+/* =========================================================
+   LOAD NOTICES
+========================================================= */
+
+/* =========================================================
+   LOAD ALL NOTICES FROM SUPABASE
+========================================================= */
+
+/* =========================================================
+   LOAD ALL NOTICES
+========================================================= */
+
+async function loadNotices() {
+
+    const list =
+        document.getElementById("adminNoticeList");
+
+    if (!list) return;
+
+
+    /* ---------------------------------------------------------
+       CHECK SUPABASE CLIENT
+    --------------------------------------------------------- */
+
+    if (
+        typeof supabaseClient === "undefined" ||
+        !supabaseClient
+    ) {
+
+        console.error(
+            "supabaseClient is not available."
+        );
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+
+                <h3>Database Connection Error</h3>
+
+                <p>
+                    Supabase client is not available.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       CHECK CURRENT USER
+    --------------------------------------------------------- */
+
+    if (!currentUser) {
+
+        console.error(
+            "currentUser is not available."
+        );
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-user-lock"></i>
+                </div>
+
+                <h3>Session Not Found</h3>
+
+                <p>
+                    Please log in again to view notices.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       USER INFORMATION
+    --------------------------------------------------------- */
+
+    const role =
+        String(
+            currentUser.role || ""
+        ).toLowerCase();
+
+
+    const schoolid =
+        currentUser.schoolid ||
+        currentUser.schoolid ||
+        currentUser.schoolID;
+
+
+    /*
+     * Teacher assigned class
+     */
+    const teacherClass =
+        currentUser.mainClass ||
+        currentUser.mainclass ||
+        currentUser.class ||
+        "";
+
+
+    /*
+     * Student assigned class
+     *
+     * We support the common class fields already used
+     * by your application.
+     */
+    const studentClass =
+        currentUser.studentclass ||
+        currentUser.studentClass ||
+        currentUser.class ||
+        currentUser.mainClass ||
+        "";
+
+
+    const userId =
+        currentUser.id ||
+        currentUser.userId ||
+        currentUser.userid ||
+        currentUser.uid ||
+        "";
+
+
+    console.log(
+        "NOTICE USER:",
+        {
+            role,
+            schoolid,
+            teacherClass,
+            studentClass,
+            userId
+        }
+    );
+
+
+    /* ---------------------------------------------------------
+       SCHOOL ID REQUIRED
+    --------------------------------------------------------- */
+
+    if (!schoolid) {
+
+        console.error(
+            "No school ID found for current user."
+        );
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-school"></i>
+                </div>
+
+                <h3>School Not Found</h3>
+
+                <p>
+                    Your school information could not be found.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       LOADING
+    --------------------------------------------------------- */
+
+    list.innerHTML = `
+        <div class="notices-empty-state">
+
+            <div class="notices-empty-icon">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+
+            <h3>Loading Notices...</h3>
+
+            <p>
+                Please wait while notices are loaded.
+            </p>
+
+        </div>
+    `;
+
+
+    try {
+
+        /* =====================================================
+           BUILD BASE QUERY
+        ===================================================== */
+
+        let query =
+            supabaseClient
+                .from("notices")
+                .select("*")
+                .eq("schoolid", schoolid);
+
+
+        /* =====================================================
+           ADMIN
+           
+           ADMIN CAN SEE EVERYTHING IN THE SCHOOL
+        ===================================================== */
+
+        if (role === "admin") {
+
+            console.log(
+                "Notice access: ADMIN - all school notices"
+            );
+
+        }
+
+
+        /* =====================================================
+           TEACHER
+           
+           Teacher sees:
+           
+           1. Notices sent to everyone
+           2. Notices sent to their assigned class
+           3. Their own notices
+        ===================================================== */
+
+        else if (role === "teacher") {
+
+            if (!teacherClass) {
+
+                console.warn(
+                    "Teacher has no assigned class."
+                );
+
+            }
+
+
+            /*
+             * We fetch the school's notices first and then
+             * apply the visibility rules below.
+             *
+             * This avoids complicated Supabase OR syntax
+             * and makes the rules easier to maintain.
+             */
+
+            console.log(
+                "Notice access: TEACHER",
+                {
+                    teacherClass,
+                    userId
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           STUDENT
+           
+           Student sees:
+           
+           1. School-wide notices
+           2. Notices for their class
+           3. Teacher notices for their class
+        ===================================================== */
+
+        else {
+
+            console.log(
+                "Notice access: STUDENT",
+                {
+                    studentClass
+                }
+            );
+
+        }
+
+
+        /* -----------------------------------------------------
+           LOAD NOTICES
+        ----------------------------------------------------- */
+
+        const {
+            data,
+            error
+        } = await query
+            .order("date", {
+                ascending: false
+            });
+
+
+        /* -----------------------------------------------------
+           ERROR
+        ----------------------------------------------------- */
+
+        if (error) {
+
+            console.error(
+                "Load notices error:",
+                error
+            );
+
+            list.innerHTML = `
+                <div class="notices-empty-state">
+
+                    <div class="notices-empty-icon">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+
+                    <h3>Unable to Load Notices</h3>
+
+                    <p>
+                        ${escapeNoticeHTML(
+                            error.message
+                        )}
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           APPLY VISIBILITY RULES
+        ===================================================== */
+
+        let visibleNotices = [];
+
+
+        /* -----------------------------------------------------
+           ADMIN
+           
+           ADMIN SEES EVERYTHING
+        ----------------------------------------------------- */
+
+        if (role === "admin") {
+
+            visibleNotices =
+                data || [];
+
+        }
+
+
+        /* -----------------------------------------------------
+           TEACHER
+        ----------------------------------------------------- */
+
+        else if (role === "teacher") {
+
+            visibleNotices =
+                (data || []).filter(
+                    notice => {
+
+                        const recipientType =
+                            String(
+                                notice.recipienttype ||
+                                notice.recipientType ||
+                                "school"
+                            ).toLowerCase();
+
+
+                        const recipientClass =
+                            String(
+                                notice.recipientclass ||
+                                notice.recipientClass ||
+                                ""
+                            ).trim();
+
+
+                        const createdBy =
+                            String(
+                                notice.createdby ||
+                                notice.createdBy ||
+                                ""
+                            );
+
+
+                        /* -----------------------------
+                           SCHOOL-WIDE
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                            "school"
+                        ) {
+
+                            return true;
+
+                        }
+
+
+                        /* -----------------------------
+                           TEACHER'S CLASS
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                                "class" ||
+
+                            recipientType ===
+                                "teacher_class"
+                        ) {
+
+                            return (
+                                recipientClass &&
+                                teacherClass &&
+                                recipientClass
+                                    .toLowerCase() ===
+                                teacherClass
+                                    .toLowerCase()
+                            );
+
+                        }
+
+
+                        /* -----------------------------
+                           TEACHER'S OWN NOTICE
+                        ----------------------------- */
+
+                        if (
+                            userId &&
+                            createdBy === userId
+                        ) {
+
+                            return true;
+
+                        }
+
+
+                        return false;
+
+                    }
+                );
+
+        }
+
+
+        /* -----------------------------------------------------
+           STUDENT
+        ----------------------------------------------------- */
+
+        else {
+
+            visibleNotices =
+                (data || []).filter(
+                    notice => {
+
+                        const recipientType =
+                            String(
+                                notice.recipienttype ||
+                                notice.recipientType ||
+                                "school"
+                            ).toLowerCase();
+
+
+                        const recipientClass =
+                            String(
+                                notice.recipientclass ||
+                                notice.recipientClass ||
+                                ""
+                            ).trim();
+
+
+                        /* -----------------------------
+                           SCHOOL-WIDE NOTICE
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                            "school"
+                        ) {
+
+                            return true;
+
+                        }
+
+
+                        /* -----------------------------
+                           CLASS NOTICE
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                                "class" ||
+
+                            recipientType ===
+                                "teacher_class"
+                        ) {
+
+                            return (
+                                recipientClass &&
+                                studentClass &&
+                                recipientClass
+                                    .toLowerCase() ===
+                                studentClass
+                                    .toLowerCase()
+                            );
+
+                        }
+
+
+                        return false;
+
+                    }
+                );
+
+        }
+
+
+        /* -----------------------------------------------------
+           NO DATA AFTER FILTER
+        ----------------------------------------------------- */
+
+        if (
+            !visibleNotices ||
+            visibleNotices.length === 0
+        ) {
+
+            list.innerHTML = `
+                <div class="notices-empty-state">
+
+                    <div class="notices-empty-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+
+                    <h3>No Notices Available</h3>
+
+                    <p>
+                        There are currently no notices
+                        available for you.
+                    </p>
+
+                </div>
+            `;
+
+
+            if (
+                typeof updateNoticeStatistics ===
+                "function"
+            ) {
+
+                updateNoticeStatistics();
+
+            }
+
+            return;
+        }
+
+
+        /* -----------------------------------------------------
+           DISPLAY NOTICES
+        ----------------------------------------------------- */
+
+        console.log(
+            "All notices:",
+            data?.length || 0
+        );
+
+
+        console.log(
+            "Visible notices:",
+            visibleNotices.length
+        );
+
+
+        list.innerHTML =
+            visibleNotices
+                .map(
+                    notice =>
+                        createNoticeCard(notice)
+                )
+                .join("");
+
+
+        /* -----------------------------------------------------
+           STATISTICS
+        ----------------------------------------------------- */
+
+        if (
+            typeof updateNoticeStatistics ===
+            "function"
+        ) {
+
+            updateNoticeStatistics();
+
+        }
+
+
+        /* -----------------------------------------------------
+           FILTER
+        ----------------------------------------------------- */
+
+        if (
+            typeof filterNotices ===
+            "function"
+        ) {
+
+            filterNotices();
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Notice loading error:",
+            error
+        );
+
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+
+                <h3>Something Went Wrong</h3>
+
+                <p>
+                    ${escapeNoticeHTML(
+                        error.message ||
+                        "Unable to load notices."
+                    )}
+                </p>
+
+            </div>
+        `;
+
+    }
+
+}
+
+
+
+function setupNoticeRecipientForUser() {
+
+    const section =
+        document.getElementById(
+            "noticeRecipientSection"
+        );
+
+    const type =
+        document.getElementById(
+            "noticeRecipientType"
+        );
+
+    const classWrapper =
+        document.getElementById(
+            "noticeClassWrapper"
+        );
+
+    const classSelect =
+        document.getElementById(
+            "noticeRecipientClass"
+        );
+
+    const preview =
+        document.getElementById(
+            "noticeRecipientPreview"
+        );
+
+
+    if (!section || !currentUser) return;
+
+
+    const role =
+        String(
+            currentUser.role || ""
+        ).toLowerCase();
+
+
+    /* =====================================================
+       ADMIN
+    ===================================================== */
+
+    if (role === "admin") {
+
+        section.style.display = "block";
+
+        if (type) {
+
+            type.disabled = false;
+
+            type.value = "school";
+
+        }
+
+        if (classWrapper) {
+
+            classWrapper.style.display =
+                "none";
+
+        }
+
+        if (preview) {
+
+            preview.innerHTML = `
+
+                <i class="fas fa-users"></i>
+
+                <span>
+                    This notice will be sent to
+                    <strong>everyone</strong>
+                    in the school.
+                </span>
+
+            `;
+
+        }
+
+        return;
+    }
+
+
+    /* =====================================================
+       TEACHER
+    ===================================================== */
+
+    if (role === "teacher") {
+
+        section.style.display = "block";
+
+
+        if (type) {
+
+            type.value = "class";
+
+            type.disabled = true;
+
+        }
+
+
+        if (classWrapper) {
+
+            classWrapper.style.display =
+                "block";
+
+        }
+
+
+        const teacherClass =
+            currentUser.mainClass ||
+            currentUser.mainclass ||
+            "";
+
+
+        if (classSelect) {
+
+            classSelect.innerHTML = `
+
+                <option value="${escapeNoticeHTML(teacherClass)}">
+
+                    ${escapeNoticeHTML(
+                        teacherClass ||
+                        "No Class Assigned"
+                    )}
+
+                </option>
+
+            `;
+
+            classSelect.value =
+                teacherClass;
+
+            classSelect.disabled = true;
+
+        }
+
+
+        if (preview) {
+
+            preview.innerHTML = `
+
+                <i class="fas fa-lock"></i>
+
+                <span>
+                    This notice will be sent only to
+                    <strong>
+                        ${escapeNoticeHTML(
+                            teacherClass ||
+                            "your assigned class"
+                        )}
+                    </strong>
+                    students.
+                </span>
+
+            `;
+
+        }
+
+        return;
+    }
+
+
+    /* =====================================================
+       OTHER USERS
+    ===================================================== */
+
+    section.style.display = "none";
+
+}
+
+/* =========================================================
+   CREATE NOTICE CARD
+========================================================= */
+
+function createNoticeCard(notice) {
+
+    const priority =
+        String(notice.priority || "normal").toLowerCase();
+
+
+    /* ---------------------------------------------------------
+       PRIORITY SETTINGS
+    --------------------------------------------------------- */
+
+    const priorityConfig = {
+
+        normal: {
+            label: "Normal",
+            icon: "fas fa-info-circle"
+        },
+
+        important: {
+            label: "Important",
+            icon: "fas fa-exclamation-circle"
+        },
+
+        urgent: {
+            label: "Urgent",
+            icon: "fas fa-triangle-exclamation"
+        }
+
+    };
+
+
+    const config =
+        priorityConfig[priority] ||
+        priorityConfig.normal;
+
+
+    /* ---------------------------------------------------------
+       DATE
+    --------------------------------------------------------- */
+
+    const formattedDate =
+        formatNoticeDate(
+            notice.date
+        );
+
+
+    /* ---------------------------------------------------------
+       CREATED DATE
+    --------------------------------------------------------- */
+
+    let createdDate = "";
+
+
+    if (notice.createdAt) {
+
+        createdDate =
+            formatNoticeDateTime(
+                notice.createdAt
+            );
+
+    }
+
+
+    /* ---------------------------------------------------------
+       NOTICE ID
+    --------------------------------------------------------- */
+
+    const noticeId =
+        notice.id || "";
+
+
+    /* ---------------------------------------------------------
+       TITLE
+    --------------------------------------------------------- */
+
+    const title =
+        notice.title ||
+        "Untitled Notice";
+
+
+    /* ---------------------------------------------------------
+       MESSAGE
+    --------------------------------------------------------- */
+
+    const message =
+        notice.message ||
+        "No message provided.";
+
+
+    /* ---------------------------------------------------------
+       CHECK ADMIN
+    --------------------------------------------------------- */
+
+    const isAdmin =
+        currentUser &&
+        String(currentUser.role).toLowerCase() === "admin";
+
+
+    /* ---------------------------------------------------------
+       RETURN CARD
+    --------------------------------------------------------- */
+
+    return `
+
+        <article
+            class="notice-card ${priority}"
+            data-notice-id="${escapeNoticeHTML(noticeId)}"
+            data-priority="${escapeNoticeHTML(priority)}"
+        >
+
+            <!-- ==============================================
+                 CARD HEADER
+            =============================================== -->
+
+            <div class="notice-card-top">
+
+                <div class="notice-card-title">
+
+                    <div
+                        class="notice-card-icon ${priority}"
+                        title="${config.label}"
+                    >
+
+                        <i class="${config.icon}"></i>
+
+                    </div>
+
+
+                    <div class="notice-card-heading">
+
+                        <h3>
+                            ${escapeNoticeHTML(title)}
+                        </h3>
+
+
+                        <div class="notice-card-meta">
+
+                            <span>
+
+                                <i class="fas fa-calendar-days"></i>
+
+                                ${escapeNoticeHTML(
+                                    formattedDate
+                                )}
+
+                            </span>
+
+
+                            ${
+                                createdDate
+                                    ? `
+                                        <span>
+                                            <i class="fas fa-clock"></i>
+                                            ${escapeNoticeHTML(
+                                                createdDate
+                                            )}
+                                        </span>
+                                      `
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PRIORITY -->
+
+                <span
+                    class="
+                        notice-priority-badge
+                        ${priority}
+                    "
+                >
+
+                    <i class="${config.icon}"></i>
+
+                    ${config.label}
+
+                </span>
+
+            </div>
+
+
+            <!-- ==============================================
+                 MESSAGE
+            =============================================== -->
+
+            <div class="notice-card-message">
+
+                ${escapeNoticeHTML(message)}
+
+            </div>
+
+
+            <!-- ==============================================
+                 FOOTER
+            =============================================== -->
+
+            <div class="notice-card-footer">
+
+                <div class="notice-published-info">
+
+                    <i class="fas fa-bullhorn"></i>
+
+                    <span>
+                        School Announcement
+                    </span>
+
+                </div>
+
+
+                <div class="notice-footer-actions">
+
+                    ${
+                        notice.createdBy
+                            ? `
+                                <div class="notice-created-by">
+
+                                    <i class="fas fa-user"></i>
+
+                                    ${escapeNoticeHTML(
+                                        notice.createdBy
+                                    )}
+
+                                </div>
+                              `
+                            : ""
+                    }
+
+
+                    ${
+                        isAdmin
+                            ? `
+                                <button
+                                    type="button"
+                                    class="notice-delete-btn"
+                                    onclick="deleteNotice('${noticeId}')"
+                                    title="Delete Notice"
+                                >
+
+                                    <i class="fas fa-trash"></i>
+
+                                    Delete
+
+                                </button>
+                              `
+                            : ""
+                    }
+
+                </div>
+
+            </div>
+
+        </article>
+
+    `;
+
+}
+
+
+/* =========================================================
+   DELETE NOTICE
+========================================================= */
+
+
+async function deleteNotice(noticeId) {
+
+    if (!noticeId) {
+
+        alert("Unable to identify this notice.");
+
+        return;
+
+    }
+
+
+    /* CHECK ADMIN */
+
+    if (
+        !currentUser ||
+        String(currentUser.role).toLowerCase() !== "admin"
+    ) {
+
+        alert(
+            "Only the administrator can delete notices."
+        );
+
+        return;
+
+    }
+
+
+    /* CONFIRM DELETE */
+
+    const confirmed = confirm(
+
+        "Are you sure you want to delete this notice?\n\n" +
+        "This action cannot be undone."
+
+    );
+
+
+    if (!confirmed) return;
+
+
+    try {
+
+        const {
+
+            error
+
+        } = await supabaseClient
+
+            .from("notices")
+
+            .delete()
+
+            .eq("id", noticeId);
+
+
+        if (error) {
+
+            console.error(
+                "Delete notice error:",
+                error
+            );
+
+
+            alert(
+
+                "Failed to delete notice.\n\n" +
+                error.message
+
+            );
+
+            return;
+
+        }
+
+
+        /* RELOAD NOTICES */
+
+        await loadNotices();
+
+
+        alert(
+            "Notice deleted successfully! ✅"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Delete notice JavaScript error:",
+            error
+        );
+
+
+        alert(
+
+            "Something went wrong while deleting the notice.\n\n" +
+            error.message
+
+        );
+
+    }
+
+}
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
+function formatNoticeDate(dateString) {
+
+    if (!dateString) {
+        return "No date";
+    }
+
+
+    const date =
+        new Date(
+            dateString + "T00:00:00"
+        );
+
+
+    if (isNaN(date.getTime())) {
+        return dateString;
+    }
+
+
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+
+/* =========================================================
+   FORMAT NOTICE DATE & TIME
+========================================================= */
+
+function formatNoticeDateTime(dateString) {
+
+    if (!dateString) {
+        return "";
+    }
+
+
+    const date =
+        new Date(dateString);
+
+
+    if (isNaN(date.getTime())) {
+        return "";
+    }
+
+
+    return date.toLocaleString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+
+            hour: "2-digit",
+            minute: "2-digit",
+
+            hour12: true
+        }
+    );
+
+}
+
+
+/* =========================================================
+   HTML ESCAPE
+========================================================= */
+
+function escapeNoticeHTML(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+/* ---------------------------------------------------------
+   INITIALIZE NOTICES PAGE
+--------------------------------------------------------- */
+
+function initializeNoticesPage() {
+
+    initNoticeCharacterCounter();
+
+    initNoticePriorityPreview();
+
+    initializeNoticeRecipient();
+
+
+
+    const filter =
+        document.getElementById(
+            "noticeFilter"
+        );
+
+
+    if (filter) {
+
+        filter.addEventListener(
+            "change",
+            filterNotices
+        );
+
+    }
+
+
+    updateNoticeStatistics();
+
+}
+
+
+/* ---------------------------------------------------------
+   PAGE LOAD
+--------------------------------------------------------- */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        initializeNoticesPage();
+
+    }
+);
+
+
+
+/* =========================================================
+   NOTICE RECIPIENT SYSTEM
+========================================================= */
+
+function initializeNoticeRecipient() {
+
+    const recipientType =
+        document.getElementById(
+            "noticeRecipientType"
+        );
+
+    const classWrapper =
+        document.getElementById(
+            "noticeClassWrapper"
+        );
+
+    const classSelect =
+        document.getElementById(
+            "noticeRecipientClass"
+        );
+
+    const recipientPreview =
+        document.getElementById(
+            "noticeRecipientPreview"
+        );
+
+
+    if (!recipientType) return;
+
+
+    recipientType.addEventListener(
+        "change",
+        async function () {
+
+            if (
+                this.value ===
+                "class"
+            ) {
+
+                classWrapper.style.display =
+                    "block";
+
+                await loadNoticeClasses();
+
+            } else {
+
+                classWrapper.style.display =
+                    "none";
+
+                if (classSelect) {
+
+                    classSelect.value = "";
+
+                }
+
+            }
+
+
+            updateNoticeRecipientPreview();
+
+        }
+    );
+
+
+    if (classSelect) {
+
+        classSelect.addEventListener(
+            "change",
+            updateNoticeRecipientPreview
+        );
+
+    }
+
+
+    updateNoticeRecipientPreview();
+
+}
+
+
+/* =========================================================
+   LOAD SCHOOL CLASSES
+========================================================= */
+
+async function loadNoticeClasses() {
+
+    const select =
+        document.getElementById(
+            "noticeRecipientClass"
+        );
+
+
+    if (!select) return;
+
+
+    const schoolId =
+        currentUser?.schoolid ||
+        currentUser?.schoolId;
+
+
+    if (!schoolId) {
+
+        select.innerHTML = `
+            <option value="">
+                School not found
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    select.innerHTML = `
+        <option value="">
+            Loading classes...
+        </option>
+    `;
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+
+            .from("classes")
+
+            .select("*")
+
+            .eq(
+                "schoolid",
+                schoolId
+            );
+
+
+        if (error) {
+
+            console.error(
+                "Unable to load notice classes:",
+                error
+            );
+
+            select.innerHTML = `
+                <option value="">
+                    Unable to load classes
+                </option>
+            `;
+
+            return;
+
+        }
+
+
+        select.innerHTML = `
+            <option value="">
+                Select Class
+            </option>
+        `;
+
+
+        /*
+         * Support different class-name fields
+         * used in your existing database.
+         */
+
+        const classes =
+            data || [];
+
+
+        classes.forEach(cls => {
+
+            const className =
+                cls.classname ||
+                cls.className ||
+                cls.name ||
+                cls.class;
+
+
+            if (!className) return;
+
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                className;
+
+            option.textContent =
+                className;
+
+
+            select.appendChild(
+                option
+            );
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Notice class error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   RECIPIENT PREVIEW
+========================================================= */
+
+function updateNoticeRecipientPreview() {
+
+    const type =
+        document.getElementById(
+            "noticeRecipientType"
+        )?.value;
+
+
+    const className =
+        document.getElementById(
+            "noticeRecipientClass"
+        )?.value;
+
+
+    const preview =
+        document.getElementById(
+            "noticeRecipientPreview"
+        );
+
+
+    if (!preview) return;
+
+
+    if (
+        type === "class" &&
+        className
+    ) {
+
+        preview.innerHTML = `
+
+            <i class="fas fa-graduation-cap"></i>
+
+            <span>
+                This notice will be sent to
+                <strong>
+                    ${escapeNoticeText(className)}
+                </strong>
+                students only.
+            </span>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (type === "class") {
+
+        preview.innerHTML = `
+
+            <i class="fas fa-graduation-cap"></i>
+
+            <span>
+                Select a class to target this notice.
+            </span>
+
+        `;
+
+        return;
+
+    }
+
+
+    preview.innerHTML = `
+
+        <i class="fas fa-users"></i>
+
+        <span>
+            This notice will be sent to all students.
+        </span>
+
+    `;
+
+}
+
+
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function escapeNoticeText(value) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        value ?? "";
+
+    return div.innerHTML;
+
 }
