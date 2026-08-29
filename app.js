@@ -4238,17 +4238,17 @@ ${logo ? `
 
 <div style="margin-top:2px; font-size:18px; line-height:1;">
 
-    <div style="display:flex; justify-content:space-between; margin:2px; ">
+    <div style="display:flex; justify-content:space-between; margin:0; ">
         <p style="margin:2; padding: 8px;"><b>Name:</b> ${s.name}</p>
         <p style="margin:2; padding: 8px;"><b>Position:</b> ${position}</p>
     </div>
 
-    <div style="display:flex; justify-content:space-between; margin:0px;">
+    <div style="display:flex; justify-content:space-between; margin:0;">
         <p style="margin:2; padding: 8px;"><b>Class:</b> ${s.studentclass}</p>
         <p style="margin:2; padding: 8px;"><b>Total Students:</b> ${totalStudents}</p>
     </div>
 
-    <div style="display:flex; justify-content:space-between; padding: 8px;">
+    <div style="display:flex; justify-content:space-between; padding: 5px;">
        <p><b>Term Ending:</b> ${formattedEnd}</p>
         <p><b>Next Term Begins:</b> ${formattedNext}</p>
     </div>
