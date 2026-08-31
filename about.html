@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>About | Nabeng SBA</title>
+
+<link rel="icon"
+      type="image/png"
+      href="assets/nabeng-sba-logo.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet">
+
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<link rel="icon" type="image/png" href="nabeng-sba-logo.png">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    background:#f5f8fa;
+    color:#17233d;
+    line-height:1.6;
+}
+
+
+/* =========================
+   NAVBAR
+========================= */
+
+header{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    z-index:1000;
+}
+
+.navbar{
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:14px 7%;
+
+    background:rgba(5,20,45,.94);
+
+    backdrop-filter:blur(12px);
+
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+
+}
+
+.logo{
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    color:white;
+
+    text-decoration:none;
+}
+
+.logo img{
+
+    width:52px;
+    height:52px;
+
+    object-fit:contain;
+
+    border-radius:12px;
+
+}
+
+.logo h2{
+
+    font-size:21px;
+    font-weight:700;
+
+    line-height:1.1;
+
+}
+
+.logo span{
+
+    display:block;
+
+    font-size:10px;
+
+    letter-spacing:1px;
+
+    color:#00c985;
+
+}
+
+
+.nav-links{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:28px;
+
+    list-style:none;
+
+}
+
+.nav-links a{
+
+    color:white;
+
+    text-decoration:none;
+
+    font-size:14px;
+
+    font-weight:500;
+
+    transition:.3s;
+
+}
+
+.nav-links a:hover{
+
+    color:#00c985;
+
+}
+
+
+/* =========================
+   HERO
+========================= */
+
+.about-hero{
+
+    min-height:55vh;
+
+    padding:150px 7% 90px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    text-align:center;
+
+    background:
+        linear-gradient(
+            rgba(3,20,48,.90),
+            rgba(3,20,48,.90)
+        ),
+        url("https://images.unsplash.com/photo-1523240795612-9a054b0db644")
+        center/cover;
+
+    color:white;
+
+}
+
+.about-hero-content{
+
+    max-width:850px;
+
+}
+
+.about-hero h1{
+
+    font-size:52px;
+
+    margin-bottom:15px;
+
+}
+
+.about-hero h1 span{
+
+    color:#00c985;
+
+}
+
+.about-hero p{
+
+    font-size:17px;
+
+    max-width:700px;
+
+    margin:auto;
+
+    color:#dce5ef;
+
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.container{
+
+    width:86%;
+
+    max-width:1200px;
+
+    margin:auto;
+
+}
+
+
+/* =========================
+   INTRO
+========================= */
+
+.intro{
+
+    padding:80px 0;
+
+}
+
+.intro-grid{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:60px;
+
+    align-items:center;
+
+}
+
+.section-label{
+
+    color:#00ad75;
+
+    font-size:13px;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:2px;
+
+    margin-bottom:10px;
+
+}
+
+.intro h2{
+
+    font-size:38px;
+
+    margin-bottom:20px;
+
+    line-height:1.2;
+
+}
+
+.intro p{
+
+    color:#647084;
+
+    margin-bottom:15px;
+
+}
+
+.logo-display{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+.logo-display img{
+
+    width:330px;
+
+    max-width:80%;
+
+    filter:drop-shadow(0 20px 30px rgba(0,0,0,.15));
+
+}
+
+
+/* =========================
+   FEATURES
+========================= */
+
+.features{
+
+    padding:80px 0;
+
+    background:#eaf8f3;
+
+}
+
+.center-title{
+
+    text-align:center;
+
+    max-width:700px;
+
+    margin:0 auto 45px;
+
+}
+
+.center-title h2{
+
+    font-size:36px;
+
+    margin-bottom:12px;
+
+}
+
+.center-title p{
+
+    color:#647084;
+
+}
+
+.feature-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:25px;
+
+}
+
+.feature-card{
+
+    background:white;
+
+    padding:32px;
+
+    border-radius:20px;
+
+    box-shadow:0 10px 30px rgba(0,0,0,.06);
+
+    transition:.3s;
+
+}
+
+.feature-card:hover{
+
+    transform:translateY(-6px);
+
+}
+
+.feature-icon{
+
+    width:55px;
+
+    height:55px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:#e2f8ef;
+
+    color:#00ad75;
+
+    border-radius:15px;
+
+    font-size:23px;
+
+    margin-bottom:20px;
+
+}
+
+.feature-card h3{
+
+    margin-bottom:10px;
+
+}
+
+.feature-card p{
+
+    color:#697586;
+
+    font-size:14px;
+
+}
+
+
+/* =========================
+   HISTORY
+========================= */
+
+.history{
+
+    padding:90px 0;
+
+}
+
+.history-box{
+
+    background:#061b3a;
+
+    color:white;
+
+    border-radius:25px;
+
+    padding:55px;
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.history-box::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:300px;
+
+    height:300px;
+
+    border:45px solid rgba(0,201,133,.12);
+
+    border-radius:50%;
+
+    right:-100px;
+
+    top:-100px;
+
+}
+
+.history h2{
+
+    font-size:36px;
+
+    margin-bottom:20px;
+
+}
+
+.history p{
+
+    color:#d3dce8;
+
+    max-width:850px;
+
+    margin-bottom:15px;
+
+}
+
+
+/* =========================
+   DEVELOPER
+========================= */
+
+.developer{
+
+    padding:90px 0;
+
+    background:white;
+
+}
+
+.developer-grid{
+
+    display:grid;
+
+    grid-template-columns:380px 1fr;
+
+    gap:65px;
+
+    align-items:center;
+
+}
+
+.developer-photo{
+
+    display:flex;
+
+    justify-content:center;
+
+}
+
+.developer-photo img{
+
+    width:300px;
+
+    height:360px;
+
+    object-fit:cover;
+
+    border-radius:25px;
+
+    box-shadow:0 20px 45px rgba(0,0,0,.15);
+
+}
+
+.developer-content h2{
+
+    font-size:38px;
+
+    margin-bottom:10px;
+
+}
+
+.developer-name{
+
+    color:#00ad75;
+
+    font-size:18px;
+
+    font-weight:700;
+
+    margin-bottom:20px;
+
+}
+
+.developer-content p{
+
+    color:#667085;
+
+    margin-bottom:15px;
+
+}
+
+.developer-tags{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
+    margin-top:25px;
+
+}
+
+.developer-tags span{
+
+    background:#eaf8f3;
+
+    color:#008c61;
+
+    padding:8px 14px;
+
+    border-radius:30px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+}
+
+
+/* =========================
+   MISSION
+========================= */
+
+.mission{
+
+    padding:80px 0;
+
+}
+
+.mission-grid{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:25px;
+
+}
+
+.mission-card{
+
+    padding:35px;
+
+    border-radius:20px;
+
+    background:#f0f8ff;
+
+}
+
+.mission-card:nth-child(2){
+
+    background:#eaf8f3;
+
+}
+
+.mission-card i{
+
+    color:#00ad75;
+
+    font-size:30px;
+
+    margin-bottom:15px;
+
+}
+
+.mission-card h3{
+
+    margin-bottom:10px;
+
+}
+
+.mission-card p{
+
+    color:#667085;
+
+    font-size:14px;
+
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+footer{
+
+    background:#061329;
+
+    color:white;
+
+    padding:45px 7% 25px;
+
+}
+
+.footer-content{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    gap:30px;
+
+    padding-bottom:30px;
+
+}
+
+.footer-brand{
+
+    max-width:400px;
+
+}
+
+.footer-brand h2{
+
+    margin-bottom:10px;
+
+}
+
+.footer-brand p{
+
+    color:#aebaca;
+
+    font-size:13px;
+
+}
+
+.footer-links{
+
+    display:flex;
+
+    gap:25px;
+
+}
+
+.footer-links a{
+
+    color:#dce4ef;
+
+    text-decoration:none;
+
+    font-size:13px;
+
+}
+
+.footer-links a:hover{
+
+    color:#00c985;
+
+}
+
+.copyright{
+
+    border-top:1px solid rgba(255,255,255,.1);
+
+    padding-top:20px;
+
+    text-align:center;
+
+    color:#8996a8;
+
+    font-size:12px;
+
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:900px){
+
+    .nav-links{
+        display:none;
+    }
+
+    .about-hero h1{
+        font-size:38px;
+    }
+
+    .intro-grid,
+    .developer-grid,
+    .mission-grid{
+        grid-template-columns:1fr;
+    }
+
+    .intro{
+        padding:60px 0;
+    }
+
+    .feature-grid{
+        grid-template-columns:1fr;
+    }
+
+    .history-box{
+        padding:35px 25px;
+    }
+
+    .developer-photo img{
+        width:250px;
+        height:300px;
+    }
+
+    .footer-content{
+        flex-direction:column;
+    }
+
+    .footer-links{
+        flex-wrap:wrap;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================
+     NAVBAR
+========================= -->
+
+<header>
+
+<nav class="navbar">
+
+<a href="index.html" class="logo">
+
+    <img src="nabeng-sba-logo.png"
+         alt="Nabeng SBA Logo">
+
+    <div>
+
+        <h2>NABENG</h2>
+
+        <span>SCHOOL MANAGEMENT SYSTEM</span>
+
+    </div>
+
+</a>
+
+
+<ul class="nav-links">
+
+    <li><a href="index.html">Home</a></li>
+
+    <li><a href="system.html">Staff</a></li>
+
+    <li><a href="student.html">Student</a></li>
+
+    <li><a href="contact.html">Contact</a></li>
+
+    <li><a href="about.html">About</a></li>
+
+</ul>
+
+</nav>
+
+</header>
+
+
+<!-- =========================
+     HERO
+========================= -->
+
+<section class="about-hero">
+
+<div class="about-hero-content">
+
+    <h1>
+        About <span>Nabeng SBA</span>
+    </h1>
+
+    <p>
+        A modern school management and assessment
+        platform designed to make academic administration
+        easier, faster and more organized.
+    </p>
+
+</div>
+
+</section>
+
+
+<!-- =========================
+     INTRODUCTION
+========================= -->
+
+<section class="intro">
+
+<div class="container">
+
+<div class="intro-grid">
+
+
+<div>
+
+    <div class="section-label">
+        About The System
+    </div>
+
+    <h2>
+        Simple Technology For Better School Management
+    </h2>
+
+    <p>
+        Nabeng SBA is a digital school management system
+        designed to help schools manage students, academic
+        assessments, attendance, results, reports and
+        communication from one convenient platform.
+    </p>
+
+    <p>
+        The system reduces the dependence on paper-based
+        record keeping and makes it easier for teachers
+        and school administrators to manage academic
+        information.
+    </p>
+
+    <p>
+        Students can also access their academic information
+        through the student portal, making the school
+        experience more transparent and convenient.
+    </p>
+
+</div>
+
+
+<div class="logo-display">
+
+    <img src="nabeng-sba-logo.png"
+         alt="Nabeng SBA">
+
+</div>
+
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- =========================
+     FEATURES
+========================= -->
+
+<section class="features">
+
+<div class="container">
+
+<div class="center-title">
+
+    <div class="section-label">
+        What We Provide
+    </div>
+
+    <h2>
+        Built For Modern Schools
+    </h2>
+
+    <p>
+        Nabeng SBA brings important school operations
+        together in one digital environment.
+    </p>
+
+</div>
+
+
+<div class="feature-grid">
+
+
+<div class="feature-card">
+
+    <div class="feature-icon">
+        <i class="fas fa-user-graduate"></i>
+    </div>
+
+    <h3>Student Management</h3>
+
+    <p>
+        Manage student records, classes, academic
+        information and student profiles efficiently.
+    </p>
+
+</div>
+
+
+<div class="feature-card">
+
+    <div class="feature-icon">
+        <i class="fas fa-chart-column"></i>
+    </div>
+
+    <h3>Assessment & Results</h3>
+
+    <p>
+        Record assessments, calculate results,
+        positions and academic performance.
+    </p>
+
+</div>
+
+
+<div class="feature-card">
+
+    <div class="feature-icon">
+        <i class="fas fa-file-lines"></i>
+    </div>
+
+    <h3>Reports</h3>
+
+    <p>
+        Generate professional student reports and
+        academic performance records.
+    </p>
+
+</div>
+
+
+<div class="feature-card">
+
+    <div class="feature-icon">
+        <i class="fas fa-calendar-check"></i>
+    </div>
+
+    <h3>Attendance</h3>
+
+    <p>
+        Record and monitor student attendance while
+        keeping attendance information organized.
+    </p>
+
+</div>
+
+
+<div class="feature-card">
+
+    <div class="feature-icon">
+        <i class="fas fa-comments"></i>
+    </div>
+
+    <h3>Communication</h3>
+
+    <p>
+        Provide a convenient communication environment
+        for school users.
+    </p>
+
+</div>
+
+
+<div class="feature-card">
+
+    <div class="feature-icon">
+        <i class="fas fa-shield-halved"></i>
+    </div>
+
+    <h3>Secure Records</h3>
+
+    <p>
+        Keep important school and academic information
+        within a structured digital system.
+    </p>
+
+</div>
+
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- =========================
+     HISTORY
+========================= -->
+
+<section class="history">
+
+<div class="container">
+
+<div class="history-box">
+
+    <div class="section-label">
+        Our Story
+    </div>
+
+    <h2>
+        The Beginning Of Nabeng SBA
+    </h2>
+
+    <p>
+        Nabeng SBA started from a simple idea: to make
+        school administration easier through technology.
+    </p>
+
+    <p>
+        The system was developed to address some of the
+        challenges schools face when managing student
+        records, assessments, attendance and academic
+        reports manually.
+    </p>
+
+    <p>
+        What began as a technology project has grown into
+        a complete school management platform designed
+        around the everyday needs of teachers,
+        administrators and students.
+    </p>
+
+    <p>
+        The goal is not simply to replace paper with
+        computers, but to create a smarter and more
+        efficient way of managing school information.
+    </p>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- =========================
+     DEVELOPER
+========================= -->
+
+<section class="developer">
+
+<div class="container">
+
+<div class="developer-grid">
+
+
+<div class="developer-photo">
+
+    <!--
+        Replace this image with the developer's
+        actual picture.
+
+        Example:
+        assets/developer.jpg
+    -->
+
+    <img src="Nabeng.png"
+         alt="Developer">
+
+</div>
+
+
+<div class="developer-content">
+
+    <div class="section-label">
+        The Developer
+    </div>
+
+    <h2>
+        Behind Nabeng SBA
+    </h2>
+
+    <div class="developer-name">
+        Nathaniel Asare Boabeng
+    </div>
+
+    <p>
+        Nabeng SBA was developed by Nathaniel Asare
+        Boabeng, a technology enthusiast and educator
+        with an interest in using software to solve
+        practical problems in education.
+    </p>
+
+    <p>
+        His interest in technology and education led to
+        the development of Nabeng SBA with the aim of
+        providing schools with a simple digital platform
+        for managing academic activities.
+    </p>
+
+    <p>
+        The development journey focuses on continuous
+        improvement, listening to the needs of schools
+        and creating tools that are practical for
+        teachers, administrators and students.
+    </p>
+
+    <div class="developer-tags">
+
+        <span>
+            <i class="fas fa-code"></i>
+            Software Development
+        </span>
+
+        <span>
+            <i class="fas fa-school"></i>
+            Education
+        </span>
+
+        <span>
+            <i class="fas fa-lightbulb"></i>
+            Innovation
+        </span>
+
+    </div>
+
+</div>
+
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- =========================
+     MISSION / VISION
+========================= -->
+
+<section class="mission">
+
+<div class="container">
+
+<div class="mission-grid">
+
+
+<div class="mission-card">
+
+    <i class="fas fa-bullseye"></i>
+
+    <h3>
+        Our Mission
+    </h3>
+
+    <p>
+        To provide schools with accessible and
+        practical digital tools that simplify
+        academic administration and improve
+        educational record management.
+    </p>
+
+</div>
+
+
+<div class="mission-card">
+
+    <i class="fas fa-eye"></i>
+
+    <h3>
+        Our Vision
+    </h3>
+
+    <p>
+        To contribute to a future where schools can
+        manage academic information efficiently,
+        securely and digitally.
+    </p>
+
+</div>
+
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- =========================
+     FOOTER
+========================= -->
+
+<footer>
+
+<div class="footer-content">
+
+<div class="footer-brand">
+
+    <h2>NABENG SBA</h2>
+
+    <p>
+        School Management System designed to simplify
+        academic administration and student management.
+    </p>
+
+</div>
+
+
+<div class="footer-links">
+
+    <a href="index.html">Home</a>
+
+    <a href="system.html">Staff</a>
+
+    <a href="student.html">Student</a>
+
+    <a href="contact.html">Contact</a>
+
+</div>
+
+</div>
+
+
+<div class="copyright">
+
+    © 2026 Nabeng SBA System. All Rights Reserved.
+
+</div>
+
+</footer>
+
+
+</body>
+
+</html>
