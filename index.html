@@ -65,11 +65,12 @@ header{
 }
 
 
-.logo i{
-
-    font-size:35px;
-    color:#00b878;
-
+.logo img{
+    width:58px;
+    height:58px;
+    object-fit:contain;
+    border-radius:14px;
+    flex-shrink:0;
 }
 
 
@@ -86,6 +87,24 @@ header{
 
 }
 
+
+
+@media(max-width:900px){
+
+    .logo img{
+        width:45px;
+        height:45px;
+    }
+
+    .logo h2{
+        font-size:18px;
+    }
+
+    .logo span{
+        font-size:9px;
+    }
+
+}
 
 
 .bav-links{
@@ -460,19 +479,15 @@ grid-template-columns:1fr;
 
 <div class="logo">
 
+    <img src="nabeng-sba-logo.png" alt="Nabeng SBA Portal Logo">
 
-<i class="fas fa-graduation-cap"></i>
+    <div>
 
+        <h2>NABENG</h2>
 
-<div>
+        <span>SBA MANAGEMENT SYSTEM</span>
 
-<h2>NABENG</h2>
-
-<span>SBA MANAGEMENT SYSTEM</span>
-
-
-</div>
-
+    </div>
 
 </div>
 
@@ -504,7 +519,7 @@ Student Portal
 
 
 <a href="system.html" class="btn white">
-Login
+Staff
 </a>
 
 
