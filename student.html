@@ -3199,6 +3199,277 @@ button:hover{
     }
 
 }
+
+
+/* =========================================================
+   MODERN STUDENT HOMEWORK PAGE
+========================================================= */
+.student-homework-page{
+    min-height:100vh;
+    background:linear-gradient(180deg,#f5f8ff 0%,#f8fafc 45%,#f1f5f9 100%);
+    padding:24px 18px 50px;
+}
+.student-homework-container{
+    width:min(1120px,100%);
+    margin:0 auto;
+}
+.student-homework-topbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-bottom:22px;
+}
+.student-homework-back,.student-homework-refresh{
+    width:auto;
+    min-height:44px;
+    border:1px solid #e2e8f0;
+    border-radius:13px;
+    padding:10px 15px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    background:#fff;
+    color:#334155;
+    font:600 13px Poppins,sans-serif;
+    cursor:pointer;
+    box-shadow:0 5px 18px rgba(15,23,42,.05);
+}
+.student-homework-back:hover,.student-homework-refresh:hover{
+    color:#3f51b5;
+    border-color:#c7d2fe;
+    transform:translateY(-1px);
+}
+.student-homework-title{flex:1;display:flex;align-items:center;gap:14px;}
+.student-homework-title-icon{
+    width:56px;height:56px;border-radius:16px;display:grid;place-items:center;
+    background:#e9edff;color:#3f51b5;font-size:22px;box-shadow:inset 0 0 0 1px #dbe3ff;
+}
+.student-homework-eyebrow{font-size:10px;font-weight:800;letter-spacing:1.2px;color:#64748b;}
+.student-homework-title h1{margin:2px 0 2px;font-size:27px;color:#172033;font-weight:800;}
+.student-homework-title p{margin:0;color:#7b8498;font-size:12px;}
+.student-homework-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+.student-hw-stat{background:#fff;border:1px solid #e7ebf2;border-radius:17px;padding:16px;display:flex;align-items:center;gap:12px;box-shadow:0 7px 24px rgba(15,23,42,.045);}
+.student-hw-stat-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:17px;}
+.student-hw-stat-icon.blue{background:#eef2ff;color:#3f51b5;}
+.student-hw-stat-icon.amber{background:#fff7df;color:#b7791f;}
+.student-hw-stat-icon.red{background:#fff0f0;color:#dc4545;}
+.student-hw-stat span{display:block;color:#8a93a5;font-size:11px;font-weight:600;}
+.student-hw-stat strong{display:block;margin-top:1px;color:#1e293b;font-size:22px;}
+.student-homework-tools{background:#fff;border:1px solid #e7ebf2;border-radius:17px;padding:12px;display:flex;gap:10px;margin-bottom:16px;box-shadow:0 7px 24px rgba(15,23,42,.045);}
+.student-hw-search{flex:1;display:flex;align-items:center;gap:9px;padding:0 14px;background:#f7f9fc;border:1px solid #e4e8ef;border-radius:12px;min-height:44px;}
+.student-hw-search i{color:#94a3b8;font-size:13px;}
+.student-hw-search input{width:100%;border:0;outline:0;background:transparent;font:13px Poppins,sans-serif;color:#1e293b;}
+.student-homework-tools select{min-width:165px;border:1px solid #e1e6ee;border-radius:12px;background:#f7f9fc;padding:0 13px;outline:0;color:#334155;font:600 12px Poppins,sans-serif;}
+.student-homework-list{display:grid;gap:15px;}
+.student-hw-card{position:relative;background:#fff;border:1px solid #e5eaf1;border-radius:20px;padding:20px;overflow:hidden;box-shadow:0 8px 28px rgba(15,23,42,.055);transition:.2s;}
+.student-hw-card:hover{transform:translateY(-2px);box-shadow:0 13px 34px rgba(15,23,42,.09);}
+.student-hw-card-accent{position:absolute;left:0;top:0;bottom:0;width:4px;background:#3f51b5;}
+.student-hw-card.overdue .student-hw-card-accent{background:#dc4545;}
+.student-hw-card-top{display:flex;gap:13px;align-items:flex-start;}
+.student-hw-subject-icon{width:46px;height:46px;flex:0 0 46px;border-radius:13px;display:grid;place-items:center;background:#eef2ff;color:#3f51b5;}
+.student-hw-card-heading{min-width:0;flex:1;}
+.student-hw-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.student-hw-subject{font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:#667085;}
+.student-hw-status{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:20px;font-size:9px;font-weight:800;text-transform:uppercase;background:#fff7df;color:#a66b00;}
+.student-hw-status.overdue{background:#fff0f0;color:#c93636;}
+.student-hw-card-heading h2{margin:5px 0 0;color:#172033;font-size:18px;line-height:1.35;}
+.student-hw-description{margin:17px 0;padding:15px 16px;border-radius:14px;background:#f8fafc;color:#4b5563;font-size:13px;line-height:1.7;white-space:pre-wrap;}
+.student-hw-details{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.student-hw-details>div{padding:11px 12px;border:1px solid #edf0f4;border-radius:12px;background:#fff;}
+.student-hw-details span{display:block;color:#98a1b2;font-size:10px;margin-bottom:4px;}
+.student-hw-details span i{margin-right:5px;color:#64748b;}
+.student-hw-details strong{display:block;color:#344054;font-size:12px;}
+.student-hw-details .deadline-overdue{color:#d13e3e;}
+.student-hw-attachment-wrap{margin-top:12px;}
+.hw-attachment-btn{display:inline-flex;align-items:center;gap:9px;max-width:100%;padding:10px 12px;border-radius:11px;background:#eef4ff;color:#315ecb;text-decoration:none;font-size:12px;font-weight:700;}
+.hw-attachment-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hw-attachment-btn:hover{background:#e2eaff;}
+.hw-loading-card,.hw-empty-card{background:#fff;border:1px dashed #d9e0ea;border-radius:20px;padding:55px 20px;text-align:center;box-shadow:0 8px 25px rgba(15,23,42,.035);}
+.hw-loading-spinner,.hw-empty-icon{width:62px;height:62px;margin:0 auto 14px;border-radius:18px;display:grid;place-items:center;background:#eef2ff;color:#3f51b5;font-size:24px;}
+.hw-loading-card h3,.hw-empty-card h3{margin:0 0 6px;color:#273142;font-size:17px;}
+.hw-loading-card p,.hw-empty-card p{margin:0;color:#8a93a5;font-size:12px;line-height:1.6;}
+.hw-empty-card.error .hw-empty-icon{background:#fff0f0;color:#d33f3f;}
+.hw-retry-btn{width:auto;margin-top:17px;padding:10px 15px;border:0;border-radius:11px;background:#3f51b5;color:#fff;font:600 12px Poppins,sans-serif;cursor:pointer;}
+@media(max-width:700px){
+    .student-homework-page{padding:15px 12px 35px;}
+    .student-homework-topbar{gap:9px;align-items:flex-start;}
+    .student-homework-title{gap:9px;}
+    .student-homework-title-icon{width:45px;height:45px;flex:0 0 45px;border-radius:13px;font-size:18px;}
+    .student-homework-title h1{font-size:21px;}
+    .student-homework-title p{font-size:10px;}
+    .student-homework-back,.student-homework-refresh{width:42px;height:42px;min-height:42px;padding:0;}
+    .student-homework-back span,.student-homework-refresh span{display:none;}
+    .student-homework-stats{gap:8px;}
+    .student-hw-stat{padding:11px 9px;gap:8px;border-radius:14px;}
+    .student-hw-stat-icon{width:36px;height:36px;border-radius:10px;font-size:14px;}
+    .student-hw-stat span{font-size:9px;}
+    .student-hw-stat strong{font-size:18px;}
+    .student-homework-tools{flex-direction:column;}
+    .student-homework-tools select{height:44px;width:100%;}
+    .student-hw-details{grid-template-columns:1fr;}
+    .student-hw-card{padding:16px;}
+}
+
+
+/* ============================================================
+   STUDENT HOMEWORK - TEACHER RESULT
+============================================================ */
+
+.student-hw-result-box {
+    margin-top: 18px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    border: 1px solid #dbe4f0;
+    background: #f8fafc;
+}
+
+.student-hw-result-box.unmarked {
+    background: #fffaf0;
+    border-color: #f4d58d;
+}
+
+.student-hw-result-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #334155;
+}
+
+.student-hw-result-header i {
+    font-size: 15px;
+}
+
+
+.student-hw-mark {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 12px 14px;
+    background: #ffffff;
+    border-radius: 9px;
+    border: 1px solid #e2e8f0;
+}
+
+.student-hw-result-label {
+    font-weight: 600;
+    color: #475569;
+}
+
+.student-hw-mark strong {
+    font-size: 20px;
+    color: #166534;
+}
+
+
+.student-hw-result-box.unmarked .student-hw-mark strong {
+    color: #b45309;
+    font-size: 15px;
+}
+
+
+.student-hw-feedback {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #ffffff;
+    border-radius: 9px;
+    border: 1px solid #e2e8f0;
+}
+
+.student-hw-feedback .student-hw-result-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 7px;
+    font-size: 14px;
+}
+
+.student-hw-feedback-text {
+    line-height: 1.6;
+    color: #334155;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+
+/* ============================================================
+   HOMEWORK STATUS
+============================================================ */
+
+.student-hw-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.student-hw-status.marked {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.student-hw-status.submitted {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.student-hw-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+
+/* ============================================================
+   SUBMISSION DATE
+============================================================ */
+
+.student-hw-submitted-date {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 600px) {
+
+    .student-hw-result-box {
+        padding: 13px;
+    }
+
+    .student-hw-mark {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .student-hw-mark strong {
+        font-size: 18px;
+    }
+
+    .student-hw-feedback {
+        padding: 11px;
+    }
+
+    .student-hw-status {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+}
 </style>
 
 </head>
@@ -3463,6 +3734,80 @@ button:hover{
 
     </div>
 
+</div>
+
+
+
+
+
+
+<!-- =========================================================
+     STUDENT HOMEWORK PAGE
+========================================================= -->
+
+<div id="studentHomeworkPage" class="student-homework-page" style="display:none;">
+
+    <div class="student-homework-container">
+
+        <div class="student-homework-topbar">
+            <button type="button" class="student-homework-back" onclick="closeHomework()">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back</span>
+            </button>
+
+            <div class="student-homework-title">
+                <div class="student-homework-title-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div>
+                    <span class="student-homework-eyebrow">ACADEMIC WORK</span>
+                    <h1>My Homework</h1>
+                    <p id="studentHomeworkSubtitle">Assignments for your class</p>
+                </div>
+            </div>
+
+            <button type="button" class="student-homework-refresh" onclick="loadStudentHomework()" title="Refresh homework">
+                <i class="fas fa-rotate"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="student-homework-stats">
+            <div class="student-hw-stat">
+                <div class="student-hw-stat-icon blue"><i class="fas fa-layer-group"></i></div>
+                <div><span>Total</span><strong id="studentHwTotal">0</strong></div>
+            </div>
+            <div class="student-hw-stat">
+                <div class="student-hw-stat-icon amber"><i class="fas fa-clock"></i></div>
+                <div><span>Pending</span><strong id="studentHwPending">0</strong></div>
+            </div>
+            <div class="student-hw-stat">
+                <div class="student-hw-stat-icon red"><i class="fas fa-calendar-xmark"></i></div>
+                <div><span>Overdue</span><strong id="studentHwOverdue">0</strong></div>
+            </div>
+        </div>
+
+        <div class="student-homework-tools">
+            <div class="student-hw-search">
+                <i class="fas fa-search"></i>
+                <input id="studentHomeworkSearch" type="search" placeholder="Search homework, subject or title..." oninput="filterStudentHomework()">
+            </div>
+            <select id="studentHomeworkFilter" onchange="filterStudentHomework()">
+                <option value="all">All Homework</option>
+                <option value="pending">Pending</option>
+                <option value="overdue">Overdue</option>
+            </select>
+        </div>
+
+        <div id="studentHomeworkList" class="student-homework-list">
+            <div class="hw-loading-card">
+                <div class="hw-loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                <h3>Loading Homework...</h3>
+                <p>Please wait while your assignments are loaded.</p>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 
@@ -3873,6 +4218,10 @@ window.supabase.createClient(
     supabaseKey
 );
 
+// Logged-in student used by all student portal pages
+let currentStudent = null;
+
+
 
 const passwordInput =
 document.getElementById("password");
@@ -3958,6 +4307,8 @@ document.getElementById("loginForm")
         "loggedStudent",
         JSON.stringify(student)
     );
+
+    currentStudent = student;
 
 
     // Load student name
@@ -4061,7 +4412,8 @@ async function openStudentNotifications() {
         "subjectsPage",
         "messagesPage",
         "downloadsPage",
-        "notificationsPage"
+        "notificationsPage",
+        "studentHomeworkPage"
     ];
 
     pages.forEach(id => {
@@ -5006,6 +5358,751 @@ async function openProfile(){
 
     `;
 
+}
+
+
+
+
+
+/* ============================================================
+   STUDENT HOMEWORK
+   LOAD HOMEWORK + SUBMISSIONS + MARKS + TEACHER FEEDBACK
+============================================================ */
+
+let studentHomeworkData = [];
+let studentHomeworkSubmissions = {};
+
+function getPortalStudent() {
+    if (currentStudent) return currentStudent;
+
+    try {
+        currentStudent = JSON.parse(
+            localStorage.getItem("loggedStudent") || "null"
+        );
+    } catch (error) {
+        console.error("Unable to read logged student:", error);
+        currentStudent = null;
+    }
+
+    return currentStudent;
+}
+
+function escapeHomeworkText(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+/* ============================================================
+   ESCAPE HTML
+============================================================ */
+
+function escapeHomeworkHTML(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+
+function homeworkDate(value) {
+    if (!value) return "Not set";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString([], {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
+}
+
+function homeworkStatus(homework) {
+    if (!homework.deadline) return "pending";
+    const deadline = new Date(homework.deadline);
+    if (Number.isNaN(deadline.getTime())) return "pending";
+    return deadline.getTime() < Date.now() ? "overdue" : "pending";
+}
+
+function openHomework() {
+    const portal = document.getElementById("studentPortal");
+    const page = document.getElementById("studentHomeworkPage");
+
+    if (portal) portal.style.display = "none";
+
+    // Hide all student pages so Homework opens cleanly.
+    [
+        "profilePage",
+        "resultsPage",
+        "subjectsPage",
+        "messagesPage",
+        "downloadsPage",
+        "notificationsPage"
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    });
+
+    if (page) page.style.display = "block";
+
+    const student = getPortalStudent();
+    const subtitle = document.getElementById("studentHomeworkSubtitle");
+    if (subtitle && student) {
+        subtitle.textContent = `Assignments for ${student.studentclass || "your class"}`;
+    }
+
+    loadStudentHomework();
+}
+
+async function loadStudentHomework() {
+
+    console.log("========== LOAD STUDENT HOMEWORK ==========");
+
+    if (!currentStudent) {
+        console.warn("No current student found.");
+        return;
+    }
+
+    try {
+
+        const student = currentStudent;
+
+        const studentClass = String(
+            student.studentclass ||
+            student.studentClass ||
+            student.class ||
+            ""
+        ).trim();
+
+        const schoolid =
+            student.schoolid ||
+            student.schoolID ||
+            student.schoolId ||
+            "";
+
+        if (!studentClass) {
+            console.warn("Student class not found.");
+            return;
+        }
+
+        console.log("Student:", student);
+        console.log("Student Class:", studentClass);
+        console.log("School ID:", schoolid);
+
+
+        /* --------------------------------------------------------
+           LOAD HOMEWORK
+        -------------------------------------------------------- */
+
+        let query = supabaseClient
+            .from("homework")
+            .select("*")
+            .eq("class", studentClass)
+            .order("created_at", {
+                ascending: false
+            });
+
+        if (schoolid) {
+            query = query.eq("schoolid", schoolid);
+        }
+
+        const {
+            data,
+            error
+        } = await query;
+
+        if (error) {
+            console.error(
+                "Error loading homework:",
+                error
+            );
+            throw error;
+        }
+
+        studentHomeworkData = Array.isArray(data)
+            ? data
+            : [];
+
+        console.log(
+            "Homework loaded:",
+            studentHomeworkData.length
+        );
+
+
+        /* --------------------------------------------------------
+           LOAD STUDENT SUBMISSIONS
+        -------------------------------------------------------- */
+
+        await loadStudentHomeworkSubmissions(student);
+
+
+        /* --------------------------------------------------------
+           UPDATE UI
+        -------------------------------------------------------- */
+
+        updateHomeworkStats();
+
+        if (typeof filterStudentHomework === "function") {
+            filterStudentHomework();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "loadStudentHomework error:",
+            error
+        );
+
+        studentHomeworkData = [];
+        studentHomeworkSubmissions = {};
+
+        if (typeof updateHomeworkStats === "function") {
+            updateHomeworkStats();
+        }
+    }
+}
+
+/* ============================================================
+   LOAD THIS STUDENT'S HOMEWORK SUBMISSIONS
+============================================================ */
+
+async function loadStudentHomeworkSubmissions(student) {
+
+    console.log(
+        "========== LOAD STUDENT HOMEWORK SUBMISSIONS =========="
+    );
+
+    studentHomeworkSubmissions = {};
+
+    try {
+
+        if (!student || !student.id) {
+            console.warn(
+                "Student ID is missing. Cannot load submissions."
+            );
+            return;
+        }
+
+        const studentId = String(student.id);
+
+        const schoolid = String(
+            student.schoolid ||
+            student.schoolID ||
+            student.schoolId ||
+            ""
+        );
+
+        console.log(
+            "Loading submissions for student:",
+            studentId
+        );
+
+
+        let query = supabaseClient
+            .from("homework_submissions")
+            .select("*")
+            .eq("student_id", studentId);
+
+        if (schoolid) {
+            query = query.eq("schoolid", schoolid);
+        }
+
+        const {
+            data,
+            error
+        } = await query;
+
+        if (error) {
+            console.error(
+                "Error loading homework submissions:",
+                error
+            );
+
+            throw error;
+        }
+
+
+        /* --------------------------------------------------------
+           STORE SUBMISSIONS USING HOMEWORK ID
+        -------------------------------------------------------- */
+
+        (data || []).forEach(submission => {
+
+            if (!submission.homework_id) {
+                return;
+            }
+
+            studentHomeworkSubmissions[
+                String(submission.homework_id)
+            ] = submission;
+        });
+
+
+        console.log(
+            "Student submissions loaded:",
+            data?.length || 0
+        );
+
+        console.log(
+            "Student homework submission map:",
+            studentHomeworkSubmissions
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "Homework submissions could not be loaded:",
+            error.message || error
+        );
+    }
+}
+
+/* ============================================================
+   GET SUBMISSION FOR A PARTICULAR HOMEWORK
+============================================================ */
+
+function getHomeworkSubmission(homework) {
+
+    if (!homework || !homework.id) {
+        return null;
+    }
+
+    return (
+        studentHomeworkSubmissions[
+            String(homework.id)
+        ] || null
+    );
+}
+
+/* ============================================================
+   FORMAT MARK
+============================================================ */
+
+function formatHomeworkMark(mark) {
+
+    if (
+        mark === null ||
+        mark === undefined ||
+        mark === ""
+    ) {
+        return "";
+    }
+
+    const number = Number(mark);
+
+    if (!Number.isFinite(number)) {
+        return String(mark);
+    }
+
+    if (Number.isInteger(number)) {
+        return String(number);
+    }
+
+    return number.toFixed(2);
+}
+
+function updateHomeworkStats() {
+    const total = studentHomeworkData.length;
+    const overdue = studentHomeworkData.filter(h => homeworkStatus(h) === "overdue").length;
+    const pending = total - overdue;
+
+    const totalEl = document.getElementById("studentHwTotal");
+    const pendingEl = document.getElementById("studentHwPending");
+    const overdueEl = document.getElementById("studentHwOverdue");
+
+    if (totalEl) totalEl.textContent = total;
+    if (pendingEl) pendingEl.textContent = pending;
+    if (overdueEl) overdueEl.textContent = overdue;
+}
+
+function filterStudentHomework() {
+    const list = document.getElementById("studentHomeworkList");
+    if (!list) return;
+
+    const search = (
+        document.getElementById("studentHomeworkSearch")?.value || ""
+    ).trim().toLowerCase();
+
+    const filter =
+        document.getElementById("studentHomeworkFilter")?.value || "all";
+
+    const filtered = studentHomeworkData.filter(homework => {
+        const haystack = [
+            homework.title,
+            homework.subject,
+            homework.description,
+            homework.class
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = !search || haystack.includes(search);
+        const matchesFilter = filter === "all" || homeworkStatus(homework) === filter;
+
+        return matchesSearch && matchesFilter;
+    });
+
+    if (!filtered.length) {
+        list.innerHTML = `
+            <div class="hw-empty-card">
+                <div class="hw-empty-icon"><i class="fas fa-book-open"></i></div>
+                <h3>${studentHomeworkData.length ? "No Matching Homework" : "No Homework Available"}</h3>
+                <p>${studentHomeworkData.length
+                    ? "Try another search or change the homework filter."
+                    : "Your class teacher has not published any homework yet."}</p>
+            </div>`;
+        return;
+    }
+
+    list.innerHTML = filtered.map(renderStudentHomeworkCard).join("");
+}
+
+/* ============================================================
+   RENDER STUDENT HOMEWORK CARD
+============================================================ */
+
+function renderStudentHomeworkCard(homework) {
+
+    if (!homework) {
+        return "";
+    }
+
+    const submission =
+        getHomeworkSubmission(homework);
+
+
+    /* --------------------------------------------------------
+       BASIC HOMEWORK INFORMATION
+    -------------------------------------------------------- */
+
+    const title =
+        homework.title ||
+        homework.homework_title ||
+        "Homework";
+
+    const subject =
+        homework.subject ||
+        "General";
+
+    const description =
+        homework.description ||
+        homework.instructions ||
+        "";
+
+    const dueDate =
+        homework.due_date ||
+        homework.deadline ||
+        "";
+
+    const maxMarks =
+        homework.max_mark ||
+        homework.max_marks ||
+        homework.total_marks ||
+        100;
+
+
+    /* --------------------------------------------------------
+       SUBMISSION STATUS
+    -------------------------------------------------------- */
+
+    const hasSubmission =
+        !!submission;
+
+    const hasMark =
+        submission &&
+        submission.mark !== null &&
+        submission.mark !== undefined &&
+        submission.mark !== "";
+
+
+    const isMarked =
+        hasMark ||
+        (
+            submission &&
+            String(submission.status || "").toLowerCase() ===
+            "marked"
+        );
+
+
+    /* --------------------------------------------------------
+       STATUS BADGE
+    -------------------------------------------------------- */
+
+    let statusHTML = "";
+
+    if (isMarked) {
+
+        statusHTML = `
+            <span class="student-hw-status marked">
+                <i class="fas fa-check-circle"></i>
+                Marked
+            </span>
+        `;
+
+    } else if (hasSubmission) {
+
+        statusHTML = `
+            <span class="student-hw-status submitted">
+                <i class="fas fa-paper-plane"></i>
+                Submitted
+            </span>
+        `;
+
+    } else {
+
+        statusHTML = `
+            <span class="student-hw-status pending">
+                <i class="fas fa-clock"></i>
+                Not Submitted
+            </span>
+        `;
+    }
+
+
+    /* --------------------------------------------------------
+       SUBMISSION DATE
+    -------------------------------------------------------- */
+
+    let submissionDateHTML = "";
+
+    if (submission && submission.submitted_at) {
+
+        const date = new Date(
+            submission.submitted_at
+        );
+
+        if (!Number.isNaN(date.getTime())) {
+
+            submissionDateHTML = `
+                <div class="student-hw-submitted-date">
+                    <i class="fas fa-calendar-check"></i>
+                    Submitted:
+                    ${date.toLocaleDateString()}
+                </div>
+            `;
+        }
+    }
+
+
+    /* --------------------------------------------------------
+       RESULT / MARK SECTION
+    -------------------------------------------------------- */
+
+    let resultHTML = "";
+
+    if (isMarked) {
+
+        const markValue =
+            hasMark
+                ? formatHomeworkMark(submission.mark)
+                : "0";
+
+        const maxMarkValue =
+            submission?.max_mark ||
+            maxMarks ||
+            100;
+
+        const feedback =
+            submission?.teacher_feedback ||
+            submission?.feedback ||
+            "";
+
+
+        resultHTML = `
+            <div class="student-hw-result-box">
+
+                <div class="student-hw-result-header">
+                    <i class="fas fa-award"></i>
+                    Teacher's Assessment
+                </div>
+
+                <div class="student-hw-mark">
+                    <span class="student-hw-result-label">
+                        Mark:
+                    </span>
+
+                    <strong>
+                        ${escapeHomeworkHTML(markValue)}/${escapeHomeworkHTML(maxMarkValue)}
+                    </strong>
+                </div>
+
+                <div class="student-hw-feedback">
+
+                    <div class="student-hw-result-label">
+                        <i class="fas fa-comment-alt"></i>
+                        Teacher Feedback:
+                    </div>
+
+                    <div class="student-hw-feedback-text">
+                        ${
+                            feedback
+                                ? escapeHomeworkHTML(feedback)
+                                : "No feedback was provided."
+                        }
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+
+    } else if (hasSubmission) {
+
+        resultHTML = `
+            <div class="student-hw-result-box unmarked">
+
+                <div class="student-hw-result-header">
+                    <i class="fas fa-hourglass-half"></i>
+                    Teacher's Assessment
+                </div>
+
+                <div class="student-hw-mark">
+                    <span class="student-hw-result-label">
+                        Mark:
+                    </span>
+
+                    <strong>
+                        Not marked yet
+                    </strong>
+                </div>
+
+                <div class="student-hw-feedback">
+
+                    <div class="student-hw-result-label">
+                        <i class="fas fa-comment-alt"></i>
+                        Teacher Feedback:
+                    </div>
+
+                    <div class="student-hw-feedback-text">
+                        Your teacher has not provided feedback yet.
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    /* --------------------------------------------------------
+       ANSWER BUTTON
+    -------------------------------------------------------- */
+
+    let actionHTML = "";
+
+    if (hasSubmission) {
+
+        actionHTML = `
+            <button
+                type="button"
+                class="student-hw-action-btn view"
+                onclick="openHomeworkAnswer('${homework.id}')"
+            >
+                <i class="fas fa-eye"></i>
+                View Submission
+            </button>
+        `;
+
+    } else {
+
+        actionHTML = `
+            <button
+                type="button"
+                class="student-hw-action-btn submit"
+                onclick="openHomeworkAnswer('${homework.id}')"
+            >
+                <i class="fas fa-upload"></i>
+                Submit Homework
+            </button>
+        `;
+    }
+
+
+    /* --------------------------------------------------------
+       COMPLETE CARD
+    -------------------------------------------------------- */
+
+    return `
+        <div
+            class="student-homework-card"
+            data-homework-id="${escapeHomeworkHTML(homework.id)}"
+        >
+
+            <div class="student-hw-card-top">
+
+                <div class="student-hw-subject">
+                    ${escapeHomeworkHTML(subject)}
+                </div>
+
+                ${statusHTML}
+
+            </div>
+
+
+            <div class="student-hw-card-body">
+
+                <h3 class="student-hw-title">
+                    ${escapeHomeworkHTML(title)}
+                </h3>
+
+                ${
+                    description
+                        ? 
+                            <div class="student-hw-description">
+                                ${escapeHomeworkHTML(description)}
+                            </div>
+                        `
+                        : ""
+                }
+
+
+                ${
+                    dueDate
+                        ? `
+                            <div class="student-hw-due-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                Due:
+                                ${escapeHomeworkHTML(dueDate)}
+                            </div>
+                        
+                        : ""
+                }
+
+
+                ${submissionDateHTML}
+
+                ${resultHTML}
+
+            </div>
+
+
+            <div class="student-hw-card-footer">
+
+                ${actionHTML}
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+function closeHomework() {
+    const page = document.getElementById("studentHomeworkPage");
+    const portal = document.getElementById("studentPortal");
+
+    if (page) page.style.display = "none";
+    if (portal) portal.style.display = "block";
 }
 
 
@@ -6610,7 +7707,7 @@ function renderStudentConversation() {
 
                         ${
                             message.text
-                                ? `
+                                ? 
                                     <div>
                                         ${escapeStudentMessage(
                                             message.text
@@ -6632,16 +7729,12 @@ function renderStudentConversation() {
                                         <i class="fas fa-paperclip"></i>
                                         Attachment
                                     </a>
-                                `
+                                
                                 : ""
                         }
 
 
-                        <div class="student-message-time">
-
-                            ${time}
-
-                        </div>
+                        <div class="student-message-time">${time}</div>
 
                     </div>
 
@@ -6844,19 +7937,7 @@ async function openAttendance(){
 }
 
 
-async function openHomework(){
 
-    let student=
-    JSON.parse(localStorage.getItem("loggedStudent"));
-
-    const {data}=await supabaseClient
-    .from("homework")
-    .select("*")
-    .eq("class",student.studentclass);
-
-    console.log(data);
-
-}
 
 
 async function openSubjects(){
@@ -8453,14 +9534,14 @@ async function generateStudentTermReport(term) {
                 ${
                     term === "term3"
 
-                    ? `
+                    ? 
 
                     &nbsp;&nbsp;&nbsp;&nbsp;
 
                     <b>Promotion Class:</b>
                     ${student.promotionClass || "Not Set"}
 
-                    `
+                    
 
                     : ""
 
