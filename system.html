@@ -371,32 +371,66 @@ Back to Login
        onkeyup="searchStudent()">
 
 
-<!-- ADMIN PORTAL ACCOUNT BUTTON -->
+<!-- ==========================================
+     STUDENT MANAGEMENT ACTIONS
+========================================== -->
 
-<button 
-id="generateAccountsBtn"
-onclick="generateStudentPortalAccounts()"
-style="display:none; margin-bottom:20px;">
+<div
+    id="studentManagementActions"
+    style="
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-bottom:20px;
+    "
+>
 
-<i class="fas fa-user-lock"></i>
+    <!-- ADMIN: GENERATE PORTAL ACCOUNTS -->
+    <button
+        id="generateAccountsBtn"
+        onclick="generateStudentPortalAccounts()"
+        style="display:none;"
+    >
+        <i class="fas fa-user-lock"></i>
+        Generate Student Portal Accounts
+    </button>
 
-Generate Student Portal Accounts
 
-</button>
+    <!-- ADMIN: ADMISSION -->
+    <button
+        id="admissionBtn"
+        onclick="openAdmissionModal()"
+        style="display:none;"
+    >
+        <i class="fas fa-user-plus"></i>
+        Admission
+    </button>
+
+</div>
 
 
+<!-- ==========================================
+     TEACHER ADD STUDENT SECTION
+========================================== -->
 
-<!-- ADD STUDENT -->
-<div id="addStudentSection" style="margin-bottom:20px;">
+<div
+    id="addStudentSection"
+    style="margin-bottom:20px;"
+>
 
     <h4>Add New Student</h4>
 
-    <input id="studentname"
-           placeholder="Student Name">
+    <input
+        id="studentname"
+        placeholder="Student Name"
+    >
 
-    <input type="text"
-           id="studentClass"
-           placeholder="Enter class">
+    <input
+        type="text"
+        id="studentClass"
+        placeholder="Enter class"
+    >
 
     <button onclick="addStudentFromPage()">
         Add Student
@@ -407,10 +441,12 @@ Generate Student Portal Accounts
 
     <br><br>
 
-    <input type="file"
-           id="csvFile"
-           accept=".csv"
-           onchange="handleCSV(event)">
+    <input
+        type="file"
+        id="csvFile"
+        accept=".csv"
+        onchange="handleCSV(event)"
+    >
 
 </div>
 
@@ -454,6 +490,15 @@ Generate Student Portal Accounts
 
 </div>
 
+
+
+
+
+
+<!-- =========================================================
+     Report page
+========================================================= -->
+
 <div id="reportsPage" class="container page">
 <h3>Reports</h3>
 
@@ -491,6 +536,15 @@ Generate Student Portal Accounts
 <div id="singleReportDownloadArea"></div>
 </div>
 
+
+
+
+
+
+
+
+
+
 <div id="attendancePage" class="container page">
     <h3>Student Attendance</h3>
 
@@ -510,7 +564,6 @@ Generate Student Portal Accounts
 </button>
     <div id="attendanceTable"></div>
 </div>
-
 
 
 
@@ -2997,6 +3050,233 @@ Generate Student Portal Accounts
             </button>
 
         </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ==========================================
+     ADMIN ADMISSION MODAL
+========================================== -->
+
+<div
+    id="admissionModal"
+    class="admission-modal"
+    style="display:none;"
+>
+
+    <div class="admission-modal-content">
+
+        <!-- HEADER -->
+
+        <div class="admission-modal-header">
+
+            <div>
+                <h2>
+                    <i class="fas fa-user-plus"></i>
+                    Student Admission
+                </h2>
+
+                <p>
+                    Register a new student into the school.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="admission-close"
+                onclick="closeAdmissionModal()"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <!-- FORM -->
+
+        <form
+            id="admissionForm"
+            onsubmit="submitAdmission(event)"
+        >
+
+            <!-- STUDENT INFORMATION -->
+
+            <div class="admission-section">
+
+                <h3>
+                    <i class="fas fa-user"></i>
+                    Student Information
+                </h3>
+
+                <div class="admission-grid">
+
+                    <div class="admission-field full">
+
+                        <label>
+                            Student Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionStudentName"
+                            placeholder="Enter student's full name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Class *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionStudentClass"
+                            placeholder="e.g. Basic 4"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Gender *
+                        </label>
+
+                        <select
+                            id="admissionGender"
+                            required
+                        >
+
+                            <option value="">
+                                Select Gender
+                            </option>
+
+                            <option value="Male">
+                                Male
+                            </option>
+
+                            <option value="Female">
+                                Female
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PARENT INFORMATION -->
+
+            <div class="admission-section">
+
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Parent / Guardian Information
+                </h3>
+
+                <div class="admission-grid">
+
+                    <div class="admission-field">
+
+                        <label>
+                            Parent / Guardian Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionParentName"
+                            placeholder="Full name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Phone Number *
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="admissionParentNumber"
+                            placeholder="Phone number"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Occupation
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionParentOccupation"
+                            placeholder="Parent occupation"
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Address
+                        </label>
+
+                        <textarea
+                            id="admissionParentAddress"
+                            placeholder="Residential address"
+                            rows="3"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+
+            <div class="admission-actions">
+
+                <button
+                    type="button"
+                    class="admission-cancel"
+                    onclick="closeAdmissionModal()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="admission-submit"
+                >
+                    <i class="fas fa-check"></i>
+                    Admit Student
+                </button>
+
+            </div>
+
+        </form>
 
     </div>
 
