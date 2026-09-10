@@ -16648,6 +16648,3 @@ async function submitAdmission(event) {
 
 
 
-selectFilteredStudent()
-
-openStudentModal()
