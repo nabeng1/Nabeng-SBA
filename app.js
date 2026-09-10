@@ -4356,32 +4356,192 @@ let daysAbsent = totalDays - daysPresent;
 
 let teacherName = getClassTeacherName(s.studentclass);
 
-// Load teacher signature
+
+// =========================================================
+// LOAD TEACHER SIGNATURE
+// =========================================================
+
 let teacherSignature = "";
 
-const { data: teacher } = await supabaseClient
-    .from("users")
-    .select("signature")
-    .eq("fullname", teacherName)      // or username if that's what getClassTeacherName() returns
-    .single();
+console.log("Teacher Name:", teacherName);
 
-if (teacher) {
-    teacherSignature = teacher.signature || "";
+const { data: teacherUsers, error: teacherError } =
+    await supabaseClient
+        .from("users")
+        .select(`
+            id,
+            firstname,
+            surname,
+            username,
+            signature_name,
+            schoolid
+        `)
+        .eq("schoolid", currentUser.schoolid);
+
+if (teacherError) {
+
+    console.error(
+        "Teacher users lookup error:",
+        teacherError
+    );
+
+} else {
+
+    console.log(
+        "Teachers/Users found:",
+        teacherUsers
+    );
 }
 
-// Load headteacher signature
+
+// ---------------------------------------------------------
+// NORMALIZE NAME
+// ---------------------------------------------------------
+
+const normalizeName = (name) => {
+
+    return String(name || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+
+};
+
+
+const reportTeacherName =
+    normalizeName(teacherName);
+
+
+// ---------------------------------------------------------
+// FIND MATCHING TEACHER
+// ---------------------------------------------------------
+
+const matchedTeacher =
+    (teacherUsers || []).find(user => {
+
+        const firstname =
+            normalizeName(user.firstname);
+
+        const surname =
+            normalizeName(user.surname);
+
+        const username =
+            normalizeName(user.username);
+
+        const fullName =
+            normalizeName(
+                `${user.firstname || ""} ${user.surname || ""}`
+            );
+
+        const reverseName =
+            normalizeName(
+                `${user.surname || ""} ${user.firstname || ""}`
+            );
+
+
+        return (
+            fullName === reportTeacherName ||
+            reverseName === reportTeacherName ||
+            username === reportTeacherName
+        );
+
+    });
+
+
+console.log(
+    "Matched Teacher:",
+    matchedTeacher
+);
+
+
+// ---------------------------------------------------------
+// GET SIGNATURE
+// ---------------------------------------------------------
+
+if (matchedTeacher?.signature_name) {
+
+    teacherSignature =
+        matchedTeacher.signature_name;
+
+}
+
+
+console.log(
+    "Teacher Signature:",
+    teacherSignature
+);
+
+
+
+// =========================================================
+// LOAD HEADTEACHER SIGNATURE
+// =========================================================
+
+
 let headSignature = "";
 
-const { data: head } = await supabaseClient
-    .from("users")
-    .select("signature")
-    .eq("role", "admin")
-    .eq("schoolid", currentUser.schoolid)
-    .single();
+const { data: headteacher, error: headError } =
+    await supabaseClient
+        .from("users")
+        .select(`
+            id,
+            firstname,
+            surname,
+            username,
+            role,
+            signature_name,
+            schoolid
+        `)
+        .eq("role", "admin")
+        .eq("schoolid", currentUser.schoolid)
+        .maybeSingle();
 
-if (head) {
-    headSignature = head.signature || "";
+
+if (headError) {
+
+    console.error(
+        "Headteacher lookup error:",
+        headError
+    );
+
 }
+
+
+console.log(
+    "Headteacher Record:",
+    headteacher
+);
+
+
+console.log(
+    "Headteacher signature_name:",
+    headteacher?.signature_name
+);
+
+
+if (headteacher?.signature_name) {
+
+    headSignature =
+        headteacher.signature_name;
+
+}
+
+let headteacherName = "Headteacher";
+
+if (headteacher) {
+    headteacherName =
+        `${headteacher.firstname || ""} ${headteacher.surname || ""}`.trim();
+
+    if (!headteacherName) {
+        headteacherName = headteacher.username || "Headteacher";
+    }
+}
+
+
+console.log(
+    "Headteacher Signature:",
+    headSignature
+);
 
 html += `</table>
 
@@ -4466,39 +4626,91 @@ ${s.teacherRemark?.[term]||""}
 <!-- SIGNATURES -->
 
 <div style="
-display:flex;
-justify-content:space-between;
-align-items:flex-end;
-margin-top:5px;
-
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-top:5px;
 ">
 
-<div style="width:40%;text-align:center;">
+    <!-- TEACHER SIGNATURE -->
+    <div style="
+        width:40%;
+        text-align:center;
+    ">
 
-<div class="report-signatures">
+        <div class="report-signatures">
 
-    <div>
-        <img src="${teacherSignature}"
-style="width:180px;height:70px;object-fit:contain;">
-        <hr>
-        <b>${teacherName}</b><br>
+            <div>
 
-Class Teacher
+                ${teacherSignature ? `
+                    <img
+                        src="${teacherSignature}"
+                        crossorigin="anonymous"
+                        style="
+                            width:180px;
+                            height:70px;
+                            object-fit:contain;
+                            display:block;
+                            margin:0 auto;
+                        "
+                    >
+                ` : `
+                    <div style="
+                        width:180px;
+                        height:70px;
+                        margin:0 auto;
+                    "></div>
+                `}
+
+                <hr>
+
+                <b>${teacherName}</b><br>
+
+                Class Teacher
+
+            </div>
+
+        </div>
+
     </div>
-</div>
 
-</div>
 
-<div style="width:40%;text-align:center;">
+    <!-- HEADTEACHER SIGNATURE -->
+    <div style="
+        width:40%;
+        text-align:center;
+    ">
 
-<div>
-        <img src="${headSignature}"
-style="width:180px;height:70px;object-fit:contain;">
-        <hr>
-        <b>Headteacher</b>
+        <div>
+
+            ${headSignature ? `
+                <img
+                    src="${headSignature}"
+                    crossorigin="anonymous"
+                    style="
+                        width:180px;
+                        height:70px;
+                        object-fit:contain;
+                        display:block;
+                        margin:0 auto;
+                    "
+                >
+            ` : `
+                <div style="
+                    width:180px;
+                    height:70px;
+                    margin:0 auto;
+                "></div>
+            `}
+
+            <hr>
+
+            <b>${headteacherName}</b><br>
+Headteacher
+
+        </div>
+
     </div>
-
-</div>
 
 </div>
 
@@ -4669,6 +4881,7 @@ async function promoteStudents(){
 
 }
 
+
 // ==========================================
 // CLICK SIGNATURE TO SELECT A FILE
 // ==========================================
@@ -4689,7 +4902,9 @@ async function handleSignatureUpload(event) {
     if (!file) return;
 
 
-    // Only allow images
+    // ------------------------------------------
+    // ONLY ALLOW IMAGES
+    // ------------------------------------------
     if (!file.type.startsWith("image/")) {
 
         alert("Please select an image file.");
@@ -4700,7 +4915,9 @@ async function handleSignatureUpload(event) {
     }
 
 
-    // Optional size limit: 2MB
+    // ------------------------------------------
+    // SIZE LIMIT: 2MB
+    // ------------------------------------------
     if (file.size > 2 * 1024 * 1024) {
 
         alert("Signature image must be less than 2MB.");
@@ -4711,7 +4928,9 @@ async function handleSignatureUpload(event) {
     }
 
 
-    // Make sure user is logged in
+    // ------------------------------------------
+    // CHECK LOGGED-IN USER
+    // ------------------------------------------
     if (!currentUser || !currentUser.id) {
 
         alert("User information not available.");
@@ -4723,7 +4942,6 @@ async function handleSignatureUpload(event) {
     // ------------------------------------------
     // SHOW PREVIEW IMMEDIATELY
     // ------------------------------------------
-
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -4745,13 +4963,18 @@ async function handleSignatureUpload(event) {
 
 
     // ------------------------------------------
-    // UPLOAD TO SUPABASE
+    // CREATE UNIQUE FILE NAME
     // ------------------------------------------
+    const extension =
+        file.name.split(".").pop().toLowerCase();
 
     const fileName =
-        `${currentUser.id}-${Date.now()}.${file.name.split(".").pop()}`;
+        `${currentUser.id}-${Date.now()}.${extension}`;
 
 
+    // ------------------------------------------
+    // UPLOAD TO SUPABASE STORAGE
+    // ------------------------------------------
     const { error: uploadError } =
         await supabaseClient.storage
             .from("signatures")
@@ -4763,9 +4986,15 @@ async function handleSignatureUpload(event) {
 
     if (uploadError) {
 
-        console.error(uploadError);
+        console.error(
+            "Signature upload error:",
+            uploadError
+        );
 
-        alert("Signature upload failed: " + uploadError.message);
+        alert(
+            "Signature upload failed: " +
+            uploadError.message
+        );
 
         return;
     }
@@ -4774,7 +5003,6 @@ async function handleSignatureUpload(event) {
     // ------------------------------------------
     // GET PUBLIC URL
     // ------------------------------------------
-
     const { data } =
         supabaseClient.storage
             .from("signatures")
@@ -4782,25 +5010,42 @@ async function handleSignatureUpload(event) {
 
 
     const signatureUrl =
-        data.publicUrl;
+        data?.publicUrl;
+
+
+    if (!signatureUrl) {
+
+        alert("Could not generate signature URL.");
+
+        return;
+    }
+
+
+    console.log(
+        "Signature URL:",
+        signatureUrl
+    );
 
 
     // ------------------------------------------
     // SAVE URL TO USERS TABLE
+    // IMPORTANT: COLUMN IS signature_name
     // ------------------------------------------
-
     const { error: dbError } =
         await supabaseClient
             .from("users")
             .update({
-                signature: signatureUrl
+                signature_name: signatureUrl
             })
             .eq("id", currentUser.id);
 
 
     if (dbError) {
 
-        console.error(dbError);
+        console.error(
+            "Signature database error:",
+            dbError
+        );
 
         alert(
             "Signature uploaded, but could not be saved to your profile: " +
@@ -4812,9 +5057,15 @@ async function handleSignatureUpload(event) {
 
 
     // ------------------------------------------
+    // UPDATE CURRENT USER OBJECT
+    // ------------------------------------------
+    currentUser.signature_name =
+        signatureUrl;
+
+
+    // ------------------------------------------
     // DISPLAY ACTUAL SUPABASE SIGNATURE
     // ------------------------------------------
-
     const preview =
         document.getElementById("signaturePreview");
 
@@ -4832,13 +5083,14 @@ async function handleSignatureUpload(event) {
         "none";
 
 
-    // Reset input so the same file
-    // can be selected again if necessary
+    // ------------------------------------------
+    // RESET FILE INPUT
+    // ------------------------------------------
     event.target.value = "";
 
 
     console.log(
-        "Signature uploaded:",
+        "Signature saved successfully:",
         signatureUrl
     );
 
@@ -4856,9 +5108,9 @@ async function loadSignature() {
     const { data, error } =
         await supabaseClient
             .from("users")
-            .select("signature")
+            .select("signature_name")
             .eq("id", currentUser.id)
-            .single();
+            .maybeSingle();
 
 
     if (error) {
@@ -4879,10 +5131,16 @@ async function loadSignature() {
         document.getElementById("signaturePlaceholder");
 
 
-    if (data?.signature) {
+    if (!preview || !placeholder) return;
+
+
+    // ------------------------------------------
+    // SIGNATURE EXISTS
+    // ------------------------------------------
+    if (data?.signature_name) {
 
         preview.src =
-            data.signature;
+            data.signature_name;
 
         preview.style.display =
             "block";
@@ -4890,8 +5148,17 @@ async function loadSignature() {
         placeholder.style.display =
             "none";
 
+
+        // Keep currentUser synchronized
+        currentUser.signature_name =
+            data.signature_name;
+
+
     } else {
 
+        // ------------------------------------------
+        // NO SIGNATURE
+        // ------------------------------------------
         preview.src = "";
 
         preview.style.display =
@@ -4901,6 +5168,8 @@ async function loadSignature() {
             "flex";
     }
 }
+
+
 
 function showPromotionModal(){
 
