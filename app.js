@@ -1358,74 +1358,112 @@ if(id === "profileNotePage"){
         : "none";
     }
 
-   // STUDENTS PAGE
-if(id === "studentsPage"){
-
-    loadStudentsTable();
-    loadClassOptions();
-
-    let addSection =
-        document.getElementById("addStudentSection");
-
-    if(addSection){
-
-        addSection.style.display =
-            currentUser.role === "admin"
-            ? "none"
-            : "block";
-    }
-}
-
+   // =========================================================
 // STUDENTS PAGE
-if(id === "studentsPage"){
+// =========================================================
 
+if (id === "studentsPage") {
 
     loadStudentsTable();
     loadClassOptions();
 
 
+    // -----------------------------------------
+    // GET ELEMENTS
+    // -----------------------------------------
 
-    // SHOW GENERATE ACCOUNT BUTTON FOR ADMIN
+    const addSection =
+        document.getElementById(
+            "addStudentSection"
+        );
 
-    let generateBtn =
-    document.getElementById(
-        "generateAccountsBtn"
-    );
+    const generateBtn =
+        document.getElementById(
+            "generateAccountsBtn"
+        );
+
+    const admissionBtn =
+        document.getElementById(
+            "admissionBtn"
+        );
 
 
-    if(generateBtn){
+    // -----------------------------------------
+    // GET USER ROLE
+    // -----------------------------------------
 
-        if(
-            currentUser.role &&
-            currentUser.role.toLowerCase() === "admin"
-        ){
+    const role =
+        String(currentUser?.role || "")
+            .toLowerCase()
+            .trim();
 
-            generateBtn.style.display = "block";
 
-        }else{
+    // =========================================
+    // ADMIN
+    // =========================================
 
-            generateBtn.style.display = "none";
+    if (role === "admin") {
+
+        // Hide teacher Add Student section
+        if (addSection) {
+
+            addSection.style.display =
+                "none";
+
+        }
+
+
+        // Show Generate Student Accounts
+        if (generateBtn) {
+
+            generateBtn.style.display =
+                "inline-flex";
+
+        }
+
+
+        // Show Admission button
+        if (admissionBtn) {
+
+            admissionBtn.style.display =
+                "inline-flex";
 
         }
 
     }
 
 
+    // =========================================
+    // TEACHER
+    // =========================================
 
-    // HIDE ADD STUDENT FOR ADMIN
+    else {
 
-    let addSection =
-    document.getElementById(
-        "addStudentSection"
-    );
+        // Show normal Add Student section
+        if (addSection) {
+
+            addSection.style.display =
+                "block";
+
+        }
 
 
-    if(addSection){
+        // Hide Generate Student Accounts
+        if (generateBtn) {
 
-        addSection.style.display =
-        currentUser.role === "admin"
-        ? "none"
-        : "block";
+            generateBtn.style.display =
+                "none";
+
+        }
+
+
+        // Hide Admission button
+        if (admissionBtn) {
+
+            admissionBtn.style.display =
+                "none";
+
+        }
 
     }
 
@@ -1681,6 +1719,9 @@ async function handleCSV(event){
 
     reader.readAsText(file);
 }
+
+
+
 function populateStudentList() {
 
     const term =
@@ -1693,21 +1734,56 @@ function populateStudentList() {
             ? filteredStudents
             : students;
 
-    // School subject list (used by Admin)
-    const Subjects =
-        (subjects || []).map(sub =>
-            typeof sub === "string" ? sub : sub.name
-        );
+    // =========================================================
+    // SCHOOL SUBJECT LIST
+    // =========================================================
+    // Use the existing `subjects` variable.
+    // Convert subject objects to subject names when necessary.
+    const Subjects = Array.isArray(subjects)
+        ? subjects
+            .map(sub =>
+                typeof sub === "string"
+                    ? sub
+                    : sub?.name
+            )
+            .filter(Boolean)
+        : [];
 
+
+    // =========================================================
+    // BUILD STUDENT LIST
+    // =========================================================
     const html = list.map((s, i) => {
 
-        // Teacher sees only assigned subjects
-        // Admin sees all school subjects
-        const subjectList =
-    currentUser.role === "teacher"
-        ? [...new Set(currentUser.subjects || [])]
-        : [...new Set(schoolSubjects)];
+        // -----------------------------------------------------
+        // Determine which subjects this user should see
+        // -----------------------------------------------------
+        let subjectList = [];
 
+        if (currentUser?.role === "teacher") {
+
+            // Teacher sees only assigned subjects
+            subjectList = [
+                ...new Set(
+                    Array.isArray(currentUser.subjects)
+                        ? currentUser.subjects
+                        : []
+                )
+            ];
+
+        } else {
+
+            // Admin sees all school subjects
+            subjectList = [
+                ...new Set(Subjects)
+            ];
+
+        }
+
+
+        // -----------------------------------------------------
+        // Calculate subject progress
+        // -----------------------------------------------------
         const totalSubjects = subjectList.length;
 
         let completed = 0;
@@ -1715,12 +1791,15 @@ function populateStudentList() {
 
         subjectList.forEach(subject => {
 
-            const mark = s.subjects?.[subject]?.[term];
+            const mark =
+                s.subjects?.[subject]?.[term];
 
             if (!mark) return;
 
+            // At least one mark has been entered
             started++;
 
+            // Check whether all components have been entered
             const isCompleted =
                 mark.test1 !== undefined &&
                 mark.test2 !== undefined &&
@@ -1734,11 +1813,21 @@ function populateStudentList() {
 
         });
 
+
+        // -----------------------------------------------------
+        // Calculate percentage
+        // -----------------------------------------------------
         const progress =
             totalSubjects > 0
-                ? Math.round((completed / totalSubjects) * 100)
+                ? Math.round(
+                    (completed / totalSubjects) * 100
+                )
                 : 0;
 
+
+        // -----------------------------------------------------
+        // Progress colour
+        // -----------------------------------------------------
         let color = "#ef4444";
 
         if (progress === 100) {
@@ -1751,36 +1840,42 @@ function populateStudentList() {
 
         }
 
+
+        // -----------------------------------------------------
+        // Student card
+        // -----------------------------------------------------
         return `
 
-        <div class="card ${s.id === currentStudent?.id ? "active-student" : ""}"
-             onclick="selectFilteredStudent(${i})">
+        <div
+            class="card ${s.id === currentStudent?.id ? "active-student" : ""}"
+            onclick="selectFilteredStudent(${i})"
+        >
 
             <div style="font-weight:bold;">
-                ${s.name}
+                ${s.name || "Unnamed Student"}
             </div>
 
             ${
                 started > 0
-                ? `
-                <div style="
-                    font-size:12px;
-                    margin-top:4px;
-                    color:${color};
-                    font-weight:bold;
-                ">
-                    ${progress}% Complete
-                </div>
-                `
-                : `
-                <div style="
-                    font-size:12px;
-                    margin-top:4px;
-                    color:#9ca3af;
-                ">
-                    Not Started
-                </div>
-                `
+                    ? `
+                    <div style="
+                        font-size:12px;
+                        margin-top:4px;
+                        color:${color};
+                        font-weight:bold;
+                    ">
+                        ${progress}% Complete
+                    </div>
+                    `
+                    : `
+                    <div style="
+                        font-size:12px;
+                        margin-top:4px;
+                        color:#9ca3af;
+                    ">
+                        Not Started
+                    </div>
+                    `
             }
 
         </div>
@@ -1789,9 +1884,17 @@ function populateStudentList() {
 
     }).join("");
 
-    studentsList.innerHTML = html;
+
+    // =========================================================
+    // DISPLAY STUDENTS
+    // =========================================================
+    if (studentsList) {
+        studentsList.innerHTML = html;
+    }
 
 }
+
+
 
 async function editStudent(index){
 
@@ -2778,187 +2881,829 @@ function confirmDelete(){
 }
 
 
+
+
+
 function openStudentModal(index) {
 
     const s = students[index];
 
+    if (!s) {
+        alert("Student information not found.");
+        return;
+    }
+
+    // Store selected student
+    currentStudent = s;
+
+    // Safe values
+    const studentName = s.name || "";
+    const studentClass = s.studentclass || "";
+    const gender = s.gender || "Male";
+
+    const parentName = s.parent_name || "";
+    const parentNumber = s.parent_number || "";
+    const parentOccupation = s.parent_occupation || "";
+    const parentAddress = s.parent_address || "";
+
+    const studentPhoto =
+        s["student-photos"] ||
+        s.photo ||
+        "default-student.png";
+
+
     document.getElementById("studentModalContent").innerHTML = `
 
-<div class="student-profile">
+        <div class="student-profile">
 
-    <!-- Header -->
-    <div class="profile-header">
+            <!-- =========================================
+                 PROFILE HEADER
+            ========================================== -->
 
-        <button class="modal-close"
-            onclick="closeStudentModal()">
-            <i class="fas fa-times"></i>
-        </button>
-
-        <div class="photo-container">
-
-            <img
-                id="studentPhoto"
-                src="${s["student-photos"] || ''}"
-                class="profile-photo"
-                onclick="document.getElementById('photoUpload').click()">
-
-            <div class="photo-hover">
-
-                <i class="fas fa-camera"></i>
-                <span>Upload</span>
-
-            </div>
-
-            <input
-                id="photoUpload"
-                type="file"
-                hidden
-                accept="image/*"
-                onchange="uploadStudentPhoto(${index},this.files[0])">
-
-        </div>
-
-        <h2>${s.name}</h2>
-
-        <p>
-            <i class="fas fa-user-graduate"></i>
-            Class ${s.studentclass}
-        </p>
-
-        <span class="student-status ${
-            s.passwordchanged ? "active" : "warning"
-        }">
-
-            ${
-                s.passwordchanged
-                ? '<i class="fas fa-check-circle"></i> Active'
-                : '<i class="fas fa-clock"></i> Temporary Password'
-            }
-
-        </span>
-
-    </div>
-
-    <!-- Information -->
-
-    <div class="profile-body">
-
-        <!-- Student ID -->
-
-        <div class="info-card">
-
-            <label>
-                <i class="fas fa-id-card"></i>
-                Student ID
-            </label>
-
-            <div class="info-row">
-
-                <span id="studentIDText">
-
-                    ${s.studentid || "Not Generated"}
-
-                </span>
+            <div class="profile-header">
 
                 <button
-                    class="icon-btn"
-                    onclick="copyStudentID()">
+                    class="modal-close"
+                    onclick="closeStudentModal()"
+                    aria-label="Close profile"
+                    type="button">
 
-                    <i class="fas fa-copy"></i>
+                    <i class="fas fa-times"></i>
 
                 </button>
 
-            </div>
 
-        </div>
+                <div class="profile-header-content">
 
-        <!-- Password -->
+                    <!-- STUDENT PHOTO -->
 
-        <div class="info-card">
+                    <div class="photo-container">
 
-            <label>
+                        <img
+                            id="studentPhoto"
+                            src="${studentPhoto}"
+                            class="profile-photo"
+                            onclick="document.getElementById('photoUpload').click()"
+                            onerror="this.src='default-student.png'"
+                            alt="Student photo"
+                        >
 
-                <i class="fas fa-lock"></i>
+                        <div class="photo-hover">
 
-                Password
+                            <i class="fas fa-camera"></i>
 
-            </label>
+                            <span>Change</span>
 
-            <div class="info-row">
+                        </div>
 
-                <span id="passwordText">
 
-                    ••••••••
+                        <input
+                            id="photoUpload"
+                            type="file"
+                            hidden
+                            accept="image/*"
+                            onchange="uploadStudentPhoto(${index}, this.files[0])"
+                        >
 
-                </span>
+                    </div>
 
-                <input
-                    id="studentPassword"
-                    type="hidden"
-                    value="${s.studentpassword || ''}">
 
-                <div class="action-icons">
+                    <!-- STUDENT DETAILS -->
 
-                    <button
-                        class="icon-btn"
-                        onclick="togglePassword()">
+                    <div class="profile-heading">
 
-                        <i class="fas fa-eye"></i>
+                        <div class="profile-name-row">
 
-                    </button>
+                            <div>
 
-                    <button
-                        class="icon-btn"
-                        onclick="copyStudentPassword()">
+                                <h2>
+                                    ${studentName || "Student"}
+                                </h2>
 
-                        <i class="fas fa-copy"></i>
+                                <p class="profile-subtitle">
 
-                    </button>
+                                    <i class="fas fa-user-graduate"></i>
+
+                                    Student Profile
+
+                                </p>
+
+                            </div>
+
+
+                            <span class="student-status ${
+                                s.passwordchanged
+                                    ? "active"
+                                    : "warning"
+                            }">
+
+                                ${
+                                    s.passwordchanged
+                                        ? '<i class="fas fa-check-circle"></i> Active'
+                                        : '<i class="fas fa-clock"></i> Temporary Password'
+                                }
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="profile-meta">
+
+                            <span>
+
+                                <i class="fas fa-school"></i>
+
+                                ${studentClass || "Class not assigned"}
+
+                            </span>
+
+
+                            <span>
+
+                                <i class="fas fa-venus-mars"></i>
+
+                                ${gender}
+
+                            </span>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
             </div>
 
+
+            <!-- =========================================
+                 PROFILE BODY
+            ========================================== -->
+
+            <div class="profile-body">
+
+
+                <!-- =====================================
+                     STUDENT INFORMATION
+                ====================================== -->
+
+                <div class="profile-section">
+
+                    <div class="info-section-title">
+
+                        <div class="section-icon">
+
+                            <i class="fas fa-user-graduate"></i>
+
+                        </div>
+
+                        <div>
+
+                            <h3>Student Information</h3>
+
+                            <p>Basic student information</p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="info-grid">
+
+
+                        <!-- STUDENT NAME -->
+
+                        <div class="info-card">
+
+                            <label for="editStudentName">
+
+                                <i class="fas fa-user"></i>
+
+                                Student Name
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editStudentName"
+                                value="${studentName}"
+                                placeholder="Enter student name"
+                            >
+
+                        </div>
+
+
+                        <!-- CLASS -->
+
+                        <div class="info-card">
+
+                            <label for="editStudentClass">
+
+                                <i class="fas fa-school"></i>
+
+                                Class
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editStudentClass"
+                                value="${studentClass}"
+                                placeholder="Enter class"
+                            >
+
+                        </div>
+
+
+                        <!-- GENDER -->
+
+                        <div class="info-card">
+
+                            <label for="editStudentGender">
+
+                                <i class="fas fa-venus-mars"></i>
+
+                                Gender
+
+                            </label>
+
+                            <select id="editStudentGender">
+
+                                <option
+                                    value="Male"
+                                    ${gender === "Male" ? "selected" : ""}
+                                >
+                                    Male
+                                </option>
+
+                                <option
+                                    value="Female"
+                                    ${gender === "Female" ? "selected" : ""}
+                                >
+                                    Female
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     ACCOUNT INFORMATION
+                ====================================== -->
+
+                <div class="profile-section">
+
+                    <div class="info-section-title">
+
+                        <div class="section-icon account-icon">
+
+                            <i class="fas fa-shield-halved"></i>
+
+                        </div>
+
+                        <div>
+
+                            <h3>Account Information</h3>
+
+                            <p>Student portal login credentials</p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="info-grid account-grid">
+
+
+                        <!-- STUDENT ID -->
+
+                        <div class="info-card account-card">
+
+                            <div class="account-card-header">
+
+                                <label>
+
+                                    <i class="fas fa-id-card"></i>
+
+                                    Student ID
+
+                                </label>
+
+                                <span class="account-label">
+                                    LOGIN ID
+                                </span>
+
+                            </div>
+
+
+                            <div class="info-row">
+
+                                <span
+                                    id="studentIDText"
+                                    class="readonly-value"
+                                >
+                                    ${s.studentid || "Not Generated"}
+                                </span>
+
+
+                                <button
+                                    type="button"
+                                    class="icon-btn"
+                                    onclick="copyStudentID()"
+                                    title="Copy Student ID"
+                                    aria-label="Copy Student ID">
+
+                                    <i class="fas fa-copy"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- PASSWORD -->
+
+                        <div class="info-card account-card">
+
+                            <div class="account-card-header">
+
+                                <label>
+
+                                    <i class="fas fa-lock"></i>
+
+                                    Password
+
+                                </label>
+
+                                <span class="account-label">
+                                    LOGIN PASSWORD
+                                </span>
+
+                            </div>
+
+
+                            <div class="info-row">
+
+                                <span
+                                    id="passwordText"
+                                    class="readonly-value password-value"
+                                >
+                                    ••••••••
+                                </span>
+
+
+                                <input
+                                    id="studentPassword"
+                                    type="hidden"
+                                    value="${s.studentpassword || ''}"
+                                >
+
+
+                                <div class="action-icons">
+
+                                    <button
+                                        type="button"
+                                        class="icon-btn"
+                                        onclick="togglePassword()"
+                                        title="Show password"
+                                        aria-label="Show password">
+
+                                        <i class="fas fa-eye"></i>
+
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="icon-btn"
+                                        onclick="copyStudentPassword()"
+                                        title="Copy password"
+                                        aria-label="Copy password">
+
+                                        <i class="fas fa-copy"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     PARENT / GUARDIAN
+                ====================================== -->
+
+                <div class="profile-section">
+
+                    <div class="info-section-title">
+
+                        <div class="section-icon parent-icon">
+
+                            <i class="fas fa-users"></i>
+
+                        </div>
+
+                        <div>
+
+                            <h3>Parent / Guardian</h3>
+
+                            <p>Parent or guardian contact details</p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="info-grid">
+
+
+                        <!-- PARENT NAME -->
+
+                        <div class="info-card">
+
+                            <label for="editParentName">
+
+                                <i class="fas fa-user-tie"></i>
+
+                                Parent / Guardian Name
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editParentName"
+                                value="${parentName}"
+                                placeholder="Enter parent or guardian name"
+                            >
+
+                        </div>
+
+
+                        <!-- PHONE -->
+
+                        <div class="info-card">
+
+                            <label for="editParentNumber">
+
+                                <i class="fas fa-phone"></i>
+
+                                Phone Number
+
+                            </label>
+
+                            <input
+                                type="tel"
+                                id="editParentNumber"
+                                value="${parentNumber}"
+                                placeholder="Enter phone number"
+                            >
+
+                        </div>
+
+
+                        <!-- OCCUPATION -->
+
+                        <div class="info-card">
+
+                            <label for="editParentOccupation">
+
+                                <i class="fas fa-briefcase"></i>
+
+                                Occupation
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editParentOccupation"
+                                value="${parentOccupation}"
+                                placeholder="Enter occupation"
+                            >
+
+                        </div>
+
+
+                        <!-- ADDRESS -->
+
+                        <div class="info-card address-card">
+
+                            <label for="editParentAddress">
+
+                                <i class="fas fa-location-dot"></i>
+
+                                Address
+
+                            </label>
+
+                            <textarea
+                                id="editParentAddress"
+                                rows="3"
+                                placeholder="Enter parent / guardian address"
+                            >${parentAddress}</textarea>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =========================================
+                 PROFILE FOOTER
+            ========================================== -->
+
+            <div class="profile-footer">
+
+
+                <div class="footer-left">
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        onclick="document.getElementById('photoUpload').click()">
+
+                        <i class="fas fa-camera"></i>
+
+                        Change Photo
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        onclick="closeStudentModal()">
+
+                        <i class="fas fa-times"></i>
+
+                        Close
+
+                    </button>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="primary-btn"
+                    onclick="saveStudentProfile(${index})">
+
+                    <i class="fas fa-save"></i>
+
+                    Save Changes
+
+                </button>
+
+            </div>
+
+
         </div>
 
-    </div>
-	
-	
+    `;
 
-    <!-- Footer -->
 
-    <div class="profile-footer">
-
-        <button
-            class="primary-btn"
-            onclick="document.getElementById('photoUpload').click()">
-
-            <i class="fas fa-upload"></i>
-
-            Upload Photo
-
-        </button>
-
-        <button
-            class="secondary-btn"
-            onclick="closeStudentModal()">
-
-            <i class="fas fa-times"></i>
-
-            Close
-
-        </button>
-
-    </div>
-
-</div>
-
-`;
-console.log("SELECTED STUDENT:", s);
-console.log("STUDENT PHOTO VALUE:", s["student-photos"]);
+    // Show modal
     document.getElementById("studentModal").style.display = "flex";
 
+
+    console.log(
+        "SELECTED STUDENT:",
+        s
+    );
+
 }
+
+
+
+
+
+
+async function saveStudentProfile(index) {
+
+    const student = students[index];
+
+    if (!student || !student.id) {
+
+        alert("Student record not found.");
+
+        return;
+    }
+
+
+    // =========================================
+    // READ FORM VALUES
+    // =========================================
+
+    const name =
+        document.getElementById("editStudentName")
+            ?.value.trim();
+
+    const studentclass =
+        document.getElementById("editStudentClass")
+            ?.value.trim();
+
+    const gender =
+        document.getElementById("editStudentGender")
+            ?.value;
+
+    const parent_name =
+        document.getElementById("editParentName")
+            ?.value.trim();
+
+    const parent_number =
+        document.getElementById("editParentNumber")
+            ?.value.trim();
+
+    const parent_occupation =
+        document.getElementById("editParentOccupation")
+            ?.value.trim();
+
+    const parent_address =
+        document.getElementById("editParentAddress")
+            ?.value.trim();
+
+
+    // =========================================
+    // VALIDATION
+    // =========================================
+
+    if (!name) {
+
+        alert("Please enter the student's name.");
+
+        return;
+    }
+
+
+    if (!studentclass) {
+
+        alert("Please enter the student's class.");
+
+        return;
+    }
+
+
+    if (!gender) {
+
+        alert("Please select the student's gender.");
+
+        return;
+    }
+
+
+    if (!parent_name) {
+
+        alert("Please enter the parent / guardian name.");
+
+        return;
+    }
+
+
+    if (!parent_number) {
+
+        alert("Please enter the parent / guardian phone number.");
+
+        return;
+    }
+
+
+    // =========================================
+    // UPDATE SUPABASE
+    // =========================================
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+
+                .from("students")
+
+                .update({
+
+                    name: name,
+
+                    studentclass: studentclass,
+
+                    gender: gender,
+
+                    parent_name: parent_name,
+
+                    parent_number: parent_number,
+
+                    parent_occupation:
+                        parent_occupation || null,
+
+                    parent_address:
+                        parent_address || null
+
+                })
+
+                .eq("id", student.id)
+
+                .eq("schoolid", currentUser.schoolid)
+
+                .select()
+
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "Student profile update error:",
+                error
+            );
+
+            alert(
+                "Failed to save student information:\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+
+        // =========================================
+        // UPDATE LOCAL STUDENT OBJECT
+        // =========================================
+
+        students[index] = {
+
+            ...students[index],
+
+            ...data
+
+        };
+
+
+        // Update current student
+        currentStudent = students[index];
+
+
+        // =========================================
+        // REFRESH STUDENT LIST
+        // =========================================
+
+        await loadStudents();
+
+        loadStudentsTable();
+
+        populateStudentList();
+
+        updateDashboard();
+
+        updateStudentSuggestions();
+
+
+        // =========================================
+        // CLOSE MODAL
+        // =========================================
+
+        closeStudentModal();
+
+
+        alert(
+            "Student and parent information updated successfully ✅"
+        );
+
+
+        console.log(
+            "Updated student:",
+            data
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Save student profile error:",
+            error
+        );
+
+        alert(
+            "An error occurred while saving the student information."
+        );
+
+    }
+
+}
+
 
 async function uploadStudentPhoto(index, file) {
 
@@ -6894,49 +7639,33 @@ async function filterStudentsByClass(){
     showTeacherSubjects();
 }
 
-function selectFilteredStudent(index){
 
-    let student = filteredStudents[index];
+function selectFilteredStudent(index) {
 
-    if(!student){
+    const student = filteredStudents[index];
+
+    if (!student) {
         alert("Student not found");
         return;
     }
 
-    // ADMIN
-    if(currentUser.role === "admin"){
-
-        let modal = document.getElementById("studentModal");
-        let content = document.getElementById("studentModalContent");
-
-        content.innerHTML = `
-            <h2>${student.name}</h2>
-
-            <p><strong>Class:</strong> ${student.studentclass}</p>
-
-            <p><strong>Gender:</strong>
-            ${student.gender || "Not Set"}</p>
-
-            <button onclick="closeStudentModal()">
-                Close
-            </button>
-        `;
-
-        modal.style.display = "flex";
-        return;
-    }
-
-    // TEACHER
-    let originalIndex = students.findIndex(
+    // Find the student's real position in the main students array
+    const originalIndex = students.findIndex(
         s => s.id === student.id
     );
 
-    if(originalIndex !== -1){
-        selectStudent(originalIndex);
+    if (originalIndex === -1) {
+        alert("Student record not found");
+        return;
     }
+
+    // Both Admin and Teacher open the same student profile
+    openStudentModal(originalIndex);
 }
 
 window.selectFilteredStudent = selectFilteredStudent;
+
+
 
 async function loadClassOptions(){
 
@@ -15602,3 +16331,323 @@ updateSubmissionStatistics();
 
 
 }
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   ADMIN ADMISSION
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   OPEN ADMISSION MODAL
+--------------------------------------------------------- */
+
+function openAdmissionModal() {
+
+    // SECURITY CHECK
+
+    if (!currentUser ||
+        currentUser.role !== "admin") {
+
+        alert("Only admin can admit students.");
+
+        return;
+    }
+
+
+    const modal =
+        document.getElementById(
+            "admissionModal"
+        );
+
+    if (!modal) return;
+
+
+    // RESET FORM
+
+    const form =
+        document.getElementById(
+            "admissionForm"
+        );
+
+    if (form) {
+        form.reset();
+    }
+
+
+    modal.style.display = "flex";
+
+}
+
+
+/* ---------------------------------------------------------
+   CLOSE ADMISSION MODAL
+--------------------------------------------------------- */
+
+function closeAdmissionModal() {
+
+    const modal =
+        document.getElementById(
+            "admissionModal"
+        );
+
+    if (!modal) return;
+
+    modal.style.display = "none";
+
+}
+
+
+/* ---------------------------------------------------------
+   SUBMIT ADMISSION
+--------------------------------------------------------- */
+
+async function submitAdmission(event) {
+
+    event.preventDefault();
+
+
+    // ADMIN ONLY
+
+    if (!currentUser ||
+        currentUser.role !== "admin") {
+
+        alert(
+            "Only admin can admit students."
+        );
+
+        return;
+    }
+
+
+    // GET VALUES
+
+    const name =
+        document
+            .getElementById(
+                "admissionStudentName"
+            )
+            .value
+            .trim();
+
+
+    const studentclass =
+        document
+            .getElementById(
+                "admissionStudentClass"
+            )
+            .value
+            .trim();
+
+
+    const gender =
+        document
+            .getElementById(
+                "admissionGender"
+            )
+            .value;
+
+
+    const parentName =
+        document
+            .getElementById(
+                "admissionParentName"
+            )
+            .value
+            .trim();
+
+
+    const parentNumber =
+        document
+            .getElementById(
+                "admissionParentNumber"
+            )
+            .value
+            .trim();
+
+
+    const parentOccupation =
+        document
+            .getElementById(
+                "admissionParentOccupation"
+            )
+            .value
+            .trim();
+
+
+    const parentAddress =
+        document
+            .getElementById(
+                "admissionParentAddress"
+            )
+            .value
+            .trim();
+
+
+    // VALIDATION
+
+    if (
+        !name ||
+        !studentclass ||
+        !gender ||
+        !parentName ||
+        !parentNumber
+    ) {
+
+        alert(
+            "Please complete all required fields."
+        );
+
+        return;
+    }
+
+
+    // DISABLE BUTTON
+
+    const submitButton =
+        event.target.querySelector(
+            ".admission-submit"
+        );
+
+    if (submitButton) {
+
+        submitButton.disabled = true;
+
+        submitButton.innerHTML =
+            `<i class="fas fa-spinner fa-spin"></i>
+             Admitting...`;
+
+    }
+
+
+    try {
+
+        // INSERT STUDENT
+
+        const { data, error } =
+            await supabaseClient
+                .from("students")
+                .insert([{
+
+                    name: name,
+
+                    studentclass:
+                        studentclass,
+
+                    gender: gender,
+
+                    parent_name:
+                        parentName,
+
+                    parent_number:
+                        parentNumber,
+
+                    parent_occupation:
+                        parentOccupation,
+
+                    parent_address:
+                        parentAddress,
+
+                    schoolid:
+                        currentUser.schoolid,
+
+                    teacher: null,
+
+                    subjects: {},
+
+                    currentTerm: "term1",
+
+                    average: 0
+
+                }])
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "Admission error:",
+                error
+            );
+
+            alert(
+                "Failed to admit student: " +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "Student admitted successfully:",
+            data
+        );
+
+
+        // REFRESH STUDENTS
+
+        await loadStudents();
+
+        loadStudentsTable();
+
+        populateStudentList();
+
+        updateDashboard();
+
+        updateStudentSuggestions();
+
+
+        // CLOSE MODAL
+
+        closeAdmissionModal();
+
+
+        alert(
+            "Student admitted successfully ✅"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Admission error:",
+            error
+        );
+
+        alert(
+            "An error occurred while admitting the student."
+        );
+
+    }
+
+    finally {
+
+        if (submitButton) {
+
+            submitButton.disabled = false;
+
+            submitButton.innerHTML =
+                `<i class="fas fa-check"></i>
+                 Admit Student`;
+
+        }
+
+    }
+
+}
+
+
+
+selectFilteredStudent()
+
+openStudentModal()
