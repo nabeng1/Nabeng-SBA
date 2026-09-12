@@ -865,347 +865,888 @@ button:hover{
 
 }
 
-/* =========================================
-   STUDENT PROFILE PAGE
-========================================= */
 
-.student-profile-page {
-    min-height: 100vh;
-    background: #f4f6fb;
-    padding: 25px 20px 50px;
-}
 
-.student-profile-container {
-    max-width: 900px;
+
+
+
+/* =========================================================
+   STUDENT PORTAL — MODERN PROFILE
+   Clean version — no duplicated old profile CSS
+========================================================= */
+
+
+/* =========================================================
+   MAIN PROFILE
+========================================================= */
+
+.portal-profile {
+    width: 100%;
+    max-width: 1100px;
     margin: 0 auto;
-}
 
+    background: var(--card-bg, #ffffff);
 
-/* =========================================
-   BACK BUTTON
-========================================= */
-
-.profile-back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-
-    padding: 11px 18px;
-
-    border: none;
-    border-radius: 12px;
-
-    background: #4356b8;
-    color: white;
-
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-
-    cursor: pointer;
-
-    box-shadow: 0 5px 15px rgba(67, 86, 184, 0.18);
-
-    transition: .2s;
-}
-
-.profile-back-btn:hover {
-    background: #3548a7;
-    transform: translateY(-1px);
-}
-
-
-/* =========================================
-   PAGE HEADING
-========================================= */
-
-.student-profile-heading {
-    text-align: center;
-    margin: 25px 0;
-}
-
-.student-profile-heading h2 {
-    margin: 0;
-
-    color: #3f51b5;
-
-    font-size: 27px;
-    font-weight: 700;
-}
-
-.student-profile-heading p {
-    margin: 6px 0 0;
-
-    color: #8a8fa3;
-
-    font-size: 13px;
-}
-
-
-/* =========================================
-   PROFILE CARD
-========================================= */
-
-.student-profile-card {
-    background: white;
-
-    border-radius: 22px;
+    border-radius: 24px;
 
     overflow: hidden;
 
     box-shadow:
-        0 10px 35px rgba(0, 0, 0, 0.07);
+        0 15px 45px rgba(0, 0, 0, 0.08);
 }
 
 
-/* =========================================
-   PROFILE TOP
-========================================= */
+/* =========================================================
+   PROFILE HEADER
+========================================================= */
 
-.student-profile-top {
-    background: linear-gradient(
-        135deg,
-        #4356b8,
-        #596bd0
-    );
+.portal-profile-header {
+    background:
+        linear-gradient(
+            135deg,
+            #111827,
+            #1f2937
+        );
 
-    padding: 35px 25px;
+    color: #ffffff;
 
-    text-align: center;
-
-    color: white;
+    padding: 35px;
 }
 
 
-/* =========================================
+.portal-profile-header-inner {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    gap: 25px;
+
+    min-height: 120px;
+}
+
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+.portal-profile-back {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid
+        rgba(255, 255, 255, 0.2);
+
+    border-radius: 12px;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+
+.portal-profile-back:hover {
+    background:
+        rgba(255, 255, 255, 0.16);
+
+    transform: translateX(-2px);
+}
+
+
+/* =========================================================
    PROFILE PHOTO
-========================================= */
+========================================================= */
 
-.student-photo-wrapper {
-    width: 125px;
-    height: 125px;
+.portal-profile-photo-wrap {
+    position: relative;
 
-    margin: 0 auto 15px;
+    width: 120px;
+    height: 120px;
 
-    border-radius: 50%;
+    flex-shrink: 0;
 
-    background: white;
-
-    padding: 5px;
-
-    box-shadow:
-        0 8px 25px rgba(0, 0, 0, 0.15);
+    margin-left: 45px;
 }
 
-.student-profile-photo {
-    width: 100%;
-    height: 100%;
 
-    border-radius: 50%;
+.portal-profile-photo {
+    width: 120px;
+    height: 120px;
+
+    display: block;
 
     object-fit: cover;
 
+    border-radius: 50%;
+
+    border: 5px solid #ffffff;
+
+    background: #f3f4f6;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Online indicator */
+
+.portal-profile-photo-status {
+    position: absolute;
+
+    right: 6px;
+    bottom: 7px;
+
+    width: 20px;
+    height: 20px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    border: 4px solid #1f2937;
+}
+
+
+/* =========================================================
+   PROFILE HEADING
+========================================================= */
+
+.portal-profile-heading {
+    flex: 1;
+
+    min-width: 0;
+}
+
+
+.portal-profile-label {
     display: block;
-}
 
+    margin-bottom: 6px;
 
-/* =========================================
-   NAME
-========================================= */
+    font-size: 11px;
 
-.student-profile-name {
-    margin: 0;
-
-    font-size: 22px;
     font-weight: 700;
-}
 
-.student-profile-id {
-    margin-top: 5px;
+    letter-spacing: 1.5px;
 
-    font-size: 13px;
+    text-transform: uppercase;
 
-    opacity: .85;
-}
-
-
-/* =========================================
-   INFORMATION SECTION
-========================================= */
-
-.student-info-section {
-    padding: 25px;
-}
-
-.student-info-title {
-    margin: 0 0 18px;
-
-    color: #252a3d;
-
-    font-size: 16px;
-    font-weight: 700;
+    color:
+        rgba(255, 255, 255, 0.6);
 }
 
 
-/* =========================================
-   INFO GRID
-========================================= */
+.portal-profile-heading h1 {
+    margin: 0 0 10px;
 
-.student-info-grid {
-    display: grid;
+    color: #ffffff;
 
-    grid-template-columns:
-        repeat(2, 1fr);
+    font-size: 30px;
 
-    gap: 15px;
+    line-height: 1.2;
+
+    font-weight: 750;
+
+    overflow-wrap: anywhere;
 }
 
-.student-info-item {
-    padding: 17px;
 
-    background: #f8f9fc;
+/* Student ID + class */
 
-    border: 1px solid #edf0f5;
+.portal-profile-meta {
+    display: flex;
 
-    border-radius: 14px;
+    flex-wrap: wrap;
 
+    align-items: center;
+
+    gap: 18px;
+
+    color:
+        rgba(255, 255, 255, 0.75);
+
+    font-size: 14px;
+}
+
+
+.portal-profile-meta span {
     display: flex;
 
     align-items: center;
 
-    gap: 13px;
+    gap: 7px;
 }
 
-.student-info-icon {
-    width: 42px;
-    height: 42px;
+
+.portal-profile-meta i {
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   STUDENT STATUS
+========================================================= */
+
+.portal-profile-status {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 9px 14px;
+
+    border-radius: 30px;
+
+    font-size: 13px;
+
+    font-weight: 650;
+
+    white-space: nowrap;
+}
+
+
+.portal-profile-status.active {
+    background:
+        rgba(34, 197, 94, 0.14);
+
+    color: #86efac;
+}
+
+
+.portal-profile-status.inactive {
+    background:
+        rgba(239, 68, 68, 0.14);
+
+    color: #fca5a5;
+}
+
+
+.portal-status-dot {
+    width: 8px;
+    height: 8px;
 
     flex-shrink: 0;
 
-    border-radius: 11px;
+    border-radius: 50%;
 
-    background: #eef1ff;
+    background: #22c55e;
+}
 
-    color: #4356b8;
+
+.portal-profile-status.inactive
+.portal-status-dot {
+    background: #ef4444;
+}
+
+
+/* =========================================================
+   PROFILE BODY
+========================================================= */
+
+.portal-profile-body {
+    padding: 35px;
+}
+
+
+/* =========================================================
+   PROFILE SECTION
+========================================================= */
+
+.portal-profile-section {
+    margin-bottom: 35px;
+}
+
+
+.portal-profile-section:last-of-type {
+    margin-bottom: 25px;
+}
+
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+.portal-section-heading {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    margin-bottom: 20px;
+}
+
+
+.portal-section-icon {
+    width: 44px;
+    height: 44px;
+
+    flex-shrink: 0;
 
     display: flex;
 
     align-items: center;
     justify-content: center;
 
-    font-size: 16px;
+    border-radius: 13px;
+
+    background: #eef2ff;
+
+    color: #4f46e5;
+
+    font-size: 17px;
 }
 
-.student-info-label {
+
+.portal-section-icon.parent {
+    background: #ecfdf5;
+
+    color: #059669;
+}
+
+
+.portal-section-icon.account {
+    background: #fff7ed;
+
+    color: #ea580c;
+}
+
+
+.portal-section-heading h2 {
+    margin: 0 0 3px;
+
+    color:
+        var(--text-color, #111827);
+
+    font-size: 17px;
+
+    font-weight: 700;
+}
+
+
+.portal-section-heading p {
+    margin: 0;
+
+    color:
+        var(--muted-text, #6b7280);
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   INFORMATION GRID
+========================================================= */
+
+.portal-info-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+
+/* =========================================================
+   INFORMATION CARD
+========================================================= */
+
+.portal-info-card {
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    min-width: 0;
+
+    padding: 18px;
+
+    background:
+        var(--card-inner-bg, #ffffff);
+
+    border: 1px solid
+        var(--border-color, #e5e7eb);
+
+    border-radius: 16px;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.portal-info-card:hover {
+    transform: translateY(-2px);
+
+    border-color: #d1d5db;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.06);
+}
+
+
+/* =========================================================
+   INFORMATION ICON
+========================================================= */
+
+.portal-info-icon {
+    width: 43px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #f3f4f6;
+
+    color: #4b5563;
+
+    font-size: 15px;
+}
+
+
+/* =========================================================
+   INFORMATION CONTENT
+========================================================= */
+
+.portal-info-content {
+    min-width: 0;
+}
+
+
+.portal-info-label {
     display: block;
 
-    color: #9297a8;
+    margin-bottom: 4px;
+
+    color:
+        var(--muted-text, #6b7280);
 
     font-size: 11px;
 
-    margin-bottom: 3px;
+    font-weight: 650;
+
+    letter-spacing: 0.5px;
+
+    text-transform: uppercase;
 }
 
-.student-info-value {
+
+.portal-info-content strong {
     display: block;
 
-    color: #292e42;
+    color:
+        var(--text-color, #111827);
+
+    font-size: 15px;
+
+    font-weight: 650;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   ACCOUNT CARD
+========================================================= */
+
+.portal-account-card {
+    display: flex;
+
+    align-items: center;
+
+    padding: 20px;
+
+    background:
+        var(--card-inner-bg, #ffffff);
+
+    border: 1px solid
+        var(--border-color, #e5e7eb);
+
+    border-radius: 18px;
+}
+
+
+.portal-account-item {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+
+.portal-account-icon {
+    width: 43px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #f0fdf4;
+
+    color: #16a34a;
+
+    font-size: 15px;
+}
+
+
+.portal-account-item span {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color:
+        var(--muted-text, #6b7280);
+
+    font-size: 11px;
+
+    letter-spacing: 0.5px;
+
+    text-transform: uppercase;
+}
+
+
+.portal-account-item strong {
+    display: block;
+
+    color:
+        var(--text-color, #111827);
 
     font-size: 14px;
 
-    font-weight: 600;
+    font-weight: 650;
+
+    overflow-wrap: anywhere;
 }
 
 
-/* =========================================
-   STATUS
-========================================= */
+/* Divider */
 
-.student-status {
+.portal-account-divider {
+    width: 1px;
+    height: 45px;
+
+    flex-shrink: 0;
+
+    margin: 0 30px;
+
+    background:
+        var(--border-color, #e5e7eb);
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.portal-profile-footer {
+    display: flex;
+
+    justify-content: flex-start;
+
+    padding-top: 5px;
+}
+
+
+.portal-back-button {
     display: inline-flex;
 
     align-items: center;
 
-    gap: 6px;
+    gap: 8px;
 
-    margin-top: 20px;
+    padding: 12px 18px;
 
-    padding: 8px 13px;
+    border: none;
 
-    border-radius: 20px;
+    border-radius: 12px;
 
-    background: #e8f7ee;
+    background: #111827;
 
-    color: #16834a;
+    color: #ffffff;
 
-    font-size: 12px;
+    font-size: 14px;
 
-    font-weight: 600;
-}
+    font-weight: 650;
 
-.student-status-dot {
-    width: 7px;
-    height: 7px;
+    cursor: pointer;
 
-    border-radius: 50%;
-
-    background: #20a35a;
+    transition: all 0.2s ease;
 }
 
 
-/* =========================================
-   MOBILE
-========================================= */
+.portal-back-button:hover {
+    background: #000000;
 
-@media(max-width: 650px) {
+    transform: translateY(-1px);
 
-    .student-profile-page {
-        padding: 15px 12px 35px;
-    }
+    box-shadow:
+        0 7px 18px
+        rgba(0, 0, 0, 0.15);
+}
 
-    .student-profile-heading h2 {
-        font-size: 23px;
-    }
 
-    .student-profile-card {
+/* =========================================================
+   MOBILE — TABLETS
+========================================================= */
+
+@media (max-width: 760px) {
+
+    .portal-profile {
         border-radius: 18px;
     }
 
-    .student-profile-top {
-        padding: 30px 18px;
+
+    .portal-profile-header {
+        padding: 25px 20px 30px;
     }
 
-    .student-info-section {
-        padding: 18px;
+
+    .portal-profile-header-inner {
+        flex-direction: column;
+
+        text-align: center;
+
+        gap: 15px;
     }
 
-    .student-info-grid {
+
+    .portal-profile-back {
+        top: 0;
+        left: 0;
+    }
+
+
+    .portal-profile-photo-wrap {
+        margin-top: 25px;
+
+        margin-left: 0;
+    }
+
+
+    .portal-profile-heading {
+        width: 100%;
+    }
+
+
+    .portal-profile-heading h1 {
+        font-size: 24px;
+    }
+
+
+    .portal-profile-meta {
+        justify-content: center;
+    }
+
+
+    .portal-profile-status {
+        margin-top: 2px;
+    }
+
+
+    .portal-profile-body {
+        padding: 25px 18px;
+    }
+
+
+    .portal-info-grid {
         grid-template-columns: 1fr;
+    }
+
+
+    .portal-account-card {
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 18px;
+    }
+
+
+    .portal-account-divider {
+        width: 100%;
+        height: 1px;
+
+        margin: 0;
     }
 
 }
 
 
-/* =========================================
-   SMALL PHONES
-========================================= */
+/* =========================================================
+   MOBILE — SMALL PHONES
+========================================================= */
 
-@media(max-width: 400px) {
+@media (max-width: 480px) {
 
-    .profile-back-btn span {
-        display: none;
+    .portal-profile-header {
+        padding: 20px 15px 25px;
     }
 
-    .profile-back-btn {
-        width: 42px;
-        height: 42px;
 
-        padding: 0;
+    .portal-profile-photo-wrap,
+    .portal-profile-photo {
+        width: 100px;
+        height: 100px;
+    }
+
+
+    .portal-profile-heading h1 {
+        font-size: 21px;
+    }
+
+
+    .portal-profile-meta {
+        flex-direction: column;
+
+        gap: 7px;
+    }
+
+
+    .portal-profile-body {
+        padding: 20px 14px;
+    }
+
+
+    .portal-section-heading {
+        align-items: flex-start;
+    }
+
+
+    .portal-section-icon {
+        width: 40px;
+        height: 40px;
+
+        font-size: 15px;
+    }
+
+
+    .portal-info-card {
+        padding: 15px;
+    }
+
+
+    .portal-info-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+
+    .portal-back-button {
+        width: 100%;
 
         justify-content: center;
     }
 
 }
+
+
+/* =========================================================
+   DARK MODE
+========================================================= */
+
+body.dark-mode .portal-profile,
+body.dark .portal-profile {
+    background: #111827;
+}
+
+
+body.dark-mode .portal-info-card,
+body.dark .portal-info-card,
+body.dark-mode .portal-account-card,
+body.dark .portal-account-card {
+
+    background: #1f2937;
+
+    border-color: #374151;
+}
+
+
+body.dark-mode .portal-info-icon,
+body.dark .portal-info-icon {
+
+    background: #374151;
+
+    color: #d1d5db;
+}
+
+
+body.dark-mode .portal-section-heading h2,
+body.dark .portal-section-heading h2,
+body.dark-mode .portal-info-content strong,
+body.dark .portal-info-content strong,
+body.dark-mode .portal-account-item strong,
+body.dark .portal-account-item strong {
+
+    color: #f9fafb;
+}
+
+
+body.dark-mode .portal-section-heading p,
+body.dark .portal-section-heading p,
+body.dark-mode .portal-info-label,
+body.dark .portal-info-label,
+body.dark-mode .portal-account-item span,
+body.dark .portal-account-item span {
+
+    color: #9ca3af;
+}
+
+
+body.dark-mode .portal-account-divider,
+body.dark .portal-account-divider {
+
+    background: #374151;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ==========================================
    DOWNLOADS PAGE
@@ -5268,200 +5809,1075 @@ function escapeNotificationText(
 }
 
 
-async function openProfile(){
-
-    document.getElementById("studentPortal")
-        .style.display = "none";
-
-    document.getElementById("profilePage")
-        .style.display = "block";
 
 
-    const loggedStudent =
-        JSON.parse(
-            localStorage.getItem("loggedStudent")
+
+/* =========================================================
+   STUDENT PORTAL - OPEN PROFILE
+   ---------------------------------------------------------
+   Fetches the latest student information from the MAIN
+   SYSTEM and displays:
+
+   • Student information
+   • School NAME instead of school code
+   • Parent / Guardian information
+   • Account status
+
+   IMPORTANT:
+   - Student data comes directly from "students"
+   - Parent fields use the MAIN SYSTEM column names
+   - School name is fetched from "schools"
+   - School name column is "schoolname"
+========================================================= */
+
+async function openProfile() {
+
+    // =====================================================
+    // HIDE STUDENT PORTAL
+    // SHOW PROFILE PAGE
+    // =====================================================
+
+    const studentPortal =
+        document.getElementById("studentPortal");
+
+    const profilePage =
+        document.getElementById("profilePage");
+
+    if (studentPortal) {
+        studentPortal.style.display = "none";
+    }
+
+    if (profilePage) {
+        profilePage.style.display = "block";
+    }
+
+    try {
+
+        // =================================================
+        // GET LOGGED-IN STUDENT
+        // =================================================
+
+        const loggedStudent =
+            JSON.parse(
+                localStorage.getItem("loggedStudent")
+            );
+
+        // =================================================
+        // CHECK STUDENT SESSION
+        // =================================================
+
+        if (!loggedStudent || !loggedStudent.id) {
+
+            alert(
+                "Student session not found. Please login again."
+            );
+
+            return;
+        }
+
+        console.log(
+            "Logged student:",
+            loggedStudent
         );
 
 
-    if(!loggedStudent){
+        // =================================================
+        // FETCH LATEST STUDENT RECORD
+        // =================================================
 
-        alert("Student session not found.");
-
-        return;
-
-    }
-
-
-    const { data, error } =
-        await supabaseClient
-        .from("students")
-        .select("*")
-        .eq("id", loggedStudent.id)
-        .single();
-
-
-    if(error){
-
-        console.error(
-            "Profile Error:",
+        const {
+            data,
             error
+        } = await supabaseClient
+            .from("students")
+            .select("*")
+            .eq("id", loggedStudent.id)
+            .single();
+
+
+        // =================================================
+        // HANDLE STUDENT FETCH ERROR
+        // =================================================
+
+        if (error) {
+
+            console.error(
+                "Student profile fetch error:",
+                error
+            );
+
+            alert(
+                "Unable to load your profile."
+            );
+
+            return;
+        }
+
+
+        // =================================================
+        // CHECK STUDENT DATA
+        // =================================================
+
+        if (!data) {
+
+            alert(
+                "Student profile not found."
+            );
+
+            return;
+        }
+
+        console.log(
+            "Latest student record from MAIN SYSTEM:",
+            data
         );
 
-        alert("Unable to load profile");
 
-        return;
+        // =================================================
+        // STUDENT INFORMATION
+        // =================================================
 
-    }
+        const studentName =
+            data.name ||
+            "Student";
+
+        const studentID =
+            data.studentid ||
+            "No Student ID";
+
+        const studentClass =
+            data.studentclass ||
+            "Class not assigned";
+
+        const gender =
+            data.gender ||
+            "Not specified";
 
 
-    document.getElementById("profileDetails")
-    .innerHTML = `
+        // =================================================
+        // SCHOOL ID
+        //
+        // students.schoolid contains the school ID/code.
+        //
+        // Example:
+        // students.schoolid = SKY-123456
+        //
+        // This is matched with:
+        // schools.schoolid
+        //
+        // Then we fetch:
+        // schools.schoolname
+        // =================================================
 
-        <div class="student-profile-card">
+        const schoolID =
+            data.schoolid ||
+            null;
 
-            <div class="student-profile-top">
 
-                <div class="student-photo-wrapper">
+        // =================================================
+        // STUDENT PHOTO
+        // =================================================
 
-                    <img
-                        src="${
-                            data["student-photos"]
-                            || "default-user.png"
-                        }"
-                        class="student-profile-photo"
-                        onerror="
-                            this.src='default-user.png';
-                        "
-                        alt="Student Photo"
+        const studentPhoto =
+            data["student-photos"] ||
+            data.photo ||
+            "default-user.png";
+
+
+        // =================================================
+        // PARENT / GUARDIAN INFORMATION
+        // =================================================
+
+        const parentName =
+            data.parent_name ||
+            "Not provided";
+
+        const parentNumber =
+            data.parent_number ||
+            "Not provided";
+
+        const parentOccupation =
+            data.parent_occupation ||
+            "Not provided";
+
+        const parentAddress =
+            data.parent_address ||
+            "Not provided";
+
+
+        // =================================================
+        // FETCH SCHOOL NAME FROM SUPABASE
+        //
+        // students.schoolid
+        //        ↓
+        // schools.schoolid
+        //        ↓
+        // schools.schoolname
+        // =================================================
+
+        let schoolName =
+            "School not assigned";
+
+        if (schoolID) {
+
+            console.log(
+                "Looking up school using schoolid:",
+                schoolID
+            );
+
+
+            const {
+                data: schoolData,
+                error: schoolError
+            } = await supabaseClient
+                .from("schools")
+                .select("schoolname")
+                .eq("schoolid", schoolID)
+                .maybeSingle();
+
+
+            // =================================================
+            // SCHOOL QUERY ERROR
+            // =================================================
+
+            if (schoolError) {
+
+                console.error(
+                    "School fetch error:",
+                    schoolError
+                );
+
+            }
+
+
+            // =================================================
+            // SCHOOL FOUND
+            // =================================================
+
+            if (
+                schoolData &&
+                schoolData.schoolname
+            ) {
+
+                schoolName =
+                    schoolData.schoolname;
+
+            } else {
+
+                console.warn(
+                    "No school found for schoolid:",
+                    schoolID
+                );
+
+            }
+
+
+            console.log(
+                "School Name:",
+                schoolName
+            );
+
+        } else {
+
+            console.warn(
+                "Student does not have a schoolid."
+            );
+
+        }
+
+
+        // =================================================
+        // ACCOUNT INFORMATION
+        // =================================================
+
+        const passwordChanged =
+            data.passwordchanged === true;
+
+        const accountStatus =
+            passwordChanged
+                ? "Active"
+                : "Temporary Password";
+
+        const statusClass =
+            passwordChanged
+                ? "active"
+                : "inactive";
+
+
+        // =================================================
+        // STUDENT STATUS
+        // =================================================
+
+        const isActive =
+            data.graduated !== true;
+
+
+        // =================================================
+        // FIND PROFILE CONTAINER
+        // =================================================
+
+        const profileDetails =
+            document.getElementById(
+                "profileDetails"
+            );
+
+        if (!profileDetails) {
+
+            console.error(
+                "profileDetails element not found."
+            );
+
+            return;
+        }
+
+
+        // =================================================
+        // BUILD PROFILE
+        // =================================================
+
+        profileDetails.innerHTML = `
+
+            <div class="portal-profile">
+
+                <!-- ======================================
+                     PROFILE HEADER
+                ======================================= -->
+
+                <div class="portal-profile-header">
+
+                    <div class="portal-profile-header-inner">
+
+                        <!-- STUDENT PHOTO -->
+
+                        <div class="portal-profile-photo-wrap">
+
+                            <img
+                                src="${studentPhoto}"
+                                class="portal-profile-photo"
+                                onerror="
+                                    this.src='default-user.png';
+                                "
+                                alt="Student Photo"
+                            >
+
+                            <span
+                                class="portal-profile-photo-status ${
+                                    isActive
+                                        ? "active"
+                                        : "inactive"
+                                }"
+                            ></span>
+
+                        </div>
+
+
+                        <!-- STUDENT HEADING -->
+
+                        <div class="portal-profile-heading">
+
+                            <span class="portal-profile-label">
+                                STUDENT PROFILE
+                            </span>
+
+                            <h1>
+                                ${studentName}
+                            </h1>
+
+                            <div class="portal-profile-meta">
+
+                                <span>
+                                    <i class="fas fa-id-card"></i>
+                                    ${studentID}
+                                </span>
+
+                                <span>
+                                    <i class="fas fa-graduation-cap"></i>
+                                    ${studentClass}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- STUDENT STATUS -->
+
+                        <div
+                            class="portal-profile-status ${
+                                isActive
+                                    ? "active"
+                                    : "inactive"
+                            }"
+                        >
+
+                            <span
+                                class="portal-status-dot"
+                            ></span>
+
+                            ${
+                                isActive
+                                    ? "Active Student"
+                                    : "Graduated"
+                            }
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     PROFILE BODY
+                ======================================= -->
+
+                <div class="portal-profile-body">
+
+
+                    <!-- ==================================
+                         STUDENT INFORMATION
+                    =================================== -->
+
+                    <section
+                        class="portal-profile-section"
                     >
 
-                </div>
+                        <div
+                            class="portal-section-heading"
+                        >
+
+                            <div
+                                class="portal-section-icon"
+                            >
+
+                                <i
+                                    class="fas fa-user-graduate"
+                                ></i>
+
+                            </div>
+
+                            <div>
+
+                                <h2>
+                                    Student Information
+                                </h2>
+
+                                <p>
+                                    Basic information about your
+                                    student account
+                                </p>
+
+                            </div>
+
+                        </div>
 
 
-                <h3 class="student-profile-name">
-                    ${data.name || "Student"}
-                </h3>
+                        <div
+                            class="portal-info-grid"
+                        >
 
 
-                <div class="student-profile-id">
-                    ${data.studentid || "No Student ID"}
-                </div>
+                            <!-- STUDENT ID -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-id-card"
+                                    ></i>
+
+                                </div>
 
 
-                <div class="student-status">
+                                <div
+                                    class="portal-info-content"
+                                >
 
-                    <span class="student-status-dot"></span>
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        Student ID
+                                    </span>
 
-                    Active Student
+                                    <strong>
+                                        ${studentID}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <!-- CLASS -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-users"
+                                    ></i>
+
+                                </div>
+
+
+                                <div
+                                    class="portal-info-content"
+                                >
+
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        Class
+                                    </span>
+
+                                    <strong>
+                                        ${studentClass}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <!-- GENDER -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-venus-mars"
+                                    ></i>
+
+                                </div>
+
+
+                                <div
+                                    class="portal-info-content"
+                                >
+
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        Gender
+                                    </span>
+
+                                    <strong>
+                                        ${gender}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <!-- SCHOOL NAME -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-school"
+                                    ></i>
+
+                                </div>
+
+
+                                <div
+                                    class="portal-info-content"
+                                >
+
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        School
+                                    </span>
+
+                                    <strong>
+                                        ${schoolName}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </section>
+
+
+
+                    <!-- ==================================
+                         PARENT / GUARDIAN
+                    =================================== -->
+
+                    <section
+                        class="portal-profile-section"
+                    >
+
+                        <div
+                            class="portal-section-heading"
+                        >
+
+                            <div
+                                class="portal-section-icon parent"
+                            >
+
+                                <i
+                                    class="fas fa-user-shield"
+                                ></i>
+
+                            </div>
+
+
+                            <div>
+
+                                <h2>
+                                    Parent / Guardian
+                                </h2>
+
+                                <p>
+                                    Parent or guardian information
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="portal-info-grid"
+                        >
+
+
+                            <!-- PARENT NAME -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-user"
+                                    ></i>
+
+                                </div>
+
+
+                                <div
+                                    class="portal-info-content"
+                                >
+
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        Parent / Guardian Name
+                                    </span>
+
+                                    <strong>
+                                        ${parentName}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <!-- PARENT PHONE -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-phone"
+                                    ></i>
+
+                                </div>
+
+
+                                <div
+                                    class="portal-info-content"
+                                >
+
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        Contact Number
+                                    </span>
+
+                                    <strong>
+                                        ${parentNumber}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <!-- PARENT OCCUPATION -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-briefcase"
+                                    ></i>
+
+                                </div>
+
+
+                                <div
+                                    class="portal-info-content"
+                                >
+
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        Occupation
+                                    </span>
+
+                                    <strong>
+                                        ${parentOccupation}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <!-- PARENT ADDRESS -->
+
+                            <div
+                                class="portal-info-card"
+                            >
+
+                                <div
+                                    class="portal-info-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-location-dot"
+                                    ></i>
+
+                                </div>
+
+
+                                <div
+                                    class="portal-info-content"
+                                >
+
+                                    <span
+                                        class="portal-info-label"
+                                    >
+                                        Address
+                                    </span>
+
+                                    <strong>
+                                        ${parentAddress}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </section>
+
+
+
+                    <!-- ==================================
+                         ACCOUNT STATUS
+                    =================================== -->
+
+                    <section
+                        class="portal-profile-section"
+                    >
+
+                        <div
+                            class="portal-section-heading"
+                        >
+
+                            <div
+                                class="portal-section-icon account"
+                            >
+
+                                <i
+                                    class="fas fa-shield-alt"
+                                ></i>
+
+                            </div>
+
+
+                            <div>
+
+                                <h2>
+                                    Account Status
+                                </h2>
+
+                                <p>
+                                    Information about your
+                                    student portal account
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="portal-account-card"
+                        >
+
+
+                            <!-- ACCOUNT STATUS -->
+
+                            <div
+                                class="portal-account-item"
+                            >
+
+                                <div
+                                    class="portal-account-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-check-circle"
+                                    ></i>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>
+                                        Account Status
+                                    </span>
+
+                                    <strong>
+                                        ${
+                                            isActive
+                                                ? "Active"
+                                                : "Graduated"
+                                        }
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div
+                                class="portal-account-divider"
+                            ></div>
+
+
+
+                            <!-- PASSWORD STATUS -->
+
+                            <div
+                                class="portal-account-item"
+                            >
+
+                                <div
+                                    class="portal-account-icon"
+                                >
+
+                                    <i
+                                        class="fas fa-key"
+                                    ></i>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>
+                                        Password Status
+                                    </span>
+
+                                    <strong>
+                                        ${
+                                            passwordChanged
+                                                ? "Password Changed"
+                                                : "Default Password"
+                                        }
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </section>
+
+
+
+                    <!-- ==================================
+                         FOOTER
+                    =================================== -->
+
+                    <div
+                        class="portal-profile-footer"
+                    >
+
+                        <button
+                            type="button"
+                            class="portal-back-button"
+                            onclick="
+                                document.getElementById(
+                                    'profilePage'
+                                ).style.display = 'none';
+
+                                document.getElementById(
+                                    'studentPortal'
+                                ).style.display = 'block';
+                            "
+                        >
+
+                            <i
+                                class="fas fa-arrow-left"
+                            ></i>
+
+                            Back to Portal
+
+                        </button>
+
+                    </div>
+
 
                 </div>
 
             </div>
 
-
-            <div class="student-info-section">
-
-                <h3 class="student-info-title">
-                    Student Information
-                </h3>
+        `;
 
 
-                <div class="student-info-grid">
+        // =================================================
+        // DEBUG INFORMATION
+        // =================================================
+
+        console.log(
+            "=========================================="
+        );
+
+        console.log(
+            "STUDENT PORTAL PROFILE LOADED"
+        );
+
+        console.log(
+            "Student Name:",
+            studentName
+        );
+
+        console.log(
+            "Student ID:",
+            studentID
+        );
+
+        console.log(
+            "Class:",
+            studentClass
+        );
+
+        console.log(
+            "School ID:",
+            schoolID
+        );
+
+        console.log(
+            "School Name:",
+            schoolName
+        );
+
+        console.log(
+            "Parent Name:",
+            parentName
+        );
+
+        console.log(
+            "Parent Number:",
+            parentNumber
+        );
+
+        console.log(
+            "Parent Occupation:",
+            parentOccupation
+        );
+
+        console.log(
+            "Parent Address:",
+            parentAddress
+        );
+
+        console.log(
+            "=========================================="
+        );
 
 
-                    <div class="student-info-item">
+    } catch (err) {
 
-                        <div class="student-info-icon">
-                            <i class="fas fa-id-card"></i>
-                        </div>
+        // =================================================
+        // UNEXPECTED ERROR
+        // =================================================
 
-                        <div>
+        console.error(
+            "Unexpected error loading student profile:",
+            err
+        );
 
-                            <span class="student-info-label">
-                                Student ID
-                            </span>
+        alert(
+            "Something went wrong while loading your profile."
+        );
 
-                            <span class="student-info-value">
-                                ${data.studentid || "-"}
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="student-info-item">
-
-                        <div class="student-info-icon">
-                            <i class="fas fa-school"></i>
-                        </div>
-
-                        <div>
-
-                            <span class="student-info-label">
-                                Class
-                            </span>
-
-                            <span class="student-info-value">
-                                ${data.studentclass || "-"}
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="student-info-item">
-
-                        <div class="student-info-icon">
-                            <i class="fas fa-user"></i>
-                        </div>
-
-                        <div>
-
-                            <span class="student-info-label">
-                                Gender
-                            </span>
-
-                            <span class="student-info-value">
-                                ${data.gender || "-"}
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="student-info-item">
-
-                        <div class="student-info-icon">
-                            <i class="fas fa-building"></i>
-                        </div>
-
-                        <div>
-
-                            <span class="student-info-label">
-                                School
-                            </span>
-
-                            <span class="student-info-value">
-                                ${data.schoolid || "-"}
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                </div>
-
-            </div>
-
-        </div>
-
-    `;
+    }
 
 }
+
+
+
 
 
 
