@@ -149,9 +149,9 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
                 </a>
 
                 <a href="#"
-                   onclick="showPage('profileSubjectsPage'); return false;">
-                    Subjects
-                </a>
+   onclick="showProfileSubjects(); return false;">
+    Subjects
+</a>
 
                 <a href="#"
                    onclick="showPage('profileTermPage'); return false;">
@@ -362,133 +362,407 @@ Back to Login
 </div>
 
 
+
+
+
+
+
 <div id="studentsPage" class="container page">
 
-<h3>Student Management</h3>
+    <!-- ==========================================
+         PAGE HEADER
+    =========================================== -->
 
-<input id="searchStudent"
-       placeholder="Search student..."
-       onkeyup="searchStudent()">
+    <div class="students-page-header">
 
+        <div>
+            <span class="students-badge">STUDENT MANAGEMENT</span>
 
-<!-- ==========================================
-     STUDENT MANAGEMENT ACTIONS
-========================================== -->
+            <h3>
+                <i class="fas fa-user-graduate"></i>
+                Student Management
+            </h3>
 
-<div
-    id="studentManagementActions"
-    style="
-        display:flex;
-        align-items:center;
-        gap:10px;
-        flex-wrap:wrap;
-        margin-bottom:20px;
-    "
->
+            <p>
+                Manage student records, admissions, portal accounts
+                and bulk student registration.
+            </p>
+        </div>
 
-    <!-- ADMIN: GENERATE PORTAL ACCOUNTS -->
-    <button
-        id="generateAccountsBtn"
-        onclick="generateStudentPortalAccounts()"
-        style="display:none;"
-    >
-        <i class="fas fa-user-lock"></i>
-        Generate Student Portal Accounts
-    </button>
+        <div class="students-header-icon">
+            <i class="fas fa-users"></i>
+        </div>
+
+    </div>
 
 
-    <!-- ADMIN: ADMISSION -->
-    <button
-        id="admissionBtn"
-        onclick="openAdmissionModal()"
-        style="display:none;"
-    >
-        <i class="fas fa-user-plus"></i>
-        Admission
-    </button>
+    <!-- ==========================================
+         SEARCH
+    =========================================== -->
 
-</div>
+    <div class="student-search-card">
+
+        <label for="searchStudent">
+            <i class="fas fa-search"></i>
+            Search Students
+        </label>
+
+        <div class="student-search-box">
+
+            <i class="fas fa-search"></i>
+
+            <input
+                id="searchStudent"
+                placeholder="Search by student name..."
+                onkeyup="searchStudent()">
+
+        </div>
+
+    </div>
 
 
-<!-- ==========================================
-     TEACHER ADD STUDENT SECTION
-========================================== -->
+    <!-- ==========================================
+         ADMIN / MANAGEMENT ACTIONS
+    =========================================== -->
 
-<div
-    id="addStudentSection"
-    style="margin-bottom:20px;"
->
-
-    <h4>Add New Student</h4>
-
-    <input
-        id="studentname"
-        placeholder="Student Name"
-    >
-
-    <input
-        type="text"
-        id="studentClass"
-        placeholder="Enter class"
+    <div
+        id="studentManagementActions"
+        class="student-management-actions"
     >
 
-    <button onclick="addStudentFromPage()">
-        Add Student
-    </button>
+        <!-- GENERATE PORTAL ACCOUNTS -->
 
-
-    <h3>Bulk Import Students</h3>
-
-    <br><br>
-
-    <input
-        type="file"
-        id="csvFile"
-        accept=".csv"
-        onchange="handleCSV(event)"
-    >
-
-</div>
-
-<!-- STUDENTS TABLE -->
-<div id="studentsTable"></div>
-
-</div>
-
-<div id="subjectsPage" class="container page">
-
-<h3>Subjects & Marks</h3>
-
-<select id="classFilter" onchange="filterStudentsByClass()" style="margin-bottom:10px;">
-    <option value="">Select Class</option>
-</select>
-
-<!-- NEW -->
-<div id="subjectList" class="cards"></div>
-
-<!-- Existing -->
-<div id="studentsList" class="cards"></div>
-<div id="marksModal" class="marks-modal">
-    <div class="marks-modal-content">
-
-        <button onclick="closeMarksModal()">
-                Close
-            </button>
-
-       <!-- Existing -->
-<div id="subjectForm" class="subjects-section"></div>
         <button
-        id="saveMarksBtn"
-        onclick="saveMarks()">
-            💾 Save Marks
+            id="generateAccountsBtn"
+            class="student-management-btn portal-account-btn"
+            onclick="generateStudentPortalAccounts()"
+            style="display:none;"
+        >
+
+            <span class="student-action-icon">
+                <i class="fas fa-user-lock"></i>
+            </span>
+
+            <span class="student-action-text">
+                <strong>Generate Portal Accounts</strong>
+                <small>Create student login accounts</small>
+            </span>
+
+            <i class="fas fa-chevron-right student-action-arrow"></i>
+
         </button>
+
+
+        <!-- ADMISSION -->
+
+        <button
+            id="admissionBtn"
+            class="student-management-btn admission-btn"
+            onclick="openAdmissionModal()"
+            style="display:none;"
+        >
+
+            <span class="student-action-icon">
+                <i class="fas fa-user-plus"></i>
+            </span>
+
+            <span class="student-action-text">
+                <strong>New Admission</strong>
+                <small>Register a new student</small>
+            </span>
+
+            <i class="fas fa-chevron-right student-action-arrow"></i>
+
+        </button>
+
+    </div>
+
+
+    <!-- ==========================================
+         ADD STUDENT
+    =========================================== -->
+
+    <div
+        id="addStudentSection"
+        class="add-student-card"
+    >
+
+        <div class="student-card-header">
+
+            <div>
+                <span>STUDENT REGISTRATION</span>
+
+                <h4>
+                    <i class="fas fa-user-plus"></i>
+                    Add New Student
+                </h4>
+            </div>
+
+            <div class="student-card-header-icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+
+        </div>
+
+
+        <!-- MANUAL ADD -->
+
+        <div class="student-form-grid">
+
+            <div class="student-form-field">
+
+                <label for="studentname">
+                    Student Name
+                </label>
+
+                <div class="student-input-wrapper">
+
+                    <i class="fas fa-user"></i>
+
+                    <input
+                        id="studentname"
+                        placeholder="Enter student name">
+
+                </div>
+
+            </div>
+
+
+            <div class="student-form-field">
+
+                <label for="studentClass">
+                    Class
+                </label>
+
+                <div class="student-input-wrapper">
+
+                    <i class="fas fa-school"></i>
+
+                    <input
+                        type="text"
+                        id="studentClass"
+                        placeholder="Enter class">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="add-student-btn"
+            onclick="addStudentFromPage()"
+        >
+
+            <i class="fas fa-plus-circle"></i>
+
+            Add Student
+
+        </button>
+
+
+        <!-- BULK IMPORT -->
+
+        <div class="bulk-import-section">
+
+            <div class="bulk-import-header">
+
+                <div>
+                    <span>BULK REGISTRATION</span>
+
+                    <h4>
+                        <i class="fas fa-file-import"></i>
+                        Import Students
+                    </h4>
+
+                    <p>
+                        Upload a CSV file to register multiple
+                        students at once.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <label
+                for="csvFile"
+                class="csv-upload-box"
+            >
+
+                <i class="fas fa-cloud-upload-alt"></i>
+
+                <strong>
+                    Choose CSV File
+                </strong>
+
+                <small>
+                    Click here to select your student CSV file
+                </small>
+
+                <input
+                    type="file"
+                    id="csvFile"
+                    accept=".csv"
+                    onchange="handleCSV(event)"
+                >
+
+            </label>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         STUDENTS TABLE
+    =========================================== -->
+
+    <div class="students-table-card">
+
+        <div class="student-card-header">
+
+            <div>
+                <span>STUDENT RECORDS</span>
+
+                <h4>
+                    <i class="fas fa-users"></i>
+                    Registered Students
+                </h4>
+            </div>
+
+            <div class="student-card-header-icon">
+                <i class="fas fa-table"></i>
+            </div>
+
+        </div>
+
+
+        <div id="studentsTable"></div>
 
     </div>
 
 </div>
 
 
+
+
+
+
+<div id="subjectsPage" class="container page">
+
+    <!-- PAGE HEADER -->
+    <div class="subjects-page-header">
+        <div>
+            <span class="subjects-badge">ACADEMIC MANAGEMENT</span>
+            <h3>
+                <i class="fas fa-book-open"></i>
+                Subjects & Marks
+            </h3>
+            <p>Manage student subjects, assessments, marks and performance.</p>
+        </div>
+    </div>
+
+    <!-- CLASS FILTER -->
+    <div class="subjects-filter-card">
+        <label for="classFilter">
+            <i class="fas fa-users"></i>
+            Select Class
+        </label>
+
+        <select id="classFilter" onchange="filterStudentsByClass()">
+            <option value="">Select Class</option>
+        </select>
+    </div>
+
+    <!-- SUBJECT LIST -->
+    <div class="subjects-list-section">
+        <div class="section-title">
+            <div>
+                <span>SUBJECTS</span>
+                <h4>Select a Subject</h4>
+            </div>
+            <i class="fas fa-layer-group"></i>
+        </div>
+
+        <div id="subjectList" class="cards"></div>
+    </div>
+
+    <!-- STUDENTS LIST -->
+    <div class="students-list-section">
+        <div class="section-title">
+            <div>
+                <span>STUDENTS</span>
+                <h4>Select Student</h4>
+            </div>
+            <i class="fas fa-user-graduate"></i>
+        </div>
+
+        <div id="studentsList" class="cards"></div>
+    </div>
+
+
+    <!-- MARKS MODAL -->
+    <div id="marksModal" class="marks-modal">
+
+        <div class="marks-modal-content">
+
+            <!-- MODAL TOP BAR -->
+            <div class="marks-modal-header">
+                <div>
+                    <span class="modal-badge">STUDENT ASSESSMENT</span>
+                    <h2>
+                        <i class="fas fa-clipboard-check"></i>
+                        Student Marks
+                    </h2>
+                    <p>Enter assessment scores and student performance details.</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="marks-close-btn"
+                    onclick="closeMarksModal()"
+                    title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+
+            <!-- FORM GENERATED BY selectStudent() -->
+            <div id="subjectForm" class="subjects-section"></div>
+
+
+            <!-- MODAL FOOTER -->
+            <div class="marks-modal-footer">
+
+                <button
+                    type="button"
+                    class="marks-cancel-btn"
+                    onclick="closeMarksModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="saveMarksBtn"
+                    class="marks-save-btn"
+                    onclick="saveMarks()">
+                    <i class="fas fa-save"></i>
+                    Save Marks
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
+
+
+
 
 
 
@@ -496,45 +770,251 @@ Back to Login
 
 
 <!-- =========================================================
-     Report page
+     REPORT PAGE
 ========================================================= -->
 
 <div id="reportsPage" class="container page">
-<h3>Reports</h3>
 
-<input
-    id="reportSearch"
-    placeholder="Enter student name"
-    list="studentSuggestions"
-    oninput="updateStudentSuggestions()">
+    <!-- PAGE HEADER -->
+    <div class="reports-page-header">
 
-<datalist id="studentSuggestions"></datalist>
+        <div>
+            <span class="reports-badge">ACADEMIC REPORTING</span>
 
-<label>Select Term</label>
-<select id="reportTerm">
-    <option value="term1">Term 1</option>
-    <option value="term2">Term 2</option>
-    <option value="term3">Term 3</option>
-</select>
+            <h3>
+                <i class="fas fa-chart-line"></i>
+                Student Reports
+            </h3>
 
-<button onclick="promoteStudents()">
-    🎓 Promote Students
-</button>
+            <p>
+                Search students, generate academic reports,
+                download results and manage student promotion.
+            </p>
+        </div>
 
-<button onclick="restoreFromHistory(
-    academicYear = currentAcademicYear
-)">
-    Restore Promotion
-</button>
+        <div class="reports-header-icon">
+            <i class="fas fa-file-invoice"></i>
+        </div>
 
-<button onclick="downloadStudentReport()">
-📥 Download Report
-</button>
+    </div>
 
-<button onclick="generateAllReports()">Generate All Reports (PDF)</button>
-<div id="reportOutput" style="color:black;"></div>
-<div id="singleReportDownloadArea"></div>
+
+    <!-- SEARCH & TERM -->
+    <div class="report-control-card">
+
+        <div class="report-card-title">
+            <div>
+                <span>REPORT SEARCH</span>
+                <h4>Find Student Report</h4>
+            </div>
+
+            <i class="fas fa-search"></i>
+        </div>
+
+
+        <div class="report-controls-grid">
+
+            <!-- STUDENT SEARCH -->
+            <div class="report-field">
+
+                <label for="reportSearch">
+                    <i class="fas fa-user-graduate"></i>
+                    Student Name
+                </label>
+
+                <div class="report-search-box">
+
+                    <i class="fas fa-search"></i>
+
+                    <input
+                        id="reportSearch"
+                        placeholder="Enter student name"
+                        list="studentSuggestions"
+                        oninput="updateStudentSuggestions()">
+
+                </div>
+
+                <datalist id="studentSuggestions"></datalist>
+
+            </div>
+
+
+            <!-- TERM -->
+            <div class="report-field">
+
+                <label for="reportTerm">
+                    <i class="fas fa-calendar-alt"></i>
+                    Select Term
+                </label>
+
+                <select id="reportTerm">
+
+                    <option value="term1">
+                        Term 1
+                    </option>
+
+                    <option value="term2">
+                        Term 2
+                    </option>
+
+                    <option value="term3">
+                        Term 3
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PROMOTION MANAGEMENT -->
+    <div class="report-management-card">
+
+        <div class="report-card-title">
+
+            <div>
+                <span>STUDENT MANAGEMENT</span>
+                <h4>Promotion Management</h4>
+            </div>
+
+            <i class="fas fa-graduation-cap"></i>
+
+        </div>
+
+
+        <div class="report-action-grid">
+
+            <!-- PROMOTE -->
+            <button
+                type="button"
+                class="report-action-btn promote-btn"
+                onclick="promoteStudents()">
+
+                <span class="report-action-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </span>
+
+                <span class="report-action-text">
+                    <strong>Promote Students</strong>
+                    <small>Move students to their next class</small>
+                </span>
+
+                <i class="fas fa-chevron-right action-arrow"></i>
+
+            </button>
+
+
+            <!-- RESTORE -->
+            <button
+                type="button"
+                class="report-action-btn restore-btn"
+                onclick="restoreFromHistory(
+                    academicYear = currentAcademicYear
+                )">
+
+                <span class="report-action-icon">
+                    <i class="fas fa-history"></i>
+                </span>
+
+                <span class="report-action-text">
+                    <strong>Restore Promotion</strong>
+                    <small>Restore students from promotion history</small>
+                </span>
+
+                <i class="fas fa-chevron-right action-arrow"></i>
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- REPORT GENERATION -->
+    <div class="report-generation-card">
+
+        <div class="report-card-title">
+
+            <div>
+                <span>REPORT GENERATION</span>
+                <h4>Generate & Download</h4>
+            </div>
+
+            <i class="fas fa-file-pdf"></i>
+
+        </div>
+
+
+        <div class="report-generation-actions">
+
+            <button
+                type="button"
+                class="download-report-btn"
+                onclick="downloadStudentReport()">
+
+                <i class="fas fa-download"></i>
+
+                <span>
+                    <strong>Download Student Report</strong>
+                    <small>Download the selected student's report</small>
+                </span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="generate-all-btn"
+                onclick="generateAllReports()">
+
+                <i class="fas fa-file-pdf"></i>
+
+                <span>
+                    <strong>Generate All Reports</strong>
+                    <small>Create PDF reports for all students</small>
+                </span>
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- REPORT OUTPUT -->
+    <div class="report-output-card">
+
+        <div class="report-output-header">
+
+            <div>
+                <span>REPORT PREVIEW</span>
+                <h4>Generated Report</h4>
+            </div>
+
+            <i class="fas fa-file-alt"></i>
+
+        </div>
+
+
+        <div
+            id="reportOutput"
+            class="report-output-content">
+        </div>
+
+
+        <div
+            id="singleReportDownloadArea"
+            class="single-report-download-area">
+        </div>
+
+    </div>
+
 </div>
+
+
 
 
 
@@ -2684,16 +3164,377 @@ Back to Login
     </div>
 </div>
 
-        <!-- SUBJECTS -->
-		<div id="profileSubjectsPage" class="container page">    <h3>Assign Class</h3>
 
-	<input id="teacherClass" placeholder="Enter Class (e.g. 1A)">
-	<h2>Assigned Subjects</h2>
-	<select id="teacherSelect" onchange="loadSelectedTeacherSubjects()"></select>
-    <div id="subjectCheckboxes"></div>
 
-    <button id="saveSubjectsBtn" onclick="saveTeacherSubjects()">💾 Save Subjects</button>
+
+        <!-- =========================================================
+     SUBJECTS / TEACHER ASSIGNMENT
+========================================================= -->
+
+<div id="profileSubjectsPage" class="container page">
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <div class="profile-section-header">
+        <div>
+            <span class="section-badge">
+                ACADEMIC MANAGEMENT
+            </span>
+
+            <h2>
+                <i class="fas fa-book-open"></i>
+                Subjects & Teaching Assignments
+            </h2>
+
+            <p>
+                Manage teacher classes and subject assignments.
+            </p>
+        </div>
+    </div>
+
+
+    <!-- =====================================================
+         ADMIN LAYOUT
+    ====================================================== -->
+
+    <div id="adminSubjectAssignment" style="display:none;">
+
+        <!-- ADMIN HEADER -->
+
+        <div class="assignment-header-card">
+
+            <div class="assignment-header-icon">
+                <i class="fas fa-user-shield"></i>
+            </div>
+
+            <div>
+                <h3>Teacher Assignment</h3>
+
+                <p>
+                    Select a teacher and assign the classes and
+                    subjects they will teach.
+                </p>
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SELECT TEACHER
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+                    <span class="assignment-step">
+                        STEP 1
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-user-tie"></i>
+                        Select Teacher
+                    </h3>
+
+                    <p>
+                        Choose the teacher you want to manage.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <label for="teacherSelect">
+                Teacher
+            </label>
+
+            <select
+                id="teacherSelect"
+                onchange="loadSelectedTeacherSubjects()"
+            >
+
+                <option value="">
+                    -- Select Teacher --
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- =================================================
+             ASSIGN CLASSES
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+                    <span class="assignment-step">
+                        STEP 2
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-school"></i>
+                        Assign Classes
+                    </h3>
+
+                    <p>
+                        Enter the class or classes this teacher
+                        is responsible for.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <label for="teacherClass">
+                Assigned Classes
+            </label>
+
+            <input
+                id="teacherClass"
+                type="text"
+                placeholder="Example: 1A, 2B, 3A"
+            >
+
+            <small class="assignment-help">
+                Separate multiple classes with commas.
+            </small>
+
+        </div>
+
+
+        <!-- =================================================
+             ASSIGN SUBJECTS
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+                    <span class="assignment-step">
+                        STEP 3
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-book"></i>
+                        Assign Subjects
+                    </h3>
+
+                    <p>
+                        Select all subjects this teacher is
+                        allowed to teach.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- SUBJECT CHECKBOXES -->
+
+            <div
+                id="subjectCheckboxes"
+                class="subject-checkbox-grid"
+            ></div>
+
+
+            <!-- SAVE BUTTON -->
+
+            <div class="assignment-actions">
+
+                <button
+                    id="saveSubjectsBtn"
+                    class="primary-assignment-btn"
+                    onclick="saveTeacherSubjects()"
+                >
+                    <i class="fas fa-save"></i>
+                    Save Assignment
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             ASSIGNMENT INFORMATION
+        ================================================== -->
+
+        <div class="assignment-info-card">
+
+            <div class="assignment-info-icon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+
+            <div>
+
+                <h4>
+                    Assignment Information
+                </h4>
+
+                <p>
+                    Teachers will only be able to access the
+                    classes and subjects assigned to them.
+                    You can return here at any time to update
+                    their assignments.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TEACHER LAYOUT
+    ====================================================== -->
+
+    <div id="teacherAssignedSubjects" style="display:none;">
+
+        <!-- TEACHER HEADER -->
+
+        <div class="assignment-header-card">
+
+            <div class="assignment-header-icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+
+            <div>
+
+                <h3>
+                    My Teaching Assignment
+                </h3>
+
+                <p>
+                    View the classes and subjects assigned
+                    to you by the school administrator.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             MY CLASSES
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+
+                    <span class="assignment-step">
+                        MY CLASSES
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-school"></i>
+                        Assigned Classes
+                    </h3>
+
+                    <p>
+                        These are the classes assigned to you.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="myAssignedClassesList"
+                class="assigned-classes-grid"
+            >
+
+                <!-- Classes will be loaded by JavaScript -->
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             MY SUBJECTS
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+
+                    <span class="assignment-step">
+                        MY SUBJECTS
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-book-open"></i>
+                        Assigned Subjects
+                    </h3>
+
+                    <p>
+                        These are the subjects you are permitted
+                        to teach and enter marks for.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="myAssignedSubjectsList"
+                class="assigned-subjects-grid"
+            >
+
+                <!-- Subjects will be loaded by JavaScript -->
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             TEACHER INFORMATION
+        ================================================== -->
+
+        <div class="assignment-info-card">
+
+            <div class="assignment-info-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+
+            <div>
+
+                <h4>
+                    Read-Only Assignment
+                </h4>
+
+                <p>
+                    Your teaching assignments are managed by
+                    the school administrator. Contact the
+                    administrator if you need a class or
+                    subject added or changed.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
+
+
 
 <!-- TERM SETTINGS -->
 	<div id="profileTermPage" class="container page">
