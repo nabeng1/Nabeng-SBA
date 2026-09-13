@@ -2731,50 +2731,256 @@ Back to Login
     <button onclick="saveTermSettings()">💾 Save Term Settings</button>
 </div>
 
-	<div id="profilePlanPage" class="container page">
-    <h2>📗 Lesson Plan Generator</h2>
 
-    <label>Select Term</label>
-    <select id="planTerm">
-        <option value="term1">Term 1</option>
-        <option value="term2">Term 2</option>
-        <option value="term3">Term 3</option>
-    </select>
 
-    <label>Select Subject</label>
-    <select id="planSubject"></select>
+<!-- =========================================================
+     LESSON PLAN PAGE
+========================================================= -->
+<div id="profilePlanPage" class="container page">
 
-    <button onclick="generateLessonPlan()">⚡ Generate Plan</button>
-	<button onclick="exportToWord(document.getElementById('planOutput').innerText)">
-📄 Export to Word
-</button>
+    <div class="lesson-header">
+        <div>
+            <span class="lesson-badge">ACADEMIC WORK</span>
+            <h2>📗 Lesson Plan Generator</h2>
+            <p>Create a structured Ghana GES-style lesson plan.</p>
+        </div>
+    </div>
 
-    <div id="planOutput" style="margin-top:15px; background:#1f2937; padding:15px; border-radius:10px;"></div>
-</div>
+    <div class="lesson-form-grid">
 
-	<div id="profileNotePage" class="container page">
-    <h2>📝 Lesson Notes</h2>
+        <div class="lesson-field">
+            <label for="planTerm">Term</label>
+            <select id="planTerm">
+                <option value="term1">Term 1</option>
+                <option value="term2">Term 2</option>
+                <option value="term3">Term 3</option>
+            </select>
+        </div>
 
-    <label>Select Term</label>
-    <select id="noteTerm">
-        <option value="term1">Term 1</option>
-        <option value="term2">Term 2</option>
-        <option value="term3">Term 3</option>
-    </select>
+        <div class="lesson-field">
+            <label for="planSubject">Subject</label>
+            <select id="planSubject"></select>
+        </div>
 
-    <label>Week</label>
-    <input id="noteWeek" placeholder="Enter Week (e.g Week 1)">
+        <div class="lesson-field">
+            <label for="planClass">Class</label>
+            <input
+                type="text"
+                id="planClass"
+                placeholder="e.g. Basic 5"
+            >
+        </div>
 
-    <label>Subject</label>
-    <select id="noteSubject"></select>
+        <div class="lesson-field">
+            <label for="planWeek">Week</label>
+            <input
+                type="text"
+                id="planWeek"
+                placeholder="e.g. Week 1"
+            >
+        </div>
 
-    <button onclick="generateLessonNote()">🧠 Generate Note</button>
+        <div class="lesson-field">
+            <label for="planTopic">Topic</label>
+            <input
+                type="text"
+                id="planTopic"
+                placeholder="Enter topic"
+            >
+        </div>
 
-    <div id="noteOutput" style="margin-top:15px; background:#1f2937; padding:15px; border-radius:10px;"></div>
-</div>
+        <div class="lesson-field">
+            <label for="planSubtopic">Sub-topic</label>
+            <input
+                type="text"
+                id="planSubtopic"
+                placeholder="Enter sub-topic"
+            >
+        </div>
+
+        <div class="lesson-field">
+            <label for="planDuration">Duration</label>
+            <input
+                type="text"
+                id="planDuration"
+                placeholder="e.g. 60 minutes"
+            >
+        </div>
 
     </div>
 
+    <div class="lesson-actions">
+
+        <button
+            type="button"
+            class="lesson-btn primary"
+            onclick="generateLessonPlan()">
+            ⚡ Generate Lesson Plan
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn success"
+            onclick="savePlan()">
+            💾 Save Plan
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="exportLessonDocument('plan')">
+            📄 Export Word
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="printLessonDocument('plan')">
+            🖨️ Print
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn secondary"
+            onclick="loadPlans()">
+            📚 Saved Plans
+        </button>
+
+    </div>
+
+    <div id="planStatus" class="lesson-status"></div>
+
+    <div
+        id="planOutput"
+        class="lesson-output">
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">📗</div>
+            <h3>Your lesson plan will appear here</h3>
+            <p>Complete the lesson information and click Generate Lesson Plan.</p>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     LESSON NOTE PAGE
+========================================================= -->
+<div id="profileNotePage" class="container page">
+
+    <div class="lesson-header">
+        <div>
+            <span class="lesson-badge">ACADEMIC WORK</span>
+            <h2>📝 Lesson Notes</h2>
+            <p>Create detailed classroom lesson notes.</p>
+        </div>
+    </div>
+
+    <div class="lesson-form-grid">
+
+        <div class="lesson-field">
+            <label for="noteTerm">Term</label>
+            <select id="noteTerm">
+                <option value="term1">Term 1</option>
+                <option value="term2">Term 2</option>
+                <option value="term3">Term 3</option>
+            </select>
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteWeek">Week</label>
+            <input
+                id="noteWeek"
+                placeholder="e.g. Week 1">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteSubject">Subject</label>
+            <select id="noteSubject"></select>
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteClass">Class</label>
+            <input
+                id="noteClass"
+                placeholder="e.g. Basic 5">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteTopic">Topic</label>
+            <input
+                id="noteTopic"
+                placeholder="Enter topic">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteSubtopic">Sub-topic</label>
+            <input
+                id="noteSubtopic"
+                placeholder="Enter sub-topic">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteDuration">Duration</label>
+            <input
+                id="noteDuration"
+                placeholder="e.g. 60 minutes">
+        </div>
+
+    </div>
+
+    <div class="lesson-actions">
+
+        <button
+            type="button"
+            class="lesson-btn primary"
+            onclick="generateLessonNote()">
+            🧠 Generate Lesson Note
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn success"
+            onclick="saveNote()">
+            💾 Save Note
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="exportLessonDocument('note')">
+            📄 Export Word
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="printLessonDocument('note')">
+            🖨️ Print
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn secondary"
+            onclick="loadNotes()">
+            📚 Saved Notes
+        </button>
+
+    </div>
+
+    <div id="noteStatus" class="lesson-status"></div>
+
+    <div
+        id="noteOutput"
+        class="lesson-output">
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">📝</div>
+            <h3>Your lesson note will appear here</h3>
+            <p>Complete the lesson information and click Generate Lesson Note.</p>
+        </div>
+    </div>
+
+</div>
 
 
 
