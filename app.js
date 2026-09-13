@@ -1859,7 +1859,7 @@ function populateStudentList() {
 
         <div
             class="card ${s.id === currentStudent?.id ? "active-student" : ""}"
-            onclick="selectFilteredStudent(${i})"
+            onclick="selectSubjectStudent(${i})"
         >
 
             <div style="font-weight:bold;">
@@ -6239,6 +6239,8 @@ function printReport(){
     win.document.close();
     win.print();
 }
+
+
 function downloadSingleReport(){
 
     if(!window.singleReportURL){
@@ -6769,6 +6771,7 @@ async function refreshCurrentUser() {
     }
 }
 
+
 async function showProfile(){
 
     showPage("userProfilePage");
@@ -6776,12 +6779,18 @@ async function showProfile(){
     await loadUsers();
 
     loadProfileData();
+
     loadTermSettings();
 
     loadSubjectSelection();
 
     loadTeacherSubjects();
 }
+
+
+
+
+
 
 
 
@@ -6893,160 +6902,1190 @@ function closeProfile(){
 
 
 
+/* =========================================================
+   SUBJECT & TEACHER ASSIGNMENT
+   ADMIN + TEACHER
+========================================================= */
+
+
+/* =========================================================
+   LOAD SUBJECT SELECTION PAGE
+========================================================= */
+
 function loadSubjectSelection(user = currentUser) {
 
-    let container = document.getElementById("subjectCheckboxes");
-    container.innerHTML = "";
+    const adminSection =
+        document.getElementById("adminSubjectAssignment");
 
-    let selected = user.subjects || [];
+    const teacherSection =
+        document.getElementById("teacherAssignedSubjects");
 
-    subjects.forEach(sub => {
+    const teacherList =
+        document.getElementById("myAssignedSubjectsList");
 
-        let checked = selected.includes(sub) ? "checked" : "";
-        let disabled = currentUser.role === "teacher" ? "disabled" : "";
+    const classList =
+        document.getElementById("myAssignedClassesList");
 
-        container.innerHTML += `
-            <label style="display:block; margin:5px 0;">
-                <input type="checkbox" value="${sub}" ${checked} ${disabled}>
-                ${sub}
-            </label>
-        `;
-    });
+    const subjectCheckboxes =
+        document.getElementById("subjectCheckboxes");
 
-    document.getElementById("saveSubjectsBtn").style.display =
-        currentUser.role === "teacher" ? "none" : "block";
+
+    /* -----------------------------------------------------
+       SAFETY CHECK
+    ----------------------------------------------------- */
+
+    if (!user) {
+        console.error(
+            "loadSubjectSelection: No current user found."
+        );
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       NORMALIZE ROLE
+    ----------------------------------------------------- */
+
+    const role =
+        String(user.role || "")
+            .toLowerCase()
+            .trim();
+
+
+    /* =====================================================
+       TEACHER
+    ===================================================== */
+
+    if (role === "teacher") {
+
+        console.log(
+            "Loading Teacher Assignment..."
+        );
+
+
+        /* -------------------------------------------------
+           HIDE ADMIN
+        ------------------------------------------------- */
+
+        if (adminSection) {
+            adminSection.style.display = "none";
+        }
+
+
+        /* -------------------------------------------------
+           SHOW TEACHER
+        ------------------------------------------------- */
+
+        if (teacherSection) {
+            teacherSection.style.display = "block";
+        }
+
+
+        /* -------------------------------------------------
+           CLEAR ADMIN CONTENT
+        ------------------------------------------------- */
+
+        if (subjectCheckboxes) {
+            subjectCheckboxes.innerHTML = "";
+        }
+
+
+        /*
+         * Get assigned classes.
+         */
+
+        const assignedClasses =
+            Array.isArray(user.classes)
+                ? user.classes
+                    .map(c => String(c).trim())
+                    .filter(Boolean)
+                : [];
+
+
+        /*
+         * Get assigned subjects.
+         */
+
+        const assignedSubjects =
+            normalizeSubjectArray(
+                user.subjects || []
+            );
+
+
+        /* =================================================
+           DISPLAY CLASSES
+        ================================================== */
+
+        if (classList) {
+
+            if (!assignedClasses.length) {
+
+                classList.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fas fa-school"></i>
+
+                        <h4>No Classes Assigned</h4>
+
+                        <p>
+                            You have not been assigned
+                            any classes yet.
+                        </p>
+
+                    </div>
+                `;
+
+            } else {
+
+                classList.innerHTML =
+                    assignedClasses
+                        .map(className => `
+
+                            <div class="assigned-class-item">
+
+                                <div class="assigned-item-icon">
+                                    <i class="fas fa-school"></i>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        ${escapeAssignmentHTML(className)}
+                                    </strong>
+
+                                    <small>
+                                        Assigned Class
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        `)
+                        .join("");
+            }
+        }
+
+
+        /* =================================================
+           DISPLAY SUBJECTS
+        ================================================== */
+
+        if (teacherList) {
+
+            if (!assignedSubjects.length) {
+
+                teacherList.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fas fa-book-open"></i>
+
+                        <h4>No Subjects Assigned</h4>
+
+                        <p>
+                            You have not been assigned
+                            any subjects yet.
+                        </p>
+
+                    </div>
+                `;
+
+            } else {
+
+                teacherList.innerHTML =
+                    assignedSubjects
+                        .map(subject => `
+
+                            <div class="assigned-subject-item">
+
+                                <div class="assigned-item-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        ${escapeAssignmentHTML(subject)}
+                                    </strong>
+
+                                    <small>
+                                        Assigned Subject
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        `)
+                        .join("");
+            }
+        }
+
+
+        console.log(
+            "Teacher Classes:",
+            assignedClasses
+        );
+
+        console.log(
+            "Teacher Subjects:",
+            assignedSubjects
+        );
+
+
+        return;
+    }
+
+
+    /* =====================================================
+       ADMIN
+    ===================================================== */
+
+    if (role === "admin") {
+
+        console.log(
+            "Loading Admin Teacher Assignment..."
+        );
+
+
+        /* -------------------------------------------------
+           SHOW ADMIN
+        ------------------------------------------------- */
+
+        if (adminSection) {
+            adminSection.style.display = "block";
+        }
+
+
+        /* -------------------------------------------------
+           HIDE TEACHER
+        ------------------------------------------------- */
+
+        if (teacherSection) {
+            teacherSection.style.display = "none";
+        }
+
+
+        /* -------------------------------------------------
+           CLEAR TEACHER CONTENT
+        ------------------------------------------------- */
+
+        if (teacherList) {
+            teacherList.innerHTML = "";
+        }
+
+        if (classList) {
+            classList.innerHTML = "";
+        }
+
+
+        /*
+         * Load teachers for admin.
+         */
+
+        loadTeachers();
+
+        return;
+    }
+
+
+    /* =====================================================
+       UNKNOWN ROLE
+    ===================================================== */
+
+    if (adminSection) {
+        adminSection.style.display = "none";
+    }
+
+    if (teacherSection) {
+        teacherSection.style.display = "none";
+    }
+
+
+    console.warn(
+        "Unknown user role:",
+        user.role
+    );
 }
 
+
+/* =========================================================
+   ESCAPE HTML
+   Prevent names/classes/subjects from breaking HTML
+========================================================= */
+
+function escapeAssignmentHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   SAVE TEACHER ASSIGNMENT
+========================================================= */
 
 async function saveTeacherSubjects() {
 
     try {
 
-        // =========================
-        // GET SELECTED TEACHER
-        // =========================
+        /* =================================================
+           ADMIN SECURITY CHECK
+        ================================================== */
 
-        const teacherId = document.getElementById("teacherSelect").value;
+        if (
+            !currentUser ||
+            String(currentUser.role)
+                .toLowerCase()
+                .trim() !== "admin"
+        ) {
 
-        if (!teacherId) {
-            alert("Please select a teacher.");
+            alert(
+                "Only administrators can assign teachers."
+            );
+
             return;
         }
 
-        // =========================
-        // GET SELECTED SUBJECTS
-        // =========================
+
+        /* =================================================
+           GET SELECTED TEACHER
+        ================================================== */
+
+        const teacherSelect =
+            document.getElementById(
+                "teacherSelect"
+            );
+
+        const teacherId =
+            teacherSelect?.value;
+
+
+        if (!teacherId) {
+
+            alert(
+                "Please select a teacher."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           GET CLASSES
+        ================================================== */
+
+        const classInput =
+            document.getElementById(
+                "teacherClass"
+            );
+
+
+        const classText =
+            classInput?.value
+                ?.trim() || "";
+
+
+        if (!classText) {
+
+            alert(
+                "Please enter at least one class."
+            );
+
+            classInput?.focus();
+
+            return;
+        }
+
+
+        /*
+         * Convert:
+         *
+         * 1A, 2B, 3A
+         *
+         * into:
+         *
+         * ["1A", "2B", "3A"]
+         */
+
+        const classList =
+            classText
+                .split(",")
+                .map(c => c.trim())
+                .filter(Boolean);
+
+
+        if (!classList.length) {
+
+            alert(
+                "Please enter a valid class."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           GET SUBJECTS
+        ================================================== */
 
         const selectedSubjects = [];
 
-        document.querySelectorAll("#subjectCheckboxes input:checked")
-            .forEach(cb => {
-                selectedSubjects.push(cb.value);
+
+        document
+            .querySelectorAll(
+                "#subjectCheckboxes input[type='checkbox']:checked"
+            )
+            .forEach(checkbox => {
+
+                if (checkbox.value) {
+
+                    selectedSubjects.push(
+                        checkbox.value.trim()
+                    );
+
+                }
+
             });
 
-        if (selectedSubjects.length === 0) {
-            alert("Please select at least one subject.");
+
+        if (!selectedSubjects.length) {
+
+            alert(
+                "Please select at least one subject."
+            );
+
             return;
         }
 
-        // =========================
-        // GET CLASS LIST
-        // =========================
 
-        const classInput = document
-            .getElementById("teacherClass")
-            .value
-            .trim();
+        /* =================================================
+           REMOVE DUPLICATES
+        ================================================== */
 
-        if (!classInput) {
-            alert("Please enter at least one class.");
-            return;
-        }
+        const uniqueClasses =
+            [...new Set(classList)];
 
-        const classList = classInput
-            .split(",")
-            .map(c => c.trim())
-            .filter(c => c !== "");
+        const uniqueSubjects =
+            [...new Set(selectedSubjects)];
 
-        if (classList.length === 0) {
-            alert("Please enter a valid class.");
-            return;
-        }
 
-        // =========================
-        // CREATE CLASSES IF NEEDED
-        // =========================
+        /* =================================================
+           CREATE CLASSES IF NECESSARY
+        ================================================== */
 
-        for (const cls of classList) {
+        for (const className of uniqueClasses) {
 
-            const { data: existingClass, error: checkError } =
+            const {
+                data: existingClass,
+                error: checkError
+            } =
                 await supabaseClient
                     .from("classes")
                     .select("id")
-                    .eq("classname", cls)
-                    .eq("schoolid", currentUser.schoolid)
+                    .eq(
+                        "classname",
+                        className
+                    )
+                    .eq(
+                        "schoolid",
+                        currentUser.schoolid
+                    )
                     .maybeSingle();
 
+
             if (checkError) {
-                console.error(checkError);
+
+                console.error(
+                    "Class check error:",
+                    checkError
+                );
+
                 continue;
             }
 
+
             if (!existingClass) {
 
-                const { error: insertError } =
+                const {
+                    error: insertError
+                } =
                     await supabaseClient
                         .from("classes")
                         .insert({
-                            classname: cls,
-                            schoolid: currentUser.schoolid
+
+                            classname:
+                                className,
+
+                            schoolid:
+                                currentUser.schoolid
+
                         });
 
+
                 if (insertError) {
-                    console.error(insertError);
-                    alert(`Failed to create class "${cls}".`);
+
+                    console.error(
+                        "Class creation error:",
+                        insertError
+                    );
+
+                    alert(
+                        `Failed to create class "${className}".`
+                    );
+
                     return;
                 }
             }
         }
 
-        // =========================
-        // UPDATE TEACHER
-        // =========================
 
-        const { error: updateError } =
+        /* =================================================
+           UPDATE TEACHER
+        ================================================== */
+
+        const {
+            error: updateError
+        } =
             await supabaseClient
                 .from("users")
                 .update({
-                    mainClass: classList[0],
-                    classes: classList,
-                    subjects: selectedSubjects
+
+                    mainClass:
+                        uniqueClasses[0],
+
+                    classes:
+                        uniqueClasses,
+
+                    subjects:
+                        uniqueSubjects
+
                 })
-                .eq("id", teacherId);
+                .eq(
+                    "id",
+                    teacherId
+                );
+
 
         if (updateError) {
-            console.error(updateError);
-            alert("Failed to save teacher settings.");
+
+            console.error(
+                "Teacher assignment update error:",
+                updateError
+            );
+
+            alert(
+                "Failed to save teacher assignment."
+            );
+
             return;
         }
 
-        // =========================
-        // REFRESH DATA
-        // =========================
 
-        await loadUsers();
+        /* =================================================
+           REFRESH USERS
+        ================================================== */
+
+        if (
+            typeof loadUsers === "function"
+        ) {
+
+            await loadUsers();
+
+        }
+
+
+        /* =================================================
+           RELOAD TEACHERS
+        ================================================== */
+
         await loadTeachers();
 
-        alert("✅ Teacher class and subjects saved successfully.");
 
-    } catch (err) {
+        /* =================================================
+           RESELECT TEACHER
+        ================================================== */
 
-        console.error(err);
-        alert("An unexpected error occurred.");
+        if (teacherSelect) {
+
+            teacherSelect.value =
+                teacherId;
+
+        }
+
+
+        await loadSelectedTeacherSubjects();
+
+
+        /* =================================================
+           SUCCESS
+        ================================================== */
+
+        alert(
+            "✅ Teacher assignment saved successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "saveTeacherSubjects error:",
+            error
+        );
+
+        alert(
+            "An unexpected error occurred while saving the assignment."
+        );
+    }
+}
+
+
+/* =========================================================
+   LOAD TEACHERS
+========================================================= */
+
+async function loadTeachers() {
+
+    /* -----------------------------------------------------
+       ADMIN ONLY
+    ----------------------------------------------------- */
+
+    if (
+        !currentUser ||
+        String(currentUser.role)
+            .toLowerCase()
+            .trim() !== "admin"
+    ) {
+
+        return;
+    }
+
+
+    const select =
+        document.getElementById(
+            "teacherSelect"
+        );
+
+
+    if (!select) {
+
+        console.error(
+            "teacherSelect element not found."
+        );
+
+        return;
+    }
+
+
+    select.innerHTML =
+        `<option value="">
+            Loading teachers...
+        </option>`;
+
+
+    try {
+
+        /* =================================================
+           GET TEACHERS
+        ================================================== */
+
+        const {
+            data: teachers,
+            error
+        } =
+            await supabaseClient
+                .from("users")
+                .select(
+                    "id, firstname, surname, username, role, schoolid, classes, subjects"
+                )
+                .eq(
+                    "role",
+                    "teacher"
+                )
+                .eq(
+                    "schoolid",
+                    currentUser.schoolid
+                )
+                .order(
+                    "firstname",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Error loading teachers:",
+                error
+            );
+
+            select.innerHTML =
+                `<option value="">
+                    Failed to load teachers
+                </option>`;
+
+            return;
+        }
+
+
+        /* =================================================
+           NO TEACHERS
+        ================================================== */
+
+        if (
+            !teachers ||
+            teachers.length === 0
+        ) {
+
+            select.innerHTML =
+                `<option value="">
+                    No teachers found
+                </option>`;
+
+            clearAdminAssignmentForm();
+
+            return;
+        }
+
+
+        /* =================================================
+           POPULATE TEACHER DROPDOWN
+        ================================================== */
+
+        select.innerHTML =
+            `<option value="">
+                -- Select Teacher --
+            </option>`;
+
+
+        teachers.forEach(teacher => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                teacher.id;
+
+
+            option.textContent =
+                `${teacher.firstname || ""} ${teacher.surname || ""}`
+                    .trim() ||
+                teacher.username ||
+                "Unnamed Teacher";
+
+
+            select.appendChild(
+                option
+            );
+
+        });
+
+
+        /* =================================================
+           SELECT FIRST TEACHER
+        ================================================== */
+
+        if (teachers.length > 0) {
+
+            select.value =
+                teachers[0].id;
+
+            await loadSelectedTeacherSubjects();
+
+        }
+
+
+        console.log(
+            "Teachers loaded:",
+            teachers
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "loadTeachers error:",
+            error
+        );
+
+        select.innerHTML =
+            `<option value="">
+                Unable to load teachers
+            </option>`;
+    }
+}
+
+
+/* =========================================================
+   CLEAR ADMIN ASSIGNMENT FORM
+========================================================= */
+
+function clearAdminAssignmentForm() {
+
+    const classInput =
+        document.getElementById(
+            "teacherClass"
+        );
+
+    const subjectContainer =
+        document.getElementById(
+            "subjectCheckboxes"
+        );
+
+
+    if (classInput) {
+        classInput.value = "";
+    }
+
+
+    if (subjectContainer) {
+
+        subjectContainer.innerHTML = `
+            <div class="empty-state">
+
+                <i class="fas fa-user-tie"></i>
+
+                <h4>No Teacher Selected</h4>
+
+                <p>
+                    Select a teacher to view
+                    their assignment.
+                </p>
+
+            </div>
+        `;
 
     }
 }
 
+
+/* =========================================================
+   LOAD SELECTED TEACHER ASSIGNMENT
+========================================================= */
+
+async function loadSelectedTeacherSubjects() {
+
+    /* -----------------------------------------------------
+       ADMIN ONLY
+    ----------------------------------------------------- */
+
+    if (
+        !currentUser ||
+        String(currentUser.role)
+            .toLowerCase()
+            .trim() !== "admin"
+    ) {
+
+        return;
+    }
+
+
+    const teacherSelect =
+        document.getElementById(
+            "teacherSelect"
+        );
+
+
+    const classInput =
+        document.getElementById(
+            "teacherClass"
+        );
+
+
+    const subjectContainer =
+        document.getElementById(
+            "subjectCheckboxes"
+        );
+
+
+    const teacherId =
+        teacherSelect?.value;
+
+
+    /* -----------------------------------------------------
+       NO TEACHER SELECTED
+    ----------------------------------------------------- */
+
+    if (!teacherId) {
+
+        clearAdminAssignmentForm();
+
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       LOADING STATE
+    ----------------------------------------------------- */
+
+    if (classInput) {
+
+        classInput.value =
+            "Loading...";
+
+    }
+
+
+    if (subjectContainer) {
+
+        subjectContainer.innerHTML = `
+            <div class="empty-state">
+
+                <i class="fas fa-spinner fa-spin"></i>
+
+                <p>
+                    Loading teacher assignment...
+                </p>
+
+            </div>
+        `;
+
+    }
+
+
+    try {
+
+        /* =================================================
+           GET TEACHER
+        ================================================== */
+
+        const {
+            data: teacher,
+            error
+        } =
+            await supabaseClient
+                .from("users")
+                .select(
+                    "id, firstname, surname, classes, subjects"
+                )
+                .eq(
+                    "id",
+                    teacherId
+                )
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "Error loading selected teacher:",
+                error
+            );
+
+            clearAdminAssignmentForm();
+
+            alert(
+                "Unable to load teacher assignment."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           NORMALIZE CLASSES
+        ================================================== */
+
+        const teacherClasses =
+            Array.isArray(teacher.classes)
+                ? teacher.classes
+                    .map(c => String(c).trim())
+                    .filter(Boolean)
+                : [];
+
+
+        /* =================================================
+           NORMALIZE SUBJECTS
+        ================================================== */
+
+        const teacherSubjects =
+            normalizeSubjectArray(
+                teacher.subjects || []
+            );
+
+
+        /* =================================================
+           DISPLAY CLASSES
+        ================================================== */
+
+        if (classInput) {
+
+            classInput.value =
+                teacherClasses.join(", ");
+
+        }
+
+
+        /* =================================================
+           BUILD SUBJECT CHECKBOXES
+        ================================================== */
+
+        if (subjectContainer) {
+
+            if (
+                !Array.isArray(subjects) ||
+                subjects.length === 0
+            ) {
+
+                subjectContainer.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fas fa-book"></i>
+
+                        <p>
+                            No subjects are available.
+                        </p>
+
+                    </div>
+                `;
+
+            } else {
+
+                subjectContainer.innerHTML =
+                    subjects
+                        .map(subject => {
+
+                            const checked =
+                                teacherSubjects
+                                    .some(
+                                        assigned =>
+                                            String(assigned)
+                                                .trim()
+                                                .toLowerCase() ===
+                                            String(subject)
+                                                .trim()
+                                                .toLowerCase()
+                                    );
+
+
+                            return `
+
+                                <label class="subject-checkbox-item">
+
+                                    <input
+                                        type="checkbox"
+                                        value="${escapeAssignmentHTML(subject)}"
+                                        ${checked ? "checked" : ""}
+                                    >
+
+                                    <span class="subject-checkbox-content">
+
+                                        <span class="subject-checkbox-icon">
+                                            <i class="fas fa-book"></i>
+                                        </span>
+
+                                        <span>
+                                            ${escapeAssignmentHTML(subject)}
+                                        </span>
+
+                                    </span>
+
+                                </label>
+
+                            `;
+
+                        })
+                        .join("");
+            }
+        }
+
+
+        console.log(
+            "Selected teacher:",
+            teacher
+        );
+
+        console.log(
+            "Assigned classes:",
+            teacherClasses
+        );
+
+        console.log(
+            "Assigned subjects:",
+            teacherSubjects
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "loadSelectedTeacherSubjects error:",
+            error
+        );
+
+        clearAdminAssignmentForm();
+    }
+}
+
+
+
+
+async function showProfileSubjects() {
+
+    // Open Subjects page
+    await showPage("profileSubjectsPage");
+
+    // Get both sections
+    const adminSection =
+        document.getElementById("adminSubjectAssignment");
+
+    const teacherSection =
+        document.getElementById("teacherAssignedSubjects");
+
+    // Hide both first
+    if (adminSection) {
+        adminSection.style.display = "none";
+    }
+
+    if (teacherSection) {
+        teacherSection.style.display = "none";
+    }
+
+    // Get current user's role
+    const role =
+        String(currentUser?.role || "")
+            .toLowerCase()
+            .trim();
+
+
+    // =====================================================
+    // ADMIN
+    // =====================================================
+
+    if (role === "admin") {
+
+        if (adminSection) {
+            adminSection.style.display = "block";
+        }
+
+        // Load teachers
+        await loadUsers();
+
+        // Load available subjects
+        loadSubjectSelection();
+
+    }
+
+
+    // =====================================================
+    // TEACHER
+    // =====================================================
+
+    else {
+
+        if (teacherSection) {
+            teacherSection.style.display = "block";
+        }
+
+        // Load teacher's assignments
+        loadTeacherSubjects();
+    }
+}
 
 
 
@@ -7689,7 +8728,13 @@ async function filterStudentsByClass(){
 }
 
 
-function selectFilteredStudent(index) {
+
+/* =========================================================
+   SUBJECT SECTION - SELECT STUDENT
+   Opens the subject marks form, NOT the student profile
+========================================================= */
+
+function selectSubjectStudent(index) {
 
     const student = filteredStudents[index];
 
@@ -7698,7 +8743,13 @@ function selectFilteredStudent(index) {
         return;
     }
 
-    // Find the student's real position in the main students array
+    // Make sure a subject has been selected first
+    if (!selectedSubject) {
+        alert("Please select a subject first.");
+        return;
+    }
+
+    // Find the student's real index in the main students array
     const originalIndex = students.findIndex(
         s => s.id === student.id
     );
@@ -7708,9 +8759,38 @@ function selectFilteredStudent(index) {
         return;
     }
 
-    // Both Admin and Teacher open the same student profile
-    openStudentModal(originalIndex);
+    // Store current student
+    currentStudentIndex = originalIndex;
+    currentStudent = student;
+
+    // Open SUBJECT MARKS form
+    selectStudent(originalIndex, students);
 }
+
+
+/* =========================================================
+   STUDENT MANAGEMENT - PROFILE
+   This function is ONLY for the normal Student section
+========================================================= */
+
+function selectStudentProfile(index) {
+
+    const student = students[index];
+
+    if (!student) {
+        alert("Student not found");
+        return;
+    }
+
+    openStudentModal(index);
+}
+
+
+/* Make functions available globally */
+window.selectSubjectStudent = selectSubjectStudent;
+window.selectStudentProfile = selectStudentProfile;
+
+
 
 window.selectFilteredStudent = selectFilteredStudent;
 
