@@ -4054,6 +4054,820 @@ body.dark .portal-account-divider {
         padding: 5px 8px;
     }
 }
+
+/* ============================================================
+   STUDENT PORTAL - MODERN SUBJECTS
+============================================================ */
+
+.student-subjects-modern-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 0 40px;
+    animation: subjectsPageIn .45s ease;
+}
+
+@keyframes subjectsPageIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ============================================================
+   HERO
+============================================================ */
+
+.subjects-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    padding: 30px;
+    margin-bottom: 22px;
+    background:
+        linear-gradient(
+            135deg,
+            #0f172a 0%,
+            #1e3a8a 55%,
+            #2563eb 100%
+        );
+    color: white;
+    box-shadow: 0 15px 40px rgba(15, 23, 42, .18);
+}
+
+.subjects-hero::before {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    right: -80px;
+    top: -100px;
+    background: rgba(255,255,255,.08);
+}
+
+.subjects-hero::after {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    right: 120px;
+    bottom: -100px;
+    background: rgba(255,255,255,.05);
+}
+
+.subjects-hero-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.subjects-hero-icon {
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.18);
+    font-size: 30px;
+    backdrop-filter: blur(10px);
+}
+
+.subjects-hero-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    opacity: .7;
+}
+
+.subjects-hero h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+}
+
+.subjects-hero p {
+    margin: 6px 0 0;
+    font-size: 14px;
+    opacity: .85;
+}
+
+.subjects-hero-decoration {
+    position: absolute;
+    z-index: 1;
+    right: 30px;
+    bottom: 20px;
+    display: flex;
+    gap: 15px;
+    opacity: .12;
+    font-size: 55px;
+}
+
+
+/* ============================================================
+   STUDENT / TEACHER INFO
+============================================================ */
+
+.subjects-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.subjects-profile-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(15, 23, 42, .07);
+    transition: .3s ease;
+}
+
+.subjects-profile-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 35px rgba(15, 23, 42, .11);
+}
+
+.subjects-profile-icon {
+    width: 55px;
+    height: 55px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 23px;
+}
+
+.subjects-profile-icon.teacher {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+.subjects-profile-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.subjects-profile-details span {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1.3px;
+}
+
+.subjects-profile-details h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 750;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.subjects-profile-details p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.subjects-profile-details p i {
+    margin-right: 4px;
+}
+
+.subjects-profile-class {
+    padding-left: 15px;
+    border-left: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.subjects-profile-class span {
+    display: block;
+    font-size: 9px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.subjects-profile-class strong {
+    display: block;
+    margin-top: 3px;
+    color: #2563eb;
+    font-size: 16px;
+}
+
+.teacher-online-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: #f0fdf4;
+    color: #16a34a;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.teacher-online-status span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+}
+
+
+/* ============================================================
+   SUMMARY
+============================================================ */
+
+.subjects-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    border-radius: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.subjects-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.summary-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    background: #dbeafe;
+    color: #2563eb;
+    font-size: 20px;
+}
+
+.subjects-summary-left span {
+    display: block;
+    font-size: 9px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1.3px;
+}
+
+.subjects-summary-left h2 {
+    margin: 3px 0;
+    color: #0f172a;
+    font-size: 20px;
+}
+
+.subjects-summary-left p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.subjects-total {
+    min-width: 90px;
+    padding: 10px 18px;
+    text-align: center;
+    border-radius: 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+}
+
+.subjects-total strong {
+    display: block;
+    color: #2563eb;
+    font-size: 26px;
+    line-height: 1;
+}
+
+.subjects-total span {
+    display: block;
+    margin-top: 5px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+
+/* ============================================================
+   SUBJECT GRID
+============================================================ */
+
+.student-subjects-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 17px;
+}
+
+
+/* ============================================================
+   SUBJECT CARD
+============================================================ */
+
+.student-subject-card-modern {
+    position: relative;
+    overflow: hidden;
+    min-height: 190px;
+    padding: 20px;
+    border-radius: 20px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 7px 22px rgba(15, 23, 42, .06);
+    cursor: pointer;
+    transition:
+        transform .3s ease,
+        box-shadow .3s ease,
+        border-color .3s ease;
+
+    animation: subjectCardIn .5s ease both;
+    animation-delay: calc(var(--subject-index) * .06s);
+}
+
+@keyframes subjectCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.student-subject-card-modern::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 4px;
+    background:
+        linear-gradient(
+            90deg,
+            #2563eb,
+            #7c3aed
+        );
+}
+
+.student-subject-card-modern::after {
+    content: "";
+    position: absolute;
+    width: 110px;
+    height: 110px;
+    right: -45px;
+    bottom: -50px;
+    border-radius: 50%;
+    background: #eff6ff;
+    transition: .3s ease;
+}
+
+.student-subject-card-modern:hover {
+    transform: translateY(-7px);
+    border-color: #bfdbfe;
+    box-shadow: 0 18px 38px rgba(37, 99, 235, .12);
+}
+
+.student-subject-card-modern:hover::after {
+    transform: scale(1.5);
+}
+
+.subject-card-top {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.subject-number {
+    font-size: 11px;
+    font-weight: 900;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.subject-status {
+    width: 27px;
+    height: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #16a34a;
+    font-size: 11px;
+}
+
+.subject-main-icon {
+    position: relative;
+    z-index: 2;
+    width: 48px;
+    height: 48px;
+    margin-top: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 19px;
+    transition: .3s ease;
+}
+
+.student-subject-card-modern:hover .subject-main-icon {
+    transform: rotate(-5deg) scale(1.08);
+}
+
+.subject-card-content {
+    position: relative;
+    z-index: 2;
+    margin-top: 14px;
+}
+
+.subject-label {
+    display: block;
+    font-size: 9px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1.3px;
+}
+
+.subject-card-content h3 {
+    margin: 4px 0 0;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.subject-card-arrow {
+    position: absolute;
+    z-index: 3;
+    right: 18px;
+    bottom: 18px;
+    color: #cbd5e1;
+    transition: .3s ease;
+}
+
+.student-subject-card-modern:hover .subject-card-arrow {
+    color: #2563eb;
+    transform: translateX(4px);
+}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+.subjects-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 22px;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.subjects-footer i {
+    color: #2563eb;
+}
+
+
+/* ============================================================
+   LOADING
+============================================================ */
+
+.subjects-modern-loading {
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.subjects-loader {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    border-radius: 22px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 27px;
+    animation: subjectsPulse 1.4s infinite;
+}
+
+@keyframes subjectsPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+.subjects-modern-loading h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 18px;
+}
+
+.subjects-modern-loading p {
+    margin: 7px 0 15px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.subjects-loading-bar {
+    width: 180px;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #e2e8f0;
+}
+
+.subjects-loading-bar span {
+    display: block;
+    width: 50%;
+    height: 100%;
+    border-radius: inherit;
+    background: #2563eb;
+    animation: loadingMove 1.2s infinite;
+}
+
+@keyframes loadingMove {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(360%);
+    }
+}
+
+
+/* ============================================================
+   EMPTY / ERROR STATES
+============================================================ */
+
+.subjects-modern-message {
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 35px 25px;
+    text-align: center;
+    border-radius: 22px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .07);
+}
+
+.subjects-message-icon {
+    width: 65px;
+    height: 65px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    border-radius: 20px;
+    background: #fef2f2;
+    color: #ef4444;
+    font-size: 25px;
+}
+
+.subjects-message-icon.blue {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.subjects-message-icon.purple {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+.subjects-modern-message.warning .subjects-message-icon {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.subjects-modern-message h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 18px;
+}
+
+.subjects-modern-message p {
+    margin: 8px auto 0;
+    max-width: 390px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.subjects-modern-message p strong {
+    color: #2563eb;
+}
+
+.subjects-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 18px;
+    padding: 10px 17px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .25s ease;
+}
+
+.subjects-action-btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+}
+
+
+/* ============================================================
+   DARK MODE
+============================================================ */
+
+.dark-mode .subjects-profile-card,
+.dark-mode .student-subject-card-modern,
+.dark-mode .subjects-modern-message {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark-mode .subjects-profile-details h3,
+.dark-mode .subject-card-content h3,
+.dark-mode .subjects-summary-left h2,
+.dark-mode .subjects-modern-message h3,
+.dark-mode .subjects-modern-loading h3 {
+    color: #f8fafc;
+}
+
+.dark-mode .subjects-summary {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+.dark-mode .subjects-total {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark-mode .subject-main-icon,
+.dark-mode .subjects-profile-icon {
+    background: #172554;
+}
+
+.dark-mode .subjects-profile-details p,
+.dark-mode .subjects-summary-left p,
+.dark-mode .subjects-modern-message p,
+.dark-mode .subjects-modern-loading p {
+    color: #94a3b8;
+}
+
+.dark-mode .subjects-profile-class {
+    border-color: #334155;
+}
+
+.dark-mode .subjects-profile-class span,
+.dark-mode .subject-label,
+.dark-mode .subject-number {
+    color: #64748b;
+}
+
+.dark-mode .subjects-footer {
+    color: #64748b;
+}
+
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (max-width: 900px) {
+
+    .student-subjects-grid-modern {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .subjects-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subjects-hero {
+        padding: 24px;
+        border-radius: 20px;
+    }
+
+    .subjects-hero h1 {
+        font-size: 25px;
+    }
+
+    .subjects-hero-icon {
+        width: 58px;
+        height: 58px;
+        font-size: 24px;
+    }
+
+    .subjects-hero-decoration {
+        display: none;
+    }
+
+    .subjects-summary {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .subjects-total {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+}
+
+
+@media (max-width: 520px) {
+
+    .student-subjects-grid-modern {
+        grid-template-columns: 1fr;
+    }
+
+    .subjects-profile-card {
+        padding: 16px;
+    }
+
+    .subjects-profile-class {
+        display: none;
+    }
+
+    .subjects-profile-details h3 {
+        font-size: 15px;
+    }
+
+    .teacher-online-status {
+        display: none;
+    }
+
+    .subjects-hero-content {
+        gap: 13px;
+    }
+
+    .subjects-hero h1 {
+        font-size: 22px;
+    }
+
+    .subjects-hero p {
+        font-size: 12px;
+    }
+
+}
 </style>
 
 </head>
@@ -9488,17 +10302,2651 @@ async function sendReply(){
 
 
 
-async function openAttendance(){
+/* ============================================================
+   STUDENT PORTAL - ATTENDANCE
+   ------------------------------------------------------------
+   Shows:
+   1. Daily attendance
+   2. Weekly attendance summary
+   3. Monthly attendance summary
 
-    let student=
-    JSON.parse(localStorage.getItem("loggedStudent"));
+   ATTENDANCE TABLE COLUMNS:
+   - schoolid
+   - teacher
+   - date
+   - studentname
+   - status
+   - term
+============================================================ */
 
-    const {data,error}=await supabaseClient
-    .from("attendance")
-    .select("*")
-    .eq("studentid",student.id);
 
-    console.log(data);
+/* ============================================================
+   GLOBAL ATTENDANCE DATA
+============================================================ */
+
+let studentAttendanceRecords = [];
+
+let selectedAttendanceWeek = "";
+let selectedAttendanceMonth = "";
+
+
+/* ============================================================
+   OPEN ATTENDANCE
+============================================================ */
+
+async function openAttendance() {
+
+    const portal =
+        document.getElementById("studentPortal");
+
+    if (portal) {
+        portal.style.display = "none";
+    }
+
+
+    // --------------------------------------------------------
+    // Hide other student portal pages
+    // --------------------------------------------------------
+
+    [
+        "profilePage",
+        "resultsPage",
+        "subjectsPage",
+        "messagesPage",
+        "downloadsPage",
+        "notificationsPage",
+        "studentHomeworkPage"
+    ].forEach(id => {
+
+        const page =
+            document.getElementById(id);
+
+        if (page) {
+            page.style.display = "none";
+        }
+
+    });
+
+
+    // --------------------------------------------------------
+    // Get logged-in student
+    // --------------------------------------------------------
+
+    let loggedStudent = null;
+
+    try {
+
+        loggedStudent =
+            JSON.parse(
+                localStorage.getItem(
+                    "loggedStudent"
+                )
+            );
+
+    } catch (error) {
+
+        console.error(
+            "Unable to read logged student:",
+            error
+        );
+
+    }
+
+
+    if (!loggedStudent || !loggedStudent.id) {
+
+        alert(
+            "Student session not found. Please login again."
+        );
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Get fresh student information
+    // --------------------------------------------------------
+
+    let student = null;
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from("students")
+            .select("*")
+            .eq("id", loggedStudent.id)
+            .single();
+
+
+        if (error) {
+
+            console.error(
+                "Student fetch error:",
+                error
+            );
+
+            alert(
+                "Unable to load student information."
+            );
+
+            return;
+        }
+
+
+        student = data;
+
+
+    } catch (error) {
+
+        console.error(
+            "Student information error:",
+            error
+        );
+
+        alert(
+            "Unable to load student information."
+        );
+
+        return;
+    }
+
+
+    if (!student) {
+
+        alert(
+            "Student record not found."
+        );
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Student details
+    // --------------------------------------------------------
+
+    const studentName =
+        String(
+            student.name || ""
+        ).trim();
+
+
+    const studentID =
+        student.studentid ||
+        "N/A";
+
+
+    const studentClass =
+        student.studentclass ||
+        "N/A";
+
+
+    const schoolID =
+        student.schoolid ||
+        "";
+
+
+    if (!studentName) {
+
+        alert(
+            "Student name is missing from your profile."
+        );
+
+        return;
+    }
+
+
+    if (!schoolID) {
+
+        alert(
+            "School information is missing from your profile."
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "========== STUDENT ATTENDANCE =========="
+    );
+
+    console.log(
+        "Student:",
+        studentName
+    );
+
+    console.log(
+        "Student ID:",
+        studentID
+    );
+
+    console.log(
+        "Class:",
+        studentClass
+    );
+
+    console.log(
+        "School ID:",
+        schoolID
+    );
+
+
+    // --------------------------------------------------------
+    // Create / get attendance page
+    // --------------------------------------------------------
+
+    let attendancePage =
+        document.getElementById(
+            "attendancePage"
+        );
+
+
+    if (!attendancePage) {
+
+        attendancePage =
+            document.createElement("div");
+
+        attendancePage.id =
+            "attendancePage";
+
+        document.body.appendChild(
+            attendancePage
+        );
+
+    }
+
+
+    attendancePage.style.display =
+        "block";
+
+
+    // --------------------------------------------------------
+    // Current week / month
+    // --------------------------------------------------------
+
+    const today =
+        new Date();
+
+
+    selectedAttendanceWeek =
+        formatAttendanceDateInput(
+            getMonday(today)
+        );
+
+
+    selectedAttendanceMonth =
+        today.getFullYear() +
+        "-" +
+        String(
+            today.getMonth() + 1
+        ).padStart(2, "0");
+
+
+    // --------------------------------------------------------
+    // Loading screen
+    // --------------------------------------------------------
+
+    attendancePage.innerHTML = `
+
+        <div class="student-attendance-page">
+
+            <div class="student-attendance-container">
+
+                <div class="student-attendance-header">
+
+                    <button
+                        type="button"
+                        class="student-attendance-back"
+                        onclick="
+                            document.getElementById(
+                                'attendancePage'
+                            ).style.display = 'none';
+
+                            document.getElementById(
+                                'studentPortal'
+                            ).style.display = 'block';
+                        "
+                    >
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Portal
+                    </button>
+
+
+                    <div class="student-attendance-title">
+
+                        <div class="student-attendance-title-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+
+                        <div>
+
+                            <h1>
+                                Attendance
+                            </h1>
+
+                            <p>
+                                Your daily, weekly and monthly
+                                attendance record
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="student-attendance-loading">
+
+                    <i class="fas fa-spinner fa-spin"></i>
+
+                    <span>
+                        Loading attendance...
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    // --------------------------------------------------------
+    // Add attendance styles
+    // --------------------------------------------------------
+
+    addStudentAttendanceStyles();
+
+
+    // --------------------------------------------------------
+    // Load attendance records
+    // --------------------------------------------------------
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from("attendance")
+            .select("*")
+            .eq("schoolid", schoolID)
+            .eq("studentname", studentName)
+            .order("date", {
+                ascending: false
+            });
+
+
+        if (error) {
+
+            console.error(
+                "Attendance fetch error:",
+                error
+            );
+
+            attendancePage.innerHTML = `
+
+                <div class="student-attendance-page">
+
+                    <div class="student-attendance-container">
+
+                        <button
+                            type="button"
+                            class="student-attendance-back"
+                            onclick="
+                                document.getElementById(
+                                    'attendancePage'
+                                ).style.display = 'none';
+
+                                document.getElementById(
+                                    'studentPortal'
+                                ).style.display = 'block';
+                            "
+                        >
+                            <i class="fas fa-arrow-left"></i>
+                            Back to Portal
+                        </button>
+
+
+                        <div class="student-attendance-error">
+
+                            <i class="fas fa-triangle-exclamation"></i>
+
+                            <h3>
+                                Unable to load attendance
+                            </h3>
+
+                            <p>
+                                ${escapeAttendanceText(
+                                    error.message ||
+                                    "Please try again."
+                                )}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+            return;
+        }
+
+
+        studentAttendanceRecords =
+            Array.isArray(data)
+                ? data
+                : [];
+
+
+        console.log(
+            "Attendance records loaded:",
+            studentAttendanceRecords
+        );
+
+
+        // ----------------------------------------------------
+        // Render dashboard
+        // ----------------------------------------------------
+
+        renderStudentAttendanceDashboard(
+            studentName,
+            studentID,
+            studentClass,
+            studentAttendanceRecords
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Unexpected attendance error:",
+            error
+        );
+
+        attendancePage.innerHTML = `
+
+            <div class="student-attendance-page">
+
+                <div class="student-attendance-container">
+
+                    <button
+                        type="button"
+                        class="student-attendance-back"
+                        onclick="
+                            document.getElementById(
+                                'attendancePage'
+                            ).style.display = 'none';
+
+                            document.getElementById(
+                                'studentPortal'
+                            ).style.display = 'block';
+                        "
+                    >
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Portal
+                    </button>
+
+
+                    <div class="student-attendance-error">
+
+                        <i class="fas fa-triangle-exclamation"></i>
+
+                        <h3>
+                            Something went wrong
+                        </h3>
+
+                        <p>
+                            Unable to load attendance records.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+/* ============================================================
+   RENDER ATTENDANCE DASHBOARD
+============================================================ */
+
+function renderStudentAttendanceDashboard(
+    studentName,
+    studentID,
+    studentClass,
+    records
+) {
+
+    const page =
+        document.getElementById(
+            "attendancePage"
+        );
+
+    if (!page) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Overall statistics
+    // --------------------------------------------------------
+
+    const totalDays =
+        records.length;
+
+
+    const totalPresent =
+        records.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Present"
+        ).length;
+
+
+    const totalAbsent =
+        records.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Absent"
+        ).length;
+
+
+    const totalLate =
+        records.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Late"
+        ).length;
+
+
+    const overallPercentage =
+        totalDays > 0
+            ? (
+                (totalPresent / totalDays) *
+                100
+            ).toFixed(1)
+            : "0.0";
+
+
+    // --------------------------------------------------------
+    // Weekly statistics
+    // --------------------------------------------------------
+
+    const weekly =
+        calculateStudentAttendanceWeek(
+            records,
+            selectedAttendanceWeek
+        );
+
+
+    // --------------------------------------------------------
+    // Monthly statistics
+    // --------------------------------------------------------
+
+    const monthly =
+        calculateStudentAttendanceMonth(
+            records,
+            selectedAttendanceMonth
+        );
+
+
+    // --------------------------------------------------------
+    // Daily records
+    // --------------------------------------------------------
+
+    let dailyHTML = "";
+
+
+    if (!records.length) {
+
+        dailyHTML = `
+
+            <div class="student-attendance-empty">
+
+                <i class="fas fa-calendar-xmark"></i>
+
+                <h3>
+                    No attendance records yet
+                </h3>
+
+                <p>
+                    Your attendance will appear here when
+                    your teacher records it.
+                </p>
+
+            </div>
+
+        `;
+
+    } else {
+
+        dailyHTML = `
+
+            <div class="student-attendance-table-wrap">
+
+                <table class="student-attendance-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Date
+                            </th>
+
+                            <th>
+                                Day
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Term
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        ${
+                            records
+                                .map(
+                                    record =>
+                                        renderAttendanceRow(
+                                            record
+                                        )
+                                )
+                                .join("")
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        `;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Build complete page
+    // --------------------------------------------------------
+
+    page.innerHTML = `
+
+        <div class="student-attendance-page">
+
+            <div class="student-attendance-container">
+
+
+                <!-- =========================================
+                     HEADER
+                ========================================== -->
+
+                <div class="student-attendance-header">
+
+                    <button
+                        type="button"
+                        class="student-attendance-back"
+                        onclick="
+                            document.getElementById(
+                                'attendancePage'
+                            ).style.display = 'none';
+
+                            document.getElementById(
+                                'studentPortal'
+                            ).style.display = 'block';
+                        "
+                    >
+
+                        <i class="fas fa-arrow-left"></i>
+
+                        Back to Portal
+
+                    </button>
+
+
+                    <div class="student-attendance-title">
+
+                        <div class="student-attendance-title-icon">
+
+                            <i class="fas fa-calendar-check"></i>
+
+                        </div>
+
+
+                        <div>
+
+                            <h1>
+                                Attendance
+                            </h1>
+
+                            <p>
+                                Daily and attendance summaries
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     STUDENT INFORMATION
+                ========================================== -->
+
+                <div class="student-attendance-student-card">
+
+                    <div class="student-attendance-avatar">
+
+                        <i class="fas fa-user-graduate"></i>
+
+                    </div>
+
+
+                    <div class="student-attendance-student-info">
+
+                        <span>
+                            Student
+                        </span>
+
+                        <strong>
+                            ${escapeAttendanceText(
+                                studentName
+                            )}
+                        </strong>
+
+                        <small>
+
+                            ID:
+                            ${escapeAttendanceText(
+                                studentID
+                            )}
+
+                            &nbsp; • &nbsp;
+
+                            Class:
+                            ${escapeAttendanceText(
+                                studentClass
+                            )}
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     OVERALL SUMMARY
+                ========================================== -->
+
+                <div class="student-attendance-section">
+
+                    <div class="student-attendance-section-title">
+
+                        <div>
+
+                            <h2>
+                                Overall Attendance
+                            </h2>
+
+                            <p>
+                                Attendance recorded for this student
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="student-attendance-summary-grid">
+
+
+                        <!-- TOTAL DAYS -->
+
+                        <div class="student-attendance-stat">
+
+                            <div class="student-attendance-stat-icon">
+
+                                <i class="fas fa-calendar-days"></i>
+
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    Total Days
+                                </span>
+
+                                <strong>
+                                    ${totalDays}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- PRESENT -->
+
+                        <div class="student-attendance-stat present">
+
+                            <div class="student-attendance-stat-icon">
+
+                                <i class="fas fa-circle-check"></i>
+
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    Present
+                                </span>
+
+                                <strong>
+                                    ${totalPresent}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- ABSENT -->
+
+                        <div class="student-attendance-stat absent">
+
+                            <div class="student-attendance-stat-icon">
+
+                                <i class="fas fa-circle-xmark"></i>
+
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    Absent
+                                </span>
+
+                                <strong>
+                                    ${totalAbsent}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- LATE -->
+
+                        <div class="student-attendance-stat late">
+
+                            <div class="student-attendance-stat-icon">
+
+                                <i class="fas fa-clock"></i>
+
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    Late
+                                </span>
+
+                                <strong>
+                                    ${totalLate}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- PERCENTAGE -->
+
+                        <div class="student-attendance-stat percentage">
+
+                            <div class="student-attendance-stat-icon">
+
+                                <i class="fas fa-chart-pie"></i>
+
+                            </div>
+
+                            <div>
+
+                                <span>
+                                    Attendance Rate
+                                </span>
+
+                                <strong>
+                                    ${overallPercentage}%
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     WEEKLY SUMMARY
+                ========================================== -->
+
+                <div class="student-attendance-section">
+
+                    <div class="student-attendance-section-title">
+
+                        <div>
+
+                            <h2>
+                                Weekly Summary
+                            </h2>
+
+                            <p>
+                                View your attendance for any week
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="student-attendance-filter">
+
+                        <label>
+                            Select week
+                        </label>
+
+                        <input
+                            type="date"
+                            id="studentAttendanceWeek"
+                            value="${selectedAttendanceWeek}"
+                            onchange="
+                                selectedAttendanceWeek = this.value;
+
+                                renderStudentAttendanceDashboard(
+                                    '${escapeAttendanceAttribute(studentName)}',
+                                    '${escapeAttendanceAttribute(studentID)}',
+                                    '${escapeAttendanceAttribute(studentClass)}',
+                                    studentAttendanceRecords
+                                );
+                            "
+                        >
+
+                    </div>
+
+
+                    <div class="student-attendance-summary-grid weekly-grid">
+
+
+                        <div class="student-attendance-mini-card">
+
+                            <span>
+                                School Days
+                            </span>
+
+                            <strong>
+                                ${weekly.total}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="student-attendance-mini-card present">
+
+                            <span>
+                                Present
+                            </span>
+
+                            <strong>
+                                ${weekly.present}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="student-attendance-mini-card absent">
+
+                            <span>
+                                Absent
+                            </span>
+
+                            <strong>
+                                ${weekly.absent}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="student-attendance-mini-card">
+
+                            <span>
+                                Attendance
+                            </span>
+
+                            <strong>
+                                ${weekly.percentage}%
+                            </strong>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="student-attendance-period">
+
+                        <i class="fas fa-calendar-week"></i>
+
+                        <span>
+                            ${weekly.label}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     MONTHLY SUMMARY
+                ========================================== -->
+
+                <div class="student-attendance-section">
+
+                    <div class="student-attendance-section-title">
+
+                        <div>
+
+                            <h2>
+                                Monthly Summary
+                            </h2>
+
+                            <p>
+                                View your attendance for any month
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="student-attendance-filter">
+
+                        <label>
+                            Select month
+                        </label>
+
+                        <input
+                            type="month"
+                            id="studentAttendanceMonth"
+                            value="${selectedAttendanceMonth}"
+                            onchange="
+                                selectedAttendanceMonth = this.value;
+
+                                renderStudentAttendanceDashboard(
+                                    '${escapeAttendanceAttribute(studentName)}',
+                                    '${escapeAttendanceAttribute(studentID)}',
+                                    '${escapeAttendanceAttribute(studentClass)}',
+                                    studentAttendanceRecords
+                                );
+                            "
+                        >
+
+                    </div>
+
+
+                    <div class="student-attendance-summary-grid weekly-grid">
+
+
+                        <div class="student-attendance-mini-card">
+
+                            <span>
+                                School Days
+                            </span>
+
+                            <strong>
+                                ${monthly.total}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="student-attendance-mini-card present">
+
+                            <span>
+                                Present
+                            </span>
+
+                            <strong>
+                                ${monthly.present}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="student-attendance-mini-card absent">
+
+                            <span>
+                                Absent
+                            </span>
+
+                            <strong>
+                                ${monthly.absent}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="student-attendance-mini-card">
+
+                            <span>
+                                Attendance
+                            </span>
+
+                            <strong>
+                                ${monthly.percentage}%
+                            </strong>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="student-attendance-period">
+
+                        <i class="fas fa-calendar-days"></i>
+
+                        <span>
+                            ${monthly.label}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =========================================
+                     DAILY ATTENDANCE
+                ========================================== -->
+
+                <div class="student-attendance-section">
+
+                    <div class="student-attendance-section-title">
+
+                        <div>
+
+                            <h2>
+                                Daily Attendance
+                            </h2>
+
+                            <p>
+                                Your attendance record by school day
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    ${dailyHTML}
+
+                </div>
+
+
+
+                <!-- =========================================
+                     FOOTER
+                ========================================== -->
+
+                <div class="student-attendance-footer">
+
+                    <button
+                        type="button"
+                        class="student-attendance-back-main"
+                        onclick="
+                            document.getElementById(
+                                'attendancePage'
+                            ).style.display = 'none';
+
+                            document.getElementById(
+                                'studentPortal'
+                            ).style.display = 'block';
+                        "
+                    >
+
+                        <i class="fas fa-arrow-left"></i>
+
+                        Back to Student Portal
+
+                    </button>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* ============================================================
+   RENDER DAILY ATTENDANCE ROW
+============================================================ */
+
+function renderAttendanceRow(record) {
+
+    const status =
+        normalizeAttendanceStatus(
+            record.status
+        );
+
+
+    const date =
+        parseAttendanceDate(
+            record.date
+        );
+
+
+    if (!date) {
+
+        return "";
+
+    }
+
+
+    const formattedDate =
+        date.toLocaleDateString(
+            [],
+            {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            }
+        );
+
+
+    const day =
+        date.toLocaleDateString(
+            [],
+            {
+                weekday: "long"
+            }
+        );
+
+
+    const term =
+        formatAttendanceTerm(
+            record.term
+        );
+
+
+    let statusClass =
+        "not-marked";
+
+
+    let statusIcon =
+        "fa-circle-question";
+
+
+    if (status === "Present") {
+
+        statusClass =
+            "present";
+
+        statusIcon =
+            "fa-circle-check";
+
+    }
+
+
+    if (status === "Absent") {
+
+        statusClass =
+            "absent";
+
+        statusIcon =
+            "fa-circle-xmark";
+
+    }
+
+
+    if (status === "Late") {
+
+        statusClass =
+            "late";
+
+        statusIcon =
+            "fa-clock";
+
+    }
+
+
+    return `
+
+        <tr>
+
+            <td>
+
+                <strong>
+                    ${formattedDate}
+                </strong>
+
+            </td>
+
+
+            <td>
+                ${day}
+            </td>
+
+
+            <td>
+
+                <span
+                    class="
+                        student-attendance-status
+                        ${statusClass}
+                    "
+                >
+
+                    <i
+                        class="fas ${statusIcon}"
+                    ></i>
+
+                    ${status}
+
+                </span>
+
+            </td>
+
+
+            <td>
+                ${term}
+            </td>
+
+        </tr>
+
+    `;
+
+}
+
+
+/* ============================================================
+   WEEKLY CALCULATION
+============================================================ */
+
+function calculateStudentAttendanceWeek(
+    records,
+    weekStartString
+) {
+
+    const start =
+        parseAttendanceDate(
+            weekStartString
+        );
+
+
+    if (!start) {
+
+        return {
+            total: 0,
+            present: 0,
+            absent: 0,
+            late: 0,
+            percentage: "0.0",
+            label: "No week selected"
+        };
+
+    }
+
+
+    // Make sure week starts Monday
+    const monday =
+        getMonday(start);
+
+
+    const sunday =
+        new Date(monday);
+
+
+    sunday.setDate(
+        monday.getDate() + 6
+    );
+
+
+    const filtered =
+        records.filter(record => {
+
+            const date =
+                parseAttendanceDate(
+                    record.date
+                );
+
+
+            if (!date) {
+                return false;
+            }
+
+
+            return (
+                date >= startOfDay(monday) &&
+                date <= endOfDay(sunday)
+            );
+
+        });
+
+
+    const present =
+        filtered.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Present"
+        ).length;
+
+
+    const absent =
+        filtered.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Absent"
+        ).length;
+
+
+    const late =
+        filtered.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Late"
+        ).length;
+
+
+    const total =
+        filtered.length;
+
+
+    const percentage =
+        total > 0
+            ? (
+                (present / total) *
+                100
+            ).toFixed(1)
+            : "0.0";
+
+
+    const label =
+        monday.toLocaleDateString(
+            [],
+            {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            }
+        ) +
+        " – " +
+        sunday.toLocaleDateString(
+            [],
+            {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            }
+        );
+
+
+    return {
+        total,
+        present,
+        absent,
+        late,
+        percentage,
+        label
+    };
+
+}
+
+
+/* ============================================================
+   MONTHLY CALCULATION
+============================================================ */
+
+function calculateStudentAttendanceMonth(
+    records,
+    monthString
+) {
+
+    if (!monthString) {
+
+        return {
+            total: 0,
+            present: 0,
+            absent: 0,
+            late: 0,
+            percentage: "0.0",
+            label: "No month selected"
+        };
+
+    }
+
+
+    const parts =
+        monthString.split("-");
+
+
+    const year =
+        Number(parts[0]);
+
+
+    const month =
+        Number(parts[1]);
+
+
+    const filtered =
+        records.filter(record => {
+
+            const date =
+                parseAttendanceDate(
+                    record.date
+                );
+
+
+            if (!date) {
+                return false;
+            }
+
+
+            return (
+                date.getFullYear() === year &&
+                date.getMonth() + 1 === month
+            );
+
+        });
+
+
+    const present =
+        filtered.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Present"
+        ).length;
+
+
+    const absent =
+        filtered.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Absent"
+        ).length;
+
+
+    const late =
+        filtered.filter(
+            record =>
+                normalizeAttendanceStatus(
+                    record.status
+                ) === "Late"
+        ).length;
+
+
+    const total =
+        filtered.length;
+
+
+    const percentage =
+        total > 0
+            ? (
+                (present / total) *
+                100
+            ).toFixed(1)
+            : "0.0";
+
+
+    const labelDate =
+        new Date(
+            year,
+            month - 1,
+            1
+        );
+
+
+    const label =
+        labelDate.toLocaleDateString(
+            [],
+            {
+                month: "long",
+                year: "numeric"
+            }
+        );
+
+
+    return {
+        total,
+        present,
+        absent,
+        late,
+        percentage,
+        label
+    };
+
+}
+
+
+/* ============================================================
+   NORMALIZE STATUS
+============================================================ */
+
+function normalizeAttendanceStatus(
+    status
+) {
+
+    const value =
+        String(
+            status || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    if (
+        value === "present" ||
+        value === "p"
+    ) {
+
+        return "Present";
+
+    }
+
+
+    if (
+        value === "absent" ||
+        value === "a"
+    ) {
+
+        return "Absent";
+
+    }
+
+
+    if (
+        value === "late" ||
+        value === "l"
+    ) {
+
+        return "Late";
+
+    }
+
+
+    return "Not marked";
+
+}
+
+
+/* ============================================================
+   FORMAT TERM
+============================================================ */
+
+function formatAttendanceTerm(
+    term
+) {
+
+    if (!term) {
+        return "Term not specified";
+    }
+
+
+    const value =
+        String(term)
+            .toLowerCase();
+
+
+    if (value === "term1") {
+        return "Term 1";
+    }
+
+
+    if (value === "term2") {
+        return "Term 2";
+    }
+
+
+    if (value === "term3") {
+        return "Term 3";
+    }
+
+
+    return term;
+
+}
+
+
+/* ============================================================
+   PARSE DATE
+============================================================ */
+
+function parseAttendanceDate(
+    value
+) {
+
+    if (!value) {
+        return null;
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return null;
+
+    }
+
+
+    return date;
+
+}
+
+
+/* ============================================================
+   GET MONDAY
+============================================================ */
+
+function getMonday(
+    date
+) {
+
+    const result =
+        new Date(date);
+
+
+    const day =
+        result.getDay();
+
+
+    const difference =
+        day === 0
+            ? -6
+            : 1 - day;
+
+
+    result.setDate(
+        result.getDate() +
+        difference
+    );
+
+
+    return startOfDay(
+        result
+    );
+
+}
+
+
+/* ============================================================
+   START OF DAY
+============================================================ */
+
+function startOfDay(
+    date
+) {
+
+    const result =
+        new Date(date);
+
+
+    result.setHours(
+        0,
+        0,
+        0,
+        0
+    );
+
+
+    return result;
+
+}
+
+
+/* ============================================================
+   END OF DAY
+============================================================ */
+
+function endOfDay(
+    date
+) {
+
+    const result =
+        new Date(date);
+
+
+    result.setHours(
+        23,
+        59,
+        59,
+        999
+    );
+
+
+    return result;
+
+}
+
+
+/* ============================================================
+   FORMAT DATE INPUT
+============================================================ */
+
+function formatAttendanceDateInput(
+    date
+) {
+
+    const year =
+        date.getFullYear();
+
+
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const day =
+        String(
+            date.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    return `${year}-${month}-${day}`;
+
+}
+
+
+/* ============================================================
+   ESCAPE HTML
+============================================================ */
+
+function escapeAttendanceText(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+    .replace(
+        /</g,
+        "&lt;"
+    )
+    .replace(
+        />/g,
+        "&gt;"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+    .replace(
+        /'/g,
+        "&#039;"
+    );
+
+}
+
+
+/* ============================================================
+   ESCAPE HTML ATTRIBUTE
+============================================================ */
+
+function escapeAttendanceAttribute(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+    .replace(
+        /\\/g,
+        "\\\\"
+    )
+    .replace(
+        /'/g,
+        "\\'"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    );
+
+}
+
+
+/* ============================================================
+   ATTENDANCE CSS
+============================================================ */
+
+function addStudentAttendanceStyles() {
+
+    if (
+        document.getElementById(
+            "studentAttendanceStyles"
+        )
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "studentAttendanceStyles";
+
+
+    style.textContent = `
+
+        .student-attendance-page {
+            min-height: 100vh;
+            background: #f5f7fb;
+            padding: 24px 18px 50px;
+        }
+
+
+        .student-attendance-container {
+            width: 100%;
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+
+
+        .student-attendance-header {
+            margin-bottom: 22px;
+        }
+
+
+        .student-attendance-back {
+            border: none;
+            background: #ffffff;
+            color: #374151;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.05);
+            margin-bottom: 20px;
+        }
+
+
+        .student-attendance-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+
+        .student-attendance-title-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 15px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+        }
+
+
+        .student-attendance-title h1 {
+            margin: 0 0 4px;
+            color: #111827;
+            font-size: 25px;
+        }
+
+
+        .student-attendance-title p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+
+        .student-attendance-student-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 17px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+
+        .student-attendance-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+        }
+
+
+        .student-attendance-student-info span {
+            display: block;
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 3px;
+        }
+
+
+        .student-attendance-student-info strong {
+            display: block;
+            color: #111827;
+            font-size: 16px;
+        }
+
+
+        .student-attendance-student-info small {
+            display: block;
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+
+        .student-attendance-section {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,.035);
+        }
+
+
+        .student-attendance-section-title {
+            margin-bottom: 18px;
+        }
+
+
+        .student-attendance-section-title h2 {
+            margin: 0 0 4px;
+            color: #111827;
+            font-size: 18px;
+        }
+
+
+        .student-attendance-section-title p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+
+        .student-attendance-summary-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(150px, 1fr)
+                );
+            gap: 12px;
+        }
+
+
+        .student-attendance-stat {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fafafa;
+        }
+
+
+        .student-attendance-stat-icon {
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            border-radius: 11px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        .student-attendance-stat.present
+        .student-attendance-stat-icon {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+
+        .student-attendance-stat.absent
+        .student-attendance-stat-icon {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+
+        .student-attendance-stat.late
+        .student-attendance-stat-icon {
+            background: #fff7ed;
+            color: #ea580c;
+        }
+
+
+        .student-attendance-stat.percentage
+        .student-attendance-stat-icon {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+
+        .student-attendance-stat span {
+            display: block;
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 3px;
+        }
+
+
+        .student-attendance-stat strong {
+            display: block;
+            color: #111827;
+            font-size: 19px;
+        }
+
+
+        .student-attendance-filter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+
+        .student-attendance-filter label {
+            color: #4b5563;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+
+        .student-attendance-filter input {
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 9px 11px;
+            background: #ffffff;
+            color: #111827;
+            font-family: inherit;
+            outline: none;
+        }
+
+
+        .student-attendance-filter input:focus {
+            border-color: #4f46e5;
+        }
+
+
+        .weekly-grid {
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(120px, 1fr)
+                );
+        }
+
+
+        .student-attendance-mini-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 13px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+
+        .student-attendance-mini-card span {
+            display: block;
+            color: #6b7280;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+
+        .student-attendance-mini-card strong {
+            color: #111827;
+            font-size: 21px;
+        }
+
+
+        .student-attendance-mini-card.present strong {
+            color: #059669;
+        }
+
+
+        .student-attendance-mini-card.absent strong {
+            color: #dc2626;
+        }
+
+
+        .student-attendance-period {
+            margin-top: 15px;
+            padding: 11px 13px;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #4b5563;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+
+        .student-attendance-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+
+        .student-attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+
+        .student-attendance-table th {
+            text-align: left;
+            padding: 13px 12px;
+            background: #f8fafc;
+            color: #4b5563;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+
+        .student-attendance-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f0f1f3;
+            color: #4b5563;
+            font-size: 13px;
+        }
+
+
+        .student-attendance-table td strong {
+            color: #111827;
+        }
+
+
+        .student-attendance-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+
+        .student-attendance-status.present {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+
+        .student-attendance-status.absent {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+
+        .student-attendance-status.late {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+
+        .student-attendance-status.not-marked {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+
+        .student-attendance-empty {
+            text-align: center;
+            padding: 45px 20px;
+            color: #6b7280;
+        }
+
+
+        .student-attendance-empty i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: #9ca3af;
+        }
+
+
+        .student-attendance-empty h3 {
+            margin: 0 0 6px;
+            color: #374151;
+        }
+
+
+        .student-attendance-empty p {
+            margin: 0;
+            font-size: 13px;
+        }
+
+
+        .student-attendance-loading {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 60px 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+
+        .student-attendance-loading i {
+            font-size: 25px;
+            margin-right: 8px;
+        }
+
+
+        .student-attendance-error {
+            background: #ffffff;
+            border: 1px solid #fecaca;
+            border-radius: 18px;
+            padding: 45px 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+
+        .student-attendance-error i {
+            font-size: 38px;
+            color: #dc2626;
+            margin-bottom: 10px;
+        }
+
+
+        .student-attendance-error h3 {
+            color: #991b1b;
+            margin: 0 0 8px;
+        }
+
+
+        .student-attendance-error p {
+            margin: 0;
+            font-size: 13px;
+        }
+
+
+        .student-attendance-footer {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+
+        .student-attendance-back-main {
+            border: none;
+            background: #4f46e5;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 11px;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+
+        @media(max-width:700px) {
+
+            .student-attendance-page {
+                padding: 18px 12px 40px;
+            }
+
+
+            .student-attendance-section {
+                padding: 17px 14px;
+                border-radius: 15px;
+            }
+
+
+            .student-attendance-title h1 {
+                font-size: 21px;
+            }
+
+
+            .weekly-grid {
+                grid-template-columns:
+                    repeat(
+                        2,
+                        minmax(0, 1fr)
+                    );
+            }
+
+
+            .student-attendance-filter {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+
+            .student-attendance-filter input {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+
+            .student-attendance-student-card {
+                padding: 14px;
+            }
+
+        }
+
+
+        @media(max-width:430px) {
+
+            .student-attendance-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+
+            .weekly-grid {
+                grid-template-columns:
+                    repeat(
+                        2,
+                        minmax(0, 1fr)
+                    );
+            }
+
+
+            .student-attendance-title {
+                align-items: flex-start;
+            }
+
+
+            .student-attendance-title-icon {
+                width: 45px;
+                height: 45px;
+            }
+
+        }
+
+
+        /* DARK MODE */
+
+        body.dark-mode .student-attendance-page,
+        body.dark .student-attendance-page {
+            background: #0f172a;
+        }
+
+
+        body.dark-mode .student-attendance-section,
+        body.dark .student-attendance-section,
+        body.dark-mode .student-attendance-student-card,
+        body.dark .student-attendance-student-card,
+        body.dark-mode .student-attendance-loading,
+        body.dark .student-attendance-loading,
+        body.dark-mode .student-attendance-error,
+        body.dark .student-attendance-error {
+            background: #111827;
+            border-color: #374151;
+        }
+
+
+        body.dark-mode .student-attendance-title h1,
+        body.dark .student-attendance-title h1,
+        body.dark-mode .student-attendance-section-title h2,
+        body.dark .student-attendance-section-title h2,
+        body.dark-mode .student-attendance-student-info strong,
+        body.dark .student-attendance-student-info strong,
+        body.dark-mode .student-attendance-stat strong,
+        body.dark .student-attendance-stat strong,
+        body.dark-mode .student-attendance-mini-card strong,
+        body.dark .student-attendance-mini-card strong,
+        body.dark-mode .student-attendance-table td strong,
+        body.dark .student-attendance-table td strong {
+            color: #f9fafb;
+        }
+
+
+        body.dark-mode .student-attendance-title p,
+        body.dark .student-attendance-title p,
+        body.dark-mode .student-attendance-section-title p,
+        body.dark .student-attendance-section-title p,
+        body.dark-mode .student-attendance-student-info span,
+        body.dark .student-attendance-student-info span,
+        body.dark-mode .student-attendance-student-info small,
+        body.dark .student-attendance-student-info small,
+        body.dark-mode .student-attendance-stat span,
+        body.dark .student-attendance-stat span,
+        body.dark-mode .student-attendance-mini-card span,
+        body.dark .student-attendance-mini-card span {
+            color: #9ca3af;
+        }
+
+
+        body.dark-mode .student-attendance-stat,
+        body.dark .student-attendance-stat,
+        body.dark-mode .student-attendance-mini-card,
+        body.dark .student-attendance-mini-card,
+        body.dark-mode .student-attendance-period,
+        body.dark .student-attendance-period {
+            background: #1f2937;
+            border-color: #374151;
+        }
+
+
+        body.dark-mode .student-attendance-table th,
+        body.dark .student-attendance-table th {
+            background: #1f2937;
+            color: #d1d5db;
+        }
+
+
+        body.dark-mode .student-attendance-table td,
+        body.dark .student-attendance-table td {
+            border-color: #374151;
+            color: #d1d5db;
+        }
+
+
+        body.dark-mode .student-attendance-back,
+        body.dark .student-attendance-back {
+            background: #1f2937;
+            color: #e5e7eb;
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
 
 }
 
@@ -9506,34 +12954,810 @@ async function openAttendance(){
 
 
 
-async function openSubjects(){
+/* ============================================================
+   STUDENT PORTAL - SUBJECTS
+   Modern / Stylish Version
+============================================================ */
 
-    document.getElementById("studentPortal").style.display = "none";
-    document.getElementById("subjectsPage").style.display = "block";
+async function openSubjects() {
 
-    let student =
-        JSON.parse(localStorage.getItem("loggedStudent"));
+    const studentPortal = document.getElementById("studentPortal");
+    const subjectsPage = document.getElementById("subjectsPage");
+    const subjectsList = document.getElementById("subjectsList");
 
-    if(!student) return;
+    /* =========================================================
+       SHOW SUBJECTS PAGE
+    ========================================================= */
 
-    let html = "";
+    if (studentPortal) {
+        studentPortal.style.display = "none";
+    }
 
-    let subjects =
-        student.subjects?.[student.currentterm] || {};
+    if (subjectsPage) {
+        subjectsPage.style.display = "block";
+    }
 
-    Object.keys(subjects).forEach(subject=>{
+    if (!subjectsList) {
+        console.error("subjectsList element not found.");
+        return;
+    }
 
-        html += `
-            <div class="resultRow">
-                ${subject}
+    /* =========================================================
+       LOADING STATE
+    ========================================================= */
+
+    subjectsList.innerHTML = `
+        <div class="subjects-modern-loading">
+            <div class="subjects-loader">
+                <i class="fas fa-book-open"></i>
+            </div>
+
+            <h3>Loading Your Subjects</h3>
+            <p>Please wait while we prepare your subjects...</p>
+
+            <div class="subjects-loading-bar">
+                <span></span>
+            </div>
+        </div>
+    `;
+
+    try {
+
+        /* =====================================================
+           GET LOGGED-IN STUDENT
+        ===================================================== */
+
+        const loggedStudent = JSON.parse(
+            localStorage.getItem("loggedStudent")
+        );
+
+        if (!loggedStudent || !loggedStudent.id) {
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message error">
+
+                    <div class="subjects-message-icon">
+                        <i class="fas fa-user-lock"></i>
+                    </div>
+
+                    <h3>Student Session Not Found</h3>
+
+                    <p>
+                        Your student session could not be found.
+                        Please login again to continue.
+                    </p>
+
+                    <button
+                        class="subjects-action-btn"
+                        onclick="location.reload()"
+                    >
+                        <i class="fas fa-rotate-right"></i>
+                        Login Again
+                    </button>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           GET FRESH STUDENT RECORD
+        ===================================================== */
+
+        const {
+            data: student,
+            error: studentError
+        } = await supabaseClient
+            .from("students")
+            .select("*")
+            .eq("id", loggedStudent.id)
+            .single();
+
+
+        if (studentError) {
+
+            console.error(
+                "Student fetch error:",
+                studentError
+            );
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message error">
+
+                    <div class="subjects-message-icon">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+
+                    <h3>Unable to Load Student Information</h3>
+
+                    <p>
+                        We couldn't retrieve your student information.
+                        Please refresh the page and try again.
+                    </p>
+
+                    <button
+                        class="subjects-action-btn"
+                        onclick="openSubjects()"
+                    >
+                        <i class="fas fa-rotate-right"></i>
+                        Try Again
+                    </button>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        if (!student) {
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message error">
+
+                    <div class="subjects-message-icon">
+                        <i class="fas fa-user-slash"></i>
+                    </div>
+
+                    <h3>Student Not Found</h3>
+
+                    <p>
+                        Your student record could not be found
+                        in the school system.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           STUDENT DETAILS
+        ===================================================== */
+
+        const studentName =
+            student.name ||
+            `${student.firstname || ""} ${student.surname || ""}`.trim() ||
+            "Student";
+
+        const studentID =
+            student.studentid ||
+            student.studentId ||
+            "N/A";
+
+        const studentClass =
+            student.studentclass ||
+            "";
+
+        const schoolID =
+            student.schoolid ||
+            student.schoolId ||
+            "";
+
+
+        console.log("==========================================");
+        console.log("STUDENT SUBJECTS");
+        console.log("Student:", studentName);
+        console.log("Student ID:", studentID);
+        console.log("Student Class:", studentClass);
+        console.log("School ID:", schoolID);
+        console.log("==========================================");
+
+
+        /* =====================================================
+           CHECK SCHOOL
+        ===================================================== */
+
+        if (!schoolID) {
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message warning">
+
+                    <div class="subjects-message-icon">
+                        <i class="fas fa-school"></i>
+                    </div>
+
+                    <h3>School Not Assigned</h3>
+
+                    <p>
+                        Your student account has not been assigned
+                        to a school yet.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           CHECK CLASS
+        ===================================================== */
+
+        if (!studentClass) {
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message warning">
+
+                    <div class="subjects-message-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+
+                    <h3>Class Not Assigned</h3>
+
+                    <p>
+                        Your class has not been assigned yet.
+                        Please contact your school administrator.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           FIND TEACHERS
+        ===================================================== */
+
+        const {
+            data: teachers,
+            error: teacherError
+        } = await supabaseClient
+            .from("users")
+            .select(
+                "id, firstname, surname, username, classes, subjects"
+            )
+            .eq("schoolid", schoolID)
+            .eq("role", "teacher");
+
+
+        if (teacherError) {
+
+            console.error(
+                "Teacher lookup error:",
+                teacherError
+            );
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message error">
+
+                    <div class="subjects-message-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+
+                    <h3>Unable to Load Class Teacher</h3>
+
+                    <p>
+                        We couldn't retrieve your class teacher
+                        information. Please try again later.
+                    </p>
+
+                    <button
+                        class="subjects-action-btn"
+                        onclick="openSubjects()"
+                    >
+                        <i class="fas fa-rotate-right"></i>
+                        Try Again
+                    </button>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           FIND CLASS TEACHER
+        ===================================================== */
+
+        const classTeacher = (teachers || []).find(
+            teacher => {
+
+                if (!Array.isArray(teacher.classes)) {
+                    return false;
+                }
+
+                return teacher.classes.some(
+                    teacherClass =>
+                        String(teacherClass)
+                            .trim()
+                            .toLowerCase() ===
+                        String(studentClass)
+                            .trim()
+                            .toLowerCase()
+                );
+
+            }
+        );
+
+
+        /* =====================================================
+           NO CLASS TEACHER
+        ===================================================== */
+
+        if (!classTeacher) {
+
+            console.warn(
+                "No class teacher found for class:",
+                studentClass
+            );
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message">
+
+                    <div class="subjects-message-icon blue">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+
+                    <h3>Class Teacher Not Assigned</h3>
+
+                    <p>
+                        No class teacher has been assigned to
+                        <strong>
+                            ${escapeStudentSubjectHTML(studentClass)}
+                        </strong>
+                        yet.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           TEACHER NAME
+        ===================================================== */
+
+        const teacherName =
+            (
+                `${classTeacher.firstname || ""} ` +
+                `${classTeacher.surname || ""}`
+            ).trim() ||
+            classTeacher.username ||
+            "Class Teacher";
+
+
+        /* =====================================================
+           GET TEACHER SUBJECTS
+        ===================================================== */
+
+        let teacherSubjects =
+            Array.isArray(classTeacher.subjects)
+                ? classTeacher.subjects
+                : [];
+
+
+        /* =====================================================
+           CLEAN SUBJECTS
+        ===================================================== */
+
+        teacherSubjects = [
+            ...new Set(
+                teacherSubjects
+                    .map(subject =>
+                        String(subject).trim()
+                    )
+                    .filter(Boolean)
+            )
+        ];
+
+
+        /* =====================================================
+           SORT SUBJECTS
+        ===================================================== */
+
+        teacherSubjects.sort(
+            (a, b) =>
+                a.localeCompare(b)
+        );
+
+
+        console.log(
+            "Class Teacher:",
+            teacherName
+        );
+
+        console.log(
+            "Teacher Classes:",
+            classTeacher.classes
+        );
+
+        console.log(
+            "Teacher Subjects:",
+            teacherSubjects
+        );
+
+
+        /* =====================================================
+           NO SUBJECTS
+        ===================================================== */
+
+        if (teacherSubjects.length === 0) {
+
+            subjectsList.innerHTML = `
+                <div class="subjects-modern-message">
+
+                    <div class="subjects-message-icon purple">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+
+                    <h3>No Subjects Assigned</h3>
+
+                    <p>
+                        Your class teacher,
+                        <strong>
+                            ${escapeStudentSubjectHTML(teacherName)}
+                        </strong>,
+                        has not been assigned any subjects yet.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           SUBJECT ICONS
+        ===================================================== */
+
+        const subjectIcons = [
+            "fa-calculator",
+            "fa-book",
+            "fa-flask",
+            "fa-globe",
+            "fa-language",
+            "fa-palette",
+            "fa-music",
+            "fa-computer",
+            "fa-person-running",
+            "fa-seedling",
+            "fa-atom",
+            "fa-pen-nib"
+        ];
+
+
+        /* =====================================================
+           CREATE SUBJECT CARDS
+        ===================================================== */
+
+        let subjectsHTML = "";
+
+        teacherSubjects.forEach(
+            (subject, index) => {
+
+                const icon =
+                    subjectIcons[
+                        index % subjectIcons.length
+                    ];
+
+                subjectsHTML += `
+                    <div
+                        class="student-subject-card-modern"
+                        style="--subject-index:${index}"
+                    >
+
+                        <div class="subject-card-top">
+
+                            <div class="subject-number">
+                                ${String(index + 1).padStart(2, "0")}
+                            </div>
+
+                            <div class="subject-status">
+                                <i class="fas fa-check"></i>
+                            </div>
+
+                        </div>
+
+
+                        <div class="subject-main-icon">
+                            <i class="fas ${icon}"></i>
+                        </div>
+
+
+                        <div class="subject-card-content">
+
+                            <span class="subject-label">
+                                SUBJECT ${String(index + 1).padStart(2, "0")}
+                            </span>
+
+                            <h3>
+                                ${escapeStudentSubjectHTML(subject)}
+                            </h3>
+
+                        </div>
+
+
+                        <div class="subject-card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+
+                    </div>
+                `;
+
+            }
+        );
+
+
+        /* =====================================================
+           DISPLAY SUBJECTS
+        ===================================================== */
+
+        subjectsList.innerHTML = `
+
+            <div class="student-subjects-modern-wrapper">
+
+
+                <!-- ==========================================
+                     HERO HEADER
+                =========================================== -->
+
+                <div class="subjects-hero">
+
+                    <div class="subjects-hero-content">
+
+                        <div class="subjects-hero-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+
+                        <div>
+
+                            <span class="subjects-hero-label">
+                                STUDENT PORTAL
+                            </span>
+
+                            <h1>
+                                My Subjects
+                            </h1>
+
+                            <p>
+                                Your academic subjects for
+                                <strong>
+                                    ${escapeStudentSubjectHTML(studentClass)}
+                                </strong>
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="subjects-hero-decoration">
+                        <i class="fas fa-book"></i>
+                        <i class="fas fa-pencil"></i>
+                        <i class="fas fa-award"></i>
+                    </div>
+
+                </div>
+
+
+                <!-- ==========================================
+                     STUDENT + TEACHER INFORMATION
+                =========================================== -->
+
+                <div class="subjects-info-grid">
+
+
+                    <!-- STUDENT CARD -->
+
+                    <div class="subjects-profile-card">
+
+                        <div class="subjects-profile-icon student">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+
+                        <div class="subjects-profile-details">
+
+                            <span>
+                                STUDENT
+                            </span>
+
+                            <h3>
+                                ${escapeStudentSubjectHTML(studentName)}
+                            </h3>
+
+                            <p>
+                                <i class="fas fa-id-card"></i>
+                                ${escapeStudentSubjectHTML(studentID)}
+                            </p>
+
+                        </div>
+
+                        <div class="subjects-profile-class">
+                            <span>CLASS</span>
+                            <strong>
+                                ${escapeStudentSubjectHTML(studentClass)}
+                            </strong>
+                        </div>
+
+                    </div>
+
+
+                    <!-- TEACHER CARD -->
+
+                    <div class="subjects-profile-card teacher">
+
+                        <div class="subjects-profile-icon teacher">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+
+                        <div class="subjects-profile-details">
+
+                            <span>
+                                CLASS TEACHER
+                            </span>
+
+                            <h3>
+                                ${escapeStudentSubjectHTML(teacherName)}
+                            </h3>
+
+                            <p>
+                                <i class="fas fa-user-tie"></i>
+                                Your Class Teacher
+                            </p>
+
+                        </div>
+
+                        <div class="teacher-online-status">
+                            <span></span>
+                            Assigned
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==========================================
+                     SUBJECT SUMMARY
+                =========================================== -->
+
+                <div class="subjects-summary">
+
+                    <div class="subjects-summary-left">
+
+                        <div class="summary-icon">
+                            <i class="fas fa-books"></i>
+                        </div>
+
+                        <div>
+
+                            <span>
+                                ACADEMIC PROGRAMME
+                            </span>
+
+                            <h2>
+                                Your Subjects
+                            </h2>
+
+                            <p>
+                                Subjects assigned to your class
+                                by your class teacher.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="subjects-total">
+
+                        <strong>
+                            ${teacherSubjects.length}
+                        </strong>
+
+                        <span>
+                            ${
+                                teacherSubjects.length === 1
+                                    ? "Subject"
+                                    : "Subjects"
+                            }
+                            Assigned
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==========================================
+                     SUBJECT GRID
+                =========================================== -->
+
+                <div class="student-subjects-grid-modern">
+
+                    ${subjectsHTML}
+
+                </div>
+
+
+                <!-- ==========================================
+                     FOOTER
+                =========================================== -->
+
+                <div class="subjects-footer">
+
+                    <i class="fas fa-circle-info"></i>
+
+                    <span>
+                        These subjects are based on the
+                        academic assignments for your class.
+                    </span>
+
+                </div>
+
             </div>
         `;
 
-    });
 
-    document.getElementById("subjectsList").innerHTML =
-        html || "No subjects available.";
+        console.log(
+            "Subjects successfully displayed."
+        );
 
+        console.log(
+            "=========================================="
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Unexpected error loading student subjects:",
+            error
+        );
+
+
+        subjectsList.innerHTML = `
+            <div class="subjects-modern-message error">
+
+                <div class="subjects-message-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+
+                <h3>Something Went Wrong</h3>
+
+                <p>
+                    We were unable to load your subjects.
+                    Please refresh the page and try again.
+                </p>
+
+                <button
+                    class="subjects-action-btn"
+                    onclick="openSubjects()"
+                >
+                    <i class="fas fa-rotate-right"></i>
+                    Try Again
+                </button>
+
+            </div>
+        `;
+    }
+}
+
+
+/* ============================================================
+   ESCAPE HTML
+============================================================ */
+
+function escapeStudentSubjectHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
