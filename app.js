@@ -1586,6 +1586,13 @@ function displayStudents(){
 }
 
 
+
+
+
+
+
+
+
 function saveMarksFromModal(){
     saveMarks();  // use your existing function
     closeStudentModal();
@@ -1722,6 +1729,10 @@ async function handleCSV(event){
 
 
 
+
+
+
+
 function populateStudentList() {
 
     const term =
@@ -1762,14 +1773,14 @@ function populateStudentList() {
 
         if (currentUser?.role === "teacher") {
 
-            // Teacher sees only assigned subjects
-            subjectList = [
-                ...new Set(
-                    Array.isArray(currentUser.subjects)
-                        ? currentUser.subjects
-                        : []
-                )
-            ];
+            const subjectList =
+    currentUser?.role === "teacher"
+        ? [...new Set(
+            Array.isArray(currentUser.subjects)
+                ? currentUser.subjects
+                : []
+        )]
+        : [...new Set(Subjects)];
 
         } else {
 
@@ -2254,6 +2265,16 @@ function updateGender(index, newGender){
 function searchStudent(){
     loadStudentsTable();
 }
+
+
+
+
+
+
+
+  // =========================
+    // ATTENDANCE SECTION
+    // =========================
 
 // Attendance data stored in localStorage: { date: { studentname: "Present"/"Absent" } }
 let attendanceData = {};
@@ -2844,6 +2865,14 @@ async function markAllPresent() {
     loadAttendanceTable();
 }
 
+
+
+
+
+
+
+
+
 function openDeleteModal(index){
     deleteIndex = index;
 
@@ -2879,6 +2908,7 @@ function confirmDelete(){
 
     closeModal();
 }
+
 
 
 
@@ -3487,6 +3517,8 @@ function openStudentModal(index) {
     );
 
 }
+
+
 
 
 
@@ -4674,6 +4706,9 @@ function formatDate(dateStr){
 
     return day + getOrdinal(day) + " " + month + ", " + year;
 }
+
+
+
 async function generateAllReports(){
 
     if(!students || students.length === 0){
@@ -4883,6 +4918,16 @@ async function generateAllReports(){
 if(currentUser && currentUser.role === "teacher" && (!currentUser.subjects || currentUser.subjects.length === 0)){
     alert("No subjects assigned to you. Contact admin.");
 }
+
+
+
+
+
+
+
+
+
+
 // Report generation remains the same
 async function generateReportWithTerm(
     s,
@@ -6844,6 +6889,10 @@ async function saveProfile() {
 function closeProfile(){
     document.getElementById("profileModal").style.display = "none";
 }
+
+
+
+
 function loadSubjectSelection(user = currentUser) {
 
     let container = document.getElementById("subjectCheckboxes");
@@ -7779,22 +7828,366 @@ async function ensureClassExists(classname){
     }
 }
 
-function loadTeacherSubjects(){
+/* =========================================================
+   LOAD SUBJECTS FOR LESSON PLAN + LESSON NOTE
+========================================================= */
 
-    let subjectList = currentUser.role === "teacher"
-        ? (currentUser.subjects || [])
-        : subjects;
+async function loadTeacherSubjects() {
 
-    let planSelect = document.getElementById("planSubject");
-    let noteSelect = document.getElementById("noteSubject");
+    const planSelect =
+        document.getElementById("planSubject");
 
-    planSelect.innerHTML = "";
-    noteSelect.innerHTML = "";
+    const noteSelect =
+        document.getElementById("noteSubject");
 
-    subjectList.forEach(sub=>{
-        planSelect.innerHTML += `<option>${sub}</option>`;
-        noteSelect.innerHTML += `<option>${sub}</option>`;
-    });
+    if (!planSelect || !noteSelect) {
+        console.warn(
+            "Lesson subject dropdowns not found."
+        );
+        return;
+    }
+
+    if (!currentUser) {
+        console.warn(
+            "currentUser is not available."
+        );
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       SHOW LOADING
+    ----------------------------------------------------- */
+
+    planSelect.innerHTML =
+        `<option value="">Loading subjects...</option>`;
+
+    noteSelect.innerHTML =
+        `<option value="">Loading subjects...</option>`;
+
+
+    try {
+
+        let subjectList = [];
+
+
+        /* =================================================
+           TEACHER
+        ================================================= */
+
+        if (
+            String(currentUser.role).toLowerCase()
+            === "teacher"
+        ) {
+
+            let teacherSubjects =
+                currentUser.subjects;
+
+
+            /*
+             * Get the latest teacher record
+             * directly from Supabase.
+             */
+
+            if (currentUser.id) {
+
+                const {
+                    data,
+                    error
+                } = await supabaseClient
+                    .from("users")
+                    .select("subjects, role")
+                    .eq(
+                        "id",
+                        currentUser.id
+                    )
+                    .single();
+
+
+                if (!error && data) {
+
+                    teacherSubjects =
+                        data.subjects;
+
+                    /*
+                     * Keep currentUser updated.
+                     */
+
+                    currentUser.subjects =
+                        normalizeSubjectArray(
+                            data.subjects
+                        );
+
+                    localStorage.setItem(
+                        "loggedInUser",
+                        JSON.stringify(
+                            currentUser
+                        )
+                    );
+
+                } else {
+
+                    console.warn(
+                        "Could not refresh teacher subjects:",
+                        error
+                    );
+
+                }
+
+            }
+
+
+            subjectList =
+                normalizeSubjectArray(
+                    teacherSubjects
+                );
+
+        }
+
+
+        /* =================================================
+           ADMIN
+        ================================================= */
+
+        else {
+
+            subjectList =
+                normalizeSubjectArray(
+                    subjects
+                );
+
+        }
+
+
+        /* =================================================
+           REMOVE DUPLICATES
+        ================================================= */
+
+        subjectList = [
+            ...new Set(
+                subjectList
+                    .map(s =>
+                        String(s).trim()
+                    )
+                    .filter(Boolean)
+            )
+        ];
+
+
+        /* =================================================
+           NO SUBJECTS
+        ================================================= */
+
+        if (subjectList.length === 0) {
+
+            planSelect.innerHTML = `
+                <option value="">
+                    No subjects available
+                </option>
+            `;
+
+            noteSelect.innerHTML = `
+                <option value="">
+                    No subjects available
+                </option>
+            `;
+
+            console.warn(
+                "No subjects available for current user."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           POPULATE PLAN
+        ================================================= */
+
+        planSelect.innerHTML = `
+            <option value="">
+                Select Subject
+            </option>
+        `;
+
+
+        subjectList.forEach(subject => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = subject;
+
+            option.textContent = subject;
+
+            planSelect.appendChild(option);
+
+        });
+
+
+        /* =================================================
+           POPULATE NOTE
+        ================================================= */
+
+        noteSelect.innerHTML = `
+            <option value="">
+                Select Subject
+            </option>
+        `;
+
+
+        subjectList.forEach(subject => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = subject;
+
+            option.textContent = subject;
+
+            noteSelect.appendChild(option);
+
+        });
+
+
+        /* =================================================
+           AUTO SELECT IF ONLY ONE
+        ================================================= */
+
+        if (subjectList.length === 1) {
+
+            planSelect.value =
+                subjectList[0];
+
+            noteSelect.value =
+                subjectList[0];
+
+        }
+
+
+        console.log(
+            "Lesson Plan Subjects:",
+            subjectList
+        );
+
+        console.log(
+            "Lesson Note Subjects:",
+            subjectList
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "loadTeacherSubjects error:",
+            error
+        );
+
+
+        planSelect.innerHTML = `
+            <option value="">
+                Failed to load subjects
+            </option>
+        `;
+
+        noteSelect.innerHTML = `
+            <option value="">
+                Failed to load subjects
+            </option>
+        `;
+
+    }
+
+}
+
+
+
+/* =========================================================
+   NORMALIZE SUBJECT DATA
+========================================================= */
+
+function normalizeSubjectArray(value) {
+
+    if (Array.isArray(value)) {
+
+        return value
+            .map(item => {
+
+                if (
+                    typeof item === "string"
+                ) {
+                    return item.trim();
+                }
+
+                if (
+                    item &&
+                    typeof item === "object"
+                ) {
+                    return String(
+                        item.name ||
+                        item.subject ||
+                        ""
+                    ).trim();
+                }
+
+                return "";
+
+            })
+            .filter(Boolean);
+
+    }
+
+
+    if (typeof value === "string") {
+
+        /*
+         * Try JSON first.
+         */
+
+        try {
+
+            const parsed =
+                JSON.parse(value);
+
+            if (Array.isArray(parsed)) {
+
+                return normalizeSubjectArray(
+                    parsed
+                );
+
+            }
+
+        } catch (error) {
+            // Continue with normal string parsing
+        }
+
+
+        /*
+         * PostgreSQL array:
+         * {"English Language","Mathematics"}
+         */
+
+        let cleaned =
+            value
+                .replace(/^\{|\}$/g, "")
+                .replace(/^\[|\]$/g, "");
+
+
+        return cleaned
+            .split(",")
+            .map(item =>
+                item
+                    .trim()
+                    .replace(/^"|"$/g, "")
+                    .replace(/^'|'$/g, "")
+            )
+            .filter(Boolean);
+
+    }
+
+
+    return [];
+
 }
 
 
@@ -7808,174 +8201,1324 @@ function isOnline(){
 }
 }
 
-async function generateLessonPlan(){
+/* =========================================================
+   LESSON PLAN & LESSON NOTE MODULE
+========================================================= */
 
-    if(!navigator.onLine){
-        planOutput.innerHTML = "❌ No internet connection.";
+
+/* =========================================================
+   GET ELEMENT SAFELY
+========================================================= */
+
+function lessonEl(id) {
+    return document.getElementById(id);
+}
+
+
+/* =========================================================
+   TERM LABEL
+========================================================= */
+
+function getTermLabel(term) {
+
+    const terms = {
+        term1: "Term 1",
+        term2: "Term 2",
+        term3: "Term 3"
+    };
+
+    return terms[term] || term;
+}
+
+
+/* =========================================================
+   CHECK INTERNET
+========================================================= */
+
+function checkLessonConnection() {
+
+    if (!navigator.onLine) {
+        alert(
+            "❌ No internet connection.\n\n" +
+            "Please connect to the internet and try again."
+        );
+
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   GENERATE LESSON PLAN
+========================================================= */
+
+async function generateLessonPlan() {
+
+    if (!checkLessonConnection()) return;
+
+    const subject = lessonEl("planSubject")?.value?.trim();
+    const term = lessonEl("planTerm")?.value;
+    const week = lessonEl("planWeek")?.value?.trim();
+    const className = lessonEl("planClass")?.value?.trim();
+    const topic = lessonEl("planTopic")?.value?.trim();
+    const subtopic = lessonEl("planSubtopic")?.value?.trim();
+    const duration = lessonEl("planDuration")?.value?.trim();
+
+    if (!subject) {
+        alert("Please select a subject.");
         return;
     }
 
-    let subject = planSubject.value;
-    let term = planTerm.value;
-
-    planOutput.innerHTML = "⏳ Generating...";
-
-    try{
-        let res = await fetch("http://localhost:3000/generate-plan", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({ subject, term })
-        });
-
-        if(!res.ok){
-            throw new Error("Server error");
-        }
-
-        let data = await res.json();
-
-        if(!data.result){
-            throw new Error("No result returned");
-        }
-
-        planOutput.innerHTML = data.result;
-
-    }catch(err){
-        console.error(err);
-        planOutput.innerHTML = "❌ Failed to generate lesson plan.";
-    }
-}
-async function generateLessonNote(){
-
-    if(!navigator.onLine){
-        document.getElementById("noteOutput").innerHTML =
-            "❌ No internet connection.";
+    if (!className) {
+        alert("Please enter the class.");
+        lessonEl("planClass")?.focus();
         return;
     }
 
-    let subject = document.getElementById("noteSubject").value;
-    let week = document.getElementById("noteWeek").value;
-    let term = document.getElementById("noteTerm").value;
+    if (!topic) {
+        alert("Please enter the lesson topic.");
+        lessonEl("planTopic")?.focus();
+        return;
+    }
 
-    document.getElementById("noteOutput").innerHTML = "⏳ Generating note...";
+    const output = lessonEl("planOutput");
+    const status = lessonEl("planStatus");
 
-    try{
-        let response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json",
-                "Authorization":"Bearer (sk-proj-f5YWVHONS7wtTzk8gkEXT3BlbkFJ6UGpQ6sHvoUnFZmktxsc)"
-            },
-            body: JSON.stringify({
-                model:"gpt-4o-mini",
-                messages:[
-                    {
-                        role:"user",
-                        content:`Prepare a Ghana GES standard lesson note for ${subject}, ${week}, ${term}. Include objectives, materials, procedure, and evaluation.`
-                    }
-                ]
-            })
-        });
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">⏳</div>
+            <h3>Generating lesson plan...</h3>
+            <p>Please wait.</p>
+        </div>
+    `;
 
-        let data = await response.json();
+    status.innerHTML = "🧠 AI is preparing your lesson plan...";
 
-        document.getElementById("noteOutput").innerHTML =
-            data.choices[0].message.content;
+    try {
 
-    }catch(err){
-        document.getElementById("noteOutput").innerHTML =
-            "❌ Failed to generate note.";
+        const response = await fetch(
+            "http://localhost:3000/generate-plan",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    type: "lesson_plan",
+
+                    subject: subject,
+
+                    term: term,
+
+                    week: week,
+
+                    className: className,
+
+                    topic: topic,
+
+                    subtopic: subtopic,
+
+                    duration: duration
+
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Server returned ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        if (!data || !data.result) {
+            throw new Error("No lesson plan was returned.");
+        }
+
+        output.innerHTML = formatLessonContent(
+            data.result,
+            "Lesson Plan",
+            {
+                subject,
+                term,
+                week,
+                className,
+                topic,
+                subtopic,
+                duration
+            }
+        );
+
+        status.innerHTML =
+            "✅ Lesson plan generated successfully.";
+
+    } catch (error) {
+
+        console.error(
+            "Lesson Plan Error:",
+            error
+        );
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+                <h3>Unable to generate lesson plan</h3>
+                <p>${escapeLessonHTML(error.message)}</p>
+            </div>
+        `;
+
+        status.innerHTML =
+            "❌ Failed to generate lesson plan.";
     }
 }
 
-window.addEventListener("offline", () => {
-    alert("❌ You are offline");
-});
 
-window.addEventListener("online", () => {
-    alert("✅ Back online");
-});
+/* =========================================================
+   GENERATE LESSON NOTE
+========================================================= */
 
-function showSection(sectionId){
+async function generateLessonNote() {
 
-    // hide all sections
-    document.querySelectorAll(".section").forEach(sec=>{
-        sec.style.display = "none";
-    });
+    if (!checkLessonConnection()) return;
 
-    // show selected section
-    document.getElementById(sectionId).style.display = "block";
+    const subject = lessonEl("noteSubject")?.value?.trim();
+    const term = lessonEl("noteTerm")?.value;
+    const week = lessonEl("noteWeek")?.value?.trim();
+    const className = lessonEl("noteClass")?.value?.trim();
+    const topic = lessonEl("noteTopic")?.value?.trim();
+    const subtopic = lessonEl("noteSubtopic")?.value?.trim();
+    const duration = lessonEl("noteDuration")?.value?.trim();
+
+    if (!subject) {
+        alert("Please select a subject.");
+        return;
+    }
+
+    if (!className) {
+        alert("Please enter the class.");
+        lessonEl("noteClass")?.focus();
+        return;
+    }
+
+    if (!topic) {
+        alert("Please enter the lesson topic.");
+        lessonEl("noteTopic")?.focus();
+        return;
+    }
+
+    const output = lessonEl("noteOutput");
+    const status = lessonEl("noteStatus");
+
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">🧠</div>
+            <h3>Generating lesson note...</h3>
+            <p>Please wait.</p>
+        </div>
+    `;
+
+    status.innerHTML =
+        "🧠 AI is preparing your lesson note...";
+
+    try {
+
+        /*
+         * IMPORTANT:
+         * Do NOT call api.openai.com directly here.
+         *
+         * The request goes through your backend so that
+         * your OpenAI API key is not exposed in app.js.
+         */
+
+        const response = await fetch(
+            "http://localhost:3000/generate-plan",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    type: "lesson_note",
+
+                    subject: subject,
+
+                    term: term,
+
+                    week: week,
+
+                    className: className,
+
+                    topic: topic,
+
+                    subtopic: subtopic,
+
+                    duration: duration
+
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Server returned ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        if (!data || !data.result) {
+            throw new Error(
+                "No lesson note was returned."
+            );
+        }
+
+        output.innerHTML = formatLessonContent(
+            data.result,
+            "Lesson Note",
+            {
+                subject,
+                term,
+                week,
+                className,
+                topic,
+                subtopic,
+                duration
+            }
+        );
+
+        status.innerHTML =
+            "✅ Lesson note generated successfully.";
+
+    } catch (error) {
+
+        console.error(
+            "Lesson Note Error:",
+            error
+        );
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+                <h3>Unable to generate lesson note</h3>
+                <p>${escapeLessonHTML(error.message)}</p>
+            </div>
+        `;
+
+        status.innerHTML =
+            "❌ Failed to generate lesson note.";
+    }
 }
 
-function exportToWord(content){
 
-    const { Document, Packer, Paragraph, TextRun } = window.docx;
+/* =========================================================
+   FORMAT GENERATED CONTENT
+========================================================= */
 
-    const doc = new Document({
-        sections: [{
+function formatLessonContent(
+    content,
+    title,
+    details
+) {
+
+    let clean = String(content || "")
+        .replace(/\r\n/g, "\n")
+        .trim();
+
+    /*
+     * Convert basic markdown formatting to HTML.
+     */
+
+    clean = escapeLessonHTML(clean);
+
+    clean = clean.replace(
+        /^### (.+)$/gm,
+        "<h3>$1</h3>"
+    );
+
+    clean = clean.replace(
+        /^## (.+)$/gm,
+        "<h3>$1</h3>"
+    );
+
+    clean = clean.replace(
+        /^# (.+)$/gm,
+        "<h2>$1</h2>"
+    );
+
+    clean = clean.replace(
+        /\*\*(.*?)\*\*/g,
+        "<strong>$1</strong>"
+    );
+
+    clean = clean.replace(
+        /\n- (.+)/g,
+        "<br>• $1"
+    );
+
+    clean = clean.replace(
+        /\n\d+\.\s(.+)/g,
+        "<br>$1"
+    );
+
+    clean = clean.replace(
+        /\n{2,}/g,
+        "<br><br>"
+    );
+
+    return `
+        <div class="generated-lesson">
+
+            <div class="generated-lesson-title">
+
+                <h2>
+                    ${escapeLessonHTML(title)}
+                </h2>
+
+                <p>
+                    ${escapeLessonHTML(
+                        details.subject || ""
+                    )}
+                    —
+                    ${escapeLessonHTML(
+                        details.className || ""
+                    )}
+                </p>
+
+            </div>
+
+            <table class="lesson-table">
+
+                <tr>
+                    <th>Term</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            getTermLabel(details.term)
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Week</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.week || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Subject</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.subject || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Class</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.className || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Topic</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.topic || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Sub-topic</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.subtopic || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Duration</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.duration || "—"
+                        )}
+                    </td>
+                </tr>
+
+            </table>
+
+            <div class="lesson-section">
+
+                ${clean}
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeLessonHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   SAVE LESSON PLAN
+========================================================= */
+
+async function savePlan() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("planOutput");
+
+    if (!output || !output.innerText.trim()) {
+        alert("There is no lesson plan to save.");
+        return;
+    }
+
+    const subject =
+        lessonEl("planSubject")?.value || "";
+
+    const term =
+        lessonEl("planTerm")?.value || "";
+
+    const week =
+        lessonEl("planWeek")?.value || "";
+
+    const className =
+        lessonEl("planClass")?.value || "";
+
+    const topic =
+        lessonEl("planTopic")?.value || "";
+
+    try {
+
+        const { error } = await supabaseClient
+            .from("plans")
+            .insert([
+                {
+                    schoolid: currentUser.schoolid,
+
+                    content: output.innerHTML,
+
+                    subject: subject,
+
+                    term: term,
+
+                    week: week,
+
+                    className: className,
+
+                    topic: topic,
+
+                    createdAt:
+                        new Date().toISOString()
+                }
+            ]);
+
+        if (error) {
+            console.error(
+                "Save Plan Error:",
+                error
+            );
+
+            alert(
+                "❌ Failed to save lesson plan.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+        alert("✅ Lesson plan saved successfully.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ Failed to save lesson plan."
+        );
+    }
+}
+
+
+/* =========================================================
+   SAVE LESSON NOTE
+========================================================= */
+
+async function saveNote() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("noteOutput");
+
+    if (!output || !output.innerText.trim()) {
+        alert("There is no lesson note to save.");
+        return;
+    }
+
+    try {
+
+        const { error } = await supabaseClient
+            .from("lesson_notes")
+            .insert([
+                {
+                    schoolid: currentUser.schoolid,
+
+                    content: output.innerHTML,
+
+                    subject:
+                        lessonEl("noteSubject")?.value || "",
+
+                    term:
+                        lessonEl("noteTerm")?.value || "",
+
+                    week:
+                        lessonEl("noteWeek")?.value || "",
+
+                    className:
+                        lessonEl("noteClass")?.value || "",
+
+                    topic:
+                        lessonEl("noteTopic")?.value || "",
+
+                    createdAt:
+                        new Date().toISOString()
+                }
+            ]);
+
+        if (error) {
+
+            console.error(
+                "Save Note Error:",
+                error
+            );
+
+            alert(
+                "❌ Failed to save lesson note.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+        alert("✅ Lesson note saved successfully.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ Failed to save lesson note."
+        );
+    }
+}
+
+
+/* =========================================================
+   LOAD SAVED PLANS
+========================================================= */
+
+async function loadPlans() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("planOutput");
+
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">⏳</div>
+            <h3>Loading saved plans...</h3>
+        </div>
+    `;
+
+    try {
+
+        const {
+            data: plans,
+            error
+        } = await supabaseClient
+            .from("plans")
+            .select("*")
+            .eq(
+                "schoolid",
+                currentUser.schoolid
+            )
+            .order(
+                "createdAt",
+                {
+                    ascending: false
+                }
+            );
+
+        if (error) throw error;
+
+        if (!plans || plans.length === 0) {
+
+            output.innerHTML = `
+                <div class="lesson-empty">
+                    <div class="lesson-empty-icon">📚</div>
+                    <h3>No saved lesson plans</h3>
+                    <p>Generate and save a lesson plan first.</p>
+                </div>
+            `;
+
+            return;
+        }
+
+        let html = `
+            <div class="generated-lesson">
+                <h2>📚 Saved Lesson Plans</h2>
+        `;
+
+        plans.forEach((plan, index) => {
+
+            html += `
+                <div class="saved-plan-card">
+
+                    <h4>
+                        ${escapeLessonHTML(
+                            plan.subject ||
+                            "Lesson Plan"
+                        )}
+                    </h4>
+
+                    <small>
+                        ${escapeLessonHTML(
+                            getTermLabel(
+                                plan.term
+                            )
+                        )}
+
+                        ${plan.week
+                            ? " • " +
+                              escapeLessonHTML(
+                                  plan.week
+                              )
+                            : ""
+                        }
+
+                        ${plan.topic
+                            ? " • " +
+                              escapeLessonHTML(
+                                  plan.topic
+                              )
+                            : ""
+                        }
+                    </small>
+
+                    <br>
+
+                    <button
+                        class="lesson-btn primary"
+                        onclick="viewSavedPlan(${index})">
+                        👁️ View
+                    </button>
+
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        output.innerHTML = html;
+
+        window.savedLessonPlans = plans;
+
+    } catch (error) {
+
+        console.error(
+            "Load Plans Error:",
+            error
+        );
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+                <h3>Unable to load saved plans</h3>
+                <p>${escapeLessonHTML(
+                    error.message
+                )}</p>
+            </div>
+        `;
+    }
+}
+
+
+/* =========================================================
+   VIEW SAVED PLAN
+========================================================= */
+
+function viewSavedPlan(index) {
+
+    const plan =
+        window.savedLessonPlans?.[index];
+
+    if (!plan) return;
+
+    lessonEl("planOutput").innerHTML =
+        plan.content || "";
+
+    if (lessonEl("planSubject")) {
+        lessonEl("planSubject").value =
+            plan.subject || "";
+    }
+
+    if (lessonEl("planTerm")) {
+        lessonEl("planTerm").value =
+            plan.term || "term1";
+    }
+
+    if (lessonEl("planWeek")) {
+        lessonEl("planWeek").value =
+            plan.week || "";
+    }
+
+    if (lessonEl("planClass")) {
+        lessonEl("planClass").value =
+            plan.className || "";
+    }
+
+    if (lessonEl("planTopic")) {
+        lessonEl("planTopic").value =
+            plan.topic || "";
+    }
+}
+
+
+/* =========================================================
+   LOAD SAVED NOTES
+========================================================= */
+
+async function loadNotes() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("noteOutput");
+
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">⏳</div>
+            <h3>Loading saved notes...</h3>
+        </div>
+    `;
+
+    try {
+
+        const {
+            data: notes,
+            error
+        } = await supabaseClient
+            .from("lesson_notes")
+            .select("*")
+            .eq(
+                "schoolid",
+                currentUser.schoolid
+            )
+            .order(
+                "createdAt",
+                {
+                    ascending: false
+                }
+            );
+
+        if (error) throw error;
+
+        if (!notes || notes.length === 0) {
+
+            output.innerHTML = `
+                <div class="lesson-empty">
+                    <div class="lesson-empty-icon">📚</div>
+                    <h3>No saved lesson notes</h3>
+                </div>
+            `;
+
+            return;
+        }
+
+        window.savedLessonNotes = notes;
+
+        let html = `
+            <div class="generated-lesson">
+                <h2>📚 Saved Lesson Notes</h2>
+        `;
+
+        notes.forEach((note, index) => {
+
+            html += `
+                <div class="saved-plan-card">
+
+                    <h4>
+                        ${escapeLessonHTML(
+                            note.subject ||
+                            "Lesson Note"
+                        )}
+                    </h4>
+
+                    <small>
+                        ${escapeLessonHTML(
+                            getTermLabel(
+                                note.term
+                            )
+                        )}
+
+                        ${note.week
+                            ? " • " +
+                              escapeLessonHTML(
+                                  note.week
+                              )
+                            : ""
+                        }
+
+                        ${note.topic
+                            ? " • " +
+                              escapeLessonHTML(
+                                  note.topic
+                              )
+                            : ""
+                        }
+                    </small>
+
+                    <br>
+
+                    <button
+                        class="lesson-btn primary"
+                        onclick="viewSavedNote(${index})">
+                        👁️ View
+                    </button>
+
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        output.innerHTML = html;
+
+    } catch (error) {
+
+        console.error(
+            "Load Notes Error:",
+            error
+        );
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+                <h3>Unable to load saved notes</h3>
+                <p>${escapeLessonHTML(
+                    error.message
+                )}</p>
+            </div>
+        `;
+    }
+}
+
+
+/* =========================================================
+   VIEW SAVED NOTE
+========================================================= */
+
+function viewSavedNote(index) {
+
+    const note =
+        window.savedLessonNotes?.[index];
+
+    if (!note) return;
+
+    lessonEl("noteOutput").innerHTML =
+        note.content || "";
+
+    if (lessonEl("noteSubject")) {
+        lessonEl("noteSubject").value =
+            note.subject || "";
+    }
+
+    if (lessonEl("noteTerm")) {
+        lessonEl("noteTerm").value =
+            note.term || "term1";
+    }
+
+    if (lessonEl("noteWeek")) {
+        lessonEl("noteWeek").value =
+            note.week || "";
+    }
+
+    if (lessonEl("noteClass")) {
+        lessonEl("noteClass").value =
+            note.className || "";
+    }
+
+    if (lessonEl("noteTopic")) {
+        lessonEl("noteTopic").value =
+            note.topic || "";
+    }
+}
+
+
+/* =========================================================
+   WORD EXPORT
+========================================================= */
+
+async function exportLessonDocument(type) {
+
+    const output =
+        type === "note"
+            ? lessonEl("noteOutput")
+            : lessonEl("planOutput");
+
+    if (!output || !output.innerText.trim()) {
+
+        alert(
+            `There is no lesson ${type} to export.`
+        );
+
+        return;
+    }
+
+    if (
+        !window.docx ||
+        !window.docx.Document
+    ) {
+
+        alert(
+            "❌ Word export library is not loaded."
+        );
+
+        return;
+    }
+
+    const {
+        Document,
+        Packer,
+        Paragraph,
+        TextRun
+    } = window.docx;
+
+    const title =
+        type === "note"
+            ? "LESSON NOTE"
+            : "LESSON PLAN";
+
+    const lines =
+        output.innerText
+            .split("\n")
+            .map(line => line.trim())
+            .filter(Boolean);
+
+    const children = [
+
+        new Paragraph({
+            alignment: 1,
             children: [
-                new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: content,
-                            size: 24
-                        })
-                    ]
+                new TextRun({
+                    text: title,
+                    bold: true,
+                    size: 32
                 })
             ]
-        }]
+        })
+
+    ];
+
+    lines.forEach(line => {
+
+        children.push(
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: line,
+                        size: 22
+                    })
+                ],
+                spacing: {
+                    after: 120
+                }
+            })
+        );
+
     });
 
-    Packer.toBlob(doc).then(blob => {
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "Lesson_Plan.docx";
-        link.click();
-    });
-}
+    const doc = new Document({
 
-async function savePlan(){
+        sections: [
 
-    let content = document.getElementById("planOutput").innerHTML;
-
-    const { error } = await supabaseClient
-        .from("plans")
-        .insert([
             {
-                schoolid: currentUser.schoolid,
-                content: content,
-                createdAt: new Date().toISOString()
+                children
             }
-        ]);
 
-    if(error){
-        console.error(error);
-        return alert("Failed to save plan");
+        ]
+
+    });
+
+    try {
+
+        const blob =
+            await Packer.toBlob(doc);
+
+        const link =
+            document.createElement("a");
+
+        link.href =
+            URL.createObjectURL(blob);
+
+        link.download =
+            type === "note"
+                ? "Lesson_Note.docx"
+                : "Lesson_Plan.docx";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        setTimeout(() => {
+            URL.revokeObjectURL(link.href);
+        }, 1000);
+
+    } catch (error) {
+
+        console.error(
+            "Word Export Error:",
+            error
+        );
+
+        alert(
+            "❌ Unable to export document."
+        );
     }
-
-    alert("✅ Plan saved");
 }
 
-async function loadPlans(){
 
-    const { data: plans, error } = await supabaseClient
-        .from("plans")
-        .select("*")
-        .eq("schoolid", currentUser.schoolid)
-        .order("createdAt", { ascending: false });
+/* =========================================================
+   PRINT
+========================================================= */
 
-    if(error){
-        console.error(error);
+function printLessonDocument(type) {
+
+    const output =
+        type === "note"
+            ? lessonEl("noteOutput")
+            : lessonEl("planOutput");
+
+    if (!output || !output.innerText.trim()) {
+
+        alert(
+            `There is no lesson ${type} to print.`
+        );
+
         return;
     }
 
-    let html = "<h3>Saved Plans</h3>";
+    const printWindow =
+        window.open(
+            "",
+            "_blank",
+            "width=900,height=700"
+        );
 
-    plans.forEach(p=>{
-        html += `<div style="margin-bottom:10px;">${p.content}</div>`;
-    });
+    if (!printWindow) {
 
-    document.getElementById("planOutput").innerHTML = html;
+        alert(
+            "Please allow pop-ups to print the document."
+        );
+
+        return;
+    }
+
+    printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html>
+
+        <head>
+
+            <title>
+                ${type === "note"
+                    ? "Lesson Note"
+                    : "Lesson Plan"}
+            </title>
+
+            <style>
+
+                body {
+                    font-family:
+                        Arial,
+                        sans-serif;
+
+                    padding: 35px;
+
+                    color: #111827;
+
+                    line-height: 1.6;
+                }
+
+                h2 {
+                    text-align: center;
+                    margin-bottom: 25px;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse:
+                        collapse;
+
+                    margin-bottom: 25px;
+                }
+
+                th,
+                td {
+                    border:
+                        1px solid #333;
+
+                    padding: 8px;
+
+                    text-align:
+                        left;
+
+                    vertical-align:
+                        top;
+                }
+
+                th {
+                    width: 25%;
+                    background:
+                        #f1f5f9;
+                }
+
+                h3 {
+                    margin-top: 22px;
+                    border-bottom:
+                        1px solid #999;
+
+                    padding-bottom: 5px;
+                }
+
+                @media print {
+
+                    body {
+                        padding: 15px;
+                    }
+
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${output.innerHTML}
+
+        </body>
+
+        </html>
+    `);
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    setTimeout(() => {
+
+        printWindow.print();
+
+        printWindow.close();
+
+    }, 500);
 }
+
+
+/* =========================================================
+   ONLINE / OFFLINE
+========================================================= */
+
+window.addEventListener(
+    "offline",
+    () => {
+
+        const planStatus =
+            lessonEl("planStatus");
+
+        const noteStatus =
+            lessonEl("noteStatus");
+
+        if (planStatus) {
+            planStatus.innerHTML =
+                "⚠️ You are offline.";
+        }
+
+        if (noteStatus) {
+            noteStatus.innerHTML =
+                "⚠️ You are offline.";
+        }
+    }
+);
+
+
+window.addEventListener(
+    "online",
+    () => {
+
+        const planStatus =
+            lessonEl("planStatus");
+
+        const noteStatus =
+            lessonEl("noteStatus");
+
+        if (planStatus) {
+            planStatus.innerHTML =
+                "✅ Internet connection restored.";
+        }
+
+        if (noteStatus) {
+            noteStatus.innerHTML =
+                "✅ Internet connection restored.";
+        }
+    }
+);
 
 /* ============================================================
    CHAT SYSTEM
