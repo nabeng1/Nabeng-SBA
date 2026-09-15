@@ -117,7 +117,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
             Fees
         </a>
 
-         <a href="#" onclick="showPage('noticesPage'); return false;">
+        <a href="#" onclick="showPage('noticesPage'); return false;">
             <i class="fas fa-bullhorn"></i>
             Notices
         </a>
@@ -179,198 +179,575 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-<div id="loginBox"
-     class="container">
-<img
-src=""
-class="login-logo">
+<!-- =========================================================
+     LOGIN
+     ========================================================= -->
 
-<h3>Log In</h3>
+<div id="loginBox" class="container">
 
-<div id="loginSection">
-<input id="username" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
+    <!-- SCHOOL LOGO -->
+    <img
+        src="nabeng-sba-logo.png"
+        class="login-logo"
+        alt="School Logo"
+    >
 
-<button onclick="login()">
-Log In
-</button>
-
-<p onclick="showForgot()" style="cursor:pointer; color:#1877f2; margin-top:10px;">
-Forgot password?
-</p>
-
-<hr style="margin:20px 0; border:1px solid #374151;">
-
-<button onclick="showSignup()" style="background:#22c55e; font-weight:bold;">
-Create new account
-</button>
-
-<p id="loginMsg" style="color:red;"></p>
-</div>
-
-<div id="signupSection" style="display:none;">
-<h4>Create Account</h4>
-
-<select id="roleSelect">
-    <option value="teacher">Teacher</option>
-    <option value="admin">Admin</option>
-</select>
-<div id="schoolNameBox">
-    <input id="schoolnamesignup" placeholder="School Name (Admin only)">
-</div>
-
-<input id="firstname" placeholder="First Name">
-<input id="surname" placeholder="Surname">
-<input id="signupUsername" placeholder="Username">
-<input id="signupEmail" placeholder="Email">
-<input id="signupPhone" placeholder="Phone Number">
-<input id="schoolCode" placeholder="">
-<input id="signupPassword" type="password" placeholder="Password">
-
-<button onclick="signup()">
-Sign Up
-</button>
-
-<p onclick="backToLogin()" style="cursor:pointer; color:#1877f2;">
-Already have an account? Login
-</p>
-</div>
+    <h3>Log In</h3>
 
 
+    <!-- =========================
+         LOGIN FORM
+         ========================= -->
 
-<!-- ==============================
-     FORGOT PASSWORD
-     ============================== -->
-
-<div id="forgotSection" style="display:none;">
-
-    <!-- STEP 1 -->
-    <div id="forgotStep1">
-
-        <h4>Reset Password</h4>
-
-        <p>
-            Enter your username and registered
-            email or phone number.
-        </p>
+    <div id="loginSection">
 
         <input
-            id="fpUsername"
+            id="username"
             type="text"
-            placeholder="Enter Username"
+            placeholder="Email or Username"
             autocomplete="username"
         >
 
         <input
-            id="fpContact"
-            type="text"
-            placeholder="Enter Email or Phone"
+            id="password"
+            type="password"
+            placeholder="Password"
+            autocomplete="current-password"
         >
 
         <button
             type="button"
-            onclick="sendResetOTP()"
+            onclick="login()"
         >
-            Send OTP
+            Log In
         </button>
 
-    </div>
-
-
-    <!-- STEP 2 -->
-    <div id="forgotStep2" style="display:none;">
-
-        <h4>Verify OTP</h4>
-
-        <p>
-            Enter the 6-digit OTP sent to your
-            registered email.
-        </p>
-
-        <input
-            id="fpOTP"
-            type="text"
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="Enter 6-digit OTP"
-        >
-
-        <button
-            type="button"
-            onclick="verifyResetOTP()"
-        >
-            Verify OTP
-        </button>
 
         <p
-            onclick="resendResetOTP()"
-            style="cursor:pointer;color:#1877f2;"
+            onclick="showForgot()"
         >
-            Resend OTP
+            Forgot password?
         </p>
 
-    </div>
 
+        <hr>
 
-    <!-- STEP 3 -->
-    <div id="forgotStep3" style="display:none;">
-
-        <h4>Create New Password</h4>
-
-        <input
-            id="fpNewPassword"
-            type="password"
-            placeholder="New Password"
-            autocomplete="new-password"
-        >
-
-        <input
-            id="fpConfirmPassword"
-            type="password"
-            placeholder="Confirm New Password"
-            autocomplete="new-password"
-        >
 
         <button
             type="button"
-            onclick="changeResetPassword()"
+            onclick="showSignup()"
         >
-            Change Password
+            Create new account
         </button>
 
+
+        <p id="loginMsg"></p>
+
     </div>
 
 
-    <!-- STEP 4 -->
-    <div id="forgotStep4" style="display:none;">
+    <!-- =========================
+         SIGN UP
+         ========================= -->
 
-        <h4>Password Changed Successfully</h4>
+    <div
+        id="signupSection"
+        style="display:none;"
+    >
 
-        <p>
-            Your password has been changed successfully.
-            You can now log in with your new password.
-        </p>
+        <h4>Create Account</h4>
+
+
+        <select id="roleSelect">
+
+            <option value="teacher">
+                Teacher
+            </option>
+
+            <option value="admin">
+                Admin
+            </option>
+
+        </select>
+
+
+        <div id="schoolNameBox">
+
+            <input
+                id="schoolnamesignup"
+                type="text"
+                placeholder="School Name (Admin only)"
+            >
+
+        </div>
+
+
+        <input
+            id="firstname"
+            type="text"
+            placeholder="First Name"
+            autocomplete="given-name"
+        >
+
+        <input
+            id="surname"
+            type="text"
+            placeholder="Surname"
+            autocomplete="family-name"
+        >
+
+        <input
+            id="signupUsername"
+            type="text"
+            placeholder="Username"
+            autocomplete="username"
+        >
+
+        <input
+            id="signupEmail"
+            type="email"
+            placeholder="Email"
+            autocomplete="email"
+        >
+
+        <input
+            id="signupPhone"
+            type="tel"
+            placeholder="Phone Number"
+            autocomplete="tel"
+        >
+
+        <input
+            id="schoolCode"
+            type="text"
+            placeholder="School Code"
+        >
+
+        <input
+            id="signupPassword"
+            type="password"
+            placeholder="Password"
+            autocomplete="new-password"
+        >
+
 
         <button
             type="button"
+            onclick="signup()"
+        >
+            Sign Up
+        </button>
+
+
+        <p
             onclick="backToLogin()"
         >
-            Back to Login
-        </button>
+            Already have an account? Login
+        </p>
 
     </div>
 
+</div>
 
-    <p
-        onclick="backToLogin()"
-        style="cursor:pointer;color:#1877f2;"
-    >
-        Back to Login
-    </p>
+
+<!-- =========================================================
+     FORGOT PASSWORD
+
+     It remains in the same DOM area so existing JS can find
+     it, but CSS makes it a full-screen overlay. This prevents
+     the "card inside card" problem.
+     ========================================================= -->
+
+<div
+    id="forgotSection"
+    class="forgot-password-wrapper"
+    style="display:none;"
+>
+
+    <div class="forgot-password-card">
+
+
+        <!-- HEADER -->
+
+        <div class="forgot-header">
+
+            <div class="forgot-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+
+            <div
+                class="forgot-step-label"
+                id="forgotStepLabel"
+            >
+                PASSWORD RECOVERY
+            </div>
+
+            <h2 id="forgotTitle">
+                Reset Your Password
+            </h2>
+
+            <p id="forgotDescription">
+                Enter your username and registered
+                email or phone number to recover your account.
+            </p>
+
+        </div>
+
+
+        <!-- PROGRESS -->
+
+        <div class="forgot-progress">
+
+            <div
+                class="progress-step active"
+                id="progress1"
+            >
+                <span>1</span>
+                <small>Account</small>
+            </div>
+
+            <div
+                class="progress-line"
+                id="line1"
+            ></div>
+
+            <div
+                class="progress-step"
+                id="progress2"
+            >
+                <span>2</span>
+                <small>Verify</small>
+            </div>
+
+            <div
+                class="progress-line"
+                id="line2"
+            ></div>
+
+            <div
+                class="progress-step"
+                id="progress3"
+            >
+                <span>3</span>
+                <small>Password</small>
+            </div>
+
+            <div
+                class="progress-line"
+                id="line3"
+            ></div>
+
+            <div
+                class="progress-step"
+                id="progress4"
+            >
+                <span>
+                    <i class="fa-solid fa-check"></i>
+                </span>
+                <small>Done</small>
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 1
+             ================================================= -->
+
+        <div
+            id="forgotStep1"
+            class="forgot-step"
+        >
+
+            <div class="input-group">
+
+                <label for="fpUsername">
+                    Username
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+
+                    <input
+                        id="fpUsername"
+                        type="text"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpContact">
+                    Email or Phone Number
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-envelope"></i>
+                    </span>
+
+                    <input
+                        id="fpContact"
+                        type="text"
+                        placeholder="Enter registered email or phone"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="sendResetOTP()"
+            >
+                <span>Send OTP</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 2
+             ================================================= -->
+
+        <div
+            id="forgotStep2"
+            class="forgot-step"
+            style="display:none;"
+        >
+
+            <div class="otp-info">
+
+                <div class="otp-icon">
+                    <i class="fa-solid fa-envelope-circle-check"></i>
+                </div>
+
+                <strong>
+                    Check Your Email
+                </strong>
+
+                <p>
+                    Enter the 6-digit verification code
+                    sent to your registered email.
+                </p>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpOTP">
+                    Verification Code
+                </label>
+
+                <div class="input-box otp-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-key"></i>
+                    </span>
+
+                    <input
+                        id="fpOTP"
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="6"
+                        placeholder="000000"
+                        autocomplete="one-time-code"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="verifyResetOTP()"
+            >
+                <span>Verify OTP</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+
+            <div class="resend-wrapper">
+
+                <span>
+                    Didn't receive the code?
+                </span>
+
+                <button
+                    type="button"
+                    class="resend-btn"
+                    onclick="resendResetOTP()"
+                >
+                    <i class="fa-solid fa-rotate-right"></i>
+                    Resend OTP
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 3
+             ================================================= -->
+
+        <div
+            id="forgotStep3"
+            class="forgot-step"
+            style="display:none;"
+        >
+
+            <div class="password-info">
+
+                <div class="password-icon">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+
+                <strong>
+                    Create a New Password
+                </strong>
+
+                <p>
+                    Choose a strong password that you
+                    haven't used before.
+                </p>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpNewPassword">
+                    New Password
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+
+                    <input
+                        id="fpNewPassword"
+                        type="password"
+                        placeholder="Enter new password"
+                        autocomplete="new-password"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpConfirmPassword">
+                    Confirm Password
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-shield"></i>
+                    </span>
+
+                    <input
+                        id="fpConfirmPassword"
+                        type="password"
+                        placeholder="Confirm your new password"
+                        autocomplete="new-password"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="changeResetPassword()"
+            >
+                <span>Change Password</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 4
+             ================================================= -->
+
+        <div
+            id="forgotStep4"
+            class="forgot-step success-step"
+            style="display:none;"
+        >
+
+            <div class="success-icon">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <h3>
+                Password Changed Successfully
+            </h3>
+
+            <p>
+                Your password has been changed successfully.
+                You can now log in using your new password.
+            </p>
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="backToLogin()"
+            >
+                <span>Back to Login</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div class="forgot-footer">
+
+            <span>
+                Remember your password?
+            </span>
+
+            <button
+                type="button"
+                onclick="backToLogin()"
+                class="back-login-btn"
+            >
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to Login
+            </button>
+
+        </div>
+
+    </div>
 
 </div>
 
-</div>
 
 
 
