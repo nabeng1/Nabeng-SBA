@@ -663,7 +663,6 @@ function showForgot(){
 
     document.getElementById("forgotSection")
         .style.display = "block";
-
     showForgotStep(1);
 
     document.getElementById("fpUsername").value = "";
@@ -2972,16 +2971,72 @@ if(currentUser.role === "teacher"){
 
     updateAttendanceStats(date);
 
-    let termData = calculateTermAttendance();
+    // =========================================================
+// CURRENT TERM SUMMARY
+// =========================================================
 
-    document.getElementById("termAttendanceSummary").innerText =
-        `📊 Term Summary → Days: ${termData.totalDays} |
-         Total Present: ${termData.totalPresent} |
-         Attendance %: ${termData.percentage}%`;
+const selectedTerm =
+    document.getElementById("attendanceTerm")?.value ||
+    getTermFromDate(date) ||
+    activeTerm ||
+    "term1";
+
+const termData =
+    calculateTermAttendance(selectedTerm);
+
+const termName =
+    selectedTerm === "term1"
+        ? "Term 1"
+        : selectedTerm === "term2"
+            ? "Term 2"
+            : "Term 3";
+
+document.getElementById(
+    "termAttendanceSummary"
+).innerHTML = `
+
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+    ">
+
+        <span>
+            ${termName}
+        </span>
+
+        <strong>
+            ${termData.percentage}%
+        </strong>
+
+    </div>
+
+    <div style="
+        margin-top:6px;
+        font-size:11px;
+        font-weight:500;
+        color:#6b7280;
+    ">
+
+        ${termData.totalDays} attendance day(s)
+        ·
+        ${termData.totalPresent} present records
+
+    </div>
+`;
 }
 
 
-async function getStudentAttendance(studentName, term){
+// =========================================================
+// GET STUDENT ATTENDANCE FOR SELECTED TERM
+// =========================================================
+
+async function getStudentAttendance(
+    studentName,
+    term
+) {
 
     const { data, error } = await supabaseClient
         .from("attendance")
@@ -2990,29 +3045,45 @@ async function getStudentAttendance(studentName, term){
         .eq("studentname", studentName)
         .eq("term", term);
 
-    if(error){
+    if (error) {
+
         console.log(error);
+
         return {
             totalDays: 0,
             daysPresent: 0,
-            daysAbsent: 0
+            daysAbsent: 0,
+            percentage: 0
         };
     }
 
-    let totalDays = data.length;
+    const totalDays = data.length;
 
-    let daysPresent =
-        data.filter(r =>
-            r.status === "Present"
+    const daysPresent =
+        data.filter(
+            record =>
+                record.status === "Present"
         ).length;
 
-    let daysAbsent =
-        totalDays - daysPresent;
+    const daysAbsent =
+        data.filter(
+            record =>
+                record.status === "Absent"
+        ).length;
+
+    const percentage =
+        totalDays === 0
+            ? 0
+            : (
+                (daysPresent / totalDays) *
+                100
+            ).toFixed(1);
 
     return {
         totalDays,
         daysPresent,
-        daysAbsent
+        daysAbsent,
+        percentage: Number(percentage)
     };
 }
 
@@ -3048,120 +3119,205 @@ async function loadAttendanceData() {
     }
 }
 
+// =========================================================
+// MARK ATTENDANCE
+// =========================================================
+
 async function markAttendance(
     date,
     studentname,
     status
-){
+) {
 
-    let term = activeTerm || "term1";
+    // -----------------------------------------------------
+    // CHECK DATE
+    // -----------------------------------------------------
 
-    // Save attendance record
-    const { error } = await supabaseClient
-        .from("attendance")
-        .upsert([
-            {
-                schoolid: currentUser.schoolid,
-                class: currentUser.mainClass,
-                date: date,
-                term: term,
-                studentname: studentname,
-                status: status,
-                teacher: currentUser.username
-            }
-        ]);
-
-    if(error){
-
-        console.log(error);
+    if (!date) {
 
         return alert(
-            "Failed to save attendance"
+            "Please select an attendance date."
         );
     }
 
-    // Local update
-    if(!attendanceData[date]){
+
+    // -----------------------------------------------------
+    // BLOCK WEEKENDS
+    // -----------------------------------------------------
+
+    if (isWeekend(date)) {
+
+        return alert(
+            "🚫 No attendance can be recorded on weekends."
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // DETERMINE TERM FROM DATE
+    // -----------------------------------------------------
+
+    const term =
+        getTermFromDate(date);
+
+
+    // -----------------------------------------------------
+    // CHECK WHETHER DATE BELONGS TO A TERM
+    // -----------------------------------------------------
+
+    if (!term) {
+
+        return alert(
+            "❌ Attendance cannot be recorded.\n\n" +
+            "The selected date is outside an active school term."
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // SAVE ATTENDANCE TO SUPABASE
+    // -----------------------------------------------------
+
+    const { error } =
+        await supabaseClient
+            .from("attendance")
+            .upsert(
+                [
+                    {
+                        schoolid:
+                            currentUser.schoolid,
+
+                        class:
+                            currentUser.mainClass,
+
+                        date:
+                            date,
+
+                        term:
+                            term,
+
+                        studentname:
+                            studentname,
+
+                        status:
+                            status,
+
+                        teacher:
+                            currentUser.username
+                    }
+                ],
+                {
+                    onConflict:
+                        "schoolid,date,studentname"
+                }
+            );
+
+
+    // -----------------------------------------------------
+    // CHECK SAVE ERROR
+    // -----------------------------------------------------
+
+    if (error) {
+
+        console.log(
+            "Attendance save error:",
+            error
+        );
+
+        return alert(
+            "Failed to save attendance."
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // UPDATE LOCAL ATTENDANCE CACHE
+    // -----------------------------------------------------
+
+    if (!attendanceData[date]) {
+
         attendanceData[date] = {};
     }
+
 
     attendanceData[date][studentname] =
         status;
 
-    // Find student
-    let student =
-        students.find(
-            s => s.name === studentname
-        );
 
-    if(student){
+    // -----------------------------------------------------
+    // UPDATE STUDENT ATTENDANCE TOTALS
+    // -----------------------------------------------------
 
-        student.totalDays =
-            student.totalDays || {};
+    syncAttendanceToStudents();
 
-        student.daysPresent =
-            student.daysPresent || {};
 
-        // Count attendance from local records
-        let totalDays = 0;
-        let daysPresent = 0;
-
-        Object.keys(attendanceData)
-            .forEach(d => {
-
-                let attendanceStatus =
-                    attendanceData[d][studentname];
-
-                if(attendanceStatus){
-
-                    totalDays++;
-
-                    if(
-                        attendanceStatus ===
-                        "Present"
-                    ){
-                        daysPresent++;
-                    }
-                }
-            });
-
-        student.totalDays[term] =
-            totalDays;
-
-        student.daysPresent[term] =
-            daysPresent;
-
-        await saveStudents();
-    }
+    // -----------------------------------------------------
+    // REFRESH ATTENDANCE TABLE
+    // -----------------------------------------------------
 
     loadAttendanceTable();
+
+
+    // -----------------------------------------------------
+    // REFRESH TERM SUMMARY
+    // -----------------------------------------------------
+
+    updateAttendanceTermSummary();
 }
 
-async function getAttendanceSummary(studentName, term){
+// =========================================================
+// GET STUDENT ATTENDANCE SUMMARY FOR ONE TERM
+// =========================================================
+
+async function getAttendanceSummary(
+    studentName,
+    term
+) {
 
     const { data, error } = await supabaseClient
         .from("attendance")
         .select("*")
         .eq("schoolid", currentUser.schoolid)
-        .eq("studentname", studentName);
+        .eq("studentname", studentName)
+        .eq("term", term);
 
-    if(error){
+    if (error) {
+
         console.log(error);
+
         return {
             totalDays: 0,
-            daysPresent: 0
+            daysPresent: 0,
+            daysAbsent: 0,
+            percentage: 0
         };
     }
 
-    let totalDays = data.length;
+    const totalDays = data.length;
 
-    let daysPresent = data.filter(
-        r => r.status === "Present"
+    const daysPresent = data.filter(
+        record =>
+            record.status === "Present"
     ).length;
+
+    const daysAbsent = data.filter(
+        record =>
+            record.status === "Absent"
+    ).length;
+
+    const percentage =
+        totalDays === 0
+            ? 0
+            : (
+                (daysPresent / totalDays) *
+                100
+            ).toFixed(1);
 
     return {
         totalDays,
-        daysPresent
+        daysPresent,
+        daysAbsent,
+        percentage: Number(percentage)
     };
 }
 
@@ -3266,36 +3422,158 @@ function isWeekend(dateStr){
     return (day === 0 || day === 6);
 }
 
-function calculateTermAttendance() {
+// =========================================================
+// CALCULATE ATTENDANCE FOR ONE TERM ONLY
+// =========================================================
+
+function calculateTermAttendance(term = null) {
+
+    // If no term was supplied, use the selected term
+    // or determine it from the selected attendance date.
+    if (!term) {
+
+        const selectedTerm =
+            document.getElementById("attendanceTerm")?.value;
+
+        const selectedDate =
+            document.getElementById("attendanceDate")?.value;
+
+        term =
+            selectedTerm ||
+            (selectedDate ? getTermFromDate(selectedDate) : null) ||
+            activeTerm ||
+            "term1";
+    }
+
     let totalDays = 0;
     let totalPresent = 0;
 
+    // -----------------------------------------------------
+    // ONLY COUNT DATES BELONGING TO THIS TERM
+    // -----------------------------------------------------
+
     for (let date in attendanceData) {
 
-        let dayData = attendanceData[date];
+        const dateTerm = getTermFromDate(date);
 
-        // ✅ CHECK if teacher actually marked at least one student
-        let marked = Object.values(dayData).some(status => status === "Present" || status === "Absent");
+        // Ignore attendance from other terms
+        if (dateTerm !== term) {
+            continue;
+        }
 
-        if (!marked) continue; // ❌ skip empty days
+        const dayData = attendanceData[date];
 
-        totalDays++; // ✅ count ONLY real school days
+        // Only count a day if attendance was actually marked
+        const marked = Object.values(dayData).some(
+            status =>
+                status === "Present" ||
+                status === "Absent"
+        );
 
-        students.forEach(s => {
-            if (dayData[s.name] === "Present") {
+        if (!marked) {
+            continue;
+        }
+
+        // This is one valid attendance day
+        totalDays++;
+
+        // Count only students marked Present
+        students.forEach(student => {
+
+            if (
+                dayData[student.name] === "Present"
+            ) {
                 totalPresent++;
             }
+
         });
     }
 
-    let percentage = totalDays === 0 ? 0 :
-        ((totalPresent / (students.length * totalDays)) * 100).toFixed(1);
+    // -----------------------------------------------------
+    // CALCULATE PERCENTAGE
+    // -----------------------------------------------------
+
+    const totalPossibleAttendance =
+        students.length * totalDays;
+
+    const percentage =
+        totalPossibleAttendance === 0
+            ? 0
+            : (
+                (totalPresent / totalPossibleAttendance) *
+                100
+            ).toFixed(1);
 
     return {
+        term,
         totalDays,
         totalPresent,
-        percentage
+        percentage: Number(percentage)
     };
+}
+
+// =========================================================
+// ATTENDANCE TERM CHANGE
+// =========================================================
+
+function updateAttendanceTermSummary() {
+
+    const termSelect =
+        document.getElementById("attendanceTerm");
+
+    const summary =
+        document.getElementById(
+            "termAttendanceSummary"
+        );
+
+    if (!termSelect || !summary) {
+        return;
+    }
+
+    const selectedTerm =
+        termSelect.value;
+
+    const termData =
+        calculateTermAttendance(selectedTerm);
+
+    const termName =
+        selectedTerm === "term1"
+            ? "Term 1"
+            : selectedTerm === "term2"
+                ? "Term 2"
+                : "Term 3";
+
+    summary.innerHTML = `
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        ">
+
+            <span>
+                ${termName}
+            </span>
+
+            <strong>
+                ${termData.percentage}%
+            </strong>
+
+        </div>
+
+        <div style="
+            margin-top:6px;
+            color:#6b7280;
+            font-size:11px;
+            font-weight:500;
+        ">
+
+            Days: ${termData.totalDays}
+            ·
+            Present: ${termData.totalPresent}
+
+        </div>
+    `;
 }
 
 let deleteIndex = null;
