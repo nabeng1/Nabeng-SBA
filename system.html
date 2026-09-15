@@ -117,8 +117,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
             Fees
         </a>
 
-        <a href="#"
-           onclick="showPage('noticesPage'); return false;">
+        <a href="#" onclick="showFeesPage(); return false;">
             <i class="fas fa-bullhorn"></i>
             Notices
         </a>
@@ -237,22 +236,143 @@ Already have an account? Login
 </p>
 </div>
 
-<!-- FORGOT -->
+
+
+<!-- ==============================
+     FORGOT PASSWORD
+     ============================== -->
+
 <div id="forgotSection" style="display:none;">
-<h4>Reset Password</h4>
 
-<input id="fpUsername" placeholder="Enter Username">
-<input id="fpContact" placeholder="Enter Email or Phone">
+    <!-- STEP 1 -->
+    <div id="forgotStep1">
+
+        <h4>Reset Password</h4>
+
+        <p>
+            Enter your username and registered
+            email or phone number.
+        </p>
+
+        <input
+            id="fpUsername"
+            type="text"
+            placeholder="Enter Username"
+            autocomplete="username"
+        >
+
+        <input
+            id="fpContact"
+            type="text"
+            placeholder="Enter Email or Phone"
+        >
+
+        <button
+            type="button"
+            onclick="sendResetOTP()"
+        >
+            Send OTP
+        </button>
+
+    </div>
 
 
-<button onclick="resetPassword()">Reset Password</button>
+    <!-- STEP 2 -->
+    <div id="forgotStep2" style="display:none;">
 
-<p onclick="backToLogin()" style="cursor:pointer; color:#1877f2;">
-Back to Login
-</p>
+        <h4>Verify OTP</h4>
+
+        <p>
+            Enter the 6-digit OTP sent to your
+            registered email.
+        </p>
+
+        <input
+            id="fpOTP"
+            type="text"
+            inputmode="numeric"
+            maxlength="6"
+            placeholder="Enter 6-digit OTP"
+        >
+
+        <button
+            type="button"
+            onclick="verifyResetOTP()"
+        >
+            Verify OTP
+        </button>
+
+        <p
+            onclick="resendResetOTP()"
+            style="cursor:pointer;color:#1877f2;"
+        >
+            Resend OTP
+        </p>
+
+    </div>
+
+
+    <!-- STEP 3 -->
+    <div id="forgotStep3" style="display:none;">
+
+        <h4>Create New Password</h4>
+
+        <input
+            id="fpNewPassword"
+            type="password"
+            placeholder="New Password"
+            autocomplete="new-password"
+        >
+
+        <input
+            id="fpConfirmPassword"
+            type="password"
+            placeholder="Confirm New Password"
+            autocomplete="new-password"
+        >
+
+        <button
+            type="button"
+            onclick="changeResetPassword()"
+        >
+            Change Password
+        </button>
+
+    </div>
+
+
+    <!-- STEP 4 -->
+    <div id="forgotStep4" style="display:none;">
+
+        <h4>Password Changed Successfully</h4>
+
+        <p>
+            Your password has been changed successfully.
+            You can now log in with your new password.
+        </p>
+
+        <button
+            type="button"
+            onclick="backToLogin()"
+        >
+            Back to Login
+        </button>
+
+    </div>
+
+
+    <p
+        onclick="backToLogin()"
+        style="cursor:pointer;color:#1877f2;"
+    >
+        Back to Login
+    </p>
+
 </div>
 
 </div>
+
+
 
 
 <div id="app" style="display:none;">
