@@ -1522,27 +1522,202 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-<div id="attendancePage" class="container page">
-    <h3>Student Attendance</h3>
+<!-- =========================================================
+     STUDENT ATTENDANCE
+     ========================================================= -->
 
-    <label for="attendanceDate">Select Date:</label>
-    <input type="date" id="attendanceDate" onchange="loadAttendanceTable()">
+<div id="attendancePage" class="container page attendance-modern">
 
-    <div id="attendanceStats" style="margin:15px 0; font-weight:bold;"></div>
-	<div id="termAttendanceSummary" style="margin-top:10px; font-weight:bold;"></div>
-<label>Select Term:</label>
-<select id="attendanceTerm">
-    <option value="term1">Term 1</option>
-    <option value="term2">Term 2</option>
-    <option value="term3">Term 3</option>
-</select>
-<button onclick="markAllPresent()" style="background:#22c55e;">
-    Mark All Present
-</button>
-    <div id="attendanceTable"></div>
+    <!-- =========================
+         ATTENDANCE HEADER
+         ========================= -->
+
+    <div class="attendance-header">
+
+        <div class="attendance-header-left">
+
+            <div class="attendance-header-icon">
+                <i class="fa-solid fa-calendar-check"></i>
+            </div>
+
+            <div>
+                <span class="attendance-eyebrow">
+                    SCHOOL MANAGEMENT
+                </span>
+
+                <h3>
+                    Student Attendance
+                </h3>
+
+                <p>
+                    Record, monitor and manage student attendance.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="attendance-header-badge">
+            <i class="fa-solid fa-circle-check"></i>
+            Attendance Management
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         ATTENDANCE CONTROLS
+         ========================= -->
+
+    <div class="attendance-control-card">
+
+        <!-- DATE -->
+
+        <div class="attendance-field">
+
+            <label for="attendanceDate">
+                <i class="fa-regular fa-calendar"></i>
+                Select Date
+            </label>
+
+            <input
+                type="date"
+                id="attendanceDate"
+                onchange="loadAttendanceTable()"
+            >
+
+        </div>
+
+
+        <!-- TERM -->
+
+        <div class="attendance-field">
+
+            <label for="attendanceTerm">
+                <i class="fa-solid fa-layer-group"></i>
+                Select Term
+            </label>
+
+            <select
+    id="attendanceTerm"
+    onchange="updateAttendanceTermSummary()"
+>
+
+                <option value="term1">
+                    Term 1
+                </option>
+
+                <option value="term2">
+                    Term 2
+                </option>
+
+                <option value="term3">
+                    Term 3
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- MARK ALL PRESENT -->
+
+        <button
+            type="button"
+            class="attendance-mark-all"
+            onclick="markAllPresent()"
+        >
+
+            <i class="fa-solid fa-user-check"></i>
+
+            Mark All Present
+
+        </button>
+
+    </div>
+
+
+    <!-- =========================
+         ATTENDANCE SUMMARY
+         ========================= -->
+
+    <div class="attendance-summary-grid">
+
+        <!-- DAILY SUMMARY -->
+
+        <div class="attendance-summary-card">
+
+            <div class="summary-card-heading">
+                <i class="fa-solid fa-chart-simple"></i>
+                Daily Attendance
+            </div>
+
+            <div
+                id="attendanceStats"
+            >
+                Select a date to view attendance.
+            </div>
+
+        </div>
+
+
+        <!-- TERM SUMMARY -->
+
+        <div class="attendance-summary-card">
+
+            <div class="summary-card-heading">
+                <i class="fa-solid fa-chart-line"></i>
+                Term Attendance
+            </div>
+
+            <div
+                id="termAttendanceSummary"
+            >
+                Select a term to view the summary.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         ATTENDANCE TABLE
+         ========================= -->
+
+    <div class="attendance-table-card">
+
+        <div class="attendance-table-header">
+
+            <div class="attendance-table-title">
+
+                <span>
+                    STUDENT RECORDS
+                </span>
+
+                <h3>
+                    Attendance Register
+                </h3>
+
+            </div>
+
+            <div class="attendance-table-icon">
+
+                <i class="fa-solid fa-users"></i>
+
+            </div>
+
+        </div>
+
+
+        <div class="attendance-table-scroll">
+
+            <div id="attendanceTable"></div>
+
+        </div>
+
+    </div>
+
 </div>
-
-
 
 
 
