@@ -13411,3 +13411,860 @@ body.dark-mode #noticesPage .notices-empty-state {
 
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+     MODERN SCHOOL SYSTEM AUTHENTICATION UI
+
+     This section modernizes the Login, Sign Up and Forgot
+     Password screens from the supplied file.
+
+     IMPORTANT:
+     - Existing JavaScript IDs and function names are preserved.
+     - No password-reset logic is changed.
+     - Font Awesome is used instead of emojis.
+     ========================================================= */
+
+
+/* =========================================================
+   MODERN AUTH UI
+   ========================================================= */
+
+:root {
+    --auth-primary: #1558ff;
+    --auth-primary-dark: #0d3fc4;
+    --auth-accent: #22c55e;
+    --auth-ink: #111827;
+    --auth-muted: #6b7280;
+    --auth-line: #e5e7eb;
+    --auth-soft: #f6f8fc;
+    --auth-white: #ffffff;
+    --auth-danger: #dc2626;
+    --auth-radius: 22px;
+}
+
+/* ---------- Main login container ---------- */
+
+#loginBox.container {
+    width: min(100% - 32px, 460px);
+    margin: 45px auto;
+    padding: 34px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: var(--auth-radius);
+    box-shadow:
+        0 30px 80px rgba(15, 23, 42, 0.18),
+        0 8px 25px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    position: relative;
+    overflow: hidden;
+    color: var(--auth-ink);
+}
+
+/* top accent */
+#loginBox.container::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(
+        90deg,
+        var(--auth-primary),
+        #4f7cff,
+        var(--auth-primary)
+    );
+}
+
+/* ---------- Logo ---------- */
+
+#loginBox .login-logo {
+    display: block;
+    width: 82px;
+    height: 82px;
+    margin: 4px auto 18px;
+    object-fit: contain;
+    border-radius: 18px;
+    background: #f7f9fd;
+    border: 1px solid var(--auth-line);
+}
+
+/* ---------- Login heading ---------- */
+
+#loginBox > h3 {
+    margin: 0 0 7px;
+    text-align: center;
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.6px;
+    color: var(--auth-ink);
+}
+
+#loginBox > h3::after {
+    content: "Secure school management access";
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--auth-muted);
+}
+
+/* ---------- Shared form ---------- */
+
+#loginSection,
+#signupSection {
+    margin-top: 28px;
+}
+
+#loginSection input,
+#signupSection input,
+#signupSection select {
+    width: 100%;
+    height: 52px;
+    margin: 0 0 14px;
+    padding: 0 15px;
+    box-sizing: border-box;
+    border: 1px solid #e1e5ec;
+    border-radius: 13px;
+    outline: none;
+    background: #f8fafc;
+    color: var(--auth-ink);
+    font: inherit;
+    font-size: 14px;
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease,
+        transform .2s ease;
+}
+
+#loginSection input:focus,
+#signupSection input:focus,
+#signupSection select:focus {
+    background: #ffffff;
+    border-color: var(--auth-primary);
+    box-shadow: 0 0 0 4px rgba(21, 88, 255, 0.09);
+}
+
+#loginSection input::placeholder,
+#signupSection input::placeholder {
+    color: #9aa3b2;
+}
+
+/* ---------- Login button ---------- */
+
+#loginSection > button {
+    width: 100%;
+    height: 52px;
+    margin-top: 5px;
+    border: 0;
+    border-radius: 13px;
+    background: linear-gradient(
+        135deg,
+        var(--auth-primary),
+        #2671ff
+    );
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(21, 88, 255, .22);
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+#loginSection > button::after {
+    content: "\f061";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    margin-left: 9px;
+}
+
+#loginSection > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(21, 88, 255, .28);
+}
+
+/* ---------- Forgot password ---------- */
+
+#loginSection > p[onclick="showForgot()"] {
+    margin: 17px 0 0 !important;
+    text-align: center;
+    color: var(--auth-primary) !important;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#loginSection > p[onclick="showForgot()"]:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Divider ---------- */
+
+#loginSection > hr {
+    height: 1px;
+    margin: 24px 0 !important;
+    border: 0 !important;
+    background: #e9edf3;
+}
+
+/* ---------- Create account ---------- */
+
+#loginSection > button[onclick="showSignup()"] {
+    width: 100%;
+    height: 50px;
+    border: 1px solid #d8f3e1;
+    border-radius: 13px;
+    background: #effbf3 !important;
+    color: #16803f;
+    font-size: 14px;
+    cursor: pointer;
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        border-color .2s ease;
+}
+
+#loginSection > button[onclick="showSignup()"]:hover {
+    background: #e5f8eb !important;
+    border-color: #bce9cb;
+    transform: translateY(-1px);
+}
+
+/* ---------- Messages ---------- */
+
+#loginMsg {
+    min-height: 18px;
+    margin: 12px 0 0 !important;
+    text-align: center;
+    color: var(--auth-danger) !important;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   SIGN UP
+   ========================================================= */
+
+#signupSection {
+    margin-top: 18px;
+}
+
+#signupSection h4 {
+    margin: 0 0 22px;
+    text-align: center;
+    color: var(--auth-ink);
+    font-size: 23px;
+    font-weight: 800;
+    letter-spacing: -.4px;
+}
+
+#signupSection h4::after {
+    content: "Create your school system account";
+    display: block;
+    margin-top: 7px;
+    color: var(--auth-muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+#signupSection select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background:
+        linear-gradient(45deg, transparent 50%, #7c8798 50%) calc(100% - 18px) 22px / 6px 6px no-repeat,
+        linear-gradient(135deg, #7c8798 50%, transparent 50%) calc(100% - 13px) 22px / 6px 6px no-repeat,
+        #f8fafc;
+}
+
+#schoolNameBox {
+    margin: 0;
+}
+
+#signupSection > button {
+    width: 100%;
+    height: 52px;
+    margin-top: 3px;
+    border: 0;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #16a05a, #22c55e);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(34, 197, 94, .20);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+#signupSection > button::after {
+    content: "\f35a";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    margin-left: 9px;
+}
+
+#signupSection > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(34, 197, 94, .27);
+}
+
+#signupSection > p {
+    margin: 18px 0 0 !important;
+    text-align: center;
+    color: var(--auth-primary) !important;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* =========================================================
+   FORGOT PASSWORD
+   IMPORTANT: fixed overlay prevents the forgot screen from
+   appearing as a card inside the login card.
+   ========================================================= */
+
+#forgotSection.forgot-password-wrapper {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px;
+    box-sizing: border-box;
+
+    overflow-y: auto;
+
+    background:
+        radial-gradient(
+            circle at 15% 15%,
+            rgba(21, 88, 255, .12),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 85% 85%,
+            rgba(34, 197, 94, .08),
+            transparent 30%
+        ),
+        rgba(241, 245, 249, .96);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.forgot-password-card {
+    width: min(100%, 520px);
+    padding: 34px;
+    box-sizing: border-box;
+
+    background: rgba(255, 255, 255, .98);
+    border: 1px solid #e5e9f0;
+    border-radius: 24px;
+
+    box-shadow:
+        0 35px 90px rgba(15, 23, 42, .18),
+        0 10px 30px rgba(15, 23, 42, .07);
+
+    position: relative;
+    overflow: hidden;
+}
+
+.forgot-password-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(
+        90deg,
+        var(--auth-primary),
+        #4f7cff,
+        var(--auth-primary)
+    );
+}
+
+/* ---------- Forgot header ---------- */
+
+.forgot-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.forgot-icon {
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 18px;
+    background: #eef3ff;
+    border: 1px solid #dce6ff;
+}
+
+.forgot-icon i {
+    color: var(--auth-primary);
+    font-size: 25px;
+}
+
+.forgot-step-label {
+    margin-bottom: 8px;
+    color: var(--auth-primary);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+}
+
+.forgot-header h2 {
+    margin: 0;
+    color: var(--auth-ink);
+    font-size: 27px;
+    font-weight: 850;
+    letter-spacing: -.6px;
+}
+
+.forgot-header p {
+    max-width: 390px;
+    margin: 10px auto 0;
+    color: var(--auth-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* ---------- Progress ---------- */
+
+.forgot-progress {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 0 0 31px;
+}
+
+.progress-step {
+    min-width: 58px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.progress-step span {
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-sizing: border-box;
+    border-radius: 50%;
+
+    background: #f1f3f7;
+    border: 2px solid #e2e6ec;
+
+    color: #9aa3b2;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.progress-step small {
+    margin-top: 7px;
+    color: #9aa3b2;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.progress-step.active span {
+    background: var(--auth-primary);
+    border-color: var(--auth-primary);
+    color: #fff;
+    box-shadow: 0 7px 18px rgba(21, 88, 255, .25);
+}
+
+.progress-step.active small {
+    color: var(--auth-primary);
+}
+
+.progress-line {
+    width: 45px;
+    height: 2px;
+    margin-top: 14px;
+    background: #e3e7ed;
+}
+
+/* ---------- Forgot form ---------- */
+
+.forgot-step {
+    animation: authFadeIn .25s ease;
+}
+
+@keyframes authFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.input-group {
+    margin-bottom: 17px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 7px;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.input-box {
+    height: 51px;
+    display: flex;
+    align-items: center;
+
+    background: #f8fafc;
+    border: 1px solid #e1e5ec;
+    border-radius: 13px;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease;
+}
+
+.input-box:focus-within {
+    background: #fff;
+    border-color: var(--auth-primary);
+    box-shadow: 0 0 0 4px rgba(21, 88, 255, .08);
+}
+
+.input-icon {
+    width: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #929baa;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.input-box:focus-within .input-icon {
+    color: var(--auth-primary);
+}
+
+.input-box input {
+    width: 100%;
+    height: 100%;
+    padding: 0 13px 0 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--auth-ink);
+    font: inherit;
+    font-size: 13px;
+}
+
+.input-box input::placeholder {
+    color: #a3abb8;
+}
+
+/* ---------- Forgot buttons ---------- */
+
+.forgot-primary-btn {
+    width: 100%;
+    height: 52px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    margin-top: 5px;
+
+    border: 0;
+    border-radius: 13px;
+
+    background: linear-gradient(
+        135deg,
+        var(--auth-primary),
+        #2874ff
+    );
+
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    box-shadow: 0 10px 25px rgba(21, 88, 255, .21);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.forgot-primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(21, 88, 255, .28);
+}
+
+.btn-arrow {
+    font-size: 14px;
+    transition: transform .2s ease;
+}
+
+.forgot-primary-btn:hover .btn-arrow {
+    transform: translateX(4px);
+}
+
+/* ---------- OTP / password info ---------- */
+
+.otp-info,
+.password-info {
+    padding: 18px 16px;
+    margin-bottom: 21px;
+    text-align: center;
+
+    background: #f7f9ff;
+    border: 1px solid #e2e8ff;
+    border-radius: 15px;
+}
+
+.otp-icon,
+.password-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #eaf0ff;
+    border-radius: 12px;
+}
+
+.otp-icon i,
+.password-icon i {
+    color: var(--auth-primary);
+    font-size: 18px;
+}
+
+.otp-info strong,
+.password-info strong {
+    display: block;
+    color: #172033;
+    font-size: 13px;
+}
+
+.otp-info p,
+.password-info p {
+    max-width: 360px;
+    margin: 6px auto 0;
+    color: #737d8d;
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+/* ---------- OTP input ---------- */
+
+.otp-box input {
+    letter-spacing: 6px;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+/* ---------- Resend ---------- */
+
+.resend-wrapper {
+    margin-top: 18px;
+    text-align: center;
+    color: #929baa;
+    font-size: 11px;
+}
+
+.resend-btn {
+    padding: 0;
+    margin-left: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--auth-primary);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.resend-btn:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Success ---------- */
+
+.success-step {
+    text-align: center;
+}
+
+.success-icon {
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 19px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+    background: #eaf8f0;
+    border: 7px solid #f5fbf7;
+}
+
+.success-icon i {
+    color: #16a05d;
+    font-size: 29px;
+}
+
+.success-step h3 {
+    margin: 0 0 8px;
+    color: var(--auth-ink);
+    font-size: 21px;
+    font-weight: 850;
+}
+
+.success-step p {
+    max-width: 365px;
+    margin: 0 auto 23px;
+    color: #737d8d;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* ---------- Footer ---------- */
+
+.forgot-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+
+    margin-top: 24px;
+    padding-top: 20px;
+
+    border-top: 1px solid #edf0f4;
+
+    color: #929aa8;
+    font-size: 11px;
+}
+
+.back-login-btn {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--auth-primary);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.back-login-btn:hover {
+    text-decoration: underline;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    #loginBox.container {
+        width: min(100% - 22px, 460px);
+        margin: 20px auto;
+        padding: 27px 20px;
+        border-radius: 20px;
+    }
+
+    #loginBox .login-logo {
+        width: 70px;
+        height: 70px;
+    }
+
+    #loginBox > h3 {
+        font-size: 24px;
+    }
+
+    #forgotSection.forgot-password-wrapper {
+        padding: 14px;
+        align-items: center;
+    }
+
+    .forgot-password-card {
+        padding: 27px 20px;
+        border-radius: 20px;
+    }
+
+    .forgot-header h2 {
+        font-size: 23px;
+    }
+
+    .progress-step {
+        min-width: 45px;
+    }
+
+    .progress-line {
+        width: 24px;
+    }
+
+    .progress-step small {
+        font-size: 8px;
+    }
+}
+
+@media (max-width: 380px) {
+
+    #loginBox.container {
+        padding: 24px 16px;
+    }
+
+    .forgot-password-card {
+        padding: 24px 16px;
+    }
+
+    .progress-line {
+        width: 17px;
+    }
+
+    .progress-step {
+        min-width: 40px;
+    }
+}
+
+
+
