@@ -3089,18 +3089,37 @@ async function getStudentAttendance(
 
 async function loadAttendanceData() {
 
+    if (!currentUser || !currentUser.schoolid) {
+        console.log(
+            "Cannot load attendance: school ID not available."
+        );
+        return;
+    }
+
     const { data, error } = await supabaseClient
         .from("attendance")
         .select("*")
         .eq("schoolid", currentUser.schoolid);
 
     if (error) {
-        console.log(error);
+
+        console.error(
+            "Attendance loading error:",
+            error
+        );
+
         return;
     }
 
+    console.log(
+        "Attendance records loaded:",
+        data
+    );
+
+    // Reset local attendance cache
     attendanceData = {};
 
+    // Rebuild attendanceData from Supabase
     data.forEach(record => {
 
         if (!attendanceData[record.date]) {
@@ -3111,11 +3130,25 @@ async function loadAttendanceData() {
             record.status;
     });
 
-    let selectedDate =
-        document.getElementById("attendanceDate")?.value;
+    console.log(
+        "Rebuilt attendanceData:",
+        attendanceData
+    );
 
-    if (selectedDate) {
+    // Refresh currently selected date
+    const dateInput =
+        document.getElementById("attendanceDate");
+
+    if (dateInput && dateInput.value) {
         loadAttendanceTable();
+    }
+
+    // Refresh term summary
+    if (
+        typeof updateAttendanceTermSummary ===
+        "function"
+    ) {
+        updateAttendanceTermSummary();
     }
 }
 
@@ -3349,72 +3382,173 @@ function updateAttendanceStats(date) {
          Total: ${students.length}`;
 }
 
-async function markAttendanceManual(
-    studentname,
-    status
-) {
+async function markAttendanceManual(studentname, status) {
 
-    let date =
-        document.getElementById(
-            "attendanceDate"
-        ).value;
+    const date =
+        document.getElementById("attendanceDate")?.value;
 
     if (!date) {
-        return alert("Select a date first!");
+        return alert(
+            "Please select an attendance date first."
+        );
     }
 
-    // Weekend block
+    // =========================
+    // WEEKEND CHECK
+    // =========================
+
     if (isWeekend(date)) {
-
         return alert(
-            "🚫 No attendance on weekends!"
+            "No attendance can be recorded on weekends."
         );
     }
 
-    let term = getTermFromDate(date);
+    // =========================
+    // GET TERM FROM DATE
+    // =========================
 
-    // Term inactive
+    const term = getTermFromDate(date);
+
     if (!term) {
-
         return alert(
-            "❌ Attendance not allowed.\nTerm has not started or has ended."
+            "Attendance cannot be recorded.\n\n" +
+            "The selected date is outside an active school term."
         );
     }
 
-    // Save attendance online
-    const { error } = await supabaseClient
-        .from("attendance")
-        .upsert([
-            {
-                schoolid: currentUser.schoolid,
-                teacher: currentUser.username,
-                date: date,
-                studentname: studentname,
-                status: status,
-                term: term
-            }
-        ]);
+    // =========================
+    // CHECK USER
+    // =========================
+
+    if (
+        !currentUser ||
+        !currentUser.schoolid
+    ) {
+        return alert(
+            "School information is not available."
+        );
+    }
+
+    // =========================
+    // FIND STUDENT
+    // =========================
+
+    const student =
+        students.find(
+            s => String(s.name).trim() ===
+                 String(studentname).trim()
+        );
+
+    if (!student) {
+        return alert(
+            "Student could not be found."
+        );
+    }
+
+    const cleanStudentName =
+        String(student.name).trim();
+
+    // =========================
+    // PREPARE RECORD
+    // =========================
+
+    const attendanceRecord = {
+
+        schoolid:
+            currentUser.schoolid,
+
+        class:
+            student.studentclass || "",
+
+        date:
+            date,
+
+        studentname:
+            cleanStudentName,
+
+        status:
+            status,
+
+        teacher:
+            currentUser.username || "",
+
+        term:
+            term
+    };
+
+    console.log(
+        "Saving attendance:",
+        attendanceRecord
+    );
+
+    // =========================
+    // SAVE / UPDATE
+    // =========================
+
+    const { error } =
+        await supabaseClient
+            .from("attendance")
+            .upsert(
+                [attendanceRecord],
+                {
+                    onConflict:
+                        "schoolid,date,studentname"
+                }
+            );
 
     if (error) {
 
-        console.log(error);
+        console.error(
+            "Attendance save error:",
+            error
+        );
 
         return alert(
-            "Failed to save attendance"
+            "Failed to save attendance.\n\n" +
+            error.message
         );
     }
 
-    // Optional local cache
+    console.log(
+        "Attendance saved successfully."
+    );
+
+    // =========================
+    // UPDATE LOCAL CACHE
+    // =========================
+
     if (!attendanceData[date]) {
         attendanceData[date] = {};
     }
 
-    attendanceData[date][studentname] = status;
+    attendanceData[date][cleanStudentName] =
+        status;
+
+    // =========================
+    // SYNC
+    // =========================
 
     syncAttendanceToStudents();
 
+    // =========================
+    // REFRESH TABLE
+    // =========================
+
     loadAttendanceTable();
+
+    // =========================
+    // REFRESH TERM SUMMARY
+    // =========================
+
+    if (
+        typeof updateAttendanceTermSummary ===
+        "function"
+    ) {
+        updateAttendanceTermSummary();
+    }
 }
+
+
 function isWeekend(dateStr){
     let d = new Date(dateStr);
     let day = d.getDay(); // 0 = Sunday, 6 = Saturday
@@ -3616,35 +3750,53 @@ function syncAttendanceToStudents() {
 
     saveStudents();
 }
+
+
 async function markAllPresent() {
 
-    let date =
-        document.getElementById(
-            "attendanceDate"
-        ).value;
+    const date =
+        document.getElementById("attendanceDate")?.value;
 
     if (!date) {
-
         return alert(
-            "Select a date first!"
+            "Please select an attendance date first."
         );
     }
 
-    // Weekend block
+    // =========================
+    // WEEKEND CHECK
+    // =========================
+
     if (isWeekend(date)) {
-
         return alert(
-            "🚫 No attendance on weekends!"
+            "No attendance can be recorded on weekends."
         );
     }
 
-    let term = getTermFromDate(date);
+    // =========================
+    // GET TERM
+    // =========================
 
-    // Term inactive
+    const term =
+        getTermFromDate(date);
+
     if (!term) {
-
         return alert(
-            "❌ Term not active!"
+            "Attendance cannot be recorded.\n\n" +
+            "The selected date is outside an active school term."
+        );
+    }
+
+    // =========================
+    // CHECK USER
+    // =========================
+
+    if (
+        !currentUser ||
+        !currentUser.schoolid
+    ) {
+        return alert(
+            "School information is not available."
         );
     }
 
@@ -3652,40 +3804,100 @@ async function markAllPresent() {
         attendanceData[date] = {};
     }
 
-    // Prepare attendance records
-    let attendanceRecords = students.map(s => {
+    // =========================
+    // CREATE RECORDS
+    // =========================
 
-        attendanceData[date][s.name] = "Present";
+    const attendanceRecords =
+        students.map(student => {
 
-      return {
-    schoolid: currentUser.schoolid,
-    teacher: currentUser.username,
-    studentname: s.name,
-    status: "Present",
-    date: date,
-    term: term
-};
-    });
+            const cleanStudentName =
+                String(student.name).trim();
 
-    // Save all attendance online
-    const { error } = await supabaseClient
-        .from("attendance")
-        .upsert(attendanceRecords);
+            attendanceData[date][cleanStudentName] =
+                "Present";
+
+            return {
+
+                schoolid:
+                    currentUser.schoolid,
+
+                class:
+                    student.studentclass || "",
+
+                date:
+                    date,
+
+                studentname:
+                    cleanStudentName,
+
+                status:
+                    "Present",
+
+                teacher:
+                    currentUser.username || "",
+
+                term:
+                    term
+            };
+        });
+
+    console.log(
+        "Saving all attendance:",
+        attendanceRecords
+    );
+
+    // =========================
+    // SAVE / UPDATE ALL
+    // =========================
+
+    const { error } =
+        await supabaseClient
+            .from("attendance")
+            .upsert(
+                attendanceRecords,
+                {
+                    onConflict:
+                        "schoolid,date,studentname"
+                }
+            );
 
     if (error) {
 
-        console.log(error);
+        console.error(
+            "Mark all present error:",
+            error
+        );
 
         return alert(
-            "Failed to save attendance"
+            "Failed to save attendance.\n\n" +
+            error.message
         );
     }
 
+    console.log(
+        "All attendance saved successfully."
+    );
+
+    // =========================
+    // SYNC
+    // =========================
+
     syncAttendanceToStudents();
 
-    loadAttendanceTable();
-}
+    // =========================
+    // REFRESH
+    // =========================
 
+    loadAttendanceTable();
+
+    if (
+        typeof updateAttendanceTermSummary ===
+        "function"
+    ) {
+        updateAttendanceTermSummary();
+    }
+}
 
 
 
@@ -5074,7 +5286,12 @@ async function changeTerm() {
 
 let termSettings = {};
 
-async function loadTermSettings(){
+async function loadTermSettings() {
+
+    if (!currentUser || !currentUser.schoolid) {
+        console.log("School information not found.");
+        return;
+    }
 
     const { data, error } = await supabaseClient
         .from("termsettings")
@@ -5082,89 +5299,272 @@ async function loadTermSettings(){
         .eq("schoolid", currentUser.schoolid)
         .single();
 
-    if(error){
-        console.log(error);
+    if (error) {
+        console.log("Term settings load error:", error);
+
+        termSettings = {};
         return;
     }
 
     termSettings = data || {};
 
-    document.getElementById("t1start").value = data.t1start || "";
-    document.getElementById("t1end").value   = data.t1end || "";
+    // Term 1
+    const t1start = document.getElementById("t1start");
+    const t1end = document.getElementById("t1end");
 
-    document.getElementById("t2start").value = data.t2start || "";
-    document.getElementById("t2end").value   = data.t2end || "";
+    if (t1start) {
+        t1start.value = data.t1start || "";
+    }
 
-    document.getElementById("t3start").value = data.t3start || "";
-    document.getElementById("t3end").value   = data.t3end || "";
+    if (t1end) {
+        t1end.value = data.t1end || "";
+    }
+
+    // Term 2
+    const t2start = document.getElementById("t2start");
+    const t2end = document.getElementById("t2end");
+
+    if (t2start) {
+        t2start.value = data.t2start || "";
+    }
+
+    if (t2end) {
+        t2end.value = data.t2end || "";
+    }
+
+    // Term 3
+    const t3start = document.getElementById("t3start");
+    const t3end = document.getElementById("t3end");
+
+    if (t3start) {
+        t3start.value = data.t3start || "";
+    }
+
+    if (t3end) {
+        t3end.value = data.t3end || "";
+    }
 }
 
 async function saveTermSettings() {
-
-    const t1start = document.getElementById("t1start").value;
-    const t1end = document.getElementById("t1end").value;
-
-    const t2start = document.getElementById("t2start").value;
-    const t2end = document.getElementById("t2end").value;
-
-    const t3start = document.getElementById("t3start").value;
-    const t3end = document.getElementById("t3end").value;
 
     if (!currentUser || !currentUser.schoolid) {
         alert("School information not found.");
         return;
     }
 
+    const t1start =
+        document.getElementById("t1start").value;
+
+    const t1end =
+        document.getElementById("t1end").value;
+
+    const t2start =
+        document.getElementById("t2start").value;
+
+    const t2end =
+        document.getElementById("t2end").value;
+
+    const t3start =
+        document.getElementById("t3start").value;
+
+    const t3end =
+        document.getElementById("t3end").value;
+
+
+    // =========================
+    // CHECK ALL DATES
+    // =========================
+
+    if (
+        !t1start || !t1end ||
+        !t2start || !t2end ||
+        !t3start || !t3end
+    ) {
+        alert(
+            "Please enter the start and end dates for all three terms."
+        );
+
+        return;
+    }
+
+
+    // =========================
+    // CONVERT DATES
+    // =========================
+
+    const t1StartDate =
+        new Date(t1start + "T00:00:00");
+
+    const t1EndDate =
+        new Date(t1end + "T00:00:00");
+
+    const t2StartDate =
+        new Date(t2start + "T00:00:00");
+
+    const t2EndDate =
+        new Date(t2end + "T00:00:00");
+
+    const t3StartDate =
+        new Date(t3start + "T00:00:00");
+
+    const t3EndDate =
+        new Date(t3end + "T00:00:00");
+
+
+    // =========================
+    // CHECK DATE ORDER
+    // =========================
+
+    if (t1StartDate > t1EndDate) {
+        alert(
+            "Term 1 start date cannot be after the end date."
+        );
+
+        return;
+    }
+
+    if (t2StartDate > t2EndDate) {
+        alert(
+            "Term 2 start date cannot be after the end date."
+        );
+
+        return;
+    }
+
+    if (t3StartDate > t3EndDate) {
+        alert(
+            "Term 3 start date cannot be after the end date."
+        );
+
+        return;
+    }
+
+
+    // =========================
+    // CHECK TERM ORDER
+    // =========================
+
+    if (t2StartDate <= t1EndDate) {
+        alert(
+            "Term 2 cannot start before Term 1 has ended."
+        );
+
+        return;
+    }
+
+    if (t3StartDate <= t2EndDate) {
+        alert(
+            "Term 3 cannot start before Term 2 has ended."
+        );
+
+        return;
+    }
+
+
+    // =========================
+    // DATA TO SAVE
+    // =========================
+
     const settingsData = {
-        schoolid: currentUser.schoolid,
+
+        schoolid:
+            currentUser.schoolid,
+
         t1start,
         t1end,
+
         t2start,
         t2end,
+
         t3start,
         t3end
     };
 
-    const { error } = await supabaseClient
-        .from("termsettings")
-        .upsert(settingsData, {
-            onConflict: "schoolid"
-        });
+
+    // =========================
+    // SAVE TO SUPABASE
+    // =========================
+
+    const { error } =
+        await supabaseClient
+            .from("termsettings")
+            .upsert(
+                settingsData,
+                {
+                    onConflict: "schoolid"
+                }
+            );
+
 
     if (error) {
-        console.error("Term settings save error:", error);
-        alert("Failed to save term settings");
+
+        console.error(
+            "Term settings save error:",
+            error
+        );
+
+        alert(
+            "Failed to save term settings."
+        );
+
         return;
     }
 
+
+    // =========================
+    // UPDATE LOCAL SETTINGS
+    // =========================
+
     termSettings = settingsData;
 
-    alert("✅ Term settings saved successfully!");
+
+    alert(
+        "Term settings saved successfully!"
+    );
 }
 
 
 function getTermFromDate(dateStr) {
 
-    let date = new Date(dateStr);
+    if (!dateStr || !termSettings) {
+        return null;
+    }
 
-    let t1start =
-        new Date(termSettings.t1start);
+    // Convert selected date to a date-only value
+    const date = new Date(dateStr + "T00:00:00");
 
-    let t1end =
-        new Date(termSettings.t1end);
+    if (isNaN(date.getTime())) {
+        return null;
+    }
 
-    let t2start =
-        new Date(termSettings.t2start);
+    // Convert term settings to date-only values
+    const t1start = new Date(
+        termSettings.t1start + "T00:00:00"
+    );
 
-    let t2end =
-        new Date(termSettings.t2end);
+    const t1end = new Date(
+        termSettings.t1end + "T23:59:59"
+    );
 
-    let t3start =
-        new Date(termSettings.t3start);
+    const t2start = new Date(
+        termSettings.t2start + "T00:00:00"
+    );
 
-    let t3end =
-        new Date(termSettings.t3end);
+    const t2end = new Date(
+        termSettings.t2end + "T23:59:59"
+    );
 
+    const t3start = new Date(
+        termSettings.t3start + "T00:00:00"
+    );
+
+    const t3end = new Date(
+        termSettings.t3end + "T23:59:59"
+    );
+
+    // =========================
+    // TERM 1
+    // =========================
     if (
         date >= t1start &&
         date <= t1end
@@ -5172,6 +5572,9 @@ function getTermFromDate(dateStr) {
         return "term1";
     }
 
+    // =========================
+    // TERM 2
+    // =========================
     if (
         date >= t2start &&
         date <= t2end
@@ -5179,6 +5582,9 @@ function getTermFromDate(dateStr) {
         return "term2";
     }
 
+    // =========================
+    // TERM 3
+    // =========================
     if (
         date >= t3start &&
         date <= t3end
@@ -5186,6 +5592,7 @@ function getTermFromDate(dateStr) {
         return "term3";
     }
 
+    // Date is outside all school terms
     return null;
 }
 
