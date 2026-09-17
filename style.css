@@ -1,50 +1,41 @@
-body { font-family:'Segoe UI',sans-serif; margin:0; background:#0f172a; color:white; }
-h1 { text-align:center; padding:15px; background:none; margin:0; }
-.top-nav { display:flex; justify-content:center; gap:10px; background:none; padding:10px 0; }
-.top-nav button {width:100%; padding:10px 15px; border:10px; border-radius:5px; background:#2563eb; color:white; cursor:pointer; }
+body { font-family:'Segoe UI',sans-serif; 
+margin:0; 
+background:#0f172a; 
+color:white; 
+}
+
+h1 { text-align:center; 
+padding:15px; 
+background:none; 
+margin:0; 
+}
+
+.container { max-width:1000px; 
+margin:20px auto; 
+background:#111827; 
+padding:20px; 
+border-radius:12px; }
+
+
+
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+.card { background:#1f2937; padding:15px; border-radius:10px; text-align:center; cursor:pointer; }
+
+
+
+
 .top-nav button.logout { background:#dc2626; }
 .nav-buttons {
     display:flex;
     justify-content:center;
     gap:10px;
 }
-.container { max-width:1000px; margin:20px auto; background:#111827; padding:20px; border-radius:12px; }
-input, select { width:50%; padding:10px; margin-top:8px; border-radius:8px; border:none; background:#1f2937; color:white; }
-button { width:auto; padding:2px; margin-top:10px; border: solid #007FFF; border-radius:8px; background:#007fff; color:white; cursor:pointer; }
-.container {
-    max-width:1000px;
-    margin:20px auto;
-    background:#111827;
-    padding:20px;
-    border-radius:20px;
-    box-shadow:0 10px 25px rgba(0,0,0,0.3);
-}
-.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
-.card { background:#1f2937; padding:15px; border-radius:10px; text-align:center; cursor:pointer; }
 .top-nav {
     display:flex;
     align-items:center;
     justify-content:space-between;
     padding:10px 20px;
     background:none;
-}
-
-/* LEFT (Welcome text) */
-.nav-left {
-    font-weight:bold;
-    font-size:16px;
-}
-
-/* CENTER (Buttons stay centered ALWAYS) */
-.nav-center {
-    display:flex;
-    gap:10px;
-    justify-content:center;
-    flex:1;
-}
-
-/* RIGHT (Logout) */
-.nav-right {
 }
 
 /* Improve buttons */
@@ -72,6 +63,27 @@ button { width:auto; padding:2px; margin-top:10px; border: solid #007FFF; border
 .top-nav .logout:hover {
     background:#b91c1c;
 }
+
+
+/* LEFT (Welcome text) */
+.nav-left {
+    font-weight:bold;
+    font-size:16px;
+}
+
+/* CENTER (Buttons stay centered ALWAYS) */
+.nav-center {
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex:1;
+}
+
+/* RIGHT (Logout) */
+.nav-right {
+}
+
+
 .card:hover { transform:scale(1.05); }
 .page { display:none; }
 table { width:100%; margin-top:15px; border-collapse:collapse; color:white; }
@@ -100,6 +112,12 @@ th, td { padding:10px; border-bottom:1px solid #374151; text-align:center; }
     .top-nav button {
         width:90%;
     }
+	
+	
+	
+	
+	
+	
 
     /* INPUTS */
     input, select {
@@ -839,6 +857,10 @@ table{
     transform:scale(0.9);
 }
 
+
+
+
+
 @media (max-width:768px){
     .top-nav{
         display:none !important;
@@ -910,96 +932,6 @@ body::before{
     to{transform:translateY(100px);}
 }
 
-#loginBox{
-    width:380px;
-    padding:40px;
-    border-radius:20px;
-
-    background:rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(15px);
-    -webkit-backdrop-filter:blur(15px);
-
-    border:1px solid rgba(255,255,255,.3);
-
-    box-shadow:0 8px 32px rgba(0,0,0,.3);
-
-    color:white;
-}
-
-#loginBox h3,
-#loginBox h4{
-    text-align:center;
-    color:white;
-    margin-bottom:20px;
-}
-
-#loginBox input,
-#loginBox select{
-    width:100%;
-    padding:12px 15px;
-    margin:10px 0;
-    border-radius:30px;
-    border:1px solid rgba(255,255,255,.4);
-    background:transparent;
-    color:white;
-    outline:none;
-}
-
-#loginBox input::placeholder{
-    color:rgba(255,255,255,.8);
-}
-
-#loginBox button{
-    width:100%;
-    margin-top:15px;
-    padding:12px;
-    border:none;
-    border-radius:30px;
-
-    background:linear-gradient(
-        135deg,
-        #007fff,
-        #007fff
-    );
-
-    color:white;
-    font-size:16px;
-    cursor:pointer;
-    transition:.3s;
-}
-
-#loginBox button:hover{
-    transform:translateY(-2px);
-
-    box-shadow:
-    0 0 15px #007fff,
-    0 0 30px #007fff;
-}
-
-#loginBox p{
-    color:white;
-    text-align:center;
-}
-
-#loginBox hr{
-    border:1px solid rgba(255,255,255,.2);
-}
-
-.login-logo{
-    width:80px;
-    height:80px;
-    border-radius:50%;
-    display:block;
-    margin:0 auto 15px;
-}
-
-.school-title{
-    text-align:center;
-    color:white;
-    margin-bottom:20px;
-    letter-spacing:1px;
-}
 
 
 
@@ -1010,107 +942,6 @@ body::before{
 
 
 
-.context-menu{
-    position:absolute;
-    display:none;
-    background:#202c33;
-    color:white;
-    min-width:150px;
-    border-radius:8px;
-    overflow:hidden;
-    z-index:9999;
-    box-shadow:0 2px 10px rgba(0,0,0,.4);
-}
-
-.context-menu div{
-    padding:12px;
-    cursor:pointer;
-}
-
-.context-menu div:hover{
-    background:#2a3942;
-}
-
-
-#chatLayout{
-    display:flex;
-    height:100%;
-}
-
-#usersPanel{
-    width:320px;
-}
-
-#conversationPanel{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-}
-
-#backToUsers{
-    display:none;
-}
-
-@media (max-width:768px){
-
-    #usersPanel{
-        width:100%;
-    }
-
-    #conversationPanel{
-        width:100%;
-    }
-
-    #backToUsers{
-        display:block;
-    }
-}
-
-
-#backToUsersBtn{
-	width: 5px;
-    display:none;
-    background:transparent;
-    border:none;
-    color:white;
-    font-size:20px;
-    cursor:pointer;
-    margin-right:10px;
-}
-
-@media(max-width:768px){
-
-    #backToUsersBtn{
-        display:block;
-    }
-
-}
-
-
-/* REPORT RESPONSIVE FIX */
-#printArea {
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-@media (max-width: 768px) {
-    #printArea {
-        padding: 20px 15px !important;
-        font-size: 13px !important;
-        border-width: 6px !important;
-        max-width: 100% !important;
-        margin: 10px !important;
-    }
-
-    #printArea h1 {
-        font-size: 20px !important;
-    }
-
-    #printArea table th,
-    #printArea table td {
-        padding: 6px 4px !important;
-        font-size: 12px !important;
-    }
-}
 
 
 
@@ -14915,3 +14746,2015 @@ body.dark-mode #noticesPage .notices-empty-state {
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   MODERN USER PROFILE
+   ========================================================= */
+
+.modern-profile-card {
+    width: 100%;
+    max-width: 1050px;
+    margin: 30px auto;
+
+    background: #ffffff;
+
+    border: 1px solid #e8ebf2;
+    border-radius: 24px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+
+/* =========================================================
+   PROFILE HEADER
+   ========================================================= */
+
+.profile-header {
+    padding: 35px 40px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f8faff 0%,
+            #eef3ff 50%,
+            #f8fafc 100%
+        );
+
+    border-bottom: 1px solid #e7eaf0;
+}
+
+.profile-photo-area {
+    display: flex;
+    align-items: center;
+
+    gap: 22px;
+}
+
+
+/* =========================================================
+   PROFILE PHOTO
+   ========================================================= */
+
+.profile-photo-wrapper {
+    position: relative;
+
+    width: 105px;
+    height: 105px;
+
+    flex-shrink: 0;
+
+    cursor: pointer;
+}
+
+.profile-photo-wrapper img {
+    width: 105px;
+    height: 105px;
+
+    object-fit: cover;
+
+    border-radius: 50%;
+
+    background: #eef2f7;
+
+    border: 5px solid #ffffff;
+
+    box-shadow:
+        0 8px 25px rgba(15, 23, 42, 0.15);
+
+    display: block;
+}
+
+
+/* =========================================================
+   PROFILE PHOTO EDIT ICON
+   ========================================================= */
+
+.profile-photo-edit {
+    position: absolute;
+
+    right: 2px;
+    bottom: 2px;
+
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #1558ff;
+
+    color: #ffffff;
+
+    border: 3px solid #ffffff;
+
+    box-shadow:
+        0 5px 12px rgba(21, 88, 255, 0.30);
+
+    font-size: 13px;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+.profile-photo-edit i {
+    line-height: 1;
+}
+
+.profile-photo-wrapper:hover .profile-photo-edit {
+    transform: scale(1.08);
+
+    background: #0d47d9;
+}
+
+
+/* =========================================================
+   PROFILE TITLE
+   ========================================================= */
+
+.profile-photo-text h2 {
+    margin: 0 0 5px;
+
+    font-size: 25px;
+
+    font-weight: 750;
+
+    color: #111827;
+
+    line-height: 1.2;
+}
+
+.profile-photo-text p {
+    margin: 0;
+
+    color: #6b7280;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   PROFILE SECTIONS
+   ========================================================= */
+
+.profile-section {
+    padding: 35px 40px;
+
+    border-bottom: 1px solid #edf0f4;
+}
+
+.profile-section:last-of-type {
+    border-bottom: none;
+}
+
+
+/* =========================================================
+   SECTION TITLE
+   ========================================================= */
+
+.profile-section-title {
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    margin-bottom: 28px;
+}
+
+
+/* =========================================================
+   SECTION ICON
+   ========================================================= */
+
+.section-icon {
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 13px;
+
+    background: #eef3ff;
+
+    color: #1558ff;
+
+    font-size: 17px;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+.section-icon i {
+    line-height: 1;
+}
+
+.profile-section-title:hover .section-icon {
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   SIGNATURE SECTION ICON
+   ========================================================= */
+
+.signature-icon {
+    background: #f3efff;
+
+    color: #7357d9;
+}
+
+
+/* =========================================================
+   SECTION TITLE TEXT
+   ========================================================= */
+
+.profile-section-title h3 {
+    margin: 0 0 4px;
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    color: #111827;
+
+    line-height: 1.3;
+}
+
+.profile-section-title p {
+    margin: 0;
+
+    font-size: 13px;
+
+    color: #7b8190;
+
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   FORM GRID
+   ========================================================= */
+
+.modern-form-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 22px 24px;
+}
+
+
+/* =========================================================
+   FORM FIELDS
+   ========================================================= */
+
+.modern-field {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.modern-field label {
+    font-size: 13px;
+
+    font-weight: 650;
+
+    color: #374151;
+
+    line-height: 1.3;
+}
+
+
+/* =========================================================
+   INPUT WRAPPER
+   ========================================================= */
+
+.input-wrapper {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    width: 100%;
+}
+
+
+/* =========================================================
+   INPUT ICON
+   ========================================================= */
+
+.input-icon {
+    position: absolute;
+
+    left: 15px;
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: #8b93a3;
+
+    font-size: 14px;
+
+    line-height: 1;
+
+    pointer-events: none;
+
+    z-index: 2;
+
+    transition:
+        color 0.2s ease;
+}
+
+.input-wrapper:focus-within .input-icon {
+    color: #1558ff;
+}
+
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+.input-wrapper input {
+    width: 100%;
+
+    height: 48px;
+
+    padding:
+        0
+        15px
+        0
+        43px;
+
+    border: 1px solid #dfe3ea;
+
+    border-radius: 12px;
+
+    outline: none;
+
+    background: #ffffff;
+
+    color: #1f2937;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    line-height: 48px;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+.input-wrapper input::placeholder {
+    color: #a0a6b2;
+
+    opacity: 1;
+}
+
+.input-wrapper input:hover {
+    border-color: #cbd1dc;
+}
+
+.input-wrapper input:focus {
+    border-color: #1558ff;
+
+    box-shadow:
+        0 0 0 4px rgba(21, 88, 255, 0.09);
+}
+
+
+/* =========================================================
+   DISABLED INPUT
+   ========================================================= */
+
+.disabled-field {
+    opacity: 0.9;
+}
+
+.disabled-field input {
+    background: #f5f6f8;
+
+    color: #737985;
+
+    border-color: #e1e4e9;
+
+    cursor: not-allowed;
+}
+
+.disabled-field .input-icon {
+    color: #a2a8b3;
+}
+
+
+/* =========================================================
+   DIGITAL SIGNATURE
+   ========================================================= */
+
+.signature-section {
+    background: #fcfdff;
+}
+
+
+/* =========================================================
+   SIGNATURE UPLOAD BOX
+   ========================================================= */
+
+.signature-upload-box {
+    position: relative;
+
+    width: 100%;
+
+    min-height: 190px;
+
+    border: 2px dashed #d8ddea;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    overflow: hidden;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.signature-upload-box:hover {
+    border-color: #1558ff;
+
+    background: #f9fbff;
+
+    box-shadow:
+        0 8px 25px rgba(21, 88, 255, 0.06);
+}
+
+
+/* =========================================================
+   SIGNATURE PLACEHOLDER
+   ========================================================= */
+
+.signature-placeholder {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
+    gap: 7px;
+
+    color: #6b7280;
+
+    padding: 25px;
+}
+
+
+/* =========================================================
+   SIGNATURE UPLOAD ICON
+   ========================================================= */
+
+.signature-upload-icon {
+    width: 52px;
+    height: 52px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #eef3ff;
+
+    color: #1558ff;
+
+    font-size: 20px;
+
+    margin-bottom: 5px;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+.signature-upload-box:hover .signature-upload-icon {
+    transform: translateY(-2px);
+
+    background: #e6edff;
+}
+
+.signature-upload-icon i {
+    line-height: 1;
+}
+
+
+/* =========================================================
+   SIGNATURE TEXT
+   ========================================================= */
+
+.signature-placeholder strong {
+    color: #202533;
+
+    font-size: 15px;
+
+    font-weight: 650;
+}
+
+.signature-placeholder span {
+    font-size: 12px;
+
+    color: #9298a5;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   SIGNATURE PREVIEW
+   ========================================================= */
+
+#signaturePreview {
+    display: none;
+
+    max-width: 75%;
+
+    max-height: 130px;
+
+    object-fit: contain;
+}
+
+
+/* =========================================================
+   SIGNATURE OVERLAY
+   ========================================================= */
+
+.signature-overlay {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    background:
+        rgba(17, 24, 39, 0.55);
+
+    color: #ffffff;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    opacity: 0;
+
+    transition:
+        opacity 0.2s ease;
+}
+
+.signature-overlay i {
+    font-size: 13px;
+}
+
+.signature-upload-box:hover .signature-overlay {
+    opacity: 1;
+}
+
+
+/* =========================================================
+   ACTION AREA
+   ========================================================= */
+
+.profile-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    padding: 24px 40px;
+
+    background: #ffffff;
+}
+
+
+/* =========================================================
+   SAVE PROFILE BUTTON
+   ========================================================= */
+
+.save-profile-btn {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 9px;
+
+    min-width: 165px;
+
+    height: 48px;
+
+    padding:
+        0
+        22px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: #1558ff;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 20px rgba(21, 88, 255, 0.20);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+.save-profile-btn i {
+    font-size: 14px;
+
+    line-height: 1;
+}
+
+.save-profile-btn:hover {
+    background: #0d47d9;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 10px 25px rgba(21, 88, 255, 0.28);
+}
+
+.save-profile-btn:active {
+    transform: translateY(0);
+
+    box-shadow:
+        0 5px 12px rgba(21, 88, 255, 0.20);
+}
+
+
+/* =========================================================
+   RESPONSIVE DESIGN
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .modern-profile-card {
+        margin: 15px auto;
+
+        border-radius: 18px;
+    }
+
+
+    .profile-header,
+    .profile-section {
+        padding: 25px 20px;
+    }
+
+
+    .modern-form-grid {
+        grid-template-columns: 1fr;
+
+        gap: 18px;
+    }
+
+
+    .profile-actions {
+        padding: 20px;
+
+        justify-content: stretch;
+    }
+
+
+    .save-profile-btn {
+        width: 100%;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE DEVICES
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .profile-photo-area {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+
+    .profile-photo-wrapper,
+    .profile-photo-wrapper img {
+        width: 90px;
+
+        height: 90px;
+    }
+
+
+    .profile-photo-text h2 {
+        font-size: 21px;
+    }
+
+
+    .profile-section-title {
+        align-items: flex-start;
+    }
+
+
+    .section-icon {
+        width: 40px;
+
+        height: 40px;
+
+        border-radius: 11px;
+
+        font-size: 15px;
+    }
+
+
+    .profile-section-title h3 {
+        font-size: 16px;
+    }
+
+
+    .profile-section-title p {
+        font-size: 12px;
+    }
+
+
+    .signature-upload-box {
+        min-height: 170px;
+    }
+
+
+    .save-profile-btn {
+        height: 46px;
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   MODERN TERM SETTINGS
+   ========================================================= */
+
+.modern-term-card {
+    width: 100%;
+    max-width: 1050px;
+
+    margin: 30px auto;
+
+    background: #ffffff;
+
+    border: 1px solid #e8ebf2;
+
+    border-radius: 24px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+
+/* =========================================================
+   TERM HEADER
+   ========================================================= */
+
+.term-header {
+    padding: 35px 40px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f8faff 0%,
+            #eef3ff 50%,
+            #f8fafc 100%
+        );
+
+    border-bottom: 1px solid #e7eaf0;
+}
+
+.term-title-area {
+    display: flex;
+
+    align-items: center;
+
+    gap: 16px;
+}
+
+
+/* =========================================================
+   MAIN TERM ICON
+   ========================================================= */
+
+.term-main-icon {
+    width: 52px;
+    height: 52px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 15px;
+
+    background: #1558ff;
+
+    color: #ffffff;
+
+    font-size: 20px;
+
+    box-shadow:
+        0 8px 18px rgba(21, 88, 255, 0.20);
+}
+
+.term-main-icon i {
+    line-height: 1;
+}
+
+
+/* =========================================================
+   TERM HEADER TEXT
+   ========================================================= */
+
+.term-title-area h2 {
+    margin: 0 0 5px;
+
+    color: #111827;
+
+    font-size: 25px;
+
+    font-weight: 750;
+
+    line-height: 1.2;
+}
+
+.term-title-area p {
+    margin: 0;
+
+    color: #6b7280;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   SETTINGS CONTENT
+   ========================================================= */
+
+.term-settings-content {
+    padding: 35px 40px;
+}
+
+
+/* =========================================================
+   TERM GRID
+   ========================================================= */
+
+.term-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 22px;
+}
+
+
+/* =========================================================
+   TERM CARD
+   ========================================================= */
+
+.term-card {
+    padding: 24px;
+
+    background: #ffffff;
+
+    border: 1px solid #e4e8ef;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 5px 18px rgba(15, 23, 42, 0.04);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.term-card:hover {
+    transform: translateY(-2px);
+
+    border-color: #cfd8ee;
+
+    box-shadow:
+        0 10px 25px rgba(15, 23, 42, 0.07);
+}
+
+
+/* =========================================================
+   TERM CARD HEADER
+   ========================================================= */
+
+.term-card-header {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 24px;
+}
+
+
+/* =========================================================
+   TERM NUMBER
+   ========================================================= */
+
+.term-number {
+    width: 43px;
+    height: 43px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 12px;
+
+    background: #eef3ff;
+
+    color: #1558ff;
+
+    font-size: 13px;
+
+    font-weight: 750;
+
+    letter-spacing: 0.5px;
+}
+
+
+/* =========================================================
+   TERM TITLE
+   ========================================================= */
+
+.term-card-header h3 {
+    margin: 0 0 3px;
+
+    color: #111827;
+
+    font-size: 17px;
+
+    font-weight: 700;
+}
+
+.term-card-header span {
+    color: #8a91a0;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   TERM FIELDS
+   ========================================================= */
+
+.term-fields {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+
+/* =========================================================
+   TERM FIELD
+   ========================================================= */
+
+.term-field {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.term-field label {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    color: #374151;
+
+    font-size: 12px;
+
+    font-weight: 650;
+}
+
+.term-field label i {
+    color: #1558ff;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   DATE INPUT
+   ========================================================= */
+
+.date-input-wrapper {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+}
+
+.date-icon {
+    position: absolute;
+
+    left: 14px;
+
+    color: #8b93a3;
+
+    font-size: 14px;
+
+    pointer-events: none;
+
+    z-index: 2;
+
+    transition: color 0.2s ease;
+}
+
+.date-input-wrapper input {
+    width: 100%;
+
+    height: 46px;
+
+    padding:
+        0
+        12px
+        0
+        40px;
+
+    border: 1px solid #dfe3ea;
+
+    border-radius: 11px;
+
+    outline: none;
+
+    background: #ffffff;
+
+    color: #1f2937;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+.date-input-wrapper input:hover {
+    border-color: #cbd1dc;
+}
+
+.date-input-wrapper input:focus {
+    border-color: #1558ff;
+
+    box-shadow:
+        0 0 0 4px rgba(21, 88, 255, 0.09);
+}
+
+.date-input-wrapper:focus-within .date-icon {
+    color: #1558ff;
+}
+
+
+/* =========================================================
+   SAVE AREA
+   ========================================================= */
+
+.term-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    margin-top: 30px;
+
+    padding-top: 25px;
+
+    border-top: 1px solid #edf0f4;
+}
+
+
+/* =========================================================
+   SAVE BUTTON
+   ========================================================= */
+
+.save-term-btn {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 9px;
+
+    min-width: 195px;
+
+    height: 48px;
+
+    padding:
+        0
+        22px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: #1558ff;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 20px rgba(21, 88, 255, 0.20);
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.save-term-btn i {
+    font-size: 14px;
+
+    line-height: 1;
+}
+
+.save-term-btn:hover {
+    background: #0d47d9;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 10px 25px rgba(21, 88, 255, 0.28);
+}
+
+.save-term-btn:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .term-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 650px) {
+
+    .modern-term-card {
+        margin: 15px auto;
+
+        border-radius: 18px;
+    }
+
+
+    .term-header {
+        padding: 25px 20px;
+    }
+
+
+    .term-settings-content {
+        padding: 25px 20px;
+    }
+
+
+    .term-grid {
+        grid-template-columns: 1fr;
+
+        gap: 18px;
+    }
+
+
+    .term-actions {
+        justify-content: stretch;
+    }
+
+
+    .save-term-btn {
+        width: 100%;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+    .term-title-area {
+        align-items: flex-start;
+    }
+
+
+    .term-main-icon {
+        width: 45px;
+        height: 45px;
+
+        border-radius: 12px;
+
+        font-size: 17px;
+    }
+
+
+    .term-title-area h2 {
+        font-size: 21px;
+    }
+
+
+    .term-title-area p {
+        font-size: 12px;
+    }
+
+
+    .term-card {
+        padding: 20px;
+    }
+
+}
+
+
+
+
+
+
+
+
+/* =========================================================
+   PROMOTION MODAL — EXECUTIVE MODERN DESIGN
+   ========================================================= */
+
+#promotionModal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(15, 23, 42, 0.68);
+
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+
+    overflow-y: auto;
+}
+
+
+/* =========================================================
+   MAIN MODAL
+   ========================================================= */
+
+.promotion-modal {
+    width: 100%;
+    max-width: 680px;
+
+    max-height: calc(100vh - 40px);
+
+    display: flex;
+    flex-direction: column;
+
+    background: #ffffff;
+
+    border-radius: 22px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.22),
+        0 10px 30px rgba(0, 0, 0, 0.10);
+
+    animation: promotionModalShow 0.25s ease;
+}
+
+
+@keyframes promotionModalShow {
+
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.promotion-header {
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 22px 24px;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #edf0f5;
+}
+
+
+.promotion-icon {
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 14px;
+
+    background: #eef4ff;
+
+    color: #1558ff;
+
+    font-size: 21px;
+}
+
+
+.promotion-header h2 {
+    margin: 0;
+
+    font-size: 20px;
+    font-weight: 750;
+
+    color: #111827;
+}
+
+
+.promotion-header p {
+    margin: 4px 0 0;
+
+    font-size: 13px;
+
+    color: #7a8494;
+}
+
+
+.promotion-close {
+    width: 38px;
+    height: 38px;
+
+    margin-left: auto;
+
+    flex-shrink: 0;
+
+    border: none;
+    border-radius: 11px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #f5f6f8;
+
+    color: #64748b;
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+
+.promotion-close:hover {
+    background: #eef1f5;
+    color: #111827;
+
+    transform: rotate(5deg);
+}
+
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+.promotion-body {
+
+    flex: 1;
+
+    min-height: 0;
+
+    padding: 22px 24px;
+
+    overflow-y: auto;
+}
+
+
+/* =========================================================
+   INTRODUCTION
+   ========================================================= */
+
+.promotion-message {
+    margin-bottom: 18px;
+}
+
+
+.promotion-message h3 {
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    margin: 0 0 6px;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    color: #172033;
+}
+
+
+.promotion-message h3 i {
+    color: #1558ff;
+}
+
+
+.promotion-message p {
+
+    margin: 0;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+
+    color: #687386;
+}
+
+
+/* =========================================================
+   PROMOTION SUMMARY
+   ========================================================= */
+
+.promotion-summary {
+
+    width: 100%;
+
+    margin: 0 0 18px;
+
+    padding: 0;
+
+    border: 1px solid #e5e9f0;
+
+    border-radius: 15px;
+
+    background: #ffffff;
+
+    overflow: hidden;
+}
+
+
+/* Remove horizontal overflow */
+.promotion-summary * {
+    max-width: 100%;
+}
+
+
+/* =========================================================
+   TABLE INSIDE SUMMARY
+   ========================================================= */
+
+.promotion-summary table {
+
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    table-layout: fixed;
+
+    border-collapse: collapse;
+
+    margin: 0;
+}
+
+
+.promotion-summary th {
+
+    padding: 13px 16px;
+
+    background: #f7f9fc;
+
+    border-bottom: 1px solid #e5e9f0;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    color: #202938;
+
+    text-align: left;
+}
+
+
+.promotion-summary td {
+
+    padding: 11px 16px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    font-size: 13px;
+
+    color: #3f4856;
+
+    vertical-align: middle;
+
+    word-break: normal;
+}
+
+
+.promotion-summary tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* =========================================================
+   COLUMN WIDTHS
+   ========================================================= */
+
+.promotion-summary th:first-child,
+.promotion-summary td:first-child {
+
+    width: 42%;
+
+}
+
+
+.promotion-summary th:nth-child(2),
+.promotion-summary td:nth-child(2) {
+
+    width: 16%;
+
+    text-align: center;
+
+}
+
+
+.promotion-summary th:last-child,
+.promotion-summary td:last-child {
+
+    width: 42%;
+
+}
+
+
+/* =========================================================
+   ARROW BETWEEN CLASSES
+   ========================================================= */
+
+.promotion-summary td:nth-child(2) {
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+    color: #1558ff;
+}
+
+
+/* =========================================================
+   WARNING
+   ========================================================= */
+
+.promotion-warning {
+
+    padding: 17px 18px;
+
+    border: 1px solid #f4dfb8;
+
+    border-radius: 15px;
+
+    background: #fffaf1;
+}
+
+
+.warning-title {
+
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    margin-bottom: 13px;
+
+    color: #925d09;
+
+    font-size: 13px;
+}
+
+
+.warning-title i {
+    font-size: 15px;
+}
+
+
+.promotion-warning ul {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    margin: 0;
+
+    padding: 0;
+
+    list-style: none;
+}
+
+
+.promotion-warning li {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 9px;
+
+    font-size: 12.5px;
+
+    line-height: 1.45;
+
+    color: #596273;
+}
+
+
+.promotion-warning li i {
+
+    width: 15px;
+
+    flex-shrink: 0;
+
+    margin-top: 2px;
+
+    color: #16a34a;
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   DANGER MESSAGE
+   ========================================================= */
+
+.promotion-danger {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 14px;
+
+    padding-top: 13px;
+
+    border-top: 1px solid #f1d7aa;
+
+    color: #c0392b;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+.promotion-danger i {
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.promotion-footer {
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 16px 24px;
+
+    background: #fafbfc;
+
+    border-top: 1px solid #edf0f4;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.promotion-cancel-btn,
+.promotion-confirm-btn {
+
+    height: 42px;
+
+    padding: 0 17px;
+
+    border: none;
+
+    border-radius: 11px;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    font-size: 13px;
+
+    font-weight: 650;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+
+/* CANCEL */
+
+.promotion-cancel-btn {
+
+    background: #eef0f3;
+
+    color: #596273;
+}
+
+
+.promotion-cancel-btn:hover {
+
+    background: #e2e5e9;
+
+    color: #1f2937;
+}
+
+
+/* PROMOTE */
+
+.promotion-confirm-btn {
+
+    background: #1558ff;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 5px 14px rgba(21, 88, 255, 0.22);
+}
+
+
+.promotion-confirm-btn:hover {
+
+    background: #0b49df;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 8px 18px rgba(21, 88, 255, 0.28);
+}
+
+
+.promotion-confirm-btn:active,
+.promotion-cancel-btn:active {
+
+    transform: scale(0.98);
+}
+
+
+/* =========================================================
+   REMOVE UNWANTED SCROLLBARS
+   ========================================================= */
+
+.promotion-modal,
+.promotion-body,
+.promotion-summary {
+
+    scrollbar-width: thin;
+}
+
+
+.promotion-summary {
+
+    overflow-x: hidden !important;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    #promotionModal {
+        padding: 12px;
+    }
+
+
+    .promotion-modal {
+
+        max-height: calc(100vh - 24px);
+
+        border-radius: 18px;
+    }
+
+
+    .promotion-header {
+
+        padding: 17px 18px;
+    }
+
+
+    .promotion-icon {
+
+        width: 43px;
+        height: 43px;
+
+        border-radius: 12px;
+    }
+
+
+    .promotion-header h2 {
+
+        font-size: 18px;
+    }
+
+
+    .promotion-body {
+
+        padding: 18px;
+    }
+
+
+    .promotion-summary th,
+    .promotion-summary td {
+
+        padding: 10px 10px;
+
+        font-size: 12px;
+    }
+
+
+    .promotion-footer {
+
+        padding: 14px 18px;
+
+        flex-direction: column-reverse;
+
+        align-items: stretch;
+    }
+
+
+    .promotion-cancel-btn,
+    .promotion-confirm-btn {
+
+        width: 100%;
+    }
+
+}
+
+
+
