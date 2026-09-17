@@ -3782,58 +3782,286 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
         <div id="userProfilePage" class="container page">
-    <div class="profile-card">
 
-        <!-- PROFILE PICTURE -->
-        <img
-            id="profilePic"
-            onclick="uploadProfilePic()"
-            style="cursor:pointer;"
-        >
+    <div class="modern-profile-card">
 
-        <div class="form-grid">
-            <input id="pFirstName" placeholder="First Name">
-            <input id="pSurname" placeholder="Surname">
-            <input id="pUsername" placeholder="Username" disabled>
-            <input id="pEmail" placeholder="Email" disabled>
-            <input id="pPhone" placeholder="Phone">
-            <input id="pRole" placeholder="Role" disabled>
+        <!-- =========================
+             PROFILE HEADER
+        ========================== -->
+        <div class="profile-header">
+
+            <div class="profile-photo-area">
+
+                <div class="profile-photo-wrapper"
+                     onclick="uploadProfilePic()">
+
+                    <img
+                        id="profilePic"
+                        alt="Profile Picture"
+                    >
+
+                    <div class="profile-photo-edit">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+
+                </div>
+
+                <div class="profile-photo-text">
+                    <h2 id="profileDisplayName">My Profile</h2>
+                    <p>Manage your personal information</p>
+                </div>
+
+            </div>
+
         </div>
 
-        <!-- DIGITAL SIGNATURE -->
-     <!-- DIGITAL SIGNATURE -->
-<h3>Digital Signature</h3>
 
-<div class="signature-wrapper">
+        <!-- =========================
+             PERSONAL INFORMATION
+        ========================== -->
+        <div class="profile-section">
 
-    <img
-        id="signaturePreview"
-        src=""
-        alt="Digital Signature"
-        onclick="uploadSignature()"
-    >
+            <div class="profile-section-title">
 
-    <div
-        id="signaturePlaceholder"
-        onclick="uploadSignature()"
-    >
-        ✍️
-        <span>Click to add signature</span>
+                <div class="section-icon">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+
+                <div>
+                    <h3>Personal Information</h3>
+                    <p>Update your account information</p>
+                </div>
+
+            </div>
+
+
+            <div class="modern-form-grid">
+
+                <!-- FIRST NAME -->
+                <div class="modern-field">
+
+                    <label for="pFirstName">
+                        First Name
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-solid fa-user input-icon"></i>
+
+                        <input
+                            id="pFirstName"
+                            type="text"
+                            placeholder="Enter first name"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- SURNAME -->
+                <div class="modern-field">
+
+                    <label for="pSurname">
+                        Surname
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-solid fa-user input-icon"></i>
+
+                        <input
+                            id="pSurname"
+                            type="text"
+                            placeholder="Enter surname"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- USERNAME -->
+                <div class="modern-field">
+
+                    <label for="pUsername">
+                        Username
+                    </label>
+
+                    <div class="input-wrapper disabled-field">
+
+                        <i class="fa-solid fa-at input-icon"></i>
+
+                        <input
+                            id="pUsername"
+                            type="text"
+                            placeholder="Username"
+                            disabled
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- EMAIL -->
+                <div class="modern-field">
+
+                    <label for="pEmail">
+                        Email Address
+                    </label>
+
+                    <div class="input-wrapper disabled-field">
+
+                        <i class="fa-solid fa-envelope input-icon"></i>
+
+                        <input
+                            id="pEmail"
+                            type="email"
+                            placeholder="Email address"
+                            disabled
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- PHONE -->
+                <div class="modern-field">
+
+                    <label for="pPhone">
+                        Phone Number
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-solid fa-phone input-icon"></i>
+
+                        <input
+                            id="pPhone"
+                            type="tel"
+                            placeholder="Enter phone number"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- ROLE -->
+                <div class="modern-field">
+
+                    <label for="pRole">
+                        Account Role
+                    </label>
+
+                    <div class="input-wrapper disabled-field">
+
+                        <i class="fa-solid fa-shield-halved input-icon"></i>
+
+                        <input
+                            id="pRole"
+                            type="text"
+                            placeholder="Account role"
+                            disabled
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             DIGITAL SIGNATURE
+        ========================== -->
+        <div class="profile-section signature-section">
+
+            <div class="profile-section-title">
+
+                <div class="section-icon signature-icon">
+                    <i class="fa-solid fa-signature"></i>
+                </div>
+
+                <div>
+                    <h3>Digital Signature</h3>
+                    <p>Add or update your official signature</p>
+                </div>
+
+            </div>
+
+
+            <div
+                class="signature-upload-box"
+                onclick="uploadSignature()"
+            >
+
+                <img
+                    id="signaturePreview"
+                    src=""
+                    alt="Digital Signature"
+                >
+
+                <div
+                    id="signaturePlaceholder"
+                    class="signature-placeholder"
+                >
+
+                    <div class="signature-upload-icon">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+
+                    <strong>
+                        Upload Your Signature
+                    </strong>
+
+                    <span>
+                        Click here to select a PNG or JPG image
+                    </span>
+
+                </div>
+
+                <div class="signature-overlay">
+                    <i class="fa-solid fa-pen"></i>
+                    <span>Change Signature</span>
+                </div>
+
+            </div>
+
+
+            <input
+                type="file"
+                id="signatureInput"
+                accept="image/png,image/jpeg,image/jpg"
+                style="display:none;"
+                onchange="handleSignatureUpload(event)"
+            >
+
+        </div>
+
+
+        <!-- =========================
+             SAVE AREA
+        ========================== -->
+        <div class="profile-actions">
+
+            <button
+                type="button"
+                class="save-profile-btn"
+                onclick="saveProfile()"
+            >
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Save Changes</span>
+            </button>
+
+        </div>
+
     </div>
 
-</div>
-
-<input
-    type="file"
-    id="signatureInput"
-    accept="image/png,image/jpeg,image/jpg"
-    style="display:none;"
-    onchange="handleSignatureUpload(event)"
->
-
-        <button onclick="saveProfile()">💾 Save Changes</button>
-
-    </div>
 </div>
 
 
@@ -4208,42 +4436,291 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-<!-- TERM SETTINGS -->
-	<div id="profileTermPage" class="container page">
-    <h2>📅 Term Settings</h2>
 
-    <div class="form-grid">
-        <!-- TERM 1 -->
-        <div>
-            <label>Term 1 Start</label>
-            <input type="date" id="t1start">
+<!-- =========================================================
+     TERM SETTINGS
+     ========================================================= -->
 
-            <label>Term 1 End</label>
-            <input type="date" id="t1end">
+<div id="profileTermPage" class="container page">
+
+    <div class="modern-term-card">
+
+        <!-- =========================
+             HEADER
+        ========================== -->
+        <div class="term-header">
+
+            <div class="term-title-area">
+
+                <div class="term-main-icon">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+
+                <div>
+                    <h2>Term Settings</h2>
+
+                    <p>
+                        Configure the start and end dates for each academic term.
+                    </p>
+                </div>
+
+            </div>
+
         </div>
 
-        <!-- TERM 2 -->
-        <div>
-            <label>Term 2 Start</label>
-            <input type="date" id="t2start">
 
-            <label>Term 2 End</label>
-            <input type="date" id="t2end">
+        <!-- =========================
+             TERM SETTINGS CONTENT
+        ========================== -->
+        <div class="term-settings-content">
+
+            <div class="term-grid">
+
+
+                <!-- =========================
+                     TERM 1
+                ========================== -->
+                <div class="term-card">
+
+                    <div class="term-card-header">
+
+                        <div class="term-number">
+                            01
+                        </div>
+
+                        <div>
+                            <h3>Term 1</h3>
+
+                            <span>
+                                First Academic Term
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="term-fields">
+
+                        <!-- START DATE -->
+                        <div class="term-field">
+
+                            <label for="t1start">
+                                <i class="fa-solid fa-play"></i>
+                                Start Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t1start"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- END DATE -->
+                        <div class="term-field">
+
+                            <label for="t1end">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                End Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar-check date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t1end"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================
+                     TERM 2
+                ========================== -->
+                <div class="term-card">
+
+                    <div class="term-card-header">
+
+                        <div class="term-number">
+                            02
+                        </div>
+
+                        <div>
+                            <h3>Term 2</h3>
+
+                            <span>
+                                Second Academic Term
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="term-fields">
+
+                        <!-- START DATE -->
+                        <div class="term-field">
+
+                            <label for="t2start">
+                                <i class="fa-solid fa-play"></i>
+                                Start Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t2start"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- END DATE -->
+                        <div class="term-field">
+
+                            <label for="t2end">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                End Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar-check date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t2end"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================
+                     TERM 3
+                ========================== -->
+                <div class="term-card">
+
+                    <div class="term-card-header">
+
+                        <div class="term-number">
+                            03
+                        </div>
+
+                        <div>
+                            <h3>Term 3</h3>
+
+                            <span>
+                                Third Academic Term
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="term-fields">
+
+                        <!-- START DATE -->
+                        <div class="term-field">
+
+                            <label for="t3start">
+                                <i class="fa-solid fa-play"></i>
+                                Start Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t3start"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- END DATE -->
+                        <div class="term-field">
+
+                            <label for="t3end">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                End Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar-check date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t3end"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 SAVE AREA
+            ========================== -->
+            <div class="term-actions">
+
+                <button
+                    type="button"
+                    class="save-term-btn"
+                    onclick="saveTermSettings()"
+                >
+
+                    <i class="fa-solid fa-floppy-disk"></i>
+
+                    <span>
+                        Save Term Settings
+                    </span>
+
+                </button>
+
+            </div>
+
         </div>
 
-        <!-- TERM 3 -->
-        <div>
-            <label>Term 3 Start</label>
-            <input type="date" id="t3start">
-
-            <label>Term 3 End</label>
-            <input type="date" id="t3end">
-        </div>
     </div>
 
-    <button onclick="saveTermSettings()">💾 Save Term Settings</button>
 </div>
-
 
 
 <!-- =========================================================
@@ -4657,60 +5134,146 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 </div>
 
 
-<!-- Promotion Confirmation Modal -->
+
+<!-- =========================================================
+     PROMOTION CONFIRMATION MODAL
+     ========================================================= -->
+
 <div id="promotionModal" class="modal-overlay">
 
     <div class="promotion-modal">
 
+        <!-- HEADER -->
         <div class="promotion-header">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h2>Promote Students</h2>
+
+            <div class="promotion-icon">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+
+            <div>
+                <h2>Promote Students</h2>
+                <p>Confirm end-of-session promotion</p>
+            </div>
+
+            <button
+                type="button"
+                class="promotion-close"
+                onclick="closePromotionModal()"
+                aria-label="Close promotion modal">
+
+                <i class="fas fa-times"></i>
+
+            </button>
+
         </div>
 
+
+        <!-- BODY -->
         <div class="promotion-body">
 
-            <p>
-                You are about to promote all students to their
-                next class.
-            </p>
+            <div class="promotion-message">
 
-            <div id="promotionSummary"></div>
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Ready to promote students?
+                </h3>
 
-            <div class="warning-box">
+                <p>
+                    You are about to promote all eligible students
+                    to their next class.
+                </p>
 
-                <h4>This action will:</h4>
+            </div>
+
+
+            <!-- DYNAMIC SUMMARY -->
+            <div
+                id="promotionSummary"
+                class="promotion-summary">
+            </div>
+
+
+            <!-- WARNING -->
+            <div class="promotion-warning">
+
+                <div class="warning-title">
+
+                    <i class="fas fa-triangle-exclamation"></i>
+
+                    <strong>
+                        Please review before continuing
+                    </strong>
+
+                </div>
 
                 <ul>
-                    <li>✔ Archive current academic records</li>
-                    <li>✔ Promote students to the next class</li>
-                    <li>✔ Reset marks</li>
-                    <li>✔ Reset attendance</li>
-                    <li>✔ Reset remarks</li>
-                    <li>✔ Set current term to Term 1</li>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Archive current academic records
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Promote students to the next class
+                    </li>
+
+                    <li>
+                        <i class="fas fa-rotate"></i>
+                        Reset marks for the new academic session
+                    </li>
+
+                    <li>
+                        <i class="fas fa-calendar-check"></i>
+                        Reset attendance
+                    </li>
+
+                    <li>
+                        <i class="fas fa-comment-dots"></i>
+                        Reset student remarks
+                    </li>
+
+                    <li>
+                        <i class="fas fa-calendar-days"></i>
+                        Set current term to Term 1
+                    </li>
+
                 </ul>
 
-                <strong style="color:red;">
-                    This action cannot be undone.
-                </strong>
+                <div class="promotion-danger">
+
+                    <i class="fas fa-lock"></i>
+
+                    <span>
+                        This action cannot be undone.
+                    </span>
+
+                </div>
 
             </div>
 
         </div>
 
+
+        <!-- FOOTER -->
         <div class="promotion-footer">
 
             <button
-                class="cancel-btn"
+                type="button"
+                class="promotion-cancel-btn"
                 onclick="closePromotionModal()">
 
+                <i class="fas fa-times"></i>
                 Cancel
 
             </button>
 
             <button
-                class="promote-btn"
+                type="button"
+                class="promotion-confirm-btn"
                 onclick="confirmPromotion()">
 
+                <i class="fas fa-arrow-up"></i>
                 Promote Students
 
             </button>
@@ -4720,6 +5283,8 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     </div>
 
 </div>
+
+
 
 
 
