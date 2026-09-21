@@ -3792,20 +3792,26 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
             <div class="profile-photo-area">
 
-                <div class="profile-photo-wrapper"
-                     onclick="uploadProfilePic()">
+                <div class="profile-photo-wrapper" onclick="uploadProfilePic()">
 
-                    <img
-                        id="profilePic"
-                        alt="Profile Picture"
-                    >
+    <img
+        id="profilePic"
+        alt="Profile Picture"
+    >
 
-                    <div class="profile-photo-edit">
-                        <i class="fa-solid fa-camera"></i>
-                    </div>
+    <div class="profile-photo-edit">
+        <i class="fa-solid fa-camera"></i>
+    </div>
 
-                </div>
+</div>
 
+<!-- Hidden profile picture selector -->
+<input
+    type="file"
+    id="profilePicInput"
+    accept="image/*"
+    style="display:none;"
+>
                 <div class="profile-photo-text">
                     <h2 id="profileDisplayName">My Profile</h2>
                     <p>Manage your personal information</p>
