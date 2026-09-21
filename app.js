@@ -9869,85 +9869,216 @@ async function updateProfile() {
 
 function uploadProfilePic() {
 
-    document.getElementById(
-        "profilePicInput"
-    ).click();
-}
+    const input = document.getElementById("profilePicInput");
 
-document.getElementById(
-    "profilePicInput"
-).addEventListener("change", async function () {
-
-    let file = this.files[0];
-
-    if (!file) return;
-
-    // Unique filename
-    let fileName =
-        `${currentUser.id}-${Date.now()}-${file.name}`;
-
-    // Upload to Supabase Storage
-    const { data, error } = await supabaseClient
-        .storage
-        .from("profile-picture")
-        .upload(fileName, file);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Profile picture upload failed"
+    if (!input) {
+        console.error(
+            "profilePicInput was not found in the HTML."
         );
+
+        alert(
+            "Profile picture selector is missing."
+        );
+
+        return;
     }
 
-    // Get public URL
-    const { data: urlData } = supabaseClient
-        .storage
-        .from("profile-picture")
-        .getPublicUrl(fileName);
-
-    let imageUrl = urlData.publicUrl;
-	console.log("Image URL:", imageUrl);
-
-    // Save URL to database
-    const { error: dbError } = await supabaseClient
-        .from("users")
-        .update({
-            profilePic: imageUrl
-        })
-        .eq("id", currentUser.id);
-
-    if (dbError) {
-
-        console.log(dbError);
-
-        return alert(
-            "Failed to save profile picture"
-        );
-    }
-if (error) {
-    console.log("Upload Error:", error);
+    input.click();
 }
 
-if (dbError) {
-    console.log("Database Error:", dbError);
-}
-    // Update current user locally
-    currentUser.profilePic = imageUrl;
 
-    localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify(currentUser)
+const profilePicInput =
+    document.getElementById("profilePicInput");
+
+
+if (profilePicInput) {
+
+    profilePicInput.addEventListener(
+        "change",
+        async function () {
+
+            const file = this.files[0];
+
+            if (!file) return;
+
+            // Make sure it is an image
+            if (!file.type.startsWith("image/")) {
+
+                alert(
+                    "Please select an image file."
+                );
+
+                this.value = "";
+                return;
+            }
+
+            // Optional file-size limit: 5 MB
+            if (file.size > 5 * 1024 * 1024) {
+
+                alert(
+                    "Please select an image smaller than 5 MB."
+                );
+
+                this.value = "";
+                return;
+            }
+
+
+            /* =========================================
+               CREATE UNIQUE FILE NAME
+               ========================================= */
+
+            const fileExtension =
+                file.name.split(".").pop();
+
+            const fileName =
+                `${currentUser.id}-${Date.now()}.${fileExtension}`;
+
+
+            /* =========================================
+               UPLOAD TO SUPABASE STORAGE
+               ========================================= */
+
+            const {
+                data: uploadData,
+                error: uploadError
+            } = await supabaseClient
+                .storage
+                .from("profile-picture")
+                .upload(
+                    fileName,
+                    file,
+                    {
+                        upsert: false
+                    }
+                );
+
+
+            if (uploadError) {
+
+                console.error(
+                    "Upload Error:",
+                    uploadError
+                );
+
+                alert(
+                    "Profile picture upload failed."
+                );
+
+                return;
+            }
+
+
+            /* =========================================
+               GET PUBLIC URL
+               ========================================= */
+
+            const {
+                data: urlData
+            } = supabaseClient
+                .storage
+                .from("profile-picture")
+                .getPublicUrl(fileName);
+
+
+            if (!urlData?.publicUrl) {
+
+                alert(
+                    "Could not create profile picture URL."
+                );
+
+                return;
+            }
+
+
+            const imageUrl =
+                urlData.publicUrl;
+
+            console.log(
+                "Profile Image URL:",
+                imageUrl
+            );
+
+
+            /* =========================================
+               SAVE URL TO USERS TABLE
+               ========================================= */
+
+            const {
+                error: dbError
+            } = await supabaseClient
+                .from("users")
+                .update({
+                    profilePic: imageUrl
+                })
+                .eq(
+                    "id",
+                    currentUser.id
+                );
+
+
+            if (dbError) {
+
+                console.error(
+                    "Database Error:",
+                    dbError
+                );
+
+                alert(
+                    "Failed to save profile picture."
+                );
+
+                return;
+            }
+
+
+            /* =========================================
+               UPDATE CURRENT USER
+               ========================================= */
+
+            currentUser.profilePic =
+                imageUrl;
+
+
+            localStorage.setItem(
+                "loggedInUser",
+                JSON.stringify(currentUser)
+            );
+
+
+            /* =========================================
+               DISPLAY NEW IMAGE
+               ========================================= */
+
+            const profilePic =
+                document.getElementById("profilePic");
+
+
+            if (profilePic) {
+
+                profilePic.src =
+                    imageUrl;
+
+                profilePic.style.display =
+                    "block";
+            }
+
+
+            /* =========================================
+               CLEAR INPUT
+               ========================================= */
+
+            this.value = "";
+
+
+            alert(
+                "Profile picture updated ✅"
+            );
+        }
     );
+}
 
-    // Display image
-    document.getElementById(
-        "profilePic"
-    ).src = imageUrl;
 
-    alert("Profile picture updated ✅");
-});
 
 async function loadTeachers() {
 
@@ -11004,7 +11135,6 @@ function checkLessonConnection() {
 ========================================================= */
 
 async function generateLessonPlan() {
-
     if (!checkLessonConnection()) return;
 
     const subject = lessonEl("planSubject")?.value?.trim();
@@ -11039,7 +11169,7 @@ async function generateLessonPlan() {
         <div class="lesson-empty">
             <div class="lesson-empty-icon">⏳</div>
             <h3>Generating lesson plan...</h3>
-            <p>Please wait.</p>
+            <p>Please wait while AI prepares your lesson plan.</p>
         </div>
     `;
 
@@ -11047,8 +11177,18 @@ async function generateLessonPlan() {
 
     try {
 
+        /*
+         * Use the local backend while developing locally.
+         * When the SBA system is deployed, use the same domain.
+         */
+        const API_URL =
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1"
+                ? "http://localhost:3000"
+                : "";
+
         const response = await fetch(
-            "http://localhost:3000/generate-plan",
+            `${API_URL}/generate-plan`,
             {
                 method: "POST",
 
@@ -11057,37 +11197,41 @@ async function generateLessonPlan() {
                 },
 
                 body: JSON.stringify({
-
                     type: "lesson_plan",
-
                     subject: subject,
-
                     term: term,
-
                     week: week,
-
                     className: className,
-
                     topic: topic,
-
                     subtopic: subtopic,
-
                     duration: duration
-
                 })
             }
         );
 
         if (!response.ok) {
-            throw new Error(
-                `Server returned ${response.status}`
-            );
+            let errorMessage = `Server returned ${response.status}`;
+
+            try {
+                const errorData = await response.json();
+
+                if (errorData?.error) {
+                    errorMessage = errorData.error;
+                }
+
+            } catch (_) {
+                // Ignore JSON parsing errors
+            }
+
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
 
         if (!data || !data.result) {
-            throw new Error("No lesson plan was returned.");
+            throw new Error(
+                "The server did not return a lesson plan."
+            );
         }
 
         output.innerHTML = formatLessonContent(
@@ -11114,11 +11258,33 @@ async function generateLessonPlan() {
             error
         );
 
+        let message = error?.message || "Unknown error";
+
+        if (
+            message.includes("Failed to fetch") ||
+            message.includes("ERR_CONNECTION_REFUSED")
+        ) {
+            message =
+                "The AI lesson-plan server is not running or cannot be reached.";
+        }
+
         output.innerHTML = `
             <div class="lesson-empty">
                 <div class="lesson-empty-icon">❌</div>
+
                 <h3>Unable to generate lesson plan</h3>
-                <p>${escapeLessonHTML(error.message)}</p>
+
+                <p>
+                    ${escapeLessonHTML(message)}
+                </p>
+
+                <button
+                    type="button"
+                    onclick="generateLessonPlan()"
+                    class="lesson-retry-btn"
+                >
+                    🔄 Try Again
+                </button>
             </div>
         `;
 
@@ -11126,7 +11292,6 @@ async function generateLessonPlan() {
             "❌ Failed to generate lesson plan.";
     }
 }
-
 
 /* =========================================================
    GENERATE LESSON NOTE
