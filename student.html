@@ -4870,6 +4870,9 @@ body.dark .portal-account-divider {
 }
 </style>
 
+<style>
+.student-timetable-page{min-height:100vh;background:#f4f6fb;padding:25px 18px 50px}.student-timetable-container{max-width:1200px;margin:0 auto}.student-timetable-topbar{background:#fff;border-radius:20px;padding:20px 22px;display:flex;align-items:center;gap:18px;box-shadow:0 8px 25px rgba(0,0,0,.06);margin-bottom:18px}.student-timetable-topbar h2{margin:0;text-align:left;color:#20253a;font-size:24px}.student-timetable-topbar p{margin:4px 0 0;color:#8a8fa3;font-size:13px}.student-timetable-back-btn{width:auto;display:flex;align-items:center;gap:8px;padding:11px 17px;border-radius:12px;background:#eef1ff;color:#3F51B5;box-shadow:none}.student-timetable-back-btn:hover{background:#e2e7ff;transform:none}.student-timetable-term{margin-left:auto;display:flex;flex-direction:column;gap:4px}.student-timetable-term label{font-size:11px;color:#777d91;font-weight:600}.student-timetable-term select{padding:9px 12px;border:1px solid #e0e3ec;border-radius:10px;background:#f8f9fc;color:#303549;outline:none}.student-timetable-status{margin-bottom:14px;padding:11px 14px;border-radius:11px;background:#eef1ff;color:#3F51B5;font-size:13px}.student-timetable-status.error{background:#ffe8e8;color:#c93636}.student-timetable-scroll{overflow-x:auto;background:#fff;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}.student-timetable-grid{width:100%;min-width:900px;border-collapse:collapse}.student-timetable-grid th{padding:15px 12px;background:#3F51B5;color:#fff;font-size:12px;text-align:center}.student-timetable-grid td{padding:9px;border-bottom:1px solid #eef0f5;border-right:1px solid #eef0f5;vertical-align:top;min-width:145px;height:90px}.student-timetable-time{width:115px;min-width:115px;color:#697086;font-weight:700;text-align:center;white-space:nowrap}.student-timetable-slot.empty{color:#c7cad4;text-align:center;vertical-align:middle}.student-timetable-card{background:#eef1ff;border-left:4px solid #3F51B5;border-radius:9px;padding:9px;text-align:left}.student-timetable-card strong{display:block;color:#252a3d;font-size:12px}.student-timetable-card span{display:block;color:#68708a;font-size:10px;margin-top:4px}.student-timetable-card small{display:block;color:#777d91;font-size:9px;margin-top:5px}.student-timetable-empty{text-align:center!important;padding:45px!important;color:#8a8fa3!important}@media(max-width:600px){.student-timetable-topbar{flex-wrap:wrap}.student-timetable-term{width:100%;margin-left:0}}
+</style>
 </head>
 <body>
 
@@ -5008,10 +5011,10 @@ body.dark .portal-account-divider {
     <p>Attendance records</p>
 </div>
 
-<div class="card" onclick="openFees()">
-    <i class="fas fa-money-bill-wave"></i>
-    <h3>Fees</h3>
-    <p>Fee payment status</p>
+<div class="card" onclick="openStudentTimetable()">
+    <i class="fas fa-calendar-alt"></i>
+    <h3>Timetable</h3>
+    <p>View your weekly class timetable</p>
 </div>
 
 <div class="card" onclick="openSubjects()">
@@ -5041,6 +5044,24 @@ body.dark .portal-account-divider {
 <!-- =========================================================
      STUDENT NOTIFICATIONS PAGE
 ========================================================= -->
+
+<!-- STUDENT TIMETABLE PAGE -->
+<div id="studentTimetablePage" class="student-timetable-page" style="display:none;">
+  <div class="student-timetable-container">
+    <div class="student-timetable-topbar">
+      <button class="student-timetable-back-btn" onclick="closeStudentTimetable()"><i class="fas fa-arrow-left"></i><span>Back</span></button>
+      <div><h2>My Timetable</h2><p id="studentTimetableSubtitle">Weekly class schedule</p></div>
+      <div class="student-timetable-term"><label>Term</label><select id="studentTimetableTerm" onchange="loadStudentTimetable()"><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option></select></div>
+    </div>
+    <div id="studentTimetableStatus" class="student-timetable-status"></div>
+    <div class="student-timetable-scroll">
+      <table class="student-timetable-grid">
+        <thead><tr><th>Time</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th></tr></thead>
+        <tbody id="studentTimetableBody"><tr><td colspan="6" class="student-timetable-empty">Loading timetable...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <div
     id="notificationsPage"
@@ -5868,6 +5889,7 @@ async function openStudentNotifications() {
         "messagesPage",
         "downloadsPage",
         "notificationsPage",
+        "studentTimetablePage",
         "studentHomeworkPage"
     ];
 
@@ -13760,6 +13782,42 @@ function escapeStudentSubjectHTML(value) {
         .replace(/'/g, "&#039;");
 }
 
+
+async 
+/* ============================================================
+   STUDENT TIMETABLE
+============================================================ */
+const STUDENT_TIMETABLE_DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
+function getLoggedStudentForTimetable(){try{return JSON.parse(localStorage.getItem("loggedStudent")||"null");}catch(e){return null;}}
+function studentTimetableTime(a,b){return `${a?a.slice(0,5):""}${a||b?" – ":""}${b?b.slice(0,5):""}`;}
+function showStudentTimetableStatus(msg,error=false){const b=document.getElementById("studentTimetableStatus");if(!b)return;b.textContent=msg;b.className="student-timetable-status "+(error?"error":"info");}
+async function openStudentTimetable(){
+  document.getElementById("studentPortal").style.display="none";
+  ["profilePage","studentHomeworkPage","resultsPage","subjectsPage","messagesPage","downloadsPage","notificationsPage"].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display="none";});
+  const p=document.getElementById("studentTimetablePage");if(p)p.style.display="block";
+  const s=getLoggedStudentForTimetable();if(!s)return showStudentTimetableStatus("Student session not found. Please log in again.",true);
+  document.getElementById("studentTimetableTerm").value=s.currentTerm||"term1";
+  await loadStudentTimetable();
+}
+function closeStudentTimetable(){const p=document.getElementById("studentTimetablePage");if(p)p.style.display="none";document.getElementById("studentPortal").style.display="block";}
+async function loadStudentTimetable(){
+  const s=getLoggedStudentForTimetable();if(!s)return;
+  const term=document.getElementById("studentTimetableTerm").value||"term1",body=document.getElementById("studentTimetableBody");
+  body.innerHTML='<tr><td colspan="6" class="student-timetable-empty"><i class="fas fa-spinner fa-spin"></i> Loading timetable...</td></tr>';
+  const cls=s.studentclass||s.class||"",school=s.schoolid;
+  if(!cls||!school)return showStudentTimetableStatus("Your class or school information is missing.",true);
+  const {data,error}=await supabaseClient.rpc("get_student_timetable",{
+    p_studentid:s.studentid,
+    p_studentpassword:s.studentpassword,
+    p_term:term
+  });
+  if(error){console.error("Student timetable error:",error);showStudentTimetableStatus("Unable to load your timetable.",true);body.innerHTML='<tr><td colspan="6" class="student-timetable-empty">Timetable could not be loaded.</td></tr>';return;}
+  const list=data||[];document.getElementById("studentTimetableSubtitle").textContent=`${cls} • ${list.length} period${list.length===1?"":"s"}`;
+  if(!list.length){showStudentTimetableStatus("No timetable has been published for this class and term yet.");body.innerHTML='<tr><td colspan="6" class="student-timetable-empty">No timetable entries found.</td></tr>';return;}
+  showStudentTimetableStatus("Your weekly timetable is shown below.");
+  const times=[...new Set(list.map(e=>`${e.start_time||""}|${e.end_time||""}`))].sort();
+  body.innerHTML=times.map(k=>{const [a,b]=k.split("|");const cells=STUDENT_TIMETABLE_DAYS.map(d=>{const rows=list.filter(e=>e.day===d&&(e.start_time||"")===a&&(e.end_time||"")===b);if(!rows.length)return'<td class="student-timetable-slot empty">—</td>';return`<td class="student-timetable-slot">${rows.map(e=>`<div class="student-timetable-card"><strong>${String(e.subject||"").replace(/</g,"&lt;")}</strong><span>${String(e.teacher_name||"").replace(/</g,"&lt;")}</span>${e.room?`<small><i class="fas fa-door-open"></i> ${String(e.room).replace(/</g,"&lt;")}</small>`:""}</div>`).join("")}</td>`}).join("");return`<tr><td class="student-timetable-time">${studentTimetableTime(a,b)}</td>${cells}</tr>`}).join("");
+}
 
 async function openFees(){
 
