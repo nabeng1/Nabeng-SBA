@@ -1398,7 +1398,9 @@ async function loadStudents() {
         return;
     }
 
-    let allStudents = data || [];
+    // Graduated students remain in Supabase and in year snapshots, but should
+    // not appear in the active year's everyday class, marks, or attendance lists.
+    let allStudents = (data || []).filter(student => !student.graduated);
 
     // Teacher only sees assigned classes
     if(currentUser.role === "teacher"){
@@ -3169,6 +3171,18 @@ document.getElementById(
 
 
 // =========================================================
+// GET SELECTED TERM DATE RANGE
+// =========================================================
+function getTermDateBounds(term) {
+    const prefix = term === "term1" ? "t1" : term === "term2" ? "t2" : term === "term3" ? "t3" : null;
+    if (!prefix) return { start: null, end: null };
+    return {
+        start: termSettings?.[`${prefix}start`] || null,
+        end: termSettings?.[`${prefix}end`] || null
+    };
+}
+
+// =========================================================
 // GET STUDENT ATTENDANCE FOR SELECTED TERM
 // =========================================================
 
@@ -3177,12 +3191,18 @@ async function getStudentAttendance(
     term
 ) {
 
+    const bounds = getTermDateBounds(term);
+    if (!bounds.start || !bounds.end) {
+        return { totalDays: 0, daysPresent: 0, daysAbsent: 0, percentage: 0 };
+    }
+
     const { data, error } = await supabaseClient
         .from("attendance")
         .select("*")
         .eq("schoolid", currentUser.schoolid)
         .eq("studentname", studentName)
-        .eq("term", term);
+        .gte("date", bounds.start)
+        .lte("date", bounds.end);
 
     if (error) {
 
@@ -3255,11 +3275,19 @@ async function loadAttendanceData() {
         data
     );
 
+    // Show only attendance inside the active academic year's configured
+    // date range. Historical attendance remains stored in Supabase.
+    const yearStart = termSettings?.t1start;
+    const yearEnd = termSettings?.t3end;
+    const yearRecords = (yearStart && yearEnd)
+        ? data.filter(record => record.date >= yearStart && record.date <= yearEnd)
+        : [];
+
     // Reset local attendance cache
     attendanceData = {};
 
-    // Rebuild attendanceData from Supabase
-    data.forEach(record => {
+    // Rebuild attendanceData from the active academic year only
+    yearRecords.forEach(record => {
 
         if (!attendanceData[record.date]) {
             attendanceData[record.date] = {};
@@ -5425,10 +5453,48 @@ async function changeTerm() {
 
 let termSettings = {};
 
+function getLocalDateISO() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function updatePromotionButtonVisibility() {
+    const button = document.getElementById("promoteStudentsBtn");
+    const message = document.getElementById("promotionEligibilityMessage");
+    if (!button) return;
+
+    const isAdmin = String(currentUser?.role || "").toLowerCase() === "admin";
+    button.style.display = isAdmin ? "flex" : "none";
+    if (message) message.style.display = isAdmin ? "block" : "none";
+    if (!isAdmin) return;
+
+    const term3End = String(termSettings?.t3end || "").slice(0, 10);
+    const today = getLocalDateISO();
+    const termHasEnded = Boolean(term3End) && today > term3End;
+    button.disabled = !termHasEnded || academicYearSwitchInProgress;
+    button.title = termHasEnded
+        ? "Promote students to the next class"
+        : "Promotion becomes available after the Term 3 end date";
+
+    if (message) {
+        if (!term3End) {
+            message.textContent = "Set the Term 3 end date in Term Settings. Promotion will be enabled after that date has passed.";
+        } else if (!termHasEnded) {
+            message.textContent = `Promotion is locked until Term 3 has ended (${term3End}).`;
+        } else {
+            message.textContent = `Term 3 ended on ${term3End}. Promotion is available to the school administrator.`;
+        }
+    }
+}
+
 async function loadTermSettings() {
 
     if (!currentUser || !currentUser.schoolid) {
         console.log("School information not found.");
+        updatePromotionButtonVisibility();
         return;
     }
 
@@ -5442,10 +5508,13 @@ async function loadTermSettings() {
         console.log("Term settings load error:", error);
 
         termSettings = {};
+        updatePromotionButtonVisibility();
         return;
     }
 
     termSettings = data || {};
+    currentAcademicYear = data.academic_year || localStorage.getItem("nabengAcademicYear") || currentAcademicYear;
+    buildAcademicYearOptions(currentAcademicYear);
 
     // Term 1
     const t1start = document.getElementById("t1start");
@@ -5482,6 +5551,8 @@ async function loadTermSettings() {
     if (t3end) {
         t3end.value = data.t3end || "";
     }
+
+    updatePromotionButtonVisibility();
 }
 
 async function saveTermSettings() {
@@ -5609,6 +5680,8 @@ async function saveTermSettings() {
         schoolid:
             currentUser.schoolid,
 
+        academic_year: currentAcademicYear,
+
         t1start,
         t1end,
 
@@ -5655,7 +5728,9 @@ async function saveTermSettings() {
     // =========================
 
     termSettings = settingsData;
-
+    localStorage.setItem("nabengAcademicYear", currentAcademicYear);
+    buildAcademicYearOptions(currentAcademicYear);
+    updatePromotionButtonVisibility();
 
     alert(
         "Term settings saved successfully!"
@@ -7372,111 +7447,455 @@ const promotionMap = {
 
 let currentAcademicYear = "2025/2026";
 
-async function promoteStudents(){
+// Academic-year switching is school-scoped. Year-specific student
+// records are archived in academic_year_student_records before switching.
+let academicYearSwitchInProgress = false;
 
-    const confirmed =
-        await showPromotionModal();
+function getAcademicYearParts(year) {
+    const match = String(year || "").trim().match(/^(\d{4})\s*\/\s*(\d{4})$/);
+    if (!match || Number(match[2]) !== Number(match[1]) + 1) return null;
+    return [Number(match[1]), Number(match[2])];
+}
 
-    if(!confirmed) return;
+function buildAcademicYearOptions(selectedYear = currentAcademicYear) {
+    const select = document.getElementById("academicYearSelect");
+    if (!select) return;
 
-    try{
+    const parts = getAcademicYearParts(selectedYear) || [2025, 2026];
+    const start = parts[0];
+    const years = new Set();
 
-        for(const student of students){
+    // Keep a practical history window and always include the selected year.
+    for (let y = start - 5; y <= start + 3; y++) {
+        years.add(`${y}/${y + 1}`);
+    }
+    years.add(selectedYear);
 
-            if(student.graduated)
-                continue;
+    select.innerHTML = [...years]
+        .sort((a, b) => Number(a.slice(0, 4)) - Number(b.slice(0, 4)))
+        .map(year => `<option value="${year}">${year}</option>`)
+        .join("");
 
-            const archiveRecord={
+    select.value = selectedYear;
+    const label = document.getElementById("academicYearCurrentLabel");
+    if (label) label.textContent = `Currently active academic year: ${currentAcademicYear}`;
+}
 
-                studentid:student.id,
+function setAcademicYearStatus(message, isError = false) {
+    const status = document.getElementById("academicYearStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.style.color = isError ? "#fca5a5" : "";
+}
 
-                academic_year:currentAcademicYear,
+async function saveAcademicYearSnapshot(year) {
+    if (!currentUser?.schoolid) throw new Error("School account was not found.");
 
-                student_name:student.name,
+    // Snapshot all visible school students. For teachers, the global students
+    // array may be class-filtered, so fetch the full school roster as admin-safe
+    // archive data (RLS still applies).
+    const { data: roster, error: rosterError } = await supabaseClient
+        .from("students")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
 
-                student_class:student.studentclass,
+    if (rosterError) throw rosterError;
+    if (!roster?.length) return;
 
-                subjects:student.subjects||{},
+    const rows = roster.map(student => ({
+        schoolid: currentUser.schoolid,
+        academic_year: year,
+        student_id: String(student.id),
+        student_data: student,
+        updated_at: new Date().toISOString()
+    }));
 
-                conduct:student.conduct||{},
+    const { error } = await supabaseClient
+        .from("academic_year_student_records")
+        .upsert(rows, { onConflict: "schoolid,academic_year,student_id" });
 
-                attitude:student.attitude||{},
+    if (error) throw error;
+}
 
-                interest:student.interest||{},
+function resetYearSpecificStudentData(student) {
+    const fresh = { ...student };
+    fresh.subjects = {};
+    fresh.conduct = {};
+    fresh.attitude = {};
+    fresh.interest = {};
+    fresh.teacherRemark = {};
+    fresh.totalDays = {};
+    fresh.daysPresent = {};
+    fresh.average = 0;
+    fresh.currentTerm = "term1";
+    // Keep identity, portal credentials, contact details and current class.
+    return fresh;
+}
 
-                teacher_remark:
-                    student.teacherRemark||{},
+async function loadAcademicYearSnapshot(year) {
+    const { data: archived, error } = await supabaseClient
+        .from("academic_year_student_records")
+        .select("student_id,student_data")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year);
 
-                total_days:
-                    student.totalDays||{},
+    if (error) throw error;
+    if (!archived?.length) return false;
 
-                days_present:
-                    student.daysPresent||{},
+    const archiveById = new Map(archived.map(row => [String(row.student_id), row.student_data]));
+    const { data: roster, error: rosterError } = await supabaseClient
+        .from("students")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
 
-                average:
-                    student.average||0
-            };
+    if (rosterError) throw rosterError;
 
-            const {error}=await supabaseClient
+    const updates = (roster || []).map(liveStudent => {
+        const oldRecord = archiveById.get(String(liveStudent.id));
+        if (!oldRecord) return resetYearSpecificStudentData(liveStudent);
 
-                .from("student_history")
+        // Restore academic fields from the chosen year but preserve current
+        // identity/portal account fields from the live student row.
+        return {
+            ...liveStudent,
+            studentclass: oldRecord.studentclass ?? liveStudent.studentclass,
+            subjects: oldRecord.subjects || {},
+            conduct: oldRecord.conduct || {},
+            attitude: oldRecord.attitude || {},
+            interest: oldRecord.interest || {},
+            teacherRemark: oldRecord.teacherRemark || {},
+            totalDays: oldRecord.totalDays || {},
+            daysPresent: oldRecord.daysPresent || {},
+            average: oldRecord.average || 0,
+            currentTerm: oldRecord.currentTerm || "term1",
+            graduated: oldRecord.graduated || false
+        };
+    });
 
-                .insert([archiveRecord]);
+    if (updates.length) {
+        const { error: updateError } = await supabaseClient
+            .from("students")
+            .upsert(updates);
+        if (updateError) throw updateError;
+    }
 
-            if(error) throw error;
+    return true;
+}
 
-            if(student.studentclass==="JHS 3"){
+async function saveAcademicYearSettings(year) {
+    const { data, error } = await supabaseClient
+        .from("termsettings")
+        .select("t1start,t1end,t2start,t2end,t3start,t3end")
+        .eq("schoolid", currentUser.schoolid)
+        .maybeSingle();
+    if (error) throw error;
 
-                student.graduated=true;
+    const row = {
+        schoolid: currentUser.schoolid,
+        academic_year: year,
+        t1start: data?.t1start || null, t1end: data?.t1end || null,
+        t2start: data?.t2start || null, t2end: data?.t2end || null,
+        t3start: data?.t3start || null, t3end: data?.t3end || null,
+        updated_at: new Date().toISOString()
+    };
+    const { error: saveError } = await supabaseClient
+        .from("academic_year_settings")
+        .upsert(row, { onConflict: "schoolid,academic_year" });
+    if (saveError) throw saveError;
+}
 
-                continue;
+async function getAcademicYearPromotionState(year) {
+    const { data, error } = await supabaseClient
+        .from("academic_year_settings")
+        .select("promotion_completed,promoted_to_year")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year)
+        .maybeSingle();
+    if (error) throw error;
+    return data || { promotion_completed: false, promoted_to_year: null };
+}
+
+async function markAcademicYearPromoted(year, nextYear) {
+    const { error } = await supabaseClient
+        .from("academic_year_settings")
+        .update({
+            promotion_completed: true,
+            promoted_to_year: nextYear,
+            updated_at: new Date().toISOString()
+        })
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year);
+    if (error) throw error;
+}
+
+async function restoreAcademicYearSettings(year) {
+    const { data, error } = await supabaseClient
+        .from("academic_year_settings")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year)
+        .maybeSingle();
+    if (error) throw error;
+    return data || null;
+}
+
+async function updateAcademicYearSetting(year, clearTermDates = false, savedSettings = null) {
+    const update = { academic_year: year };
+
+    if (clearTermDates) {
+        update.t1start = null; update.t1end = null;
+        update.t2start = null; update.t2end = null;
+        update.t3start = null; update.t3end = null;
+    } else if (savedSettings) {
+        update.t1start = savedSettings.t1start;
+        update.t1end = savedSettings.t1end;
+        update.t2start = savedSettings.t2start;
+        update.t2end = savedSettings.t2end;
+        update.t3start = savedSettings.t3start;
+        update.t3end = savedSettings.t3end;
+    }
+
+    const { data: existing, error: readError } = await supabaseClient
+        .from("termsettings")
+        .select("schoolid")
+        .eq("schoolid", currentUser.schoolid)
+        .maybeSingle();
+    if (readError) throw readError;
+
+    let result;
+    if (existing) {
+        result = await supabaseClient.from("termsettings")
+            .update(update).eq("schoolid", currentUser.schoolid);
+    } else {
+        result = await supabaseClient.from("termsettings")
+            .insert({ schoolid: currentUser.schoolid, ...update });
+    }
+    if (result.error) throw result.error;
+
+    currentAcademicYear = year;
+    termSettings = { ...(termSettings || {}), ...update, schoolid: currentUser.schoolid };
+    localStorage.setItem("nabengAcademicYear", year);
+}
+
+async function switchAcademicYear() {
+    if (academicYearSwitchInProgress) return;
+    if (!currentUser || currentUser.role !== "admin") {
+        alert("Only the school administrator can switch the academic year.");
+        return;
+    }
+
+    const select = document.getElementById("academicYearSelect");
+    const targetYear = select?.value;
+    if (!getAcademicYearParts(targetYear)) {
+        alert("Choose a valid academic year, for example 2026/2027.");
+        return;
+    }
+    if (targetYear === currentAcademicYear) {
+        setAcademicYearStatus(`${targetYear} is already the active academic year.`);
+        return;
+    }
+
+    const targetExists = await (async () => {
+        const { data, error } = await supabaseClient
+            .from("academic_year_student_records")
+            .select("student_id")
+            .eq("schoolid", currentUser.schoolid)
+            .eq("academic_year", targetYear)
+            .limit(1);
+        if (error) throw error;
+        return !!data?.length;
+    })().catch(error => {
+        console.error("Academic year check failed:", error);
+        setAcademicYearStatus("Could not check archived years. Confirm the database setup and try again.", true);
+        return null;
+    });
+    if (targetExists === null) return;
+
+    const selectedStart = getAcademicYearParts(targetYear)[0];
+    const currentStart = getAcademicYearParts(currentAcademicYear)?.[0];
+    if (!targetExists && selectedStart < currentStart) {
+        setAcademicYearStatus(`No archived records were found for ${targetYear}. Older years cannot be started as new years; restore a year only after it has been archived.`, true);
+        alert(`No archived records were found for ${targetYear}. Your current records have not been changed.`);
+        buildAcademicYearOptions(currentAcademicYear);
+        return;
+    }
+
+    const message = targetExists
+        ? `Switch from ${currentAcademicYear} to ${targetYear}?\n\nThe current year will be saved first, then ${targetYear}'s records will be restored.`
+        : `Start ${targetYear}?\n\nThe current year will be saved first. ${targetYear} has no archive yet, so student marks and assessments will start fresh. Student identities and portal accounts will remain.`;
+
+    if (!confirm(message)) return;
+
+    academicYearSwitchInProgress = true;
+    setAcademicYearStatus("Saving the current year and switching records…");
+    try {
+        const currentPromotionState = await getAcademicYearPromotionState(currentAcademicYear);
+        if (!currentPromotionState.promotion_completed) {
+            await saveAcademicYearSnapshot(currentAcademicYear);
+        }
+        await saveAcademicYearSettings(currentAcademicYear);
+
+        if (targetExists) {
+            const targetSettings = await restoreAcademicYearSettings(targetYear);
+            if (!targetSettings) {
+                throw new Error(`Student records exist for ${targetYear}, but its term dates have not been archived. Set up that year's term dates before switching to it.`);
             }
+            await loadAcademicYearSnapshot(targetYear);
+            await updateAcademicYearSetting(targetYear, false, targetSettings);
+        } else {
+            const { data: roster, error } = await supabaseClient
+                .from("students")
+                .select("*")
+                .eq("schoolid", currentUser.schoolid);
+            if (error) throw error;
 
-            student.studentclass=
-
-                promotionMap[
-                    student.studentclass
-                ]||
-
-                student.studentclass;
-
-            student.subjects={};
-
-            student.conduct={};
-
-            student.attitude={};
-
-            student.interest={};
-
-            student.teacherRemark={};
-
-            student.totalDays={};
-
-            student.daysPresent={};
-
-            student.average=0;
-
-            student.currentTerm="term1";
+            const freshRoster = (roster || []).map(resetYearSpecificStudentData);
+            if (freshRoster.length) {
+                const { error: resetError } = await supabaseClient
+                    .from("students")
+                    .upsert(freshRoster);
+                if (resetError) throw resetError;
+            }
+            await updateAcademicYearSetting(targetYear, true);
+            await saveAcademicYearSettings(targetYear);
         }
 
-        await saveStudents();
+        await loadTermSettings();
+        await loadStudents();
+        activeTerm = await getCurrentTerm();
+        selectedMarkTerm = activeTerm || "term1";
+        updateDashboard();
+        populateStudentList();
+        if (typeof loadAttendanceData === "function") await loadAttendanceData();
+        if (typeof loadNotices === "function") await loadNotices();
 
-        alert(
-            "Students promoted successfully!"
-        );
+        buildAcademicYearOptions(currentAcademicYear);
+        setAcademicYearStatus(`Academic year switched successfully to ${currentAcademicYear}.`);
+        alert(`Academic year is now ${currentAcademicYear}.`);
+    } catch (error) {
+        console.error("Academic year switch failed:", error);
+        setAcademicYearStatus(`Switch failed: ${error.message || "Unknown error"}. No further changes were attempted.`, true);
+        alert("Academic year switch failed. Check the browser console and Supabase database setup before trying again.");
+    } finally {
+        academicYearSwitchInProgress = false;
+    }
+}
 
+
+async function promoteStudents() {
+    if (!currentUser || String(currentUser.role || "").toLowerCase() !== "admin") {
+        alert("Only the school administrator can promote students.");
+        return;
+    }
+    if (academicYearSwitchInProgress) return;
+
+    const term3End = String(termSettings?.t3end || "").slice(0, 10);
+    if (!term3End) {
+        alert("Promotion is locked. Please set the Term 3 end date in Term Settings first.");
+        updatePromotionButtonVisibility();
+        return;
+    }
+    if (getLocalDateISO() <= term3End) {
+        alert(`Promotion is only allowed after Term 3 has ended (${term3End}).`);
+        updatePromotionButtonVisibility();
+        return;
     }
 
-    catch(err){
+    const parts = getAcademicYearParts(currentAcademicYear);
+    if (!parts) {
+        alert("The active academic year is invalid. Check Term Settings first.");
+        return;
+    }
+    const nextYear = `${parts[0] + 1}/${parts[1] + 1}`;
 
-        console.log(err);
-
-        alert(
-            "Promotion failed."
-        );
-
+    const { data: nextArchive, error: archiveCheckError } = await supabaseClient
+        .from("academic_year_student_records")
+        .select("student_id")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", nextYear)
+        .limit(1);
+    if (archiveCheckError) {
+        console.error("Next-year archive check failed:", archiveCheckError);
+        alert("Could not verify the next academic year. Check the database setup and try again.");
+        return;
+    }
+    if (nextArchive?.length) {
+        alert(`Records for ${nextYear} already exist. Use the Academic Year switcher to restore that year instead of promoting again.`);
+        return;
     }
 
+    const confirmed = confirm(
+        `Promote students from ${currentAcademicYear} to ${nextYear}?\n\n` +
+        `The current year's results will be archived first. Students will move to the next class, ` +
+        `year-specific marks and remarks will be cleared, and JHS 3 students will be marked as graduated. ` +
+        `Student IDs and portal credentials will be kept. This action should be done only once at year end.`
+    );
+    if (!confirmed) return;
+
+    academicYearSwitchInProgress = true;
+    updatePromotionButtonVisibility();
+    setAcademicYearStatus(`Archiving ${currentAcademicYear} and preparing ${nextYear}…`);
+    try {
+        // Preserve the complete pre-promotion year before changing live student rows.
+        await saveAcademicYearSnapshot(currentAcademicYear);
+        await saveAcademicYearSettings(currentAcademicYear);
+
+        const { data: roster, error: rosterError } = await supabaseClient
+            .from("students")
+            .select("*")
+            .eq("schoolid", currentUser.schoolid);
+        if (rosterError) throw rosterError;
+        if (!roster?.length) throw new Error("No student records were found for this school.");
+
+        const promotedRoster = roster.map(student => {
+            if (student.graduated) return student;
+
+            const currentClass = String(student.studentclass || "").trim();
+            const nextClass = promotionMap[currentClass];
+            const updated = resetYearSpecificStudentData(student);
+
+            if (currentClass === "JHS 3") {
+                updated.graduated = true;
+                return updated;
+            }
+            if (nextClass) updated.studentclass = nextClass;
+            return updated;
+        });
+
+        // Mark the previous year before mutating live rows. If the roster update
+        // fails, the pre-promotion archive remains protected and the operation can
+        // be reviewed safely before retrying.
+        await markAcademicYearPromoted(currentAcademicYear, nextYear);
+
+        // One school-scoped upsert updates the full roster in a single request.
+        const { error: updateError } = await supabaseClient
+            .from("students")
+            .upsert(promotedRoster);
+        if (updateError) throw updateError;
+
+        await updateAcademicYearSetting(nextYear, true);
+        await saveAcademicYearSettings(nextYear);
+
+        await loadTermSettings();
+        await loadStudents();
+        activeTerm = await getCurrentTerm();
+        selectedMarkTerm = activeTerm || "term1";
+        updateDashboard();
+        populateStudentList();
+        if (typeof loadAttendanceData === "function") await loadAttendanceData();
+        if (typeof loadNotices === "function") await loadNotices();
+
+        buildAcademicYearOptions(currentAcademicYear);
+        setAcademicYearStatus(`Students promoted successfully. Active academic year: ${currentAcademicYear}. Set the new term dates in Term Settings.`);
+        alert(`Promotion completed. The active academic year is now ${currentAcademicYear}. Set the new term dates before recording marks or attendance.`);
+    } catch (error) {
+        console.error("Student promotion failed:", error);
+        setAcademicYearStatus(`Promotion failed: ${error.message || "Unknown error"}. Check the database before retrying.`, true);
+        alert(`Promotion could not be completed fully. Do not click Promote again until you check the student records and browser console. Details: ${error.message || "Unknown error"}`);
+    } finally {
+        academicYearSwitchInProgress = false;
+        updatePromotionButtonVisibility();
+    }
 }
 
 
