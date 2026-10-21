@@ -5004,6 +5004,33 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
                     Student Information
                 </h3>
 
+                <div class="admission-photo-upload">
+                    <div class="admission-photo-preview-wrap">
+                        <img
+                            id="admissionPhotoPreview"
+                            src="default-student.png"
+                            alt="Student photo preview"
+                            onerror="this.onerror=null; this.src='https://placehold.co/140x160?text=Student+Photo';"
+                        >
+                    </div>
+                    <div class="admission-photo-controls">
+                        <label for="admissionStudentPhoto">
+                            <i class="fas fa-camera"></i>
+                            Student Photograph
+                        </label>
+                        <p>Upload a clear passport-style photo (JPG, PNG or WebP; max 5 MB).</p>
+                        <input
+                            type="file"
+                            id="admissionStudentPhoto"
+                            accept="image/jpeg,image/png,image/webp"
+                            onchange="previewAdmissionPhoto(event)"
+                        >
+                        <button type="button" class="admission-photo-remove" onclick="clearAdmissionPhoto()">
+                            <i class="fas fa-times"></i> Remove photo
+                        </button>
+                    </div>
+                </div>
+
                 <div class="admission-grid">
 
                     <div class="admission-field full">
@@ -5172,6 +5199,64 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
         </form>
 
     </div>
+
+
+
+<style>
+.admission-photo-upload {
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:16px;
+    margin:16px 0 20px;
+    border:1px dashed #cbd5e1;
+    border-radius:14px;
+    background:rgba(148,163,184,.07);
+}
+.admission-photo-preview-wrap {
+    width:112px;
+    height:132px;
+    flex:0 0 112px;
+    overflow:hidden;
+    border-radius:10px;
+    border:1px solid #dbe2ea;
+    background:#fff;
+}
+.admission-photo-preview-wrap img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+}
+.admission-photo-controls { min-width:0; }
+.admission-photo-controls label {
+    display:block;
+    font-weight:700;
+    margin-bottom:6px;
+}
+.admission-photo-controls p {
+    margin:0 0 10px;
+    font-size:13px;
+    color:#64748b;
+}
+.admission-photo-controls input[type="file"] {
+    display:block;
+    max-width:100%;
+    font-size:13px;
+}
+.admission-photo-remove {
+    margin-top:9px;
+    padding:7px 10px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    background:transparent;
+    cursor:pointer;
+}
+@media(max-width:560px) {
+    .admission-photo-upload { align-items:flex-start; gap:12px; padding:12px; }
+    .admission-photo-preview-wrap { width:88px; height:108px; flex-basis:88px; }
+}
+</style>
 
 </div>
 

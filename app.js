@@ -21361,6 +21361,49 @@ updateSubmissionStatistics();
 
 
 /* ---------------------------------------------------------
+   ADMISSION PHOTO PREVIEW
+--------------------------------------------------------- */
+
+function previewAdmissionPhoto(event) {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById("admissionPhotoPreview");
+    if (!preview) return;
+
+    if (!file) {
+        preview.src = "default-student.png";
+        return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+        alert("Please choose a JPG, PNG, or WebP image.");
+        event.target.value = "";
+        preview.src = "default-student.png";
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert("Student photo must be 5 MB or smaller.");
+        event.target.value = "";
+        preview.src = "default-student.png";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => { preview.src = reader.result; };
+    reader.onerror = () => alert("Could not preview this image. Please try another file.");
+    reader.readAsDataURL(file);
+}
+
+function clearAdmissionPhoto() {
+    const input = document.getElementById("admissionStudentPhoto");
+    const preview = document.getElementById("admissionPhotoPreview");
+    if (input) input.value = "";
+    if (preview) preview.src = "default-student.png";
+}
+
+
+/* ---------------------------------------------------------
    OPEN ADMISSION MODAL
 --------------------------------------------------------- */
 
@@ -21396,6 +21439,8 @@ function openAdmissionModal() {
         form.reset();
     }
 
+    const photoPreview = document.getElementById("admissionPhotoPreview");
+    if (photoPreview) photoPreview.src = "default-student.png";
 
     modal.style.display = "flex";
 
@@ -21505,6 +21550,21 @@ async function submitAdmission(event) {
             .value
             .trim();
 
+    const photoInput = document.getElementById("admissionStudentPhoto");
+    const photoFile = photoInput?.files?.[0] || null;
+
+    if (photoFile) {
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(photoFile.type)) {
+            alert("Please choose a JPG, PNG, or WebP student photo.");
+            return;
+        }
+        if (photoFile.size > 5 * 1024 * 1024) {
+            alert("Student photo must be 5 MB or smaller.");
+            return;
+        }
+    }
+
 
     // VALIDATION
 
@@ -21544,6 +21604,37 @@ async function submitAdmission(event) {
 
     try {
 
+        // Upload the optional admission photo to the same Supabase Storage
+        // bucket used by the existing Student Details photo feature.
+        let studentPhotoUrl = null;
+
+        if (photoFile) {
+            const extension = photoFile.name.split(".").pop().toLowerCase();
+            const safeSchoolId = String(currentUser.schoolid || "school").replace(/[^a-zA-Z0-9_-]/g, "_");
+            const fileName = `${safeSchoolId}/admission-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+
+            const { error: photoUploadError } = await supabaseClient.storage
+                .from("student-photos")
+                .upload(fileName, photoFile, {
+                    upsert: false,
+                    contentType: photoFile.type
+                });
+
+            if (photoUploadError) {
+                throw new Error("Photo upload failed: " + photoUploadError.message);
+            }
+
+            const { data: photoUrlData } = supabaseClient.storage
+                .from("student-photos")
+                .getPublicUrl(fileName);
+
+            studentPhotoUrl = photoUrlData?.publicUrl || null;
+
+            if (!studentPhotoUrl) {
+                throw new Error("The photo uploaded, but its public URL could not be created.");
+            }
+        }
+
         // INSERT STUDENT
 
         const { data, error } =
@@ -21557,6 +21648,8 @@ async function submitAdmission(event) {
                         studentclass,
 
                     gender: gender,
+
+                    "student-photos": studentPhotoUrl,
 
                     parent_name:
                         parentName,
