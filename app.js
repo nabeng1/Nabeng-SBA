@@ -477,15 +477,14 @@ document.body.classList.add("logged-in");
     document.getElementById("app").style.display =
         "block";
 
-    document.getElementById("topNav").style.display =
-        "flex";
-
-    document.getElementById("subHeader").style.display =
-        "flex";
-
-    // WELCOME TEXT
-    document.getElementById("welcomeUser").innerText =
-        "👋 Welcome, " + currentUser.firstname;
+    // WELCOME TEXT (sidebar + dashboard header)
+    const welcomeMsg = "👋 Welcome, " + currentUser.firstname;
+    const welcomeEl = document.getElementById("welcomeUser");
+    if (welcomeEl) welcomeEl.innerText = welcomeMsg;
+    const dashWelcome = document.getElementById("dashWelcomeUser");
+    if (dashWelcome) dashWelcome.innerText = welcomeMsg;
+    const sideName = document.getElementById("sidebarUserName");
+    if (sideName) sideName.textContent = currentUser.firstname || currentUser.username || "User";
 
     // LOAD DATA
 	
@@ -560,8 +559,10 @@ async function displaySchoolName() {
                 " (Code: " + currentUser.schoolid + ")";
         }
 
-        document.getElementById("schoolNameText").innerText =
-            displayText;
+        const sn = document.getElementById("schoolNameText");
+        if (sn) sn.innerText = displayText;
+        const sideSchool = document.getElementById("sidebarSchoolName");
+        if (sideSchool) sideSchool.textContent = schoolName;
 
         // Show edit icon only for admin
         document.getElementById("editSchoolIcon").style.display =
@@ -639,18 +640,30 @@ async function loadTheme() {
         .single();
 
     let theme = data?.theme || "light";
+    applyAppTheme(theme === "light" ? "light" : "dark");
+}
 
-    if (theme === "light") {
+function applyAppTheme(theme) {
+    const isLight = theme === "light";
+    document.body.classList.toggle("light-mode", isLight);
+    document.body.classList.toggle("dark-mode", !isLight);
+    document.documentElement.setAttribute("data-theme", isLight ? "light" : "dark");
 
-        document.body.classList.add("light-mode");
-
-        document.getElementById("themeBtn").innerText = "";
-
-    } else {
-
-        document.body.classList.remove("light-mode");
-
-        document.getElementById("themeBtn").innerText = "";
+    // Update any theme icons (topbar + sidebar)
+    document.querySelectorAll("#themeBtn i, #sidebarThemeIcon, #themeIcon").forEach(icon => {
+        if (!icon) return;
+        icon.className = isLight ? "fas fa-moon" : "fas fa-sun";
+    });
+    // Older code sometimes set className on the button itself
+    const themeBtn = document.getElementById("themeBtn");
+    if (themeBtn && themeBtn.tagName === "BUTTON") {
+        // keep button class, only ensure inner icon is correct
+        let icon = themeBtn.querySelector("i");
+        if (!icon) {
+            icon = document.createElement("i");
+            themeBtn.appendChild(icon);
+        }
+        icon.className = isLight ? "fas fa-moon" : "fas fa-sun";
     }
 }
 function showForgot(){
@@ -1823,33 +1836,32 @@ async function showPage(id){
         page.style.display = 'block';
     }
 
-    // ACTIVE NAV
+    // ACTIVE NAV (sidebar + bottom)
     document.querySelectorAll('.nav-item')
     .forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.sba-nav-link')
+    .forEach(item => item.classList.remove('is-active'));
+
+    document.querySelectorAll('.sba-nav-link[data-page="'+id+'"]')
+    .forEach(item => item.classList.add('is-active'));
 
     if(id === 'dashboardPage')
         document.querySelectorAll('.nav-item')[0]
         ?.classList.add('active');
 
-    if(id === 'studentsPage')
-        document.querySelectorAll('.nav-item')[1]
-        ?.classList.add('active');
+    // Page title in topbar
+    const titles = {
+      dashboardPage:'Dashboard', studentsPage:'Students', subjectsPage:'Subjects',
+      reportsPage:'Reports', attendancePage:'Attendance', homeworkPage:'Homework',
+      timetablePage:'Timetable', noticesPage:'Notices', chat:'Chat',
+      userProfilePage:'Profile', profileSubjectsPage:'My Subjects',
+      profileTermPage:'Term Setup', profilePlanPage:'Plan', profileNotePage:'Note'
+    };
+    const titleEl = document.getElementById('sbaPageTitle');
+    if(titleEl) titleEl.textContent = titles[id] || 'Nabeng-SBA';
 
-    if(id === 'subjectsPage')
-        document.querySelectorAll('.nav-item')[2]
-        ?.classList.add('active');
-
-    if(id === 'attendancePage')
-        document.querySelectorAll('.nav-item')[3]
-        ?.classList.add('active');
-
-    if(id === 'chat')
-        document.querySelectorAll('.nav-item')[4]
-        ?.classList.add('active');
-
-    if(id === 'reportsPage')
-        document.querySelectorAll('.nav-item')[5]
-        ?.classList.add('active');
+    // Close mobile drawer after navigation
+    if(typeof closeSbaSidebar === 'function') closeSbaSidebar();
 
   await loadStudents();
 
@@ -8863,31 +8875,17 @@ window.onload = async function () {
                 "app"
             ).style.display = "block";
 
-
-
-            document.getElementById(
-                "topNav"
-            ).style.display = "flex";
-
-
-
-            document.getElementById(
-                "subHeader"
-            ).style.display = "flex";
-
-
-
-            document.getElementById(
-                "welcomeUser"
-            ).innerText =
-
-                "👋 Welcome, " +
-
-                user.firstname +
-
-                " " +
-
-                user.surname;
+            const welcomeMsg =
+                    "👋 Welcome, " +
+                    (user.firstname || "") +
+                    " " +
+                    (user.surname || "");
+            const welcomeEl = document.getElementById("welcomeUser");
+            if (welcomeEl) welcomeEl.innerText = welcomeMsg;
+            const dashWelcome = document.getElementById("dashWelcomeUser");
+            if (dashWelcome) dashWelcome.innerText = welcomeMsg;
+            const sideName = document.getElementById("sidebarUserName");
+            if (sideName) sideName.textContent = user.firstname || user.username || "User";
 
 
 
@@ -9111,13 +9109,13 @@ async function saveProfile() {
     );
 
     // Update welcome text instantly
-    document.getElementById(
-        "welcomeUser"
-    ).innerText =
-        "👋 Welcome, " +
-        currentUser.firstname +
-        " " +
-        currentUser.surname;
+    (function(){
+        const _wm = "👋 Welcome, " + currentUser.firstname + " " + currentUser.surname;
+        const _we = document.getElementById("welcomeUser");
+        if (_we) _we.innerText = _wm;
+        const _dw = document.getElementById("dashWelcomeUser");
+        if (_dw) _dw.innerText = _wm;
+    })();
 
     alert("Profile updated successfully!");
 }
@@ -10409,13 +10407,13 @@ async function updateProfile() {
     // UPDATE WELCOME TEXT
     // =========================
 
-    document.getElementById(
-        "welcomeUser"
-    ).innerText =
-        "👋 Welcome, " +
-        currentUser.firstname +
-        " " +
-        currentUser.surname;
+    (function(){
+        const _wm = "👋 Welcome, " + currentUser.firstname + " " + currentUser.surname;
+        const _we = document.getElementById("welcomeUser");
+        if (_we) _we.innerText = _wm;
+        const _dw = document.getElementById("dashWelcomeUser");
+        if (_dw) _dw.innerText = _wm;
+    })();
 
     alert(
         "Profile updated successfully ✅"
@@ -15615,44 +15613,22 @@ function toggleSchoolMenu(){
 }
 
 async function toggleTheme() {
+    const isLight = document.body.classList.contains("light-mode");
+    const newTheme = isLight ? "dark" : "light";
+    applyAppTheme(newTheme);
 
-    // Toggle theme visually
-    document.body.classList.toggle(
-        "light-mode"
-    );
-
-    let isLight =
-        document.body.classList.contains(
-            "light-mode"
-        );
-
-    let newTheme =
-        isLight ? "light" : "dark";
-
-    // Save theme online
-    const { error } = await supabaseClient
-        .from("users")
-        .update({
-            theme: newTheme
-        })
-        .eq("username", currentUser.username);
-
-    if (error) {
-
-        console.log(error);
-
-        return alert(
-            "Failed to save theme"
-        );
+    // Save theme online (best-effort)
+    try {
+        if (typeof supabaseClient !== "undefined" && currentUser?.username) {
+            const { error } = await supabaseClient
+                .from("users")
+                .update({ theme: newTheme })
+                .eq("username", currentUser.username);
+            if (error) console.log(error);
+        }
+    } catch (e) {
+        console.log(e);
     }
-
-    // Update icon
-    document.getElementById(
-        "themeBtn"
-    ).className =
-        isLight
-        ? "fas fa-sun"
-        : "fas fa-moon";
 }
 
 
@@ -21785,3 +21761,19 @@ async function submitAdmission(event) {
 
 
 
+
+
+/* ========== SBA Shell: sidebar + mobile menu ========== */
+function openSbaSidebar(){
+  const app = document.getElementById('app');
+  if(app) app.classList.add('sba-sidebar-open');
+}
+function closeSbaSidebar(){
+  const app = document.getElementById('app');
+  if(app) app.classList.remove('sba-sidebar-open');
+}
+function toggleSbaSidebar(){
+  const app = document.getElementById('app');
+  if(!app) return;
+  app.classList.toggle('sba-sidebar-open');
+}

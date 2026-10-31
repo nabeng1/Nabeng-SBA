@@ -30,154 +30,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 <body class="sba-system">
 
 
-<div id="subHeader" class="sub-header" style="display:none;">
-
-    <h1>📊 Nabeng-SBA</h1>
-
-    <!-- MOVE ICONS DIRECTLY UNDER H1 -->
-    <div class="header-icons">
-        <div id="themeBtn" class="icon-btn" onclick="toggleTheme()">
-    <i class="fas fa-moon"></i>
-</div>
-        <div class="icon-btn" onclick="logout()">
-    <i class="fas fa-sign-out-alt"></i>
-</div>
-		<div class="icon-btn" onclick="openWhatsApp()">
-    <i class="fab fa-whatsapp"></i>
-</div>
-    </div>
-
-<div id="topNav" class="top-nav" style="display:none;">
-
-    <div class="nav-left">
-        <span id="welcomeText"></span>
-    </div>
-
-    <div class="nav-center">
-
-        <!-- DASHBOARD -->
-        <button onclick="showPage('dashboardPage')">
-            Dashboard
-        </button>
-
-
-        <!-- ACADEMICS DROPDOWN -->
-        <div class="dropdown">
-
-            <button class="dropbtn">
-                Academics▼
-            </button>
-
-            <div class="dropdown-content">
-
-                <a href="#"
-                   onclick="showPage('studentsPage'); return false;">
-                    Students
-                </a>
-
-                <a href="#"
-                   onclick="showPage('subjectsPage'); return false;">
-                    Subjects
-                </a>
-
-                <a href="#"
-                   onclick="showPage('reportsPage'); return false;">
-                    Reports
-                </a>
-
-            </div>
-
-        </div>
-
-
-        <!-- SCHOOL DROPDOWN -->
-<div class="dropdown">
-
-    <button class="dropbtn">
-        School▼
-    </button>
-
-    <div class="dropdown-content">
-
-        <a href="#"
-           onclick="showPage('attendancePage'); return false;">
-            <i class="fas fa-clipboard-check"></i>
-            Attendance
-        </a>
-
-        <a href="#"
-           onclick="showPage('homeworkPage'); return false;">
-            <i class="fas fa-book-open"></i>
-            Home Work
-        </a>
-
-        <a href="#" 
-   onclick="showPage('timetablePage'); return false;"> 
-    <i class="fas fa-calendar-alt"></i> 
-    Timetable 
-</a>
-
-        <a href="#" onclick="showPage('noticesPage'); return false;">
-            <i class="fas fa-bullhorn"></i>
-            Notices
-        </a>
-
-    </div>
-
-</div>
-
-
-        <!-- CHAT -->
-        <button onclick="showPage('chat')">
-            Chat
-        </button>
-
-
-        <!-- PROFILE DROPDOWN -->
-        <div class="dropdown">
-
-            <button class="dropbtn">
-                Profile▼
-            </button>
-
-            <div class="dropdown-content">
-
-                <a href="#"
-                   onclick="showPage('userProfilePage'); return false;">
-                    User
-                </a>
-
-                <a href="#"
-   onclick="showProfileSubjects(); return false;">
-    Subjects
-</a>
-
-                <a href="#"
-                   onclick="showPage('profileTermPage'); return false;">
-                    Term Setup
-                </a>
-
-                <a href="#"
-                   onclick="showPage('profilePlanPage'); return false;">
-                    Plan
-                </a>
-
-                <a href="#"
-                   onclick="showPage('profileNotePage'); return false;">
-                    Note
-                </a>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-</div>
-
-
-
+<!-- app chrome moved inside #app -->
 
 <!-- =========================================================
      LOGIN
@@ -752,9 +605,117 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-<div id="app" style="display:none;">
+<div id="app" style="display:none;" class="sba-app">
 
-<div id="dashboardPage" class="container page">
+<!-- ========== DESKTOP SIDEBAR + MOBILE DRAWER ========== -->
+<aside id="sbaSidebar" class="sba-sidebar">
+  <div class="sba-sidebar-brand">
+    <img src="nabeng-sba-logo.png" alt="Nabeng-SBA" class="sba-sidebar-logo" onerror="this.style.display='none'">
+    <div>
+      <strong>Nabeng-SBA</strong>
+      <small id="sidebarSchoolName">School System</small>
+    </div>
+  </div>
+
+  <div class="sba-sidebar-user">
+    <span class="sba-sidebar-avatar"><i class="fas fa-user"></i></span>
+    <div>
+      <strong id="sidebarUserName">User</strong>
+      <small id="welcomeUser">Welcome</small>
+    </div>
+  </div>
+
+  <nav class="sba-sidebar-nav">
+    <button type="button" class="sba-nav-link is-active" data-page="dashboardPage" onclick="showPage('dashboardPage')">
+      <i class="fas fa-home"></i><span>Dashboard</span>
+    </button>
+
+    <div class="sba-nav-label">Academics</div>
+    <button type="button" class="sba-nav-link" data-page="studentsPage" onclick="showPage('studentsPage')">
+      <i class="fas fa-user-graduate"></i><span>Students</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="subjectsPage" onclick="showPage('subjectsPage')">
+      <i class="fas fa-book"></i><span>Subjects</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="reportsPage" onclick="showPage('reportsPage')">
+      <i class="fas fa-file-alt"></i><span>Reports</span>
+    </button>
+
+    <div class="sba-nav-label">School</div>
+    <button type="button" class="sba-nav-link" data-page="attendancePage" onclick="showPage('attendancePage')">
+      <i class="fas fa-clipboard-check"></i><span>Attendance</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="homeworkPage" onclick="showPage('homeworkPage')">
+      <i class="fas fa-book-open"></i><span>Homework</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="timetablePage" onclick="showPage('timetablePage')">
+      <i class="fas fa-calendar-alt"></i><span>Timetable</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="noticesPage" onclick="showPage('noticesPage')">
+      <i class="fas fa-bullhorn"></i><span>Notices</span>
+    </button>
+
+    <div class="sba-nav-label">More</div>
+    <button type="button" class="sba-nav-link" data-page="chat" onclick="showPage('chat')">
+      <i class="fas fa-comments"></i><span>Chat</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="userProfilePage" onclick="showPage('userProfilePage')">
+      <i class="fas fa-user"></i><span>Profile</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profileSubjectsPage" onclick="showProfileSubjects(); return false;">
+      <i class="fas fa-layer-group"></i><span>My Subjects</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profileTermPage" onclick="showPage('profileTermPage')">
+      <i class="fas fa-calendar-week"></i><span>Term Setup</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profilePlanPage" onclick="showPage('profilePlanPage')">
+      <i class="fas fa-tasks"></i><span>Plan</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profileNotePage" onclick="showPage('profileNotePage')">
+      <i class="fas fa-sticky-note"></i><span>Note</span>
+    </button>
+  </nav>
+
+  <div class="sba-sidebar-footer">
+    <button type="button" class="sba-nav-link" onclick="toggleTheme()">
+      <i class="fas fa-moon" id="sidebarThemeIcon"></i><span>Theme</span>
+    </button>
+    <button type="button" class="sba-nav-link sba-nav-logout" onclick="logout()">
+      <i class="fas fa-sign-out-alt"></i><span>Log out</span>
+    </button>
+  </div>
+</aside>
+
+<div class="sba-sidebar-backdrop" id="sbaSidebarBackdrop" onclick="closeSbaSidebar()"></div>
+
+<!-- ========== MAIN COLUMN ========== -->
+<div class="sba-main">
+  <header class="sba-topbar" id="sbaTopbar">
+    <button type="button" class="sba-menu-btn" id="sbaMenuBtn" onclick="toggleSbaSidebar()" aria-label="Open menu">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="sba-topbar-title">
+      <strong id="sbaPageTitle">Dashboard</strong>
+      <span id="welcomeText" class="sba-welcome-inline"></span>
+    </div>
+    <div class="sba-topbar-actions">
+      <button type="button" class="sba-icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button type="button" class="sba-icon-btn" onclick="openWhatsApp()" title="WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+      </button>
+      <button type="button" class="sba-icon-btn sba-logout-btn" onclick="logout()" title="Log out">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ONE shared container for every page -->
+  <div class="container sba-page-container" id="sbaPageContainer">
+
+
+<div id="dashboardPage" class="page">
 
 <!-- ===== HEADER (LOGO + WELCOME + SCHOOL NAME) ===== -->
 <div style="
@@ -780,7 +741,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 <input type="file" id="schoolLogoInput" accept="image/*" style="display:none;">
     <!-- TEXT -->
     <div style="flex:1;">
-        <h2 id="welcomeUser" style="
+        <h2 id="dashWelcomeUser" style="
             margin:0;
             color:#60a5fa;
             font-weight:bold;
@@ -864,7 +825,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-<div id="studentsPage" class="container page">
+<div id="studentsPage" class="page">
 
     <!-- ==========================================
          PAGE HEADER
@@ -1147,7 +1108,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-<div id="subjectsPage" class="container page">
+<div id="subjectsPage" class="page">
 
     <!-- PAGE HEADER -->
     <div class="subjects-page-header">
@@ -1270,7 +1231,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
      REPORT PAGE
 ========================================================= -->
 
-<div id="reportsPage" class="container page">
+<div id="reportsPage" class="page">
 
     <!-- PAGE HEADER -->
     <div class="reports-page-header">
@@ -1532,7 +1493,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
      STUDENT ATTENDANCE
      ========================================================= -->
 
-<div id="attendancePage" class="container page attendance-modern">
+<div id="attendancePage" class="page attendance-modern">
 
     <!-- =========================
          ATTENDANCE HEADER
@@ -1733,7 +1694,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
      MODERN HOMEWORK PAGE
 ========================================================= -->
 
-<div id="homeworkPage" class="container page" style="display:none;">
+<div id="homeworkPage" class="page" style="display:none;">
 
 
 <!-- =====================================================
@@ -2522,7 +2483,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
      NOTICES PAGE
 ========================================================= -->
 <!-- TIMETABLE PAGE -->
-<div id="timetablePage" class="container page timetable-page" style="display:none;">
+<div id="timetablePage" class="page timetable-page" style="display:none;">
   <div class="timetable-header">
     <div>
       <span class="timetable-eyebrow">SCHOOL OPERATIONS</span>
@@ -2594,7 +2555,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
   </div>
 </div>
 
-<div id="noticesPage" class="container page" style="display:none;">
+<div id="noticesPage" class="page" style="display:none;">
 
     <!-- PAGE HEADER -->
     <div class="notices-page-header">
@@ -3046,7 +3007,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 <!-- ==========================================
      CHAT PAGE
 ========================================== -->
-<div id="chat" class="page container">
+<div id="chat" class="page">
 
     <div id="chatLayout">
 
@@ -3349,7 +3310,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-        <div id="userProfilePage" class="container page">
+        <div id="userProfilePage" class="page">
 
     <div class="modern-profile-card">
 
@@ -3645,7 +3606,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
      SUBJECTS / TEACHER ASSIGNMENT
 ========================================================= -->
 
-<div id="profileSubjectsPage" class="container page">
+<div id="profileSubjectsPage" class="page">
 
     <!-- =====================================================
          PAGE HEADER
@@ -4015,7 +3976,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
      TERM SETTINGS
      ========================================================= -->
 
-<div id="profileTermPage" class="container page">
+<div id="profileTermPage" class="page">
 
     <div class="modern-term-card">
 
@@ -4335,7 +4296,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 <!-- =========================================================
      LESSON PLAN PAGE
 ========================================================= -->
-<div id="profilePlanPage" class="container page">
+<div id="profilePlanPage" class="page">
 
     <div class="lesson-header">
         <div>
@@ -4465,7 +4426,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 <!-- =========================================================
      LESSON NOTE PAGE
 ========================================================= -->
-<div id="profileNotePage" class="container page">
+<div id="profileNotePage" class="page">
 
     <div class="lesson-header">
         <div>
@@ -4597,6 +4558,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
   </div>
 </div>
 
+
+</div><!-- /.sba-page-container -->
+</div><!-- /.sba-main -->
+</div><!-- /#app -->
 
 <div class="bottom-nav">
 <button id="installBtn" style="display:none;">📲 Install App</button>

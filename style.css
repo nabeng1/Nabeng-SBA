@@ -10881,9 +10881,9 @@ body.dark-mode #noticesPage .notices-empty-state {
 ========================================================= */
 
 #profileSubjectsPage {
-    max-width: 1180px;
+    max-width: 960px;
     margin: 0 auto;
-    padding: 30px 24px 60px;
+    padding: 24px 16px 48px;
     animation: subjectsPageIn .35s ease;
 }
 
@@ -14120,7 +14120,7 @@ body.dark-mode #noticesPage .notices-empty-state {
     --att-soft: #f7f9fc;
     --att-white: #ffffff;
 
-    max-width: 1180px;
+    max-width: 960px;
     margin: 0 auto;
     padding: 10px 0 40px;
 }
@@ -16925,4 +16925,1608 @@ body.dark-mode #noticesPage .notices-empty-state {
 }
 .promotion-eligibility-message {
     line-height: 1.5;
+}
+
+/* =========================================================
+   SBA APP SHELL — one container, desktop sidebar, mobile menu
+   ========================================================= */
+
+.sba-app{
+  display:flex;
+  min-height:100vh;
+  background:#0b1220;
+}
+
+/* Sidebar */
+.sba-sidebar{
+  position:fixed;
+  top:0; left:0; bottom:0;
+  width:260px;
+  z-index:100;
+  display:flex;
+  flex-direction:column;
+  background:#111827;
+  border-right:1px solid #1f2937;
+  overflow-y:auto;
+  transition:transform .28s cubic-bezier(.22,1,.36,1);
+}
+
+.sba-sidebar-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:18px 16px;
+  border-bottom:1px solid #1f2937;
+}
+.sba-sidebar-logo{
+  width:40px; height:40px;
+  border-radius:10px;
+  object-fit:cover;
+  background:#fff;
+}
+.sba-sidebar-brand strong{
+  display:block;
+  font-size:15px;
+  color:#f8fafc;
+}
+.sba-sidebar-brand small{
+  display:block;
+  font-size:11px;
+  color:#94a3b8;
+  margin-top:2px;
+}
+
+.sba-sidebar-user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:14px 16px;
+  border-bottom:1px solid #1f2937;
+}
+.sba-sidebar-avatar{
+  width:40px; height:40px;
+  border-radius:50%;
+  background:#1e3a8a;
+  color:#93c5fd;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+}
+.sba-sidebar-user strong{
+  display:block;
+  font-size:13px;
+  color:#e2e8f0;
+}
+.sba-sidebar-user small{
+  display:block;
+  font-size:11px;
+  color:#94a3b8;
+  margin-top:2px;
+}
+
+.sba-sidebar-nav{
+  flex:1;
+  padding:12px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.sba-nav-label{
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#64748b;
+  padding:14px 12px 6px;
+}
+.sba-nav-link{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  border:0;
+  background:transparent;
+  color:#94a3b8;
+  padding:11px 12px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  text-align:left;
+  transition:background .15s, color .15s;
+}
+.sba-nav-link i{
+  width:18px;
+  text-align:center;
+  font-size:14px;
+}
+.sba-nav-link:hover{
+  background:#1e293b;
+  color:#e2e8f0;
+}
+.sba-nav-link.is-active{
+  background:#2563eb;
+  color:#fff;
+}
+.sba-nav-logout:hover{
+  background:#7f1d1d;
+  color:#fecaca;
+}
+.sba-sidebar-footer{
+  padding:10px;
+  border-top:1px solid #1f2937;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.sba-sidebar-backdrop{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:90;
+  background:rgba(0,0,0,.45);
+}
+
+/* Main column */
+.sba-main{
+  flex:1;
+  margin-left:260px;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+
+.sba-topbar{
+  position:sticky;
+  top:0;
+  z-index:50;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 20px;
+  background:rgba(17,24,39,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid #1f2937;
+}
+.sba-menu-btn{
+  display:none;
+  width:40px; height:40px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#1e293b;
+  color:#e2e8f0;
+  cursor:pointer;
+  place-items:center;
+  font-size:16px;
+}
+.sba-topbar-title{
+  flex:1;
+  min-width:0;
+}
+.sba-topbar-title strong{
+  display:block;
+  font-size:16px;
+  color:#f1f5f9;
+}
+.sba-welcome-inline{
+  font-size:12px;
+  color:#94a3b8;
+}
+.sba-topbar-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.sba-icon-btn{
+  width:38px; height:38px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#1e293b;
+  color:#cbd5e1;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  font-size:15px;
+}
+.sba-icon-btn:hover{ background:#334155; color:#fff; }
+.sba-logout-btn:hover{ background:#7f1d1d; color:#fecaca; border-color:#991b1b; }
+
+/* ONE shared container for all pages */
+.sba-page-container.container{
+  max-width:none;
+  width:100%;
+  margin:0;
+  border-radius:0;
+  background:transparent;
+  padding:16px 16px 40px;
+  box-sizing:border-box;
+  flex:1;
+}
+
+/* Match every page to the My Subjects page size (max-width 960px, centered) */
+.sba-page-container > .page{
+  width:100%;
+  max-width:960px;
+  margin-left:auto;
+  margin-right:auto;
+  box-sizing:border-box;
+  animation:fadeIn .2s ease;
+}
+
+/* Keep My Subjects consistent (avoid double horizontal growth) */
+#profileSubjectsPage{
+  max-width:960px !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  width:100% !important;
+}
+
+/* Align other pages that set their own widths to the same size */
+#noticesPage,
+#homeworkPage,
+#timetablePage,
+#attendancePage,
+#reportsPage,
+#studentsPage,
+#subjectsPage,
+#dashboardPage,
+#userProfilePage,
+#profileTermPage,
+#profilePlanPage,
+#profileNotePage,
+#chat{
+  max-width:960px !important;
+  width:100% !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  box-sizing:border-box !important;
+}
+
+@media (max-width:900px){
+  .sba-page-container.container{
+    padding:12px 10px 28px;
+  }
+  .sba-page-container > .page{
+    max-width:100%;
+  }
+}
+
+/* Hide legacy top/sub headers if any remnant */
+.sub-header, .top-nav{ display:none !important; }
+
+/* Hide bottom nav — replaced by sidebar + hamburger */
+.bottom-nav{ display:none !important; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 900px){
+  .sba-menu-btn{ display:grid; }
+
+  .sba-sidebar{
+    transform:translateX(-105%);
+    box-shadow:12px 0 40px rgba(0,0,0,.4);
+    width:min(300px, 88vw);
+  }
+  .sba-app.sba-sidebar-open .sba-sidebar{
+    transform:translateX(0);
+  }
+  .sba-app.sba-sidebar-open .sba-sidebar-backdrop{
+    display:block;
+  }
+
+  .sba-main{
+    margin-left:0;
+  }
+  .sba-page-container.container{
+    padding:14px 12px 32px;
+  }
+  .sba-topbar{
+    padding:10px 12px;
+  }
+}
+
+/* Light mode compatibility */
+.light-mode .sba-app,
+body.light-mode .sba-app{
+  background:#f1f5f9;
+}
+.light-mode .sba-sidebar,
+body.light-mode .sba-sidebar{
+  background:#fff;
+  border-right-color:#e2e8f0;
+}
+.light-mode .sba-sidebar-brand,
+.light-mode .sba-sidebar-user,
+.light-mode .sba-sidebar-footer,
+body.light-mode .sba-sidebar-brand,
+body.light-mode .sba-sidebar-user,
+body.light-mode .sba-sidebar-footer{
+  border-color:#e2e8f0;
+}
+.light-mode .sba-sidebar-brand strong,
+.light-mode .sba-sidebar-user strong,
+body.light-mode .sba-sidebar-brand strong,
+body.light-mode .sba-sidebar-user strong{
+  color:#0f172a;
+}
+.light-mode .sba-nav-link,
+body.light-mode .sba-nav-link{
+  color:#64748b;
+}
+.light-mode .sba-nav-link:hover,
+body.light-mode .sba-nav-link:hover{
+  background:#f1f5f9;
+  color:#0f172a;
+}
+.light-mode .sba-topbar,
+body.light-mode .sba-topbar{
+  background:rgba(255,255,255,.92);
+  border-bottom-color:#e2e8f0;
+}
+.light-mode .sba-topbar-title strong,
+body.light-mode .sba-topbar-title strong{
+  color:#0f172a;
+}
+.light-mode .sba-menu-btn,
+.light-mode .sba-icon-btn,
+body.light-mode .sba-menu-btn,
+body.light-mode .sba-icon-btn{
+  background:#f8fafc;
+  border-color:#e2e8f0;
+  color:#334155;
+}
+.light-mode .sba-page-container.container,
+body.light-mode .sba-page-container.container{
+  background:transparent;
+}
+
+/* =========================================================
+   GLOBAL THEME FIX
+   App uses: body.light-mode (light) | body.dark-mode (dark)
+   Many pages had fixed #fff / dark-only styles.
+========================================================= */
+
+:root, body.light-mode {
+  --sba-bg: #f1f5f9;
+  --sba-panel: #ffffff;
+  --sba-panel-2: #f8fafc;
+  --sba-ink: #0f172a;
+  --sba-muted: #64748b;
+  --sba-border: #e2e8f0;
+  --sba-input: #f1f5f9;
+  --sba-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+body.dark-mode,
+body:not(.light-mode) {
+  --sba-bg: #0b1220;
+  --sba-panel: #151922;
+  --sba-panel-2: #10131a;
+  --sba-ink: #f3f4f6;
+  --sba-muted: #9ca3af;
+  --sba-border: #272d3a;
+  --sba-input: #10131a;
+  --sba-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Base surfaces */
+body.dark-mode,
+body:not(.light-mode) {
+  background: var(--sba-bg) !important;
+  color: var(--sba-ink) !important;
+}
+
+body.light-mode {
+  background: var(--sba-bg) !important;
+  color: var(--sba-ink) !important;
+}
+
+/* App shell */
+body.dark-mode .sba-app,
+body:not(.light-mode) .sba-app {
+  background: var(--sba-bg) !important;
+}
+body.dark-mode .sba-sidebar,
+body:not(.light-mode) .sba-sidebar {
+  background: #0f172a !important;
+  border-right-color: var(--sba-border) !important;
+}
+body.dark-mode .sba-topbar,
+body:not(.light-mode) .sba-topbar {
+  background: rgba(15, 23, 42, 0.94) !important;
+  border-bottom-color: var(--sba-border) !important;
+}
+body.dark-mode .sba-topbar-title strong,
+body:not(.light-mode) .sba-topbar-title strong {
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .sba-menu-btn,
+body.dark-mode .sba-icon-btn,
+body:not(.light-mode) .sba-menu-btn,
+body:not(.light-mode) .sba-icon-btn {
+  background: #1e293b !important;
+  border-color: var(--sba-border) !important;
+  color: #e2e8f0 !important;
+}
+
+body.light-mode .sba-app { background: var(--sba-bg) !important; }
+body.light-mode .sba-sidebar {
+  background: #ffffff !important;
+  border-right-color: var(--sba-border) !important;
+}
+body.light-mode .sba-sidebar-brand strong,
+body.light-mode .sba-sidebar-user strong { color: #0f172a !important; }
+body.light-mode .sba-sidebar-brand small,
+body.light-mode .sba-sidebar-user small,
+body.light-mode .sba-nav-link { color: #64748b !important; }
+body.light-mode .sba-nav-link:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+body.light-mode .sba-nav-link.is-active {
+  background: #2563eb !important;
+  color: #fff !important;
+}
+body.light-mode .sba-topbar {
+  background: rgba(255,255,255,.95) !important;
+  border-bottom-color: var(--sba-border) !important;
+}
+body.light-mode .sba-topbar-title strong { color: #0f172a !important; }
+body.light-mode .sba-menu-btn,
+body.light-mode .sba-icon-btn {
+  background: #fff !important;
+  border-color: var(--sba-border) !important;
+  color: #334155 !important;
+}
+body.light-mode .sba-sidebar-brand,
+body.light-mode .sba-sidebar-user,
+body.light-mode .sba-sidebar-footer {
+  border-color: var(--sba-border) !important;
+}
+
+/* Generic cards / panels used across many pages */
+body.dark-mode .card,
+body.dark-mode .stat-card,
+body.dark-mode .chart-box,
+body.dark-mode .container,
+body.dark-mode .modal-content,
+body.dark-mode .assignment-card,
+body.dark-mode .assignment-header-card,
+body.dark-mode .assignment-info-card,
+body.dark-mode .hw-page-header,
+body.dark-mode .hw-main-card,
+body.dark-mode .hw-stat-card,
+body.dark-mode .homework-item,
+body.dark-mode .homework-card,
+body.dark-mode .notices-page-header,
+body.dark-mode .notices-main-card,
+body.dark-mode .notice-stat-card,
+body.dark-mode .notice-card,
+body.dark-mode .attendance-card,
+body.dark-mode .timetable-card,
+body.dark-mode .profile-card,
+body.dark-mode .info-card,
+body:not(.light-mode) .card,
+body:not(.light-mode) .stat-card,
+body:not(.light-mode) .chart-box,
+body:not(.light-mode) .assignment-card,
+body:not(.light-mode) .assignment-header-card,
+body:not(.light-mode) .assignment-info-card,
+body:not(.light-mode) .hw-page-header,
+body:not(.light-mode) .hw-main-card,
+body:not(.light-mode) .hw-stat-card,
+body:not(.light-mode) .homework-item,
+body:not(.light-mode) .homework-card,
+body:not(.light-mode) .notices-page-header,
+body:not(.light-mode) .notices-main-card,
+body:not(.light-mode) .notice-stat-card,
+body:not(.light-mode) .notice-card {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+  box-shadow: var(--sba-shadow) !important;
+}
+
+/* Text on those panels */
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4,
+body.dark-mode .hw-page-header h1,
+body.dark-mode .hw-card-heading h2,
+body.dark-mode .notices-page-header h1,
+body.dark-mode .notices-card-title h2,
+body.dark-mode .notice-card-title h3,
+body.dark-mode .assignment-card-header h3,
+body.dark-mode .assignment-header-card h3,
+body.dark-mode .assignment-info-card h4,
+body.dark-mode .profile-section-header h2,
+body:not(.light-mode) h1,
+body:not(.light-mode) h2,
+body:not(.light-mode) h3,
+body:not(.light-mode) h4 {
+  color: var(--sba-ink) !important;
+}
+
+body.dark-mode p,
+body.dark-mode small,
+body.dark-mode span,
+body.dark-mode label,
+body.dark-mode .hw-page-header p,
+body.dark-mode .notices-page-header p,
+body.dark-mode .assignment-card-header p,
+body.dark-mode .assignment-header-card p,
+body.dark-mode .assignment-info-card p,
+body:not(.light-mode) p,
+body:not(.light-mode) small,
+body:not(.light-mode) label {
+  color: var(--sba-muted);
+}
+
+/* Keep intentional white text on blue gradient headers */
+body.dark-mode .profile-section-header,
+body.dark-mode .profile-section-header h2,
+body.dark-mode .profile-section-header p,
+body.dark-mode .profile-section-header span,
+body:not(.light-mode) .profile-section-header,
+body:not(.light-mode) .profile-section-header h2,
+body:not(.light-mode) .profile-section-header p,
+body:not(.light-mode) .profile-section-header span,
+body.light-mode .profile-section-header,
+body.light-mode .profile-section-header h2,
+body.light-mode .profile-section-header p {
+  color: #fff !important;
+}
+
+/* Forms */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea,
+body:not(.light-mode) input,
+body:not(.light-mode) select,
+body:not(.light-mode) textarea {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+/* Tables */
+body.dark-mode table,
+body:not(.light-mode) table {
+  color: var(--sba-ink) !important;
+}
+body.dark-mode th,
+body.dark-mode td,
+body:not(.light-mode) th,
+body:not(.light-mode) td {
+  border-bottom-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode thead th,
+body:not(.light-mode) thead th {
+  background: var(--sba-panel-2) !important;
+}
+
+/* Page-specific white cards that break dark mode */
+body.dark-mode #profileSubjectsPage .assignment-card,
+body.dark-mode #profileSubjectsPage .assignment-header-card,
+body.dark-mode #profileSubjectsPage .assignment-info-card,
+body.dark-mode #profileSubjectsPage select,
+body.dark-mode #profileSubjectsPage input[type="text"],
+body:not(.light-mode) #profileSubjectsPage .assignment-card,
+body:not(.light-mode) #profileSubjectsPage .assignment-header-card,
+body:not(.light-mode) #profileSubjectsPage .assignment-info-card,
+body:not(.light-mode) #profileSubjectsPage select,
+body:not(.light-mode) #profileSubjectsPage input[type="text"] {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+body.dark-mode #homeworkPage,
+body.dark-mode #noticesPage,
+body.dark-mode #attendancePage,
+body.dark-mode #timetablePage,
+body.dark-mode #reportsPage,
+body.dark-mode #studentsPage,
+body.dark-mode #subjectsPage,
+body.dark-mode #dashboardPage,
+body.dark-mode #userProfilePage,
+body.dark-mode #profileTermPage,
+body.dark-mode #profilePlanPage,
+body.dark-mode #profileNotePage,
+body.dark-mode #chat,
+body:not(.light-mode) #homeworkPage,
+body:not(.light-mode) #noticesPage,
+body:not(.light-mode) #attendancePage,
+body:not(.light-mode) #timetablePage,
+body:not(.light-mode) #reportsPage,
+body:not(.light-mode) #studentsPage,
+body:not(.light-mode) #subjectsPage,
+body:not(.light-mode) #dashboardPage,
+body:not(.light-mode) #userProfilePage,
+body:not(.light-mode) #profileTermPage,
+body:not(.light-mode) #profilePlanPage,
+body:not(.light-mode) #profileNotePage,
+body:not(.light-mode) #chat {
+  background: transparent !important;
+  color: var(--sba-ink) !important;
+}
+
+/* Chat panels */
+body.dark-mode #chat,
+body:not(.light-mode) #chat {
+  --chat-bg: #0b1220;
+  --chat-panel: #151922;
+  --chat-sidebar: #10131a;
+  --chat-input: #10131a;
+  --chat-text: #f3f4f6;
+  --chat-text-light: #9ca3af;
+  --chat-muted: #94a3b8;
+  --chat-border: #272d3a;
+}
+
+body.light-mode #chat {
+  --chat-bg: #EEF3FA;
+  --chat-panel: #FFFFFF;
+  --chat-sidebar: #F8FAFD;
+  --chat-input: #F1F5F9;
+  --chat-text: #1E293B;
+  --chat-text-light: #64748B;
+  --chat-muted: #94A3B8;
+  --chat-border: #E5EAF2;
+}
+
+/* Attendance / timetable common surfaces */
+body.dark-mode .attendance-modern,
+body.dark-mode .timetable-page,
+body:not(.light-mode) .attendance-modern,
+body:not(.light-mode) .timetable-page {
+  background: transparent !important;
+  color: var(--sba-ink) !important;
+}
+
+/* Modals */
+body.dark-mode .modal-content,
+body.dark-mode .modal-box,
+body.dark-mode .student-modal-box,
+body:not(.light-mode) .modal-content,
+body:not(.light-mode) .modal-box,
+body:not(.light-mode) .student-modal-box {
+  background: var(--sba-panel) !important;
+  color: var(--sba-ink) !important;
+  border-color: var(--sba-border) !important;
+}
+
+/* Light mode: ensure dark-designed blocks become light */
+body.light-mode .card,
+body.light-mode .stat-card,
+body.light-mode .chart-box,
+body.light-mode .assignment-card,
+body.light-mode .assignment-header-card,
+body.light-mode .assignment-info-card,
+body.light-mode .hw-main-card,
+body.light-mode .hw-stat-card,
+body.light-mode .homework-card,
+body.light-mode .notices-main-card,
+body.light-mode .notice-card,
+body.light-mode .notice-stat-card {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+body.light-mode .container {
+  background: transparent !important;
+  color: var(--sba-ink) !important;
+}
+
+/* Dashboard inline dark header block */
+body.light-mode #dashboardPage [style*="background:#1e293b"],
+body.light-mode #dashboardPage [style*="background: #1e293b"] {
+  background: #ffffff !important;
+  border: 1px solid var(--sba-border);
+}
+body.light-mode #dashWelcomeUser,
+body.light-mode #schoolNameText {
+  color: #1e3a8a !important;
+}
+
+/* Empty states / filters */
+body.dark-mode .hw-empty-state,
+body.dark-mode .notices-empty-state,
+body.dark-mode .hw-filter,
+body.dark-mode .notice-filter,
+body.dark-mode .hw-upload-box,
+body:not(.light-mode) .hw-empty-state,
+body:not(.light-mode) .notices-empty-state,
+body:not(.light-mode) .hw-filter,
+body:not(.light-mode) .notice-filter,
+body:not(.light-mode) .hw-upload-box {
+  background: var(--sba-panel-2) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-muted) !important;
+}
+
+/* Buttons that were forced white text on dark-only bars */
+body.light-mode .sba-nav-link.is-active i,
+body.light-mode .sba-nav-link.is-active span {
+  color: #fff !important;
+}
+
+
+/* Login box theme */
+body.dark-mode #loginBox,
+body:not(.light-mode) #loginBox {
+  background: var(--sba-panel) !important;
+  color: var(--sba-ink) !important;
+}
+body.light-mode #loginBox {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Reports / students common white wrappers */
+body.dark-mode .report-card,
+body.dark-mode .students-list-section,
+body.dark-mode .subjects-list-section,
+body.dark-mode .bulk-import-section,
+body.dark-mode .ni-dash-card,
+body:not(.light-mode) .report-card,
+body:not(.light-mode) .students-list-section,
+body:not(.light-mode) .subjects-list-section,
+body:not(.light-mode) .bulk-import-section {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+/* Force any leftover pure-white large surfaces in dark mode */
+body.dark-mode .page > div[style*="background:#fff"],
+body.dark-mode .page > div[style*="background: #fff"],
+body.dark-mode .page > div[style*="background:#ffffff"],
+body.dark-mode .page > div[style*="background: #ffffff"],
+body.dark-mode .page > div[style*="background:white"],
+body:not(.light-mode) .page > div[style*="background:#fff"],
+body:not(.light-mode) .page > div[style*="background: #fff"],
+body:not(.light-mode) .page > div[style*="background:#ffffff"],
+body:not(.light-mode) .page > div[style*="background: #ffffff"],
+body:not(.light-mode) .page > div[style*="background:white"] {
+  background: var(--sba-panel) !important;
+  color: var(--sba-ink) !important;
+}
+
+/* =========================================================
+   PAGE-SPECIFIC THEME FIXES
+   Students · Subjects · Reports · Attendance · Timetable
+   Chat · Profile · Term settings
+========================================================= */
+
+/* ---------- Shared page cards (Students / Subjects / Reports) ---------- */
+body.dark-mode .subjects-filter-card,
+body.dark-mode .subjects-list-section,
+body.dark-mode .students-list-section,
+body.dark-mode .subjects-section,
+body.dark-mode .student-search-card,
+body.dark-mode .student-management-btn,
+body.dark-mode .add-student-card,
+body.dark-mode .students-table-card,
+body.dark-mode .report-control-card,
+body.dark-mode .report-management-card,
+body.dark-mode .report-generation-card,
+body.dark-mode .report-output-card,
+body.dark-mode .marks-modal-content,
+body.dark-mode .marks-modal-footer,
+body:not(.light-mode) .subjects-filter-card,
+body:not(.light-mode) .subjects-list-section,
+body:not(.light-mode) .students-list-section,
+body:not(.light-mode) .subjects-section,
+body:not(.light-mode) .student-search-card,
+body:not(.light-mode) .student-management-btn,
+body:not(.light-mode) .add-student-card,
+body:not(.light-mode) .students-table-card,
+body:not(.light-mode) .report-control-card,
+body:not(.light-mode) .report-management-card,
+body:not(.light-mode) .report-generation-card,
+body:not(.light-mode) .report-output-card,
+body:not(.light-mode) .marks-modal-content,
+body:not(.light-mode) .marks-modal-footer {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+  box-shadow: var(--sba-shadow) !important;
+}
+
+body.dark-mode .section-title h4,
+body.dark-mode .report-card-title h4,
+body.dark-mode .report-output-header h4,
+body.dark-mode .student-action-text strong,
+body.dark-mode .student-search-card label,
+body.dark-mode .subjects-filter-card label,
+body.dark-mode .report-field label,
+body.dark-mode .report-output-content,
+body:not(.light-mode) .section-title h4,
+body:not(.light-mode) .report-card-title h4,
+body:not(.light-mode) .report-output-header h4,
+body:not(.light-mode) .student-action-text strong,
+body:not(.light-mode) .student-search-card label,
+body:not(.light-mode) .subjects-filter-card label,
+body:not(.light-mode) .report-field label,
+body:not(.light-mode) .report-output-content {
+  color: var(--sba-ink) !important;
+}
+
+body.dark-mode .student-action-text small,
+body.dark-mode .section-title span,
+body.dark-mode .report-card-title span,
+body.dark-mode .report-output-header span,
+body:not(.light-mode) .student-action-text small {
+  color: var(--sba-muted) !important;
+}
+
+body.dark-mode .section-title > i,
+body.dark-mode .report-card-title > i,
+body.dark-mode .report-output-header > i,
+body.dark-mode .portal-account-btn .student-action-icon,
+body:not(.light-mode) .section-title > i,
+body:not(.light-mode) .report-card-title > i,
+body:not(.light-mode) .report-output-header > i,
+body:not(.light-mode) .portal-account-btn .student-action-icon {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+}
+
+body.dark-mode .subjects-filter-card select,
+body.dark-mode .student-search-box input,
+body.dark-mode .report-search-box input,
+body.dark-mode .report-field select,
+body.dark-mode .subjects-section input[type="number"],
+body.dark-mode .subjects-section input[type="text"],
+body.dark-mode .subjects-section select,
+body:not(.light-mode) .subjects-filter-card select,
+body:not(.light-mode) .student-search-box input,
+body:not(.light-mode) .report-search-box input,
+body:not(.light-mode) .report-field select,
+body:not(.light-mode) .subjects-section input[type="number"],
+body:not(.light-mode) .subjects-section input[type="text"],
+body:not(.light-mode) .subjects-section select {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+body.dark-mode .subjects-section input[readonly],
+body:not(.light-mode) .subjects-section input[readonly] {
+  background: #1e293b !important;
+  color: var(--sba-muted) !important;
+}
+
+body.dark-mode .marks-cancel-btn,
+body:not(.light-mode) .marks-cancel-btn {
+  background: var(--sba-panel-2) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+body.dark-mode .report-output-header,
+body:not(.light-mode) .report-output-header {
+  border-bottom-color: var(--sba-border) !important;
+}
+
+body.dark-mode .report-action-btn,
+body:not(.light-mode) .report-action-btn {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .report-action-text strong,
+body:not(.light-mode) .report-action-text strong { color: var(--sba-ink) !important; }
+body.dark-mode .report-action-text small,
+body:not(.light-mode) .report-action-text small { color: var(--sba-muted) !important; }
+
+/* Gradient headers keep white text */
+body.dark-mode .subjects-page-header,
+body.dark-mode .subjects-page-header h3,
+body.dark-mode .subjects-page-header p,
+body.dark-mode .reports-page-header,
+body.dark-mode .reports-page-header h3,
+body.dark-mode .reports-page-header p,
+body.dark-mode .students-page-header,
+body.dark-mode .students-page-header h3,
+body.dark-mode .students-page-header p,
+body.dark-mode .attendance-header,
+body.dark-mode .attendance-header h3,
+body.dark-mode .attendance-header p,
+body.light-mode .subjects-page-header,
+body.light-mode .reports-page-header,
+body.light-mode .students-page-header,
+body.light-mode .attendance-header {
+  color: #fff !important;
+}
+body.dark-mode .subjects-page-header h3,
+body.dark-mode .reports-page-header h3,
+body.dark-mode .students-page-header h3,
+body.dark-mode .attendance-header h3,
+body.light-mode .subjects-page-header h3,
+body.light-mode .reports-page-header h3,
+body.light-mode .students-page-header h3,
+body.light-mode .attendance-header h3 {
+  color: #fff !important;
+}
+
+/* ---------- Attendance ---------- */
+body.dark-mode .attendance-modern,
+body:not(.light-mode) .attendance-modern {
+  --att-ink: #f3f4f6;
+  --att-muted: #9ca3af;
+  --att-line: #272d3a;
+  --att-soft: #10131a;
+  --att-white: #151922;
+}
+
+body.dark-mode .attendance-summary-card,
+body.dark-mode .attendance-table-card,
+body.dark-mode .attendance-controls,
+body.dark-mode .attendance-filter-card,
+body:not(.light-mode) .attendance-summary-card,
+body:not(.light-mode) .attendance-table-card,
+body:not(.light-mode) .attendance-controls,
+body:not(.light-mode) .attendance-filter-card {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+  box-shadow: var(--sba-shadow) !important;
+}
+
+body.dark-mode .attendance-table-header,
+body:not(.light-mode) .attendance-table-header {
+  border-bottom-color: var(--sba-border) !important;
+}
+body.dark-mode .attendance-table-title h3,
+body.dark-mode #attendanceStats,
+body.dark-mode #termAttendanceSummary,
+body:not(.light-mode) .attendance-table-title h3,
+body:not(.light-mode) #attendanceStats,
+body:not(.light-mode) #termAttendanceSummary {
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .summary-card-heading,
+body:not(.light-mode) .summary-card-heading {
+  color: var(--sba-muted) !important;
+}
+
+body.dark-mode #attendanceTable td,
+body:not(.light-mode) #attendanceTable td {
+  border-bottom-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode #attendanceTable tbody tr:hover,
+body:not(.light-mode) #attendanceTable tbody tr:hover {
+  background: #1e293b !important;
+}
+body.dark-mode #attendanceTable button,
+body.dark-mode #attendanceTable select,
+body.dark-mode #attendanceTable input,
+body:not(.light-mode) #attendanceTable button,
+body:not(.light-mode) #attendanceTable select,
+body:not(.light-mode) #attendanceTable input {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+/* ---------- Timetable ---------- */
+body.dark-mode .timetable-page,
+body:not(.light-mode) .timetable-page {
+  background: transparent !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .timetable-header,
+body:not(.light-mode) .timetable-header {
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+  border-color: var(--sba-border) !important;
+  color: #fff !important;
+}
+body.light-mode .timetable-header {
+  background: linear-gradient(135deg, #08063d, #1558ff) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .timetable-card,
+body.dark-mode .timetable-section-heading,
+body.dark-mode .timetable-list,
+body.dark-mode .timetable-entry,
+body.dark-mode .timetable-form-card,
+body:not(.light-mode) .timetable-card,
+body:not(.light-mode) .timetable-entry,
+body:not(.light-mode) .timetable-form-card {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+body.dark-mode .timetable-section-heading h2,
+body.dark-mode .timetable-section-heading p,
+body:not(.light-mode) .timetable-section-heading h2 {
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .timetable-section-heading p,
+body:not(.light-mode) .timetable-section-heading p {
+  color: var(--sba-muted) !important;
+}
+
+body.dark-mode .timetable-page input,
+body.dark-mode .timetable-page select,
+body.dark-mode .timetable-page textarea,
+body:not(.light-mode) .timetable-page input,
+body:not(.light-mode) .timetable-page select,
+body:not(.light-mode) .timetable-page textarea {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+/* ---------- Chat ---------- */
+body.dark-mode #chat,
+body.dark-mode #chatLayout,
+body:not(.light-mode) #chat,
+body:not(.light-mode) #chatLayout {
+  background: var(--sba-bg) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .chat-sidebar,
+body.dark-mode #chatTopBar,
+body.dark-mode #chatComposer,
+body.dark-mode .chat-main,
+body.dark-mode .chat-messages,
+body:not(.light-mode) .chat-sidebar,
+body:not(.light-mode) #chatTopBar,
+body:not(.light-mode) #chatComposer,
+body:not(.light-mode) .chat-main,
+body:not(.light-mode) .chat-messages {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode #chatComposer input,
+body:not(.light-mode) #chatComposer input {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .chat-sidebar,
+body:not(.light-mode) .chat-sidebar {
+  background: var(--sba-panel-2) !important;
+}
+body.dark-mode .sidebar-title h2,
+body.dark-mode .chat-contact-name,
+body:not(.light-mode) .sidebar-title h2,
+body:not(.light-mode) .chat-contact-name {
+  color: var(--sba-ink) !important;
+}
+
+/* ---------- Profile (user) ---------- */
+body.dark-mode #userProfilePage,
+body:not(.light-mode) #userProfilePage {
+  background: transparent !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .profile-section,
+body.dark-mode .profile-card,
+body.dark-mode .profile-wrapper,
+body.dark-mode .profile-content,
+body.dark-mode .profile-sidebar,
+body.dark-mode .info-card,
+body.dark-mode .account-card,
+body:not(.light-mode) .profile-section,
+body:not(.light-mode) .profile-card,
+body:not(.light-mode) .profile-content,
+body:not(.light-mode) .profile-sidebar,
+body:not(.light-mode) .info-card,
+body:not(.light-mode) .account-card {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .profile-section-title h3,
+body.dark-mode .profile-content h2,
+body:not(.light-mode) .profile-section-title h3,
+body:not(.light-mode) .profile-content h2 {
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .profile-section-title p,
+body:not(.light-mode) .profile-section-title p {
+  color: var(--sba-muted) !important;
+}
+body.dark-mode .profile-section input,
+body.dark-mode .profile-section select,
+body.dark-mode .profile-section textarea,
+body.dark-mode .info-card input,
+body.dark-mode .info-card select,
+body.dark-mode .info-card textarea,
+body:not(.light-mode) .profile-section input,
+body:not(.light-mode) .profile-section select,
+body:not(.light-mode) .profile-section textarea,
+body:not(.light-mode) .info-card input,
+body:not(.light-mode) .info-card select,
+body:not(.light-mode) .info-card textarea {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .menu-item,
+body:not(.light-mode) .menu-item {
+  color: var(--sba-muted) !important;
+}
+body.dark-mode .menu-item.active,
+body:not(.light-mode) .menu-item.active {
+  color: var(--sba-ink) !important;
+  background: var(--sba-panel-2) !important;
+}
+
+/* ---------- Term settings ---------- */
+body.dark-mode #profileTermPage,
+body:not(.light-mode) #profileTermPage {
+  background: transparent !important;
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .modern-term-card,
+body.dark-mode .term-card,
+body.dark-mode .term-main-icon,
+body:not(.light-mode) .modern-term-card,
+body:not(.light-mode) .term-card {
+  background: var(--sba-panel) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+  box-shadow: var(--sba-shadow) !important;
+}
+body.dark-mode .term-card-header h3,
+body:not(.light-mode) .term-card-header h3 {
+  color: var(--sba-ink) !important;
+}
+body.dark-mode .term-card-header span,
+body:not(.light-mode) .term-card-header span {
+  color: var(--sba-muted) !important;
+}
+body.dark-mode #profileTermPage input,
+body.dark-mode #profileTermPage select,
+body.dark-mode #profileTermPage textarea,
+body:not(.light-mode) #profileTermPage input,
+body:not(.light-mode) #profileTermPage select,
+body:not(.light-mode) #profileTermPage textarea {
+  background: var(--sba-input) !important;
+  border-color: var(--sba-border) !important;
+  color: var(--sba-ink) !important;
+}
+
+/* Light mode: ensure dark default surfaces lighten */
+body.light-mode .subjects-filter-card,
+body.light-mode .student-search-card,
+body.light-mode .student-management-btn,
+body.light-mode .add-student-card,
+body.light-mode .students-table-card,
+body.light-mode .report-control-card,
+body.light-mode .report-management-card,
+body.light-mode .report-generation-card,
+body.light-mode .report-output-card,
+body.light-mode .attendance-summary-card,
+body.light-mode .attendance-table-card,
+body.light-mode .term-card,
+body.light-mode .modern-term-card,
+body.light-mode .profile-section,
+body.light-mode .subjects-section {
+  background: #ffffff !important;
+  border-color: #e8e9ef !important;
+  color: #10111a !important;
+}
+body.light-mode .section-title h4,
+body.light-mode .report-card-title h4,
+body.light-mode .student-action-text strong,
+body.light-mode .term-card-header h3 {
+  color: #10111a !important;
+}
+body.light-mode .student-action-text small,
+body.light-mode .term-card-header span {
+  color: #737887 !important;
+}
+
+/* =========================================================
+   HARD FIXES: Chat (dark) · Timetable (light) · Term header
+========================================================= */
+
+/* ===== CHAT — force dark theme variables + surfaces ===== */
+body.dark-mode #chat,
+body:not(.light-mode) #chat {
+  --chat-primary: #3b82f6 !important;
+  --chat-primary-dark: #2563eb !important;
+  --chat-primary-soft: #1e3a8a !important;
+  --chat-bg: #0b1220 !important;
+  --chat-panel: #151922 !important;
+  --chat-sidebar: #10131a !important;
+  --chat-input: #0f172a !important;
+  --chat-text: #f3f4f6 !important;
+  --chat-text-light: #9ca3af !important;
+  --chat-muted: #94a3b8 !important;
+  --chat-border: #272d3a !important;
+  --chat-shadow: 0 15px 40px rgba(0,0,0,.35) !important;
+  background: #0b1220 !important;
+  color: #f3f4f6 !important;
+}
+
+body.dark-mode #chatLayout,
+body:not(.light-mode) #chatLayout {
+  background: #151922 !important;
+  border-color: #272d3a !important;
+  box-shadow: 0 15px 40px rgba(0,0,0,.35) !important;
+}
+
+body.dark-mode .chat-sidebar,
+body.dark-mode .chat-users,
+body:not(.light-mode) .chat-sidebar,
+body:not(.light-mode) .chat-users {
+  background: #10131a !important;
+  border-color: #272d3a !important;
+}
+
+body.dark-mode .sidebar-header,
+body:not(.light-mode) .sidebar-header {
+  background: #151922 !important;
+  border-bottom-color: #272d3a !important;
+}
+
+body.dark-mode .sidebar-title h2,
+body:not(.light-mode) .sidebar-title h2 {
+  color: #f3f4f6 !important;
+}
+
+body.dark-mode .search-wrapper input,
+body:not(.light-mode) .search-wrapper input {
+  background: #0f172a !important;
+  color: #f3f4f6 !important;
+  border-color: #272d3a !important;
+}
+body.dark-mode .search-wrapper input:focus,
+body:not(.light-mode) .search-wrapper input:focus {
+  background: #1e293b !important;
+  border-color: rgba(59,130,246,.4) !important;
+}
+
+body.dark-mode .chat-filters,
+body:not(.light-mode) .chat-filters {
+  background: #0b1220 !important;
+}
+body.dark-mode .chat-filter,
+body:not(.light-mode) .chat-filter {
+  color: #9ca3af !important;
+}
+body.dark-mode .chat-filter.active,
+body:not(.light-mode) .chat-filter.active {
+  background: #1e293b !important;
+  color: #60a5fa !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode .chat-user,
+body:not(.light-mode) .chat-user {
+  background: #151922 !important;
+  border-color: #272d3a !important;
+  color: #f3f4f6 !important;
+}
+body.dark-mode .chat-user:hover,
+body.dark-mode .chat-user.active,
+body:not(.light-mode) .chat-user:hover,
+body:not(.light-mode) .chat-user.active {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode #chatTopBar,
+body.dark-mode .chat-main,
+body.dark-mode .chat-messages,
+body.dark-mode .chat-window,
+body.dark-mode .chat-panel,
+body:not(.light-mode) #chatTopBar,
+body:not(.light-mode) .chat-main,
+body:not(.light-mode) .chat-messages,
+body:not(.light-mode) .chat-window,
+body:not(.light-mode) .chat-panel {
+  background: #151922 !important;
+  border-color: #272d3a !important;
+  color: #f3f4f6 !important;
+}
+
+body.dark-mode #chatComposer,
+body:not(.light-mode) #chatComposer {
+  background: #10131a !important;
+  border-color: #272d3a !important;
+}
+body.dark-mode #chatComposer input,
+body:not(.light-mode) #chatComposer input {
+  background: #0f172a !important;
+  color: #f3f4f6 !important;
+  border-color: #272d3a !important;
+}
+
+body.dark-mode .chat-user-name,
+body.dark-mode .chat-contact-name,
+body.dark-mode .message-text,
+body.dark-mode .chat-message,
+body:not(.light-mode) .chat-user-name,
+body:not(.light-mode) .chat-contact-name {
+  color: #f3f4f6 !important;
+}
+body.dark-mode .chat-user-status,
+body.dark-mode .chat-preview,
+body.dark-mode .chat-time,
+body:not(.light-mode) .chat-user-status,
+body:not(.light-mode) .chat-preview,
+body:not(.light-mode) .chat-time {
+  color: #94a3b8 !important;
+}
+
+/* ===== TIMETABLE — force light mode surfaces ===== */
+body.light-mode .timetable-page {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+body.light-mode .timetable-header {
+  background: linear-gradient(135deg, #08063d, #1558ff) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+body.light-mode .timetable-header h1 {
+  color: #fff !important;
+}
+body.light-mode .timetable-header p,
+body.light-mode .timetable-eyebrow {
+  color: rgba(255,255,255,.85) !important;
+}
+body.light-mode .timetable-header-badge {
+  background: rgba(255,255,255,.15) !important;
+  color: #fff !important;
+}
+
+body.light-mode .timetable-filter-group label,
+body.light-mode .timetable-form-group label {
+  color: #64748b !important;
+}
+body.light-mode .timetable-filter-group select,
+body.light-mode .timetable-filter-group input,
+body.light-mode .timetable-form-group select,
+body.light-mode .timetable-form-group input {
+  background: #fff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light-mode .timetable-secondary-btn,
+body.light-mode .timetable-cancel-btn {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light-mode .timetable-summary-card,
+body.light-mode .timetable-grid-wrapper,
+body.light-mode .timetable-entries-wrap,
+body.light-mode .timetable-entry,
+body.light-mode .timetable-form-card,
+body.light-mode .timetable-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 20px rgba(15,23,42,.05) !important;
+}
+
+body.light-mode .timetable-summary-card span {
+  color: #64748b !important;
+}
+body.light-mode .timetable-summary-card strong {
+  color: #0f172a !important;
+}
+body.light-mode .timetable-summary-card i {
+  color: #2563eb !important;
+}
+
+body.light-mode .timetable-section-heading h2 {
+  color: #0f172a !important;
+}
+body.light-mode .timetable-section-heading p {
+  color: #64748b !important;
+}
+
+body.light-mode .timetable-message.success {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+}
+body.light-mode .timetable-message.error {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+}
+body.light-mode .timetable-message.info {
+  background: #eff6ff !important;
+  color: #1e40af !important;
+}
+
+/* Timetable table cells in light mode */
+body.light-mode .timetable-page table,
+body.light-mode .timetable-page th,
+body.light-mode .timetable-page td {
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode .timetable-page th {
+  background: #f8fafc !important;
+}
+
+/* ===== TERM SETTINGS — header + panels ===== */
+body.dark-mode .modern-term-card,
+body:not(.light-mode) .modern-term-card {
+  background: #151922 !important;
+  border-color: #272d3a !important;
+  box-shadow: 0 18px 50px rgba(0,0,0,.35) !important;
+}
+
+body.dark-mode .term-header,
+body:not(.light-mode) .term-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #1d4ed8 100%) !important;
+  border-bottom-color: #272d3a !important;
+  color: #fff !important;
+}
+body.dark-mode .term-header h2,
+body.dark-mode .term-title-area h2,
+body:not(.light-mode) .term-header h2,
+body:not(.light-mode) .term-title-area h2 {
+  color: #ffffff !important;
+}
+body.dark-mode .term-header p,
+body.dark-mode .term-title-area p,
+body:not(.light-mode) .term-header p,
+body:not(.light-mode) .term-title-area p {
+  color: rgba(255,255,255,.85) !important;
+}
+
+body.light-mode .term-header {
+  background: linear-gradient(135deg, #f8faff 0%, #eef3ff 50%, #f8fafc 100%) !important;
+  border-bottom-color: #e7eaf0 !important;
+}
+body.light-mode .term-header h2,
+body.light-mode .term-title-area h2 {
+  color: #111827 !important;
+}
+body.light-mode .term-header p,
+body.light-mode .term-title-area p {
+  color: #64748b !important;
+}
+
+body.dark-mode .term-card,
+body:not(.light-mode) .term-card {
+  background: #10131a !important;
+  border-color: #272d3a !important;
+}
+body.dark-mode .term-card-header h3,
+body:not(.light-mode) .term-card-header h3 {
+  color: #f3f4f6 !important;
+}
+body.dark-mode .term-card-header span,
+body.dark-mode .term-field label,
+body:not(.light-mode) .term-card-header span,
+body:not(.light-mode) .term-field label {
+  color: #9ca3af !important;
+}
+body.dark-mode .term-number,
+body:not(.light-mode) .term-number {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+}
+
+body.dark-mode .academic-year-panel,
+body.dark-mode .term-settings-content,
+body:not(.light-mode) .academic-year-panel,
+body:not(.light-mode) .term-settings-content {
+  background: transparent !important;
+  color: #f3f4f6 !important;
+}
+body.dark-mode .academic-year-heading h3,
+body:not(.light-mode) .academic-year-heading h3 {
+  color: #f3f4f6 !important;
+}
+body.dark-mode .academic-year-heading p,
+body.dark-mode .academic-year-eyebrow,
+body:not(.light-mode) .academic-year-heading p,
+body:not(.light-mode) .academic-year-eyebrow {
+  color: #9ca3af !important;
+}
+body.dark-mode .academic-year-field select,
+body.dark-mode .academic-year-field label,
+body.dark-mode .date-input-wrapper input,
+body.dark-mode .term-field input,
+body:not(.light-mode) .academic-year-field select,
+body:not(.light-mode) .date-input-wrapper input,
+body:not(.light-mode) .term-field input {
+  background: #0f172a !important;
+  border-color: #272d3a !important;
+  color: #f3f4f6 !important;
+}
+body.dark-mode .academic-year-notice,
+body:not(.light-mode) .academic-year-notice {
+  background: #10131a !important;
+  border-color: #272d3a !important;
+  color: #e2e8f0 !important;
+}
+body.dark-mode .academic-year-notice strong,
+body:not(.light-mode) .academic-year-notice strong {
+  color: #f3f4f6 !important;
+}
+body.dark-mode .academic-year-notice p,
+body:not(.light-mode) .academic-year-notice p {
+  color: #9ca3af !important;
+}
+
+body.light-mode .modern-term-card {
+  background: #ffffff !important;
+  border-color: #e8ebf2 !important;
+}
+body.light-mode .term-card {
+  background: #ffffff !important;
+  border-color: #e4e8ef !important;
+}
+body.light-mode .term-card-header h3 {
+  color: #111827 !important;
+}
+body.light-mode .term-card-header span,
+body.light-mode .term-field label {
+  color: #64748b !important;
+}
+
+/* Timetable extras — light mode */
+body.light-mode .timetable-slot-card {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1e3a8a !important;
+}
+body.light-mode .timetable-grid th {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+body.light-mode .timetable-grid td {
+  background: #fff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode .timetable-modal-content {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode .timetable-modal-icon {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+}
+body.light-mode .timetable-entry-item,
+body.light-mode .timetable-list-item {
+  background: #fff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Chat message bubbles dark */
+body.dark-mode .message.mine .bubble,
+body.dark-mode .chat-bubble.mine,
+body:not(.light-mode) .message.mine .bubble {
+  background: #2563eb !important;
+  color: #fff !important;
+}
+body.dark-mode .message.theirs .bubble,
+body.dark-mode .chat-bubble.theirs,
+body:not(.light-mode) .message.theirs .bubble {
+  background: #1e293b !important;
+  color: #f3f4f6 !important;
 }
