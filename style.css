@@ -18578,3 +18578,35 @@ body:not(.light-mode) .message.theirs .bubble {
   background: #1e293b !important;
   color: #f3f4f6 !important;
 }
+
+
+/* Sidebar user profile photo */
+.sba-sidebar-avatar-wrap{
+  position:relative;
+  width:40px;
+  height:40px;
+  flex-shrink:0;
+}
+.sba-sidebar-photo{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid #334155;
+  display:block;
+  background:#1e293b;
+}
+.sba-sidebar-avatar-wrap .sba-sidebar-avatar{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#2563eb;
+  color:#fff;
+  font-size:14px;
+}
+body.light-mode .sba-sidebar-photo{
+  border-color:#e2e8f0;
+  background:#f1f5f9;
+}

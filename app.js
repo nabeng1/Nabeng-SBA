@@ -20,6 +20,43 @@ let subjects = [
 let students = [];
 let users = [];
 let currentUser = null;
+
+function applySidebarAvatar(user) {
+    const u = user || (typeof currentUser !== "undefined" ? currentUser : null);
+    const photo = document.getElementById("sidebarUserPhoto");
+    const fallback = document.getElementById("sidebarUserAvatar");
+    if (!photo && !fallback) return;
+
+    const url = (u && (u.profilePic || u.profile_pic || u.photo || u.avatar)) || "";
+
+    if (url && photo) {
+        photo.src = url;
+        photo.style.display = "block";
+        photo.onerror = function () {
+            photo.style.display = "none";
+            if (fallback) fallback.style.display = "grid";
+        };
+        if (fallback) fallback.style.display = "none";
+    } else {
+        if (photo) {
+            photo.removeAttribute("src");
+            photo.style.display = "none";
+        }
+        if (fallback) fallback.style.display = "grid";
+    }
+
+    // Keep name in sync if provided
+    const sideName = document.getElementById("sidebarUserName");
+    if (sideName && u) {
+        const name = [u.firstname, u.surname].filter(Boolean).join(" ").trim()
+            || u.name
+            || u.username
+            || "User";
+        sideName.textContent = name;
+    }
+}
+
+
 let selectedMediaFile = null;
 let filteredStudents = [];
 let gradeChartInstance = null;
@@ -487,6 +524,7 @@ document.body.classList.add("logged-in");
     if (dashWelcome) dashWelcome.innerText = welcomeMsg;
     const sideName = document.getElementById("sidebarUserName");
     if (sideName) sideName.textContent = currentUser.firstname || currentUser.username || "User";
+    if (typeof applySidebarAvatar === "function") applySidebarAvatar(currentUser);
 
     // LOAD DATA
 	
@@ -8890,8 +8928,7 @@ window.onload = async function () {
             if (dashWelcome) dashWelcome.innerText = welcomeMsg;
             const sideName = document.getElementById("sidebarUserName");
             if (sideName) sideName.textContent = user.firstname || user.username || "User";
-
-
+            if (typeof applySidebarAvatar === "function") applySidebarAvatar(user || currentUser);
 
             // Load system data
 			await loadUsers();
@@ -8997,6 +9034,10 @@ async function refreshCurrentUser() {
             "loggedInUser",
             JSON.stringify(currentUser)
         );
+
+        if (typeof applySidebarAvatar === "function") {
+            applySidebarAvatar(currentUser);
+        }
     }
 }
 
@@ -9053,6 +9094,10 @@ function loadProfileData(){
     if(img){
         img.src = currentUser.profilePic ||
                   "assets/default-profile.png";
+    }
+
+    if (typeof applySidebarAvatar === "function") {
+        applySidebarAvatar(currentUser);
     }
 }
 
@@ -10605,6 +10650,9 @@ if (profilePicInput) {
                 JSON.stringify(currentUser)
             );
 
+            if (typeof applySidebarAvatar === "function") {
+                applySidebarAvatar(currentUser);
+            }
 
             /* =========================================
                DISPLAY NEW IMAGE

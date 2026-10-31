@@ -618,7 +618,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
   </div>
 
   <div class="sba-sidebar-user">
-    <span class="sba-sidebar-avatar"><i class="fas fa-user"></i></span>
+    <div class="sba-sidebar-avatar-wrap" onclick="showPage('userProfilePage')" title="My Profile" style="cursor:pointer;">
+      <img id="sidebarUserPhoto" class="sba-sidebar-photo" alt="Profile" style="display:none;">
+      <span id="sidebarUserAvatar" class="sba-sidebar-avatar"><i class="fas fa-user"></i></span>
+    </div>
     <div>
       <strong id="sidebarUserName">User</strong>
       <small id="welcomeUser">Welcome</small>
