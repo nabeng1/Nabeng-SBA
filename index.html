@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Nabeng SBA — Smart School-Based Assessment Portal for students, teachers and administrators.">
+<title>Nabeng SBA Portal</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<link rel="icon" type="image/png" href="nabeng-sba-logo.png">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+:root{
+  --green:#00b878;
+  --green-dark:#009463;
+  --ink:#0f172a;
+  --muted:#64748b;
+  --bg:#f4f7f8;
+  --white:#fff;
+  --shadow:0 20px 50px rgba(15,23,42,.12);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);line-height:1.6;overflow-x:hidden}
+
+/* NAV */
+.navbar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 6%;
+  background:rgba(15,23,42,.72);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  transition:background .25s, box-shadow .25s;
+}
+.navbar.scrolled{
+  background:rgba(15,23,42,.92);
+  box-shadow:0 8px 30px rgba(0,0,0,.25);
+}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none}
+.logo img{width:48px;height:48px;object-fit:contain;border-radius:12px;background:rgba(255,255,255,.1);padding:4px}
+.logo h2{font-size:18px;font-weight:700;letter-spacing:.02em;line-height:1.15}
+.logo span{font-size:10px;font-weight:500;opacity:.75;letter-spacing:.06em}
+
+.nav-links{display:flex;gap:28px;list-style:none;align-items:center}
+.nav-links a{
+  color:rgba(255,255,255,.88);text-decoration:none;font-size:14px;font-weight:500;
+  transition:color .2s;
+}
+.nav-links a:hover{color:var(--green)}
+
+.nav-buttons{display:flex;gap:10px;align-items:center}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 20px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px;
+  border:none;cursor:pointer;transition:transform .2s, box-shadow .2s, background .2s;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn-green{background:var(--green);color:#fff;box-shadow:0 8px 20px rgba(0,184,120,.3)}
+.btn-green:hover{background:var(--green-dark)}
+.btn-white{background:#fff;color:var(--ink)}
+.btn-outline{
+  background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45);
+}
+.btn-outline:hover{background:rgba(255,255,255,.1);border-color:#fff}
+
+.menu-toggle{
+  display:none;width:42px;height:42px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);
+  color:#fff;font-size:18px;cursor:pointer;place-items:center;
+}
+
+/* HERO */
+.hero{
+  min-height:100vh;
+  position:relative;
+  display:flex;align-items:center;
+  background:
+    linear-gradient(135deg, rgba(8,20,40,.88) 0%, rgba(0,80,60,.55) 55%, rgba(15,23,42,.9) 100%),
+    url("https://images.unsplash.com/photo-1523240795612-9a054b0db644") center/cover no-repeat;
+  padding:120px 6% 100px;
+}
+.hero-grid{
+  width:100%;max-width:1200px;margin:0 auto;
+  display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 14px;border-radius:999px;
+  background:rgba(0,184,120,.15);border:1px solid rgba(0,184,120,.35);
+  color:#6ee7b7;font-size:12px;font-weight:600;margin-bottom:18px;
+}
+.hero h1{
+  color:#fff;font-size:clamp(32px,5vw,56px);line-height:1.12;font-weight:800;
+  margin-bottom:18px;letter-spacing:-.02em;
+}
+.hero h1 span{color:var(--green)}
+.hero p{
+  color:rgba(226,232,240,.9);font-size:17px;max-width:540px;margin-bottom:28px;line-height:1.75;
+}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:36px}
+.hero-stats{
+  display:flex;flex-wrap:wrap;gap:22px;
+}
+.hero-stat strong{display:block;color:#fff;font-size:22px;font-weight:700}
+.hero-stat span{color:rgba(226,232,240,.7);font-size:12px}
+
+.hero-card{
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(16px);
+  border-radius:24px;padding:28px;
+  color:#fff;box-shadow:var(--shadow);
+}
+.hero-card h3{font-size:18px;margin-bottom:16px;font-weight:700}
+.hero-card-list{list-style:none;display:flex;flex-direction:column;gap:12px}
+.hero-card-list li{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.08);
+  font-size:13px;line-height:1.45;
+}
+.hero-card-list i{color:var(--green);margin-top:2px;flex-shrink:0}
+
+/* HOW */
+.how{
+  width:min(1120px,92%);
+  margin:-70px auto 70px;
+  background:linear-gradient(145deg,#e8faf4,#d9f4ed);
+  padding:48px 40px;
+  border-radius:28px;
+  position:relative;z-index:10;
+  box-shadow:var(--shadow);
+}
+.section-label{
+  display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--green-dark);margin-bottom:8px;
+}
+.how h2,.features h2,.cta h2{font-size:clamp(26px,3.5vw,34px);font-weight:800;margin-bottom:10px;color:var(--ink)}
+.section-sub{color:var(--muted);margin-bottom:32px;max-width:520px}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.step{
+  background:#fff;padding:28px 24px;border-radius:20px;
+  border:1px solid rgba(0,184,120,.12);
+  transition:transform .2s, box-shadow .2s;
+}
+.step:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(0,184,120,.12)}
+.step-num{
+  width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+  background:rgba(0,184,120,.12);color:var(--green-dark);font-weight:800;font-size:14px;margin-bottom:14px;
+}
+.step i{font-size:28px;color:var(--green);margin-bottom:12px}
+.step h3{font-size:17px;margin-bottom:8px}
+.step p{font-size:13px;color:var(--muted)}
+
+/* FEATURES */
+.features{padding:40px 6% 80px;max-width:1200px;margin:0 auto}
+.features-head{text-align:center;margin-bottom:40px}
+.features-head .section-sub{margin-left:auto;margin-right:auto}
+.feature-box{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feature{
+  background:#fff;padding:32px 26px;text-align:center;border-radius:20px;
+  box-shadow:0 10px 28px rgba(15,23,42,.06);border:1px solid #eef2f6;
+  transition:transform .2s, box-shadow .2s;
+}
+.feature:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(15,23,42,.1)}
+.feature-icon{
+  width:56px;height:56px;margin:0 auto 16px;border-radius:16px;
+  display:grid;place-items:center;background:rgba(0,184,120,.12);color:var(--green);font-size:22px;
+}
+.feature h3{font-size:17px;margin-bottom:8px}
+.feature p{font-size:13px;color:var(--muted)}
+
+/* CTA */
+.cta{
+  margin:0 6% 80px;padding:48px 40px;border-radius:28px;
+  background:linear-gradient(135deg,#0f172a 0%,#134e4a 100%);
+  color:#fff;text-align:center;
+  box-shadow:var(--shadow);
+}
+.cta p{color:rgba(226,232,240,.85);max-width:480px;margin:0 auto 24px;font-size:15px}
+.cta-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
+
+/* FOOTER */
+footer{
+  background:#0b1220;color:rgba(255,255,255,.75);
+  padding:36px 6% 28px;text-align:center;font-size:13px;
+}
+.footer-brand{display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;margin-bottom:10px;font-weight:700}
+.footer-brand img{width:32px;height:32px;border-radius:8px}
+.footer-links{display:flex;justify-content:center;flex-wrap:wrap;gap:18px;margin:14px 0 18px}
+.footer-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px}
+.footer-links a:hover{color:var(--green)}
+
+/* MOBILE */
+@media(max-width:960px){
+  .menu-toggle{display:grid}
+  .nav-links,.nav-buttons{display:none}
+  .navbar.open .nav-links{
+    display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;
+    background:#0f172a;padding:18px 6% 22px;gap:16px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .navbar.open .nav-buttons{
+    display:flex;flex-direction:column;position:absolute;top:calc(100% + 160px);left:0;right:0;
+    background:#0f172a;padding:0 6% 20px;gap:10px;
+  }
+  .navbar.open .nav-buttons .btn{width:100%}
+  .hero-grid{grid-template-columns:1fr}
+  .hero-card{order:-1;max-width:420px}
+  .how{padding:36px 22px;margin-top:-50px}
+  .steps,.feature-box{grid-template-columns:1fr}
+  .cta{padding:36px 22px;margin-left:4%;margin-right:4%}
+}
+@media(max-width:480px){
+  .hero{padding:110px 5% 80px}
+  .logo h2{font-size:15px}
+  .logo span{font-size:9px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="navbar" id="navbar">
+    <a href="landing.html" class="logo">
+      <img src="nabeng-sba-logo.png" alt="Nabeng SBA">
+      <div>
+        <h2>NABENG SBA</h2>
+        <span>ASSESSMENT PORTAL</span>
+      </div>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="landing.html">Home</a></li>
+      <li><a href="system.html">SBA System</a></li>
+      <li><a href="student.html">Student</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#features">Features</a></li>
+    </ul>
+
+    <div class="nav-buttons">
+      <a href="student.html" class="btn btn-green">Student Portal</a>
+      <a href="system.html" class="btn btn-white">SBA System</a>
+    </div>
+
+    <button type="button" class="menu-toggle" id="menuToggle" aria-label="Menu">
+      <i class="fas fa-bars"></i>
+    </button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-badge"><i class="fas fa-graduation-cap"></i> School-Based Assessment</div>
+      <h1>Smart <span>SBA</span> management for modern schools</h1>
+      <p>
+        Manage students, record continuous assessments, generate reports,
+        and monitor academic performance — all in one secure portal.
+      </p>
+      <div class="hero-actions">
+        <a href="student.html" class="btn btn-green"><i class="fas fa-user-graduate"></i> Access Student Portal</a>
+        <a href="system.html" class="btn btn-outline"><i class="fas fa-chalkboard-teacher"></i> Teacher / Admin Login</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><strong>SBA</strong><span>Marks & reports</span></div>
+        <div class="hero-stat"><strong>Live</strong><span>Attendance & homework</span></div>
+        <div class="hero-stat"><strong>Secure</strong><span>Role-based access</span></div>
+      </div>
+    </div>
+
+    <aside class="hero-card">
+      <h3>Everything in one place</h3>
+      <ul class="hero-card-list">
+        <li><i class="fas fa-check-circle"></i><span>Enter class scores, projects and exam marks by term</span></li>
+        <li><i class="fas fa-check-circle"></i><span>Publish homework and review student submissions</span></li>
+        <li><i class="fas fa-check-circle"></i><span>Generate and download terminal report cards</span></li>
+        <li><i class="fas fa-check-circle"></i><span>Track attendance, timetable and notices</span></li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <span class="section-label">Getting started</span>
+  <h2>How to use the SBA Portal</h2>
+  <p class="section-sub">Three simple steps for schools to go live with assessments and reporting.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <i class="fas fa-user-plus"></i>
+      <h3>Create accounts</h3>
+      <p>Register administrators, teachers and students with secure login credentials.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <i class="fas fa-book-open"></i>
+      <h3>Enter assessments</h3>
+      <p>Add SBA scores, assignments, exams and track performance by term.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <i class="fas fa-chart-line"></i>
+      <h3>Generate reports</h3>
+      <p>View results instantly and print professional student terminal reports.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="features-head">
+    <span class="section-label">Why Nabeng SBA</span>
+    <h2>Built for schools that care about clarity</h2>
+    <p class="section-sub">Secure records, fast access and a clean experience on every device.</p>
+  </div>
+  <div class="feature-box">
+    <div class="feature">
+      <div class="feature-icon"><i class="fas fa-lock"></i></div>
+      <h3>Secure</h3>
+      <p>Protected student records with role-based authentication for staff and learners.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+      <h3>Fast</h3>
+      <p>Quick access to marks, homework, attendance and downloadable reports.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i class="fas fa-mobile-screen"></i></div>
+      <h3>Responsive</h3>
+      <p>Works smoothly on phones, tablets and desktop computers.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <h2>Ready to get started?</h2>
+  <p>Open the student portal or sign in to the SBA system to manage your school assessments.</p>
+  <div class="cta-actions">
+    <a href="student.html" class="btn btn-green">Student Portal</a>
+    <a href="system.html" class="btn btn-white">SBA System</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">
+    <img src="nabeng-sba-logo.png" alt="">
+    Nabeng SBA System
+  </div>
+  <div class="footer-links">
+    <a href="landing.html">Home</a>
+    <a href="system.html">SBA System</a>
+    <a href="student.html">Student Portal</a>
+  </div>
+  <div>© 2026 Nabeng SBA System. All rights reserved.</div>
+</footer>
+
+<script>
+(function(){
+  const nav = document.getElementById('navbar');
+  const toggle = document.getElementById('menuToggle');
+  if (toggle && nav) {
+    toggle.addEventListener('click', function(){
+      nav.classList.toggle('open');
+      const icon = toggle.querySelector('i');
+      if (icon) icon.className = nav.classList.contains('open') ? 'fas fa-xmark' : 'fas fa-bars';
+    });
+  }
+  window.addEventListener('scroll', function(){
+    if (!nav) return;
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  });
+})();
+</script>
+</body>
+</html>
