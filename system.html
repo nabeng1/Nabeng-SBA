@@ -1754,7 +1754,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 <div class="hw-stats-grid">
 
 
-    <!-- TOTAL HOMEWORK -->
+    <!-- THIS WEEK -->
     <div class="hw-stat-card">
 
         <div class="hw-stat-icon">
@@ -1764,10 +1764,31 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
         <div>
 
             <span>
-                Total Homework
+                This Week
             </span>
 
             <strong id="homeworkTotalCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+    <!-- TERM TOTAL -->
+    <div class="hw-stat-card">
+
+        <div class="hw-stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+
+        <div>
+
+            <span id="homeworkTermTotalLabel">
+                Term Total
+            </span>
+
+            <strong id="homeworkTermTotalCount">
                 0
             </strong>
 
@@ -2193,39 +2214,41 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-            <!-- FILTER -->
-            <div class="hw-filter">
+            <!-- WEEK + FILTER -->
+            <div class="hw-toolbar-filters" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
 
-                <i class="fas fa-filter"></i>
+                <div class="hw-term-select-wrap" style="display:flex;align-items:center;gap:6px;">
+                    <label for="homeworkTermFilter" style="font-size:11px;font-weight:700;opacity:.8;">Term</label>
+                    <select id="homeworkTermFilter" onchange="onHomeworkTermChange()" style="min-height:36px;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:600;">
+                        <option value="term1">Term 1</option>
+                        <option value="term2">Term 2</option>
+                        <option value="term3">Term 3</option>
+                    </select>
+                </div>
 
+                <div class="hw-week-switcher" style="display:flex;align-items:center;gap:6px;background:rgba(37,99,235,.08);border-radius:10px;padding:4px;">
+                    <button type="button" class="hw-week-btn" onclick="shiftHomeworkWeek(-1)" title="Previous week" style="border:0;background:transparent;cursor:pointer;padding:8px 10px;border-radius:8px;color:#2563eb;">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="homeworkWeekLabel" style="font-size:12px;font-weight:700;min-width:160px;text-align:center;color:inherit;">This week</span>
+                    <button type="button" class="hw-week-btn" onclick="shiftHomeworkWeek(1)" title="Next week" style="border:0;background:transparent;cursor:pointer;padding:8px 10px;border-radius:8px;color:#2563eb;">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button type="button" onclick="resetHomeworkWeek()" title="Jump to this week" style="border:0;background:#2563eb;color:#fff;cursor:pointer;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;">
+                        Today
+                    </button>
+                </div>
 
-                <select
-                    id="homeworkFilter"
-                    onchange="filterTeacherHomework()"
-                >
-
-                    <option value="all">
-                        All Homework
-                    </option>
-
-                    <option value="active">
-                        Active
-                    </option>
-
-                    <option value="overdue">
-                        Overdue
-                    </option>
-
-                    <option value="submitted">
-                        Has Submissions
-                    </option>
-
-                    <option value="unmarked">
-                        Needs Marking
-                    </option>
-
-                </select>
-
+                <div class="hw-filter">
+                    <i class="fas fa-filter"></i>
+                    <select id="homeworkFilter" onchange="filterTeacherHomework()">
+                        <option value="all">All this week</option>
+                        <option value="active">Active</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="submitted">Has Submissions</option>
+                        <option value="unmarked">Needs Marking</option>
+                    </select>
+                </div>
             </div>
 
         </div>
@@ -4593,45 +4616,8 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 </div>
 
 
-<div id="studentModal"
-     style="
-        display:none;
-        position:fixed;
-        top:0;
-        left:0;
-        width:100%;
-        height:100%;
-        background:rgba(0,0,0,0.7);
-        justify-content:center;
-        align-items:center;
-        z-index:9999;
-">
-
-    <div style="
-        background:#1e293b;
-        color:white;
-        width:90%;
-        max-width:500px;
-        padding:20px;
-        border-radius:15px;
-        position:relative;
-    ">
-
-        <span onclick="closeStudentModal()"
-              style="
-                position:absolute;
-                top:10px;
-                right:15px;
-                cursor:pointer;
-                font-size:28px;
-              ">
-              &times;
-        </span>
-
-        <div id="studentModalContent"></div>
-
-    </div>
-
+<div id="studentModal" class="student-detail-modal" style="display:none;" onclick="if(event.target===this)closeStudentModal()">
+    <div id="studentModalContent" class="student-detail-modal-panel" role="dialog" aria-modal="true"></div>
 </div>
 
 <div id="academicsMenu" class="academics-menu">

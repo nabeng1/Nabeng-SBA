@@ -704,7 +704,7 @@ table{
 .student-modal{
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
+    background: rgba(15, 23, 42, 0.45);
     display: none;
     justify-content: center;
     align-items: center;
@@ -4326,7 +4326,9 @@ button{
 --------------------------------------------------------- */
 
 
-#studentModal {
+/* Student details modal — single soft overlay, no nested dark box */
+#studentModal,
+#studentModal.student-detail-modal {
     position: fixed;
     inset: 0;
     width: 100%;
@@ -4334,43 +4336,41 @@ button{
     display: none;
     align-items: center;
     justify-content: center;
-
     padding: 24px;
-
-    background: rgba(15, 23, 42, 0.68);
-
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-
+    /* Soft dim only — not a heavy black sheet */
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     z-index: 9999;
-
     overflow-y: auto;
+    box-sizing: border-box;
 }
 
-
 /* ---------------------------------------------------------
-   MAIN PROFILE CONTAINER
+   MAIN PROFILE CONTAINER (the white card only)
 --------------------------------------------------------- */
 
-#studentModalContent {
+#studentModalContent,
+#studentModalContent.student-detail-modal-panel {
     width: 100%;
     max-width: 980px;
-
     max-height: 94vh;
-
     margin: auto;
-
-    overflow: hidden;
-
+    overflow: auto;
     border-radius: 22px;
-
     background: #ffffff;
-
+    color: #0f172a;
     box-shadow:
         0 30px 80px rgba(15, 23, 42, 0.22),
         0 10px 30px rgba(15, 23, 42, 0.10);
-
     animation: studentModalOpen 0.25s ease;
+    position: relative;
+}
+
+body.dark-mode #studentModalContent,
+body:not(.light-mode) #studentModalContent {
+    background: #151922 !important;
+    color: #f3f4f6 !important;
 }
 
 
@@ -11606,7 +11606,7 @@ body.dark-mode #noticesPage .notices-empty-state {
 
 /* MODAL CONTAINER */
 .marks-modal-content {
-    width: min(100%, 950px);
+    width: min(100%, 720px);
     max-height: 92vh;
     overflow-y: auto;
 
@@ -11743,30 +11743,78 @@ body.dark-mode #noticesPage .notices-empty-state {
 }
 
 
-/* SCORE INPUTS */
+/* SCORE INPUTS — compact, not full-width */
+.subjects-section {
+    /* ensure section can use flex/grid for fields */
+}
+
 .subjects-section input[type="number"],
 .subjects-section input[type="text"] {
+    display: block;
     width: 100%;
-    min-height: 44px;
+    max-width: 180px;
+    min-height: 40px;
+    margin: 0 0 12px;
 
-    padding: 10px 12px;
+    padding: 8px 12px;
 
     border: 1px solid #dfe2ea;
     border-radius: 10px;
 
-    background: #fff;
+    background: #f8f9fc;
 
     font-size: 14px;
     color: #10111a;
 
     outline: none;
+    box-sizing: border-box;
 
     transition: .2s;
 }
 
+/* Score fields in a neat 2-column grid when space allows */
+.subjects-section h4 + input[type="number"],
+.subjects-section input[type="number"] {
+    /* individual scores stay compact */
+}
+
+/* Wrap consecutive score inputs in visual grouping via grid on the section */
+#marksFormArea,
+.subjects-section {
+    display: block;
+}
+
+/* Apply grid only around score inputs using a helper class if present */
+.subjects-section .marks-score-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 180px));
+    gap: 10px 16px;
+    margin: 8px 0 16px;
+    max-width: 400px;
+}
+
+.subjects-section .marks-score-grid input[type="number"],
+.subjects-section .marks-score-grid input[type="text"] {
+    max-width: 100%;
+    margin: 0;
+    width: 100%;
+}
+
 .subjects-section input:focus {
     border-color: #1558ff;
+    background: #fff;
     box-shadow: 0 0 0 3px rgba(21,88,255,.08);
+}
+
+@media (max-width: 520px) {
+    .subjects-section input[type="number"],
+    .subjects-section input[type="text"] {
+        max-width: 100%;
+    }
+    .subjects-section .marks-score-grid {
+        grid-template-columns: 1fr 1fr;
+        max-width: 100%;
+    }
 }
 
 

@@ -5191,7 +5191,11 @@ body.dark .portal-account-divider {
         <div class="student-homework-stats">
             <div class="student-hw-stat">
                 <div class="student-hw-stat-icon blue"><i class="fas fa-layer-group"></i></div>
-                <div><span>Total</span><strong id="studentHwTotal">0</strong></div>
+                <div><span>This week</span><strong id="studentHwTotal">0</strong></div>
+            </div>
+            <div class="student-hw-stat">
+                <div class="student-hw-stat-icon" style="background:#eef1ff;color:#3F51B5;"><i class="fas fa-calendar-alt"></i></div>
+                <div><span id="studentHwTermLabel">Term total</span><strong id="studentHwTermTotal">0</strong></div>
             </div>
             <div class="student-hw-stat">
                 <div class="student-hw-stat-icon amber"><i class="fas fa-clock"></i></div>
@@ -5207,13 +5211,24 @@ body.dark .portal-account-divider {
             </div>
         </div>
 
-        <div class="student-homework-tools">
+        <div class="student-homework-tools" style="flex-wrap:wrap;gap:10px;">
+            <select id="studentHomeworkTermFilter" onchange="onStudentHomeworkTermChange()" style="min-height:36px;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:600;border:1px solid #e0e3ec;background:#fff;">
+                <option value="term1">Term 1</option>
+                <option value="term2">Term 2</option>
+                <option value="term3">Term 3</option>
+            </select>
+            <div class="stu-hw-week" style="display:flex;align-items:center;gap:6px;background:#eef1ff;border-radius:10px;padding:4px 6px;">
+                <button type="button" onclick="shiftStudentHomeworkWeek(-1)" style="border:0;background:transparent;cursor:pointer;padding:6px 8px;color:#3F51B5;"><i class="fas fa-chevron-left"></i></button>
+                <span id="studentHomeworkWeekLabel" style="font-size:12px;font-weight:700;min-width:150px;text-align:center;color:#303549;">This week</span>
+                <button type="button" onclick="shiftStudentHomeworkWeek(1)" style="border:0;background:transparent;cursor:pointer;padding:6px 8px;color:#3F51B5;"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" onclick="resetStudentHomeworkWeek()" style="border:0;background:#3F51B5;color:#fff;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">Today</button>
+            </div>
             <div class="student-hw-search">
                 <i class="fas fa-search"></i>
                 <input id="studentHomeworkSearch" type="search" placeholder="Search homework, subject or title..." oninput="filterStudentHomework()">
             </div>
             <select id="studentHomeworkFilter" onchange="filterStudentHomework()">
-                <option value="all">All Homework</option>
+                <option value="all">All this week</option>
                 <option value="pending">Pending</option>
                 <option value="submitted">Submitted</option>
                 <option value="overdue">Overdue</option>
@@ -7724,6 +7739,9 @@ async function openProfile() {
 let studentHomeworkData = [];
 let studentHomeworkSubmissions = {};
 let activeHomeworkForAnswer = null;
+let studentHomeworkWeekOffset = 0;
+let studentTermSettings = null;
+let studentHomeworkTermSelected = "term1";
 
 function getPortalStudent() {
     if (currentStudent) return currentStudent;
@@ -7780,7 +7798,8 @@ function openHomework() {
         "subjectsPage",
         "messagesPage",
         "downloadsPage",
-        "notificationsPage"
+        "notificationsPage",
+        "studentTimetablePage"
     ].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = "none";
@@ -7788,10 +7807,19 @@ function openHomework() {
 
     if (page) page.style.display = "block";
 
-    const student = getPortalStudent();
+    // Ensure session is available for homework load
+    const student = (typeof getPortalStudent === "function")
+        ? getPortalStudent()
+        : null;
+
+    if (!student) {
+        alert("Please log in again to view homework.");
+        return;
+    }
+
     const subtitle = document.getElementById("studentHomeworkSubtitle");
-    if (subtitle && student) {
-        subtitle.textContent = `Assignments for ${student.studentclass || "your class"}`;
+    if (subtitle) {
+        subtitle.textContent = `Assignments for ${student.studentclass || student.class || "your class"}`;
     }
 
     loadStudentHomework();
@@ -7801,8 +7829,16 @@ async function loadStudentHomework() {
 
     console.log("========== LOAD STUDENT HOMEWORK ==========");
 
+    if (!currentStudent && typeof getPortalStudent === "function") {
+        currentStudent = getPortalStudent();
+    }
+
     if (!currentStudent) {
         console.warn("No current student found.");
+        const list = document.getElementById("studentHomeworkList");
+        if (list) {
+            list.innerHTML = `<div class="hw-empty-card"><div class="hw-empty-icon"><i class="fas fa-user-lock"></i></div><h3>Session expired</h3><p>Please log in again to view homework.</p></div>`;
+        }
         return;
     }
 
@@ -7871,6 +7907,7 @@ async function loadStudentHomework() {
             studentHomeworkData.length
         );
 
+        await loadStudentTermSettings(schoolid);
 
         /* --------------------------------------------------------
            LOAD STUDENT SUBMISSIONS
@@ -8069,31 +8106,125 @@ function escapeHomeworkHTML(value) {
 }
 
 
+function getStudentHomeworkWeekRange(offset = 0) {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    const day = now.getDay();
+    const toMonday = day === 0 ? -6 : 1 - day;
+    const start = new Date(now);
+    start.setDate(now.getDate() + toMonday + (offset * 7));
+    start.setHours(0,0,0,0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23,59,59,999);
+    return { start, end };
+}
+function isStudentHomeworkInWeek(homework) {
+    const { start, end } = getStudentHomeworkWeekRange(studentHomeworkWeekOffset || 0);
+    const raw = homework.date_given || homework.created_at;
+    if (!raw) return false;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return false;
+    return d >= start && d <= end;
+}
+function updateStudentHomeworkWeekLabel() {
+    const el = document.getElementById("studentHomeworkWeekLabel");
+    if (!el) return;
+    const { start, end } = getStudentHomeworkWeekRange(studentHomeworkWeekOffset || 0);
+    const opts = { day: "numeric", month: "short" };
+    const a = start.toLocaleDateString(undefined, opts);
+    const b = end.toLocaleDateString(undefined, opts);
+    const off = studentHomeworkWeekOffset || 0;
+    if (off === 0) el.textContent = `This week (${a} – ${b})`;
+    else if (off === -1) el.textContent = `Last week (${a} – ${b})`;
+    else if (off === 1) el.textContent = `Next week (${a} – ${b})`;
+    else el.textContent = `${a} – ${b}`;
+}
+function shiftStudentHomeworkWeek(delta) {
+    studentHomeworkWeekOffset = (studentHomeworkWeekOffset || 0) + delta;
+    updateStudentHomeworkWeekLabel();
+    filterStudentHomework();
+    updateHomeworkStats();
+}
+function resetStudentHomeworkWeek() {
+    studentHomeworkWeekOffset = 0;
+    updateStudentHomeworkWeekLabel();
+    filterStudentHomework();
+    updateHomeworkStats();
+}
+function getStudentTermBounds(term) {
+    const t = term || studentHomeworkTermSelected || "term1";
+    const prefix = t === "term1" ? "t1" : t === "term2" ? "t2" : t === "term3" ? "t3" : null;
+    if (!prefix || !studentTermSettings) return { start: null, end: null };
+    return {
+        start: studentTermSettings[prefix + "start"] || null,
+        end: studentTermSettings[prefix + "end"] || null
+    };
+}
+function getStudentHomeworkForTerm(term) {
+    const bounds = getStudentTermBounds(term);
+    if (!bounds.start || !bounds.end) return (studentHomeworkData || []).slice();
+    const start = new Date(bounds.start + "T00:00:00");
+    const end = new Date(bounds.end + "T23:59:59");
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return (studentHomeworkData || []).slice();
+    return (studentHomeworkData || []).filter(h => {
+        const raw = h.date_given || h.created_at;
+        if (!raw) return false;
+        const d = new Date(raw);
+        return !Number.isNaN(d.getTime()) && d >= start && d <= end;
+    });
+}
+function onStudentHomeworkTermChange() {
+    const sel = document.getElementById("studentHomeworkTermFilter");
+    studentHomeworkTermSelected = sel?.value || "term1";
+    updateHomeworkStats();
+}
+async function loadStudentTermSettings(schoolid) {
+    if (!schoolid || typeof supabaseClient === "undefined") return;
+    try {
+        const { data, error } = await supabaseClient
+            .from("termsettings")
+            .select("*")
+            .eq("schoolid", schoolid)
+            .single();
+        if (!error && data) studentTermSettings = data;
+    } catch (e) {
+        console.warn("Student term settings:", e);
+    }
+}
+
 function updateHomeworkStats() {
-    const total = studentHomeworkData.length;
-    const submitted = studentHomeworkData.filter(h => !!getHomeworkSubmission(h)).length;
-    const overdue = studentHomeworkData.filter(h => !getHomeworkSubmission(h) && homeworkStatus(h) === "overdue").length;
+    const weekItems = (studentHomeworkData || []).filter(h => isStudentHomeworkInWeek(h));
+    const total = weekItems.length;
+    const submitted = weekItems.filter(h => !!getHomeworkSubmission(h)).length;
+    const overdue = weekItems.filter(h => !getHomeworkSubmission(h) && homeworkStatus(h) === "overdue").length;
     const pending = Math.max(0, total - submitted - overdue);
     const set = (id, value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
     set("studentHwTotal", total);
     set("studentHwPending", pending);
     set("studentHwSubmitted", submitted);
     set("studentHwOverdue", overdue);
+    const termItems = getStudentHomeworkForTerm(studentHomeworkTermSelected);
+    set("studentHwTermTotal", termItems.length);
+    const label = document.getElementById("studentHwTermLabel");
+    if (label) label.textContent = ((studentHomeworkTermSelected || "term1").replace("term", "Term ")) + " total";
 }
 
 function filterStudentHomework() {
     const list = document.getElementById("studentHomeworkList");
     if (!list) return;
+    updateStudentHomeworkWeekLabel();
     const search = (document.getElementById("studentHomeworkSearch")?.value || "").trim().toLowerCase();
     const filter = document.getElementById("studentHomeworkFilter")?.value || "all";
-    const filtered = studentHomeworkData.filter(homework => {
+    const weekItems = studentHomeworkData.filter(isStudentHomeworkInWeek);
+    const filtered = weekItems.filter(homework => {
         const haystack = [homework.title, homework.subject, homework.description, homework.class].join(" ").toLowerCase();
         const submission = getHomeworkSubmission(homework);
         const status = submission ? "submitted" : homeworkStatus(homework);
         return (!search || haystack.includes(search)) && (filter === "all" || status === filter);
     });
     if (!filtered.length) {
-        list.innerHTML = `<div class="hw-empty-card"><div class="hw-empty-icon"><i class="fas fa-book-open"></i></div><h3>${studentHomeworkData.length ? "No Matching Homework" : "No Homework Available"}</h3><p>${studentHomeworkData.length ? "Try another search or change the homework filter." : "Your class teacher has not published any homework yet."}</p></div>`;
+        list.innerHTML = `<div class="hw-empty-card"><div class="hw-empty-icon"><i class="fas fa-book-open"></i></div><h3>${weekItems.length ? "No Matching Homework" : "No Homework This Week"}</h3><p>${weekItems.length ? "Try another search or change the filter." : "No homework for this week. Use the arrows to view other weeks."}</p></div>`;
         return;
     }
     list.innerHTML = filtered.map(renderStudentHomeworkCard).join("");
@@ -13783,11 +13914,10 @@ function escapeStudentSubjectHTML(value) {
 }
 
 
-async 
 /* ============================================================
    STUDENT TIMETABLE
 ============================================================ */
-const STUDENT_TIMETABLE_DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
+var STUDENT_TIMETABLE_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
 function getLoggedStudentForTimetable(){try{return JSON.parse(localStorage.getItem("loggedStudent")||"null");}catch(e){return null;}}
 function studentTimetableTime(a,b){return `${a?a.slice(0,5):""}${a||b?" – ":""}${b?b.slice(0,5):""}`;}
 function showStudentTimetableStatus(msg,error=false){const b=document.getElementById("studentTimetableStatus");if(!b)return;b.textContent=msg;b.className="student-timetable-status "+(error?"error":"info");}
@@ -13801,22 +13931,116 @@ async function openStudentTimetable(){
 }
 function closeStudentTimetable(){const p=document.getElementById("studentTimetablePage");if(p)p.style.display="none";document.getElementById("studentPortal").style.display="block";}
 async function loadStudentTimetable(){
-  const s=getLoggedStudentForTimetable();if(!s)return;
-  const term=document.getElementById("studentTimetableTerm").value||"term1",body=document.getElementById("studentTimetableBody");
-  body.innerHTML='<tr><td colspan="6" class="student-timetable-empty"><i class="fas fa-spinner fa-spin"></i> Loading timetable...</td></tr>';
-  const cls=s.studentclass||s.class||"",school=s.schoolid;
-  if(!cls||!school)return showStudentTimetableStatus("Your class or school information is missing.",true);
-  const {data,error}=await supabaseClient.rpc("get_student_timetable",{
-    p_studentid:s.studentid,
-    p_studentpassword:s.studentpassword,
-    p_term:term
-  });
-  if(error){console.error("Student timetable error:",error);showStudentTimetableStatus("Unable to load your timetable.",true);body.innerHTML='<tr><td colspan="6" class="student-timetable-empty">Timetable could not be loaded.</td></tr>';return;}
-  const list=data||[];document.getElementById("studentTimetableSubtitle").textContent=`${cls} • ${list.length} period${list.length===1?"":"s"}`;
-  if(!list.length){showStudentTimetableStatus("No timetable has been published for this class and term yet.");body.innerHTML='<tr><td colspan="6" class="student-timetable-empty">No timetable entries found.</td></tr>';return;}
-  showStudentTimetableStatus("Your weekly timetable is shown below.");
-  const times=[...new Set(list.map(e=>`${e.start_time||""}|${e.end_time||""}`))].sort();
-  body.innerHTML=times.map(k=>{const [a,b]=k.split("|");const cells=STUDENT_TIMETABLE_DAYS.map(d=>{const rows=list.filter(e=>e.day===d&&(e.start_time||"")===a&&(e.end_time||"")===b);if(!rows.length)return'<td class="student-timetable-slot empty">—</td>';return`<td class="student-timetable-slot">${rows.map(e=>`<div class="student-timetable-card"><strong>${String(e.subject||"").replace(/</g,"&lt;")}</strong><span>${String(e.teacher_name||"").replace(/</g,"&lt;")}</span>${e.room?`<small><i class="fas fa-door-open"></i> ${String(e.room).replace(/</g,"&lt;")}</small>`:""}</div>`).join("")}</td>`}).join("");return`<tr><td class="student-timetable-time">${studentTimetableTime(a,b)}</td>${cells}</tr>`}).join("");
+  const s = getLoggedStudentForTimetable();
+  if (!s) return;
+
+  const term = document.getElementById("studentTimetableTerm")?.value || "term1";
+  const body = document.getElementById("studentTimetableBody");
+  if (!body) return;
+
+  body.innerHTML = '<tr><td colspan="6" class="student-timetable-empty"><i class="fas fa-spinner fa-spin"></i> Loading timetable...</td></tr>';
+
+  const cls = String(s.studentclass || s.studentClass || s.class || "").trim();
+  const school = s.schoolid || s.schoolID || s.schoolId || "";
+
+  if (!cls || !school) {
+    showStudentTimetableStatus("Your class or school information is missing.", true);
+    body.innerHTML = '<tr><td colspan="6" class="student-timetable-empty">Class information missing.</td></tr>';
+    return;
+  }
+
+  try {
+    // Load class timetable directly from timetables table (same source as staff portal)
+    let query = supabaseClient
+      .from("timetables")
+      .select("*")
+      .eq("schoolid", school)
+      .eq("class", cls)
+      .eq("term", term)
+      .order("period", { ascending: true })
+      .order("start_time", { ascending: true });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Student timetable error:", error);
+      showStudentTimetableStatus("Unable to load your class timetable. " + (error.message || ""), true);
+      body.innerHTML = '<tr><td colspan="6" class="student-timetable-empty">Timetable could not be loaded.</td></tr>';
+      return;
+    }
+
+    let list = Array.isArray(data) ? data.slice() : [];
+
+    // Normalize day names (Mon -> Monday etc.)
+    const dayMap = {
+      mon: "Monday", monday: "Monday",
+      tue: "Tuesday", tues: "Tuesday", tuesday: "Tuesday",
+      wed: "Wednesday", wednesday: "Wednesday",
+      thu: "Thursday", thur: "Thursday", thursday: "Thursday",
+      fri: "Friday", friday: "Friday"
+    };
+    list = list.map(e => {
+      const raw = String(e.day || "").trim();
+      const key = raw.toLowerCase();
+      return { ...e, day: dayMap[key] || raw };
+    });
+
+    // Fill missing teacher names from users table when teacher_id is present
+    const missingTeacherIds = [...new Set(
+      list.filter(e => !e.teacher_name && e.teacher_id).map(e => e.teacher_id)
+    )];
+    if (missingTeacherIds.length) {
+      try {
+        const { data: teachers } = await supabaseClient
+          .from("users")
+          .select("id, firstname, surname, username, name")
+          .in("id", missingTeacherIds);
+        const map = {};
+        (teachers || []).forEach(t => {
+          map[String(t.id)] = t.name || (`${t.firstname || ""} ${t.surname || ""}`.trim()) || t.username || "Teacher";
+        });
+        list = list.map(e => {
+          if (!e.teacher_name && e.teacher_id && map[String(e.teacher_id)]) {
+            return { ...e, teacher_name: map[String(e.teacher_id)] };
+          }
+          return e;
+        });
+      } catch (te) {
+        console.warn("Teacher name lookup:", te);
+      }
+    }
+
+    const sub = document.getElementById("studentTimetableSubtitle");
+    if (sub) sub.textContent = `${cls} • ${term.replace("term", "Term ")} • ${list.length} period${list.length === 1 ? "" : "s"}`;
+
+    if (!list.length) {
+      showStudentTimetableStatus("No timetable has been published for your class this term yet.");
+      body.innerHTML = '<tr><td colspan="6" class="student-timetable-empty">No timetable entries found for this class and term.</td></tr>';
+      return;
+    }
+
+    showStudentTimetableStatus("Showing your class weekly timetable.");
+    const times = [...new Set(list.map(e => `${e.start_time || ""}|${e.end_time || ""}`))].sort();
+    body.innerHTML = times.map(k => {
+      const [a, b] = k.split("|");
+      const days = (typeof STUDENT_TIMETABLE_DAYS !== "undefined" && STUDENT_TIMETABLE_DAYS) ? STUDENT_TIMETABLE_DAYS : ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+      const cells = days.map(d => {
+        const rows = list.filter(e => e.day === d && (e.start_time || "") === a && (e.end_time || "") === b);
+        if (!rows.length) return '<td class="student-timetable-slot empty">—</td>';
+        return `<td class="student-timetable-slot">${rows.map(e =>
+          `<div class="student-timetable-card"><strong>${String(e.subject || "").replace(/</g, "&lt;")}</strong>` +
+          `<span>${String(e.teacher_name || "Teacher").replace(/</g, "&lt;")}</span>` +
+          (e.room ? `<small><i class="fas fa-door-open"></i> ${String(e.room).replace(/</g, "&lt;")}</small>` : "") +
+          `</div>`
+        ).join("")}</td>`;
+      }).join("");
+      return `<tr><td class="student-timetable-time">${studentTimetableTime(a, b)}</td>${cells}</tr>`;
+    }).join("");
+  } catch (err) {
+    console.error("loadStudentTimetable unexpected:", err);
+    showStudentTimetableStatus("Unable to load timetable.", true);
+    body.innerHTML = '<tr><td colspan="6" class="student-timetable-empty">Timetable could not be loaded.</td></tr>';
+  }
 }
 
 async function openFees(){

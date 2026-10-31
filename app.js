@@ -37,6 +37,8 @@ let chatCacheLoading = false;
 let chatContacts = [];
 let teacherHomeworkData = [];
 let teacherHomeworkSubmissions = [];
+let homeworkWeekOffset = 0; // 0 = current week, -1 = last week, +1 = next week
+let homeworkTermSelected = "term1";
 
 
 
@@ -5124,6 +5126,7 @@ let d = s.subjects?.[sub]?.[term] || {};
  html += `
     <h4>${sub}</h4>
 
+    <div class="marks-score-grid">
     <input
         type="number"
         id="${sub}_test1"
@@ -5168,6 +5171,7 @@ let d = s.subjects?.[sub]?.[term] || {};
         min="0"
         max="100"
         oninput="if(this.value > 100) this.value = 100; if(this.value < 0) this.value = 0;">
+    </div>
     `;
 ;
 
@@ -20148,6 +20152,26 @@ list.innerHTML =
 
                             </button>
 
+                            <button
+                                type="button"
+                                onclick="deleteHomework('${escapeHomeworkText(
+                                    homework.id
+                                )}')"
+                                style="
+                                    border:none;
+                                    padding:10px 16px;
+                                    border-radius:9px;
+                                    cursor:pointer;
+                                    font-weight:600;
+                                    background:#fee2e2;
+                                    color:#b91c1c;
+                                "
+                                title="Delete this homework"
+                            >
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+
 
                             ${
                                 submittedCount > 0
@@ -20990,80 +21014,31 @@ UPDATE SUBMISSION STATISTICS
 
 function updateSubmissionStatistics() {
 
+// Only submissions that belong to homework in the selected week
+const weekSubs = (typeof getSubmissionsForSelectedWeek === "function")
+    ? getSubmissionsForSelectedWeek()
+    : (teacherHomeworkSubmissions || []);
 
-const total =
-    teacherHomeworkSubmissions.length;
+const total = weekSubs.length;
 
+const marked = weekSubs.filter(
+    submission =>
+        submission.mark !== null &&
+        submission.mark !== undefined &&
+        submission.mark !== ""
+).length;
 
-const marked =
-    teacherHomeworkSubmissions.filter(
-        submission =>
-            submission.mark !== null &&
-            submission.mark !== undefined &&
-            submission.mark !== ""
-    ).length;
+const unmarked = total - marked;
 
+const totalElement = document.getElementById("totalHomeworkSubmissions");
+const markedElement = document.getElementById("markedHomeworkSubmissions");
+const unmarkedElement = document.getElementById("unmarkedHomeworkSubmissions");
+const submittedCount = document.getElementById("homeworkSubmittedCount");
 
-const unmarked =
-    total -
-    marked;
-
-
-const totalElement =
-    document.getElementById(
-        "totalHomeworkSubmissions"
-    );
-
-
-const markedElement =
-    document.getElementById(
-        "markedHomeworkSubmissions"
-    );
-
-
-const unmarkedElement =
-    document.getElementById(
-        "unmarkedHomeworkSubmissions"
-    );
-
-
-if (totalElement) {
-
-    totalElement.textContent =
-        total;
-
-}
-
-
-if (markedElement) {
-
-    markedElement.textContent =
-        marked;
-
-}
-
-
-if (unmarkedElement) {
-
-    unmarkedElement.textContent =
-        unmarked;
-
-}
-
-
-const submittedCount =
-    document.getElementById(
-        "homeworkSubmittedCount"
-    );
-
-
-if (submittedCount) {
-
-    submittedCount.textContent =
-        total;
-
-}
-
+if (totalElement) totalElement.textContent = total;
+if (markedElement) markedElement.textContent = marked;
+if (unmarkedElement) unmarkedElement.textContent = unmarked;
+if (submittedCount) submittedCount.textContent = total;
 
 }
 
@@ -21073,51 +21048,24 @@ UPDATE HOMEWORK STATISTICS
 
 function updateHomeworkStatistics() {
 
+// Stats follow the selected week (not all history)
+const weekItems = (typeof getHomeworkForSelectedWeek === "function")
+    ? getHomeworkForSelectedWeek()
+    : (teacherHomeworkData || []);
 
-const total =
-    teacherHomeworkData.length;
+const total = weekItems.length;
 
+const now = new Date();
 
-const now =
-    new Date();
+const pending = weekItems.filter(homework => {
+    if (!homework.deadline) return false;
+    return new Date(homework.deadline) >= now;
+}).length;
 
-
-const pending =
-    teacherHomeworkData.filter(
-        homework => {
-
-            if (!homework.deadline) {
-                return false;
-            }
-
-            const deadline =
-                new Date(
-                    homework.deadline
-                );
-
-            return deadline >= now;
-
-        }
-    ).length;
-
-
-const overdue =
-    teacherHomeworkData.filter(
-        homework => {
-
-            if (!homework.deadline) {
-                return false;
-            }
-
-            const deadline =
-                new Date(
-                    homework.deadline
-                );
-
-            return deadline < now;
-
-        }
-    ).length;
+const overdue = weekItems.filter(homework => {
+    if (!homework.deadline) return false;
+    return new Date(homework.deadline) < now;
+}).length;
 
 
 const totalElement =
@@ -21139,31 +21087,34 @@ const overdueElement =
 
 
 if (totalElement) {
-
-    totalElement.textContent =
-        total;
-
+    totalElement.textContent = total;
 }
-
 
 if (pendingElement) {
-
-    pendingElement.textContent =
-        pending;
-
+    pendingElement.textContent = pending;
 }
-
 
 if (overdueElement) {
-
-    overdueElement.textContent =
-        overdue;
-
+    overdueElement.textContent = overdue;
 }
 
+// Term total (independent of week switcher)
+const termSel = document.getElementById("homeworkTermFilter");
+if (termSel && termSel.value) {
+    homeworkTermSelected = termSel.value;
+}
+const termItems = (typeof getHomeworkForTerm === "function")
+    ? getHomeworkForTerm(homeworkTermSelected)
+    : (teacherHomeworkData || []);
+const termTotalEl = document.getElementById("homeworkTermTotalCount");
+const termLabelEl = document.getElementById("homeworkTermTotalLabel");
+if (termTotalEl) termTotalEl.textContent = termItems.length;
+if (termLabelEl) {
+    const label = (homeworkTermSelected || "term1").replace("term", "Term ");
+    termLabelEl.textContent = label + " Total";
+}
 
 updateSubmissionStatistics();
-
 
 }
 
@@ -21171,8 +21122,168 @@ updateSubmissionStatistics();
 FILTER TEACHER HOMEWORK
 ========================================================= */
 
-function filterTeacherHomework() {
 
+/* =========================================================
+   HOMEWORK WEEK HELPERS
+========================================================= */
+
+function getHomeworkWeekRange(offset = 0) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const day = now.getDay(); // 0 Sun .. 6 Sat
+    const toMonday = day === 0 ? -6 : 1 - day;
+    const start = new Date(now);
+    start.setDate(now.getDate() + toMonday + (offset * 7));
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+}
+
+function formatHomeworkWeekLabel(offset = 0) {
+    const { start, end } = getHomeworkWeekRange(offset);
+    const opts = { day: "numeric", month: "short" };
+    const a = start.toLocaleDateString(undefined, opts);
+    const b = end.toLocaleDateString(undefined, opts);
+    if (offset === 0) return `This week (${a} – ${b})`;
+    if (offset === -1) return `Last week (${a} – ${b})`;
+    if (offset === 1) return `Next week (${a} – ${b})`;
+    return `${a} – ${b}`;
+}
+
+function updateHomeworkWeekLabel() {
+    const el = document.getElementById("homeworkWeekLabel");
+    if (el) el.textContent = formatHomeworkWeekLabel(homeworkWeekOffset);
+}
+
+function isHomeworkInSelectedWeek(homework) {
+    const { start, end } = getHomeworkWeekRange(homeworkWeekOffset);
+    // Prefer date_given; fall back to created_at
+    const raw = homework.date_given || homework.created_at;
+    if (!raw) return false;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return false;
+    return d >= start && d <= end;
+}
+
+function getHomeworkForSelectedWeek() {
+    return (teacherHomeworkData || []).filter(isHomeworkInSelectedWeek);
+}
+
+function getHomeworkForTerm(term) {
+    const t = term || homeworkTermSelected || "term1";
+    let bounds = { start: null, end: null };
+    try {
+        if (typeof getTermDateBounds === "function") {
+            bounds = getTermDateBounds(t) || bounds;
+        }
+    } catch (e) {}
+
+    if (!bounds.start || !bounds.end) {
+        // No term dates configured — show all school homework as term total
+        return (teacherHomeworkData || []).slice();
+    }
+
+    const start = new Date(bounds.start + "T00:00:00");
+    const end = new Date(bounds.end + "T23:59:59");
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return (teacherHomeworkData || []).slice();
+    }
+
+    return (teacherHomeworkData || []).filter(homework => {
+        const raw = homework.date_given || homework.created_at;
+        if (!raw) return false;
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return false;
+        return d >= start && d <= end;
+    });
+}
+
+function onHomeworkTermChange() {
+    const sel = document.getElementById("homeworkTermFilter");
+    homeworkTermSelected = sel?.value || "term1";
+    updateHomeworkStatistics();
+    updateSubmissionStatistics();
+}
+
+function getSubmissionsForSelectedWeek() {
+    const weekIds = new Set(
+        getHomeworkForSelectedWeek().map(h => String(h.id))
+    );
+    return (teacherHomeworkSubmissions || []).filter(
+        s => weekIds.has(String(s.homework_id))
+    );
+}
+
+function shiftHomeworkWeek(delta) {
+    homeworkWeekOffset += delta;
+    updateHomeworkWeekLabel();
+    filterTeacherHomework();
+    updateHomeworkStatistics();
+}
+
+function resetHomeworkWeek() {
+    homeworkWeekOffset = 0;
+    updateHomeworkWeekLabel();
+    filterTeacherHomework();
+    updateHomeworkStatistics();
+}
+
+async function deleteHomework(homeworkId) {
+    if (!homeworkId) return;
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const ok = confirm(
+        "Delete this homework?\n\nStudents will no longer see it, and any submissions for it will also be removed. This cannot be undone."
+    );
+    if (!ok) return;
+
+    try {
+        // Remove submissions first (if table exists / RLS allows)
+        const { error: subErr } = await supabaseClient
+            .from("homework_submissions")
+            .delete()
+            .eq("homework_id", homeworkId);
+        if (subErr) {
+            console.warn("Submission delete warning:", subErr.message);
+        }
+
+        // Remove homework row
+        const { error } = await supabaseClient
+            .from("homework")
+            .delete()
+            .eq("id", homeworkId)
+            .eq("schoolid", currentUser.schoolid);
+
+        if (error) throw error;
+
+        // Refresh local data
+        teacherHomeworkData = (teacherHomeworkData || []).filter(
+            h => String(h.id) !== String(homeworkId)
+        );
+        teacherHomeworkSubmissions = (teacherHomeworkSubmissions || []).filter(
+            s => String(s.homework_id) !== String(homeworkId)
+        );
+
+        filterTeacherHomework();
+        updateHomeworkStatistics();
+        if (typeof updateSubmissionStatistics === "function") {
+            updateSubmissionStatistics();
+        }
+
+        alert("Homework deleted.");
+    } catch (error) {
+        console.error("Delete homework error:", error);
+        alert(error.message || "Unable to delete homework.");
+    }
+}
+
+
+function filterTeacherHomework() {
 
 const filter =
     document.getElementById(
@@ -21180,102 +21291,58 @@ const filter =
     )?.value ||
     "all";
 
+updateHomeworkWeekLabel();
 
-if (!teacherHomeworkData.length) {
-    return;
-}
+const now = new Date();
 
-
-const now =
-    new Date();
-
-
-let filtered =
-    [...teacherHomeworkData];
-
+// Always scope to the selected week first
+let filtered = getHomeworkForSelectedWeek();
 
 if (filter === "active") {
-
-    filtered =
-        filtered.filter(
-            homework =>
-                homework.deadline &&
-                new Date(
-                    homework.deadline
-                ) >= now
-        );
-
+    filtered = filtered.filter(
+        homework =>
+            homework.deadline &&
+            new Date(homework.deadline) >= now
+    );
 }
-
 
 if (filter === "overdue") {
-
-    filtered =
-        filtered.filter(
-            homework =>
-                homework.deadline &&
-                new Date(
-                    homework.deadline
-                ) < now
-        );
-
+    filtered = filtered.filter(
+        homework =>
+            homework.deadline &&
+            new Date(homework.deadline) < now
+    );
 }
-
 
 if (filter === "submitted") {
-
-    filtered =
-        filtered.filter(
-            homework =>
-                teacherHomeworkSubmissions.some(
-                    submission =>
-                        String(
-                            submission.homework_id
-                        ) ===
-                        String(homework.id)
-                )
-        );
-
+    filtered = filtered.filter(
+        homework =>
+            teacherHomeworkSubmissions.some(
+                submission =>
+                    String(submission.homework_id) === String(homework.id)
+            )
+    );
 }
-
 
 if (filter === "unmarked") {
-
-    filtered =
-        filtered.filter(
-            homework =>
-                teacherHomeworkSubmissions.some(
-                    submission =>
-                        String(
-                            submission.homework_id
-                        ) ===
-                        String(homework.id) &&
-
-                        (
-                            submission.mark === null ||
-                            submission.mark === undefined ||
-                            submission.mark === ""
-                        )
-                )
-        );
-
+    filtered = filtered.filter(
+        homework =>
+            teacherHomeworkSubmissions.some(
+                submission =>
+                    String(submission.homework_id) === String(homework.id) &&
+                    (
+                        submission.mark === null ||
+                        submission.mark === undefined ||
+                        submission.mark === ""
+                    )
+            )
+    );
 }
 
-
-const original =
-    teacherHomeworkData;
-
-
-teacherHomeworkData =
-    filtered;
-
-
+const original = teacherHomeworkData;
+teacherHomeworkData = filtered;
 renderTeacherHomework();
-
-
-teacherHomeworkData =
-    original;
-
+teacherHomeworkData = original;
 
 }
 
@@ -21310,8 +21377,23 @@ setupHomeworkAttachment();
    Load homework + submissions.
 */
 
+updateHomeworkWeekLabel();
+
+// Sync term filter with active term when available
+try {
+    const term = (typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1";
+    homeworkTermSelected = term;
+    const termSel = document.getElementById("homeworkTermFilter");
+    if (termSel) termSel.value = term;
+} catch (e) {}
+
 await loadPublishedHomework();
 
+/*
+   Apply current week filter on first load
+*/
+filterTeacherHomework();
+updateHomeworkStatistics();
 
 /*
    Make sure submission statistics
