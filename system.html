@@ -7,11 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>Nabeng-SBA System</title>
-<!-- Styles are bundled by Vite through /src/main-system.js. Do not load src/style.css directly. -->
+<link rel="stylesheet" href="style.css">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script type="module" src="/src/main-system.js"></script>
+<script src="app.js" defer></script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/docx@7.7.0/build/index.js"></script>
@@ -24,8 +24,7 @@
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-<link rel="icon" type="image/png" href="/nabeng-sba-logo.png">
-<script src="https://js.paystack.co/v1/inline.js"></script>
+<link rel="icon" type="image/png" href="nabeng-sba-logo.png">
 </head>
 
 <body class="sba-system">
@@ -41,7 +40,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
     <!-- SCHOOL LOGO -->
     <img
-        src="/nabeng-sba-logo.png"
+        src="nabeng-sba-logo.png"
         class="login-logo"
         alt="School Logo"
     >
@@ -606,57 +605,12 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
-
-<!-- =========================================================
-     SUBSCRIPTION LOCKED SCREEN (Paystack — same account as Nabeng Invoice)
-========================================================= -->
-<div id="subscriptionLockedScreen" class="sba-sub-lock" style="display:none;">
-  <div class="sba-sub-card">
-    <div class="sba-sub-brand">
-      <img src="/nabeng-sba-logo.png" alt="Nabeng-SBA" onerror="this.style.display='none'">
-      <div>
-        <strong>Nabeng-SBA</strong>
-        <span>School subscription required</span>
-      </div>
-    </div>
-
-    <h2>Unlock your school system</h2>
-    <p id="subLockStatus" class="sba-sub-status">
-      Choose a plan to continue using Nabeng-SBA for your school.
-    </p>
-
-    <div class="sba-sub-plans" id="subPlansAdmin">
-      <button type="button" class="sba-sub-plan" onclick="startSbaPaystackPayment('termly')">
-        <span class="sba-sub-plan-tag">Termly</span>
-        <strong>GHS 100</strong>
-        <small>16 weeks · 1 term (4 months)</small>
-      </button>
-      <button type="button" class="sba-sub-plan sba-sub-plan-year" onclick="startSbaPaystackPayment('yearly')">
-        <span class="sba-sub-plan-tag">Yearly · Best value</span>
-        <strong>GHS 280</strong>
-        <small>12 months · all 3 terms</small>
-      </button>
-    </div>
-
-    <p id="subPlansTeacher" class="sba-sub-teacher-msg" style="display:none;">
-      Your school subscription has expired. Please ask the <strong>school administrator</strong> to renew the plan.
-    </p>
-
-    <div id="subLockMsg" class="sba-sub-msg"></div>
-
-    <div class="sba-sub-meta" id="subLockMeta"></div>
-
-    <button type="button" class="sba-sub-signout" onclick="logout()">Sign out</button>
-  </div>
-</div>
-
-
 <div id="app" style="display:none;" class="sba-app">
 
 <!-- ========== DESKTOP SIDEBAR + MOBILE DRAWER ========== -->
 <aside id="sbaSidebar" class="sba-sidebar">
   <div class="sba-sidebar-brand">
-    <img src="/nabeng-sba-logo.png" alt="Nabeng-SBA" class="sba-sidebar-logo" onerror="this.style.display='none'">
+    <img src="nabeng-sba-logo.png" alt="Nabeng-SBA" class="sba-sidebar-logo" onerror="this.style.display='none'">
     <div>
       <strong>Nabeng-SBA</strong>
       <small id="sidebarSchoolName">School System</small>
