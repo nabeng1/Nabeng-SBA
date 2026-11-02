@@ -1,32 +1,35 @@
 /**
- * Nabeng-SBA entry (Vite) — same pattern as Nabeng Invoice main.js
+ * Nabeng-SBA entry (Vite) — modular like Nabeng Invoice
  */
 import "./style.css";
 import "./runtime.js";
 import "./modules/subscription.js";
-import "./modules/shell.js";
 import { wireSbaApi } from "./modules/wire.js";
 import { refreshSidebarUser } from "./components/sidebar.js";
 
-// Load classic core after runtime globals exist
-import coreUrl from "./modules/app-core.js?url";
+const CLASSIC_MODULES = ['shared', 'auth', 'profile', 'students', 'teachers', 'marks', 'dashboard', 'attendance', 'homework', 'terms', 'reports', 'chat', 'notices', 'timetable', 'shell', 'boot'];
 
-function loadClassicCore() {
+function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
-    s.src = coreUrl;
+    s.src = src;
+    s.async = false;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Failed to load app-core.js"));
+    s.onerror = () => reject(new Error("Failed to load " + src));
     document.head.appendChild(s);
   });
 }
 
-loadClassicCore()
+async function loadClassicModules() {
+  for (const name of CLASSIC_MODULES) {
+    await loadScript("/js/modules/" + name + ".js");
+  }
+}
+
+loadClassicModules()
   .then(() => {
     wireSbaApi();
     try { refreshSidebarUser(); } catch (e) {}
-    console.log("[Nabeng-SBA] modules ready");
+    console.log("[Nabeng-SBA] modules ready:", CLASSIC_MODULES.join(", "));
   })
-  .catch((err) => {
-    console.error(err);
-  });
+  .catch((err) => console.error(err));
