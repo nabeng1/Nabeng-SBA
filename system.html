@@ -7,11 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>Nabeng-SBA System</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="/src/style.css">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script src="app.js" defer></script>
+<script type="module" src="/src/main-system.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/docx@7.7.0/build/index.js"></script>
@@ -24,7 +24,8 @@
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-<link rel="icon" type="image/png" href="nabeng-sba-logo.png">
+<link rel="icon" type="image/png" href="/nabeng-sba-logo.png">
+<script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 
 <body class="sba-system">
@@ -40,7 +41,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
     <!-- SCHOOL LOGO -->
     <img
-        src="nabeng-sba-logo.png"
+        src="/nabeng-sba-logo.png"
         class="login-logo"
         alt="School Logo"
     >
@@ -605,12 +606,57 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 
 
+
+<!-- =========================================================
+     SUBSCRIPTION LOCKED SCREEN (Paystack — same account as Nabeng Invoice)
+========================================================= -->
+<div id="subscriptionLockedScreen" class="sba-sub-lock" style="display:none;">
+  <div class="sba-sub-card">
+    <div class="sba-sub-brand">
+      <img src="/nabeng-sba-logo.png" alt="Nabeng-SBA" onerror="this.style.display='none'">
+      <div>
+        <strong>Nabeng-SBA</strong>
+        <span>School subscription required</span>
+      </div>
+    </div>
+
+    <h2>Unlock your school system</h2>
+    <p id="subLockStatus" class="sba-sub-status">
+      Choose a plan to continue using Nabeng-SBA for your school.
+    </p>
+
+    <div class="sba-sub-plans" id="subPlansAdmin">
+      <button type="button" class="sba-sub-plan" onclick="startSbaPaystackPayment('termly')">
+        <span class="sba-sub-plan-tag">Termly</span>
+        <strong>GHS 100</strong>
+        <small>16 weeks · 1 term (4 months)</small>
+      </button>
+      <button type="button" class="sba-sub-plan sba-sub-plan-year" onclick="startSbaPaystackPayment('yearly')">
+        <span class="sba-sub-plan-tag">Yearly · Best value</span>
+        <strong>GHS 280</strong>
+        <small>12 months · all 3 terms</small>
+      </button>
+    </div>
+
+    <p id="subPlansTeacher" class="sba-sub-teacher-msg" style="display:none;">
+      Your school subscription has expired. Please ask the <strong>school administrator</strong> to renew the plan.
+    </p>
+
+    <div id="subLockMsg" class="sba-sub-msg"></div>
+
+    <div class="sba-sub-meta" id="subLockMeta"></div>
+
+    <button type="button" class="sba-sub-signout" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+
 <div id="app" style="display:none;" class="sba-app">
 
 <!-- ========== DESKTOP SIDEBAR + MOBILE DRAWER ========== -->
 <aside id="sbaSidebar" class="sba-sidebar">
   <div class="sba-sidebar-brand">
-    <img src="nabeng-sba-logo.png" alt="Nabeng-SBA" class="sba-sidebar-logo" onerror="this.style.display='none'">
+    <img src="/nabeng-sba-logo.png" alt="Nabeng-SBA" class="sba-sidebar-logo" onerror="this.style.display='none'">
     <div>
       <strong>Nabeng-SBA</strong>
       <small id="sidebarSchoolName">School System</small>
@@ -720,107 +766,138 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 <div id="dashboardPage" class="page">
 
-<!-- ===== HEADER (LOGO + WELCOME + SCHOOL NAME) ===== -->
-<div style="
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:15px;
-    background:#1e293b;
-    padding:20px;
-    border-radius:12px;
-    margin-bottom:20px;
-">
-
-    <!-- LOGO -->
-   <img id="schoolLogoPreview" src="" onclick="uploadLogo()" style="
-    width:70px;
-    height:70px;
-    border-radius:10px;
-    object-fit:cover;
-    background:#fff;
-    cursor:pointer;
-">
-<input type="file" id="schoolLogoInput" accept="image/*" style="display:none;">
-    <!-- TEXT -->
-    <div style="flex:1;">
-        <h2 id="dashWelcomeUser" style="
-            margin:0;
-            color:#60a5fa;
-            font-weight:bold;
-        "></h2>
-
-        <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
-            <p id="schoolNameText" style="
-                margin:0;
-                font-weight:bold;
-                color:#cbd5f5;
-                font-size:15px;
-            "></p>
-
-            <span id="editSchoolIcon" onclick="editSchoolName()" style="
-                cursor:pointer;
-                font-size:14px;
-                display:none;
-            ">✏️</span>
-        </div>
+  <!-- Welcome strip -->
+  <div class="dash-welcome-strip">
+    <div class="dash-welcome-left">
+      <img id="schoolLogoPreview" src="" onclick="uploadLogo()" alt="School logo" class="dash-school-logo" title="Click to change logo">
+      <input type="file" id="schoolLogoInput" accept="image/*" style="display:none;">
+      <div>
+        <h2 id="dashWelcomeUser">Welcome</h2>
+        <p class="dash-school-line">
+          <span id="schoolNameText">School</span>
+          <span id="editSchoolIcon" onclick="editSchoolName()" style="cursor:pointer;display:none;" title="Edit school name">✏️</span>
+        </p>
+      </div>
     </div>
-
-</div>
-
-<!-- ===== DASHBOARD TITLE ===== -->
-<h3 style="margin-bottom:15px;">📊 Dashboard Overview</h3>
-
-<!-- ===== STATS ===== -->
-<div class="dashboard-grid">
-    <div class="stat-card">
-        <h4>Total Students</h4>
-        <p id="totalStudents">0</p>
+    <div class="dash-welcome-filters">
+      <div class="dash-filter">
+        <label>Term</label>
+        <select id="dashTermFilter" onchange="updateDashboard()">
+          <option value="term1">Term 1</option>
+          <option value="term2">Term 2</option>
+          <option value="term3">Term 3</option>
+        </select>
+      </div>
     </div>
+  </div>
 
-    <div class="stat-card">
-        <h4>Highest %</h4>
-        <p id="highestScore">0%</p>
+  <!-- Overview heading -->
+  <div class="dash-section-head">
+    <div>
+      <span class="dash-kicker">OVERVIEW</span>
+      <h3>Performance at a Glance</h3>
     </div>
+  </div>
 
-    <div class="stat-card">
-        <h4>Average %</h4>
-        <p id="avgScore">0%</p>
+  <!-- KPI cards -->
+  <div class="dash-kpi-row">
+    <div class="dash-kpi dash-kpi-blue">
+      <div class="dash-kpi-icon"><i class="fas fa-user-graduate"></i></div>
+      <div>
+        <span class="dash-kpi-label">Total Students</span>
+        <strong id="totalStudents">0</strong>
+      </div>
     </div>
-
-    <div class="stat-card">
-        <h4>Pass Rate</h4>
-        <p id="passRate">0%</p>
+    <div class="dash-kpi dash-kpi-teal">
+      <div class="dash-kpi-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div>
+        <span class="dash-kpi-label">Students Passed</span>
+        <strong id="dashPassedCount">0</strong>
+        <small id="passRate">0% Pass Rate</small>
+      </div>
     </div>
-</div>
-
-<!-- ===== CHARTS ===== -->
-<div class="charts-grid">
-
-    <div class="chart-box">
-        <h4>Grade Distribution</h4>
-        <canvas id="gradeChart"></canvas>
+    <div class="dash-kpi dash-kpi-purple">
+      <div class="dash-kpi-icon"><i class="fas fa-award"></i></div>
+      <div>
+        <span class="dash-kpi-label">Distinctions (A)</span>
+        <strong id="dashDistinctions">0</strong>
+        <small id="dashDistinctionPct">0% of total</small>
+      </div>
     </div>
-
-    <div class="chart-box">
-        <h4>Top 5 Students</h4>
-        <canvas id="topChart"></canvas>
+    <div class="dash-kpi dash-kpi-orange">
+      <div class="dash-kpi-icon"><i class="fas fa-chart-line"></i></div>
+      <div>
+        <span class="dash-kpi-label">Average Score</span>
+        <strong id="avgScore">0%</strong>
+        <small id="highestScore">Highest 0%</small>
+      </div>
     </div>
-
-    <div class="chart-box">
-        <h4>Subject Average</h4>
-        <canvas id="subjectChart"></canvas>
+    <div class="dash-kpi dash-kpi-pink">
+      <div class="dash-kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
+      <div>
+        <span class="dash-kpi-label">Fail Rate</span>
+        <strong id="dashFailRate">0%</strong>
+        <small id="dashFailCount">0 students</small>
+      </div>
     </div>
+  </div>
 
-    <div class="chart-box">
+  <!-- Main grid -->
+  <div class="dash-main-grid">
+    <div class="dash-card">
+      <h4>Result Summary</h4>
+      <div class="dash-chart-wrap"><canvas id="gradeChart"></canvas></div>
+    </div>
+    <div class="dash-card">
+      <h4>Average Score by Subject</h4>
+      <div class="dash-chart-wrap"><canvas id="subjectChart"></canvas></div>
+    </div>
+    <div class="dash-card dash-card-top">
+      <h4><i class="fas fa-trophy" style="color:#f59e0b;margin-right:6px;"></i>Top Performing Students</h4>
+      <ol id="dashTopStudents" class="dash-top-list">
+        <li class="dash-top-empty">No student averages yet</li>
+      </ol>
+      <!-- keep hidden canvas for compatibility -->
+      <canvas id="topChart" style="display:none;"></canvas>
+    </div>
+  </div>
+
+  <div class="dash-secondary-grid">
+    <div class="dash-card dash-card-table">
+      <h4>Class Performance Overview</h4>
+      <div class="dash-table-wrap">
+        <table class="dash-class-table">
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Students</th>
+              <th>Average</th>
+              <th>Pass Rate</th>
+              <th>Distinctions</th>
+              <th>Fail Rate</th>
+            </tr>
+          </thead>
+          <tbody id="dashClassTableBody">
+            <tr><td colspan="6" style="text-align:center;opacity:.7;">No class data yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dash-side-col">
+      <div class="dash-card">
         <h4>Pass vs Fail</h4>
-        <canvas id="passChart"></canvas>
+        <div class="dash-chart-wrap dash-chart-sm"><canvas id="passChart"></canvas></div>
+      </div>
+      <div class="dash-quote-card">
+        <div class="dash-quote-icon"><i class="fas fa-trophy"></i></div>
+        <p>“Education is the key to success. Keep learning, keep growing!”</p>
+        <small>Nabeng-SBA</small>
+      </div>
     </div>
+  </div>
 
 </div>
 
-</div>
-</div>
 
 
 
@@ -3915,9 +3992,11 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
                 id="myAssignedClassesList"
                 class="assigned-classes-grid"
             >
-
-                <!-- Classes will be loaded by JavaScript -->
-
+                <div class="empty-state">
+                    <i class="fas fa-school"></i>
+                    <h4>Loading classes…</h4>
+                    <p>Your assigned classes will appear here.</p>
+                </div>
             </div>
 
         </div>
@@ -3956,9 +4035,11 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
                 id="myAssignedSubjectsList"
                 class="assigned-subjects-grid"
             >
-
-                <!-- Subjects will be loaded by JavaScript -->
-
+                <div class="empty-state">
+                    <i class="fas fa-book-open"></i>
+                    <h4>Loading subjects…</h4>
+                    <p>Your assigned subjects will appear here.</p>
+                </div>
             </div>
 
         </div>
@@ -4033,7 +4114,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
         <!-- =========================
              ACADEMIC YEAR MANAGEMENT
         ========================== -->
-        <section class="academic-year-panel">
+        <section id="academicYearPanel" class="academic-year-panel">
             <div class="academic-year-heading">
                 <div class="academic-year-icon"><i class="fa-solid fa-calendar-check"></i></div>
                 <div>
