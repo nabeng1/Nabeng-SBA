@@ -740,7 +740,7 @@ function backToLogin(){
 }
 
 
-export async function login() {
+async function login() {
 
     let email =
         document.getElementById("username").value.trim();
@@ -888,6 +888,10 @@ setTimeout(() => {
 	
 }
 
+
+// The login button in system.html uses onclick="login()".
+// Expose the module-scoped function explicitly for that existing handler.
+if (typeof window !== "undefined") window.login = login;
 
 async function displaySchoolName() {
 

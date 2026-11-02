@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-const OPENAI_KEY ="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"; // 🔒 put your real key
+const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 
 
 
@@ -164,8 +164,7 @@ and bullet points.
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization":
-                        `Bearer ${"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"; // 🔒 put your real key
-}`
+                        `Bearer ${OPENAI_KEY}`
                 },
 
                 body: JSON.stringify({
