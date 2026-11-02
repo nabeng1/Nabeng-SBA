@@ -4,4 +4,7 @@
  * App functions are also attached to window for HTML onclick handlers.
  */
 import "./style.css";
-import "./app.js";
+import { login } from "./app.js";
+
+// Explicitly expose the login handler used by the legacy inline HTML action.
+window.login = login;

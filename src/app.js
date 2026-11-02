@@ -740,7 +740,7 @@ function backToLogin(){
 }
 
 
-async function login() {
+export async function login() {
 
     let email =
         document.getElementById("username").value.trim();
