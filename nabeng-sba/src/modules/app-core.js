@@ -6270,6 +6270,11 @@ async function initializeSystem(){
 
     window.activeTerm = currentTerm;
 
+    // Ensure admin subject assignment has a usable subject catalog
+    if (typeof ensureSchoolSubjects === "function") {
+        try { ensureSchoolSubjects(); } catch (e) {}
+    }
+
     console.log(
         "Current Term:",
         currentTerm
@@ -9823,6 +9828,274 @@ function loadSubjectSelection(user = currentUser) {
    Prevent names/classes/subjects from breaking HTML
 ========================================================= */
 
+
+/* =========================================================
+   SCHOOL SUBJECT CATALOG
+   Global `subjects` is often empty for new schools.
+   Provide a sensible default list (Ghana basic school)
+   and merge any already-assigned teacher subjects so
+   admin can always select subjects for teachers.
+========================================================= */
+
+const DEFAULT_SCHOOL_SUBJECTS = [
+    "English Language",
+    "Mathematics",
+    "RME",
+    "History",
+    "ICT",
+    "Creative Arts",
+    "Integrated Science",
+    "Social Studies",
+    "Ghanaian Language",
+    "French",
+    "Physical Education",
+    "Career Technology",
+    "Our World Our People",
+    "Writing",
+    "Numeracy",
+    "Literacy"
+];
+
+function getCustomSubjectsStorageKey() {
+    const schoolId =
+        (typeof currentUser !== "undefined" && currentUser && currentUser.schoolid)
+            ? String(currentUser.schoolid)
+            : "default";
+    return "nabeng_custom_subjects_" + schoolId;
+}
+
+function loadCustomSchoolSubjects() {
+    try {
+        const raw = localStorage.getItem(getCustomSubjectsStorageKey());
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .map(s => String(s || "").trim())
+            .filter(Boolean);
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCustomSchoolSubjects(list) {
+    const cleaned = [...new Set(
+        (Array.isArray(list) ? list : [])
+            .map(s => String(s || "").trim())
+            .filter(Boolean)
+    )];
+    try {
+        localStorage.setItem(
+            getCustomSubjectsStorageKey(),
+            JSON.stringify(cleaned)
+        );
+    } catch (e) {
+        console.warn("Could not save custom subjects:", e);
+    }
+    return cleaned;
+}
+
+function ensureSchoolSubjects(extra = []) {
+    const fromGlobal = Array.isArray(subjects)
+        ? subjects.map(s => (typeof s === "string" ? s : (s && s.name) || "")).map(s => String(s).trim()).filter(Boolean)
+        : [];
+
+    const fromExtra = (Array.isArray(extra) ? extra : [])
+        .map(s => (typeof s === "string" ? s : (s && (s.name || s.subject)) || ""))
+        .map(s => String(s).trim())
+        .filter(Boolean);
+
+    const fromCustom = loadCustomSchoolSubjects();
+
+    // Always include defaults + school customs + extras + current global
+    const merged = [...new Set([
+        ...DEFAULT_SCHOOL_SUBJECTS,
+        ...fromCustom,
+        ...fromGlobal,
+        ...fromExtra
+    ].map(s => s.trim()).filter(Boolean))];
+
+    try {
+        subjects = merged;
+    } catch (e) {
+        // ignore if subjects is not writable
+    }
+
+    return merged;
+}
+
+function getAvailableSubjectsForAdmin(teacherSubjects = []) {
+    return ensureSchoolSubjects(teacherSubjects);
+}
+
+/**
+ * Admin: add a subject that is not already on the school list.
+ * Saves to localStorage (per school) and refreshes the checkbox grid.
+ */
+function addAdminCustomSubject() {
+    if (
+        !currentUser ||
+        String(currentUser.role || "").toLowerCase().trim() !== "admin"
+    ) {
+        alert("Only administrators can add subjects.");
+        return;
+    }
+
+    const input = document.getElementById("customSubjectInput");
+    const name = (input?.value || "").trim();
+
+    if (!name) {
+        alert("Enter a subject name.");
+        input?.focus();
+        return;
+    }
+
+    const available = ensureSchoolSubjects();
+    const exists = available.some(
+        s => String(s).trim().toLowerCase() === name.toLowerCase()
+    );
+
+    if (exists) {
+        alert(`"${name}" is already in the subject list.`);
+        // Still check the matching box if present
+        const boxes = document.querySelectorAll("#subjectCheckboxes input[type='checkbox']");
+        boxes.forEach(cb => {
+            if (String(cb.value).trim().toLowerCase() === name.toLowerCase()) {
+                cb.checked = true;
+            }
+        });
+        if (input) input.value = "";
+        return;
+    }
+
+    const customs = loadCustomSchoolSubjects();
+    customs.push(name);
+    saveCustomSchoolSubjects(customs);
+    ensureSchoolSubjects([name]);
+
+    if (input) input.value = "";
+
+    // Refresh checkboxes; keep currently checked + auto-check the new one
+    const checkedNow = [];
+    document
+        .querySelectorAll("#subjectCheckboxes input[type='checkbox']:checked")
+        .forEach(cb => {
+            if (cb.value) checkedNow.push(cb.value.trim());
+        });
+    checkedNow.push(name);
+
+    if (typeof loadSelectedTeacherSubjects === "function") {
+        // Re-render from teacher record, then force-check new + previously checked
+        const teacherSelect = document.getElementById("teacherSelect");
+        const teacherId = teacherSelect?.value;
+        if (teacherId) {
+            loadSelectedTeacherSubjects().then(() => {
+                document
+                    .querySelectorAll("#subjectCheckboxes input[type='checkbox']")
+                    .forEach(cb => {
+                        const v = String(cb.value || "").trim().toLowerCase();
+                        if (checkedNow.some(c => c.toLowerCase() === v)) {
+                            cb.checked = true;
+                        }
+                    });
+            }).catch(() => {
+                appendSubjectCheckbox(name, true);
+            });
+        } else {
+            appendSubjectCheckbox(name, true);
+        }
+    } else {
+        appendSubjectCheckbox(name, true);
+    }
+}
+
+function appendSubjectCheckbox(subject, checked) {
+    const subjectContainer = document.getElementById("subjectCheckboxes");
+    if (!subjectContainer) return;
+
+    // Clear empty-state if present
+    const empty = subjectContainer.querySelector(".empty-state");
+    if (empty) subjectContainer.innerHTML = "";
+
+    const already = [...subjectContainer.querySelectorAll("input[type='checkbox']")]
+        .some(cb => String(cb.value).trim().toLowerCase() === String(subject).trim().toLowerCase());
+    if (already) return;
+
+    const escape =
+        typeof escapeAssignmentHTML === "function"
+            ? escapeAssignmentHTML
+            : (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+    const label = document.createElement("label");
+    label.className = "subject-checkbox-item";
+    label.innerHTML = `
+        <input type="checkbox" value="${escape(subject)}" ${checked ? "checked" : ""}>
+        <span class="subject-checkbox-content">
+            <span class="subject-checkbox-icon">
+                <i class="fas fa-book"></i>
+            </span>
+            <span>${escape(subject)}</span>
+        </span>
+    `;
+    subjectContainer.appendChild(label);
+}
+
+/**
+ * Admin: remove a custom subject from the school catalog (not from defaults).
+ */
+function removeAdminCustomSubject(subjectName) {
+    if (
+        !currentUser ||
+        String(currentUser.role || "").toLowerCase().trim() !== "admin"
+    ) {
+        return;
+    }
+
+    const name = String(subjectName || "").trim();
+    if (!name) return;
+
+    const isDefault = DEFAULT_SCHOOL_SUBJECTS.some(
+        s => s.toLowerCase() === name.toLowerCase()
+    );
+    if (isDefault) {
+        alert("Default subjects cannot be removed from the catalog.");
+        return;
+    }
+
+    const customs = loadCustomSchoolSubjects().filter(
+        s => s.toLowerCase() !== name.toLowerCase()
+    );
+    saveCustomSchoolSubjects(customs);
+
+    // Drop from global list
+    try {
+        if (Array.isArray(subjects)) {
+            subjects = subjects.filter(
+                s => String(s).trim().toLowerCase() !== name.toLowerCase()
+            );
+        }
+    } catch (e) {}
+
+    if (typeof loadSelectedTeacherSubjects === "function") {
+        const teacherSelect = document.getElementById("teacherSelect");
+        if (teacherSelect?.value) {
+            loadSelectedTeacherSubjects();
+            return;
+        }
+    }
+
+    const subjectContainer = document.getElementById("subjectCheckboxes");
+    if (subjectContainer) {
+        [...subjectContainer.querySelectorAll("label.subject-checkbox-item")].forEach(label => {
+            const cb = label.querySelector("input[type='checkbox']");
+            if (cb && String(cb.value).trim().toLowerCase() === name.toLowerCase()) {
+                label.remove();
+            }
+        });
+    }
+}
+
+
 function escapeAssignmentHTML(value) {
 
     return String(value ?? "")
@@ -10203,17 +10476,13 @@ async function loadTeachers() {
         ================================================== */
 
         const {
-            data: teachers,
+            data: rows,
             error
         } =
             await supabaseClient
                 .from("users")
                 .select(
                     "id, firstname, surname, username, role, schoolid, classes, subjects"
-                )
-                .eq(
-                    "role",
-                    "teacher"
                 )
                 .eq(
                     "schoolid",
@@ -10241,6 +10510,11 @@ async function loadTeachers() {
 
             return;
         }
+
+        // Case-insensitive role filter so newly registered teachers always appear
+        const teachers = (rows || []).filter(u =>
+            String(u.role || "").toLowerCase().trim() === "teacher"
+        );
 
 
         /* =================================================
@@ -10536,13 +10810,23 @@ async function loadSelectedTeacherSubjects() {
 
         /* =================================================
            BUILD SUBJECT CHECKBOXES
+           Use school subject catalog (with defaults) so
+           newly registered teachers can be assigned subjects
+           even when the global subjects list is still empty.
         ================================================== */
 
         if (subjectContainer) {
 
+            const availableSubjects =
+                typeof getAvailableSubjectsForAdmin === "function"
+                    ? getAvailableSubjectsForAdmin(teacherSubjects)
+                    : (Array.isArray(subjects) && subjects.length
+                        ? subjects
+                        : []);
+
             if (
-                !Array.isArray(subjects) ||
-                subjects.length === 0
+                !Array.isArray(availableSubjects) ||
+                availableSubjects.length === 0
             ) {
 
                 subjectContainer.innerHTML = `
@@ -10560,7 +10844,7 @@ async function loadSelectedTeacherSubjects() {
             } else {
 
                 subjectContainer.innerHTML =
-                    subjects
+                    availableSubjects
                         .map(subject => {
 
                             const checked =
@@ -10783,6 +11067,11 @@ async function showProfileSubjects() {
 
         if (adminSection) {
             adminSection.style.display = "block";
+        }
+
+        // Ensure subject catalog exists before assignment UI loads
+        if (typeof ensureSchoolSubjects === "function") {
+            try { ensureSchoolSubjects(); } catch (e) {}
         }
 
         // Load teachers
