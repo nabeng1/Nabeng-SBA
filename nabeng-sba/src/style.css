@@ -19427,3 +19427,65 @@ body.light-mode textarea::placeholder {
 @media (max-width: 560px) {
   .sba-sub-plans { grid-template-columns: 1fr; }
 }
+
+
+/* =========================================================
+   Admin: add custom subject (assignment page)
+========================================================= */
+
+.add-subject-row {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.18);
+}
+
+.add-subject-row > label {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.add-subject-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.add-subject-controls input[type="text"] {
+    flex: 1 1 220px;
+    min-width: 180px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    background: var(--card-bg, #fff);
+    color: inherit;
+    font-size: 14px;
+}
+
+.secondary-assignment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    background: transparent;
+    color: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.secondary-assignment-btn:hover {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+body.dark-mode .add-subject-row,
+[data-theme="dark"] .add-subject-row {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(129, 140, 248, 0.28);
+}
