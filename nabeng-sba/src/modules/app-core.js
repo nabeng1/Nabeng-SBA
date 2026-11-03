@@ -4,6 +4,213 @@
  * Kept as a classic script (not an ES module) so existing function/global style keeps working.
  */
 
+function applySidebarAvatar(user) {
+    const u = user || (typeof currentUser !== "undefined" ? currentUser : null);
+    const photo = document.getElementById("sidebarUserPhoto");
+    const fallback = document.getElementById("sidebarUserAvatar");
+    if (!photo && !fallback) return;
+
+    const url = (u && (u.profilePic || u.profile_pic || u.photo || u.avatar)) || "";
+
+    if (url && photo) {
+        photo.src = url;
+        photo.style.display = "block";
+        photo.onerror = function () {
+            photo.style.display = "none";
+            if (fallback) fallback.style.display = "grid";
+        };
+        if (fallback) fallback.style.display = "none";
+    } else {
+        if (photo) {
+            photo.removeAttribute("src");
+            photo.style.display = "none";
+        }
+        if (fallback) fallback.style.display = "grid";
+    }
+
+    // Keep name in sync if provided
+    const sideName = document.getElementById("sidebarUserName");
+    if (sideName && u) {
+        const name = [u.firstname, u.surname].filter(Boolean).join(" ").trim()
+            || u.name
+            || u.username
+            || "User";
+        sideName.textContent = name;
+    }
+}
+
+
+let selectedMediaFile = null;
+let filteredStudents = [];
+let gradeChartInstance = null;
+let topChartInstance = null;
+let subjectChartInstance = null;
+let passChartInstance = null;
+let selectedMessageId = null;
+let activeTerm = "term1";
+let selectedMarkTerm = "term1";
+let selectedUser = null;
+let selectedUserType = null;
+let chatCache = [];
+let chatCacheLoaded = false;
+let chatCacheLoading = false;
+let chatContacts = [];
+let teacherHomeworkData = [];
+let teacherHomeworkSubmissions = [];
+let homeworkWeekOffset = 0; // 0 = current week, -1 = last week, +1 = next week
+let homeworkTermSelected = "term1";
+
+
+
+
+// Show signup if no users exist
+if(users.length === 0){
+    document.getElementById("signupSection").style.display = "block";
+    document.getElementById("loginSection").style.display = "none";
+}
+document.getElementById("roleSelect").addEventListener("change", function(){
+    let role = this.value;
+
+    let schoolCodeInput = document.getElementById("schoolCode");
+
+    if(role === "admin"){
+        document.getElementById("schoolNameBox").style.display = "block";
+
+        schoolCodeInput.placeholder = "Create School Code";
+        schoolCodeInput.value = "SCH_" + Math.floor(Math.random() * 100000); // auto-generate
+    } 
+    else {
+        document.getElementById("schoolNameBox").style.display = "none";
+
+        schoolCodeInput.placeholder = "Enter School Code";
+        schoolCodeInput.value = "";
+    }
+});
+
+
+
+async function loadUsers() {
+
+    if (!currentUser) {
+        console.error("currentUser is not available");
+        users = [];
+        return [];
+    }
+
+    const { data, error } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .order("firstname");
+
+    if (error) {
+        console.error("Load Users Error:", error);
+        users = [];
+        return [];
+    }
+
+    users = data || [];
+
+    console.log("Users Loaded:", users);
+    console.log("Total Users:", users.length);
+
+    if (currentUser.role === "admin") {
+        loadTeachers();
+    }
+
+    return users;
+}
+
+
+function calculateSubjectResult(data) {
+
+    let test1 = Number(data.test1 || 0);
+    let test2 = Number(data.test2 || 0);
+    let project = Number(data.project || 0);
+    let group = Number(data.group || 0);
+    let exam = Number(data.exam || 0);
+
+    // Continuous Assessment (100 marks)
+    let classTotal =
+        test1 +
+        test2 +
+        project +
+        group;
+
+    // Convert to 50%
+    let classScore =
+        Number(((classTotal / 100) * 50).toFixed(2));
+
+    // Convert Exam to 50%
+    let examScore =
+        Number(((exam / 100) * 50).toFixed(2));
+
+    // Final score out of 100
+    let totalScore =
+        Number((classScore + examScore).toFixed(2));
+
+    let grade = getGrade(totalScore);
+
+	let remark = getRemark(totalScore);
+
+    return {
+
+        test1,
+        test2,
+        project,
+        group,
+        exam,
+
+        classTotal,
+        classScore,
+        examScore,
+        totalScore,
+
+        grade,
+        remark
+
+    };
+
+}
+
+function calculateStudentAverage(student, term){
+
+    if(!student.subjects){
+
+        student.average = 0;
+        return;
+
+    }
+
+    let total = 0;
+    let count = 0;
+
+    Object.keys(student.subjects).forEach(subject=>{
+
+        let result =
+        student.subjects[subject]?.[term];
+
+        if(!result) return;
+
+        if(result.totalScore === undefined) return;
+
+        total += Number(result.totalScore);
+
+        count++;
+
+    });
+
+    student.average =
+    count
+    ? Number((total / count).toFixed(2))
+    : 0;
+
+}
+
+
+
+
+
 async function signup() {
 
     let firstname =
