@@ -3874,6 +3874,35 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
             </div>
 
 
+            <!-- ADD CUSTOM SUBJECT -->
+
+            <div class="add-subject-row">
+                <label for="customSubjectInput">
+                    Add subject (if not in the list)
+                </label>
+                <div class="add-subject-controls">
+                    <input
+                        type="text"
+                        id="customSubjectInput"
+                        placeholder="e.g. Computing, Bece Prep, Arabic"
+                        maxlength="80"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();addAdminCustomSubject();}"
+                    >
+                    <button
+                        type="button"
+                        class="secondary-assignment-btn"
+                        onclick="addAdminCustomSubject()"
+                    >
+                        <i class="fas fa-plus"></i>
+                        Add Subject
+                    </button>
+                </div>
+                <small class="assignment-help">
+                    New subjects are saved for your school and can be assigned to any teacher.
+                </small>
+            </div>
+
+
             <!-- SUBJECT CHECKBOXES -->
 
             <div
