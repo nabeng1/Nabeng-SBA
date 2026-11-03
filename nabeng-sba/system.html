@@ -1,0 +1,5300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Nabeng-SBA System</title>
+<link rel="stylesheet" href="/src/style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module" src="/src/main-system.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/docx@7.7.0/build/index.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+<link rel="icon" type="image/png" href="/nabeng-sba-logo.png">
+<script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+
+<body class="sba-system">
+
+
+<!-- app chrome moved inside #app -->
+
+<!-- =========================================================
+     LOGIN
+     ========================================================= -->
+
+<div id="loginBox" class="container">
+
+    <!-- SCHOOL LOGO -->
+    <img
+        src="/nabeng-sba-logo.png"
+        class="login-logo"
+        alt="School Logo"
+    >
+
+    <h3>Log In</h3>
+
+
+    <!-- =========================
+         LOGIN FORM
+         ========================= -->
+
+    <div id="loginSection">
+
+        <input
+            id="username"
+            type="text"
+            placeholder="Email or Username"
+            autocomplete="username"
+        >
+
+        <input
+            id="password"
+            type="password"
+            placeholder="Password"
+            autocomplete="current-password"
+        >
+
+        <button
+            type="button"
+            onclick="login()"
+        >
+            Log In
+        </button>
+
+
+        <p
+            onclick="showForgot()"
+        >
+            Forgot password?
+        </p>
+
+
+        <hr>
+
+
+        <button
+            type="button"
+            onclick="showSignup()"
+        >
+            Create new account
+        </button>
+
+
+        <p id="loginMsg"></p>
+
+    </div>
+
+
+    <!-- =========================
+         SIGN UP
+         ========================= -->
+
+    <div
+        id="signupSection"
+        style="display:none;"
+    >
+
+        <h4>Create Account</h4>
+
+
+        <select id="roleSelect">
+
+            <option value="teacher">
+                Teacher
+            </option>
+
+            <option value="admin">
+                Admin
+            </option>
+
+        </select>
+
+
+        <div id="schoolNameBox">
+
+            <input
+                id="schoolnamesignup"
+                type="text"
+                placeholder="School Name (Admin only)"
+            >
+
+        </div>
+
+
+        <input
+            id="firstname"
+            type="text"
+            placeholder="First Name"
+            autocomplete="given-name"
+        >
+
+        <input
+            id="surname"
+            type="text"
+            placeholder="Surname"
+            autocomplete="family-name"
+        >
+
+        <input
+            id="signupUsername"
+            type="text"
+            placeholder="Username"
+            autocomplete="username"
+        >
+
+        <input
+            id="signupEmail"
+            type="email"
+            placeholder="Email"
+            autocomplete="email"
+        >
+
+        <input
+            id="signupPhone"
+            type="tel"
+            placeholder="Phone Number"
+            autocomplete="tel"
+        >
+
+        <input
+            id="schoolCode"
+            type="text"
+            placeholder="School Code"
+        >
+
+        <input
+            id="signupPassword"
+            type="password"
+            placeholder="Password"
+            autocomplete="new-password"
+        >
+
+
+        <button
+            type="button"
+            onclick="signup()"
+        >
+            Sign Up
+        </button>
+
+
+        <p
+            onclick="backToLogin()"
+        >
+            Already have an account? Login
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     FORGOT PASSWORD
+
+     It remains in the same DOM area so existing JS can find
+     it, but CSS makes it a full-screen overlay. This prevents
+     the "card inside card" problem.
+     ========================================================= -->
+
+<div
+    id="forgotSection"
+    class="forgot-password-wrapper"
+    style="display:none;"
+>
+
+    <div class="forgot-password-card">
+
+
+        <!-- HEADER -->
+
+        <div class="forgot-header">
+
+            <div class="forgot-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+
+            <div
+                class="forgot-step-label"
+                id="forgotStepLabel"
+            >
+                PASSWORD RECOVERY
+            </div>
+
+            <h2 id="forgotTitle">
+                Reset Your Password
+            </h2>
+
+            <p id="forgotDescription">
+                Enter your username and registered
+                email or phone number to recover your account.
+            </p>
+
+        </div>
+
+
+        <!-- PROGRESS -->
+
+        <div class="forgot-progress">
+
+            <div
+                class="progress-step active"
+                id="progress1"
+            >
+                <span>1</span>
+                <small>Account</small>
+            </div>
+
+            <div
+                class="progress-line"
+                id="line1"
+            ></div>
+
+            <div
+                class="progress-step"
+                id="progress2"
+            >
+                <span>2</span>
+                <small>Verify</small>
+            </div>
+
+            <div
+                class="progress-line"
+                id="line2"
+            ></div>
+
+            <div
+                class="progress-step"
+                id="progress3"
+            >
+                <span>3</span>
+                <small>Password</small>
+            </div>
+
+            <div
+                class="progress-line"
+                id="line3"
+            ></div>
+
+            <div
+                class="progress-step"
+                id="progress4"
+            >
+                <span>
+                    <i class="fa-solid fa-check"></i>
+                </span>
+                <small>Done</small>
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 1
+             ================================================= -->
+
+        <div
+            id="forgotStep1"
+            class="forgot-step"
+        >
+
+            <div class="input-group">
+
+                <label for="fpUsername">
+                    Username
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+
+                    <input
+                        id="fpUsername"
+                        type="text"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpContact">
+                    Email or Phone Number
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-envelope"></i>
+                    </span>
+
+                    <input
+                        id="fpContact"
+                        type="text"
+                        placeholder="Enter registered email or phone"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="sendResetOTP()"
+            >
+                <span>Send OTP</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 2
+             ================================================= -->
+
+        <div
+            id="forgotStep2"
+            class="forgot-step"
+            style="display:none;"
+        >
+
+            <div class="otp-info">
+
+                <div class="otp-icon">
+                    <i class="fa-solid fa-envelope-circle-check"></i>
+                </div>
+
+                <strong>
+                    Check Your Email
+                </strong>
+
+                <p>
+                    Enter the 6-digit verification code
+                    sent to your registered email.
+                </p>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpOTP">
+                    Verification Code
+                </label>
+
+                <div class="input-box otp-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-key"></i>
+                    </span>
+
+                    <input
+                        id="fpOTP"
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="6"
+                        placeholder="000000"
+                        autocomplete="one-time-code"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="verifyResetOTP()"
+            >
+                <span>Verify OTP</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+
+            <div class="resend-wrapper">
+
+                <span>
+                    Didn't receive the code?
+                </span>
+
+                <button
+                    type="button"
+                    class="resend-btn"
+                    onclick="resendResetOTP()"
+                >
+                    <i class="fa-solid fa-rotate-right"></i>
+                    Resend OTP
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 3
+             ================================================= -->
+
+        <div
+            id="forgotStep3"
+            class="forgot-step"
+            style="display:none;"
+        >
+
+            <div class="password-info">
+
+                <div class="password-icon">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+
+                <strong>
+                    Create a New Password
+                </strong>
+
+                <p>
+                    Choose a strong password that you
+                    haven't used before.
+                </p>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpNewPassword">
+                    New Password
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+
+                    <input
+                        id="fpNewPassword"
+                        type="password"
+                        placeholder="Enter new password"
+                        autocomplete="new-password"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="fpConfirmPassword">
+                    Confirm Password
+                </label>
+
+                <div class="input-box">
+
+                    <span class="input-icon">
+                        <i class="fa-solid fa-shield"></i>
+                    </span>
+
+                    <input
+                        id="fpConfirmPassword"
+                        type="password"
+                        placeholder="Confirm your new password"
+                        autocomplete="new-password"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="changeResetPassword()"
+            >
+                <span>Change Password</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             STEP 4
+             ================================================= -->
+
+        <div
+            id="forgotStep4"
+            class="forgot-step success-step"
+            style="display:none;"
+        >
+
+            <div class="success-icon">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <h3>
+                Password Changed Successfully
+            </h3>
+
+            <p>
+                Your password has been changed successfully.
+                You can now log in using your new password.
+            </p>
+
+            <button
+                type="button"
+                class="forgot-primary-btn"
+                onclick="backToLogin()"
+            >
+                <span>Back to Login</span>
+                <i class="fa-solid fa-arrow-right btn-arrow"></i>
+            </button>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div class="forgot-footer">
+
+            <span>
+                Remember your password?
+            </span>
+
+            <button
+                type="button"
+                onclick="backToLogin()"
+                class="back-login-btn"
+            >
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to Login
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+<!-- =========================================================
+     SUBSCRIPTION LOCKED SCREEN (Paystack — same account as Nabeng Invoice)
+========================================================= -->
+<div id="subscriptionLockedScreen" class="sba-sub-lock" style="display:none;">
+  <div class="sba-sub-card">
+    <div class="sba-sub-brand">
+      <img src="/nabeng-sba-logo.png" alt="Nabeng-SBA" onerror="this.style.display='none'">
+      <div>
+        <strong>Nabeng-SBA</strong>
+        <span>School subscription required</span>
+      </div>
+    </div>
+
+    <h2>Unlock your school system</h2>
+    <p id="subLockStatus" class="sba-sub-status">
+      Choose a plan to continue using Nabeng-SBA for your school.
+    </p>
+
+    <div class="sba-sub-plans" id="subPlansAdmin">
+      <button type="button" class="sba-sub-plan" onclick="startSbaPaystackPayment('termly')">
+        <span class="sba-sub-plan-tag">Termly</span>
+        <strong>GHS 100</strong>
+        <small>16 weeks · 1 term (4 months)</small>
+      </button>
+      <button type="button" class="sba-sub-plan sba-sub-plan-year" onclick="startSbaPaystackPayment('yearly')">
+        <span class="sba-sub-plan-tag">Yearly · Best value</span>
+        <strong>GHS 280</strong>
+        <small>12 months · all 3 terms</small>
+      </button>
+    </div>
+
+    <p id="subPlansTeacher" class="sba-sub-teacher-msg" style="display:none;">
+      Your school subscription has expired. Please ask the <strong>school administrator</strong> to renew the plan.
+    </p>
+
+    <div id="subLockMsg" class="sba-sub-msg"></div>
+
+    <div class="sba-sub-meta" id="subLockMeta"></div>
+
+    <button type="button" class="sba-sub-signout" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+
+<div id="app" style="display:none;" class="sba-app">
+
+<!-- ========== DESKTOP SIDEBAR + MOBILE DRAWER ========== -->
+<aside id="sbaSidebar" class="sba-sidebar">
+  <div class="sba-sidebar-brand">
+    <img src="/nabeng-sba-logo.png" alt="Nabeng-SBA" class="sba-sidebar-logo" onerror="this.style.display='none'">
+    <div>
+      <strong>Nabeng-SBA</strong>
+      <small id="sidebarSchoolName">School System</small>
+    </div>
+  </div>
+
+  <div class="sba-sidebar-user">
+    <div class="sba-sidebar-avatar-wrap" onclick="showPage('userProfilePage')" title="My Profile" style="cursor:pointer;">
+      <img id="sidebarUserPhoto" class="sba-sidebar-photo" alt="Profile" style="display:none;">
+      <span id="sidebarUserAvatar" class="sba-sidebar-avatar"><i class="fas fa-user"></i></span>
+    </div>
+    <div>
+      <strong id="sidebarUserName">User</strong>
+      <small id="welcomeUser">Welcome</small>
+    </div>
+  </div>
+
+  <nav class="sba-sidebar-nav">
+    <button type="button" class="sba-nav-link is-active" data-page="dashboardPage" onclick="showPage('dashboardPage')">
+      <i class="fas fa-home"></i><span>Dashboard</span>
+    </button>
+
+    <div class="sba-nav-label">Academics</div>
+    <button type="button" class="sba-nav-link" data-page="studentsPage" onclick="showPage('studentsPage')">
+      <i class="fas fa-user-graduate"></i><span>Students</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="subjectsPage" onclick="showPage('subjectsPage')">
+      <i class="fas fa-book"></i><span>Subjects</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="reportsPage" onclick="showPage('reportsPage')">
+      <i class="fas fa-file-alt"></i><span>Reports</span>
+    </button>
+
+    <div class="sba-nav-label">School</div>
+    <button type="button" class="sba-nav-link" data-page="attendancePage" onclick="showPage('attendancePage')">
+      <i class="fas fa-clipboard-check"></i><span>Attendance</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="homeworkPage" onclick="showPage('homeworkPage')">
+      <i class="fas fa-book-open"></i><span>Homework</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="timetablePage" onclick="showPage('timetablePage')">
+      <i class="fas fa-calendar-alt"></i><span>Timetable</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="noticesPage" onclick="showPage('noticesPage')">
+      <i class="fas fa-bullhorn"></i><span>Notices</span>
+    </button>
+
+    <div class="sba-nav-label">More</div>
+    <button type="button" class="sba-nav-link" data-page="chat" onclick="showPage('chat')">
+      <i class="fas fa-comments"></i><span>Chat</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="userProfilePage" onclick="showPage('userProfilePage')">
+      <i class="fas fa-user"></i><span>Profile</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profileSubjectsPage" onclick="showProfileSubjects(); return false;">
+      <i class="fas fa-layer-group"></i><span>My Subjects</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profileTermPage" onclick="showPage('profileTermPage')">
+      <i class="fas fa-calendar-week"></i><span>Term Setup</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profilePlanPage" onclick="showPage('profilePlanPage')">
+      <i class="fas fa-tasks"></i><span>Plan</span>
+    </button>
+    <button type="button" class="sba-nav-link" data-page="profileNotePage" onclick="showPage('profileNotePage')">
+      <i class="fas fa-sticky-note"></i><span>Note</span>
+    </button>
+  </nav>
+
+  <div class="sba-sidebar-footer">
+    <button type="button" class="sba-nav-link" onclick="toggleTheme()">
+      <i class="fas fa-moon" id="sidebarThemeIcon"></i><span>Theme</span>
+    </button>
+    <button type="button" class="sba-nav-link sba-nav-logout" onclick="logout()">
+      <i class="fas fa-sign-out-alt"></i><span>Log out</span>
+    </button>
+  </div>
+</aside>
+
+<div class="sba-sidebar-backdrop" id="sbaSidebarBackdrop" onclick="closeSbaSidebar()"></div>
+
+<!-- ========== MAIN COLUMN ========== -->
+<div class="sba-main">
+  <header class="sba-topbar" id="sbaTopbar">
+    <button type="button" class="sba-menu-btn" id="sbaMenuBtn" onclick="toggleSbaSidebar()" aria-label="Open menu">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="sba-topbar-title">
+      <strong id="sbaPageTitle">Dashboard</strong>
+      <span id="welcomeText" class="sba-welcome-inline"></span>
+    </div>
+    <div class="sba-topbar-actions">
+      <button type="button" class="sba-icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button type="button" class="sba-icon-btn" onclick="openWhatsApp()" title="WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+      </button>
+      <button type="button" class="sba-icon-btn sba-logout-btn" onclick="logout()" title="Log out">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ONE shared container for every page -->
+  <div class="container sba-page-container" id="sbaPageContainer">
+
+
+<div id="dashboardPage" class="page">
+
+  <!-- Welcome strip -->
+  <div class="dash-welcome-strip">
+    <div class="dash-welcome-left">
+      <img id="schoolLogoPreview" src="" onclick="uploadLogo()" alt="School logo" class="dash-school-logo" title="Click to change logo">
+      <input type="file" id="schoolLogoInput" accept="image/*" style="display:none;">
+      <div>
+        <h2 id="dashWelcomeUser">Welcome</h2>
+        <p class="dash-school-line">
+          <span id="schoolNameText">School</span>
+          <span id="editSchoolIcon" onclick="editSchoolName()" style="cursor:pointer;display:none;" title="Edit school name">✏️</span>
+        </p>
+      </div>
+    </div>
+    <div class="dash-welcome-filters">
+      <div class="dash-filter">
+        <label>Term</label>
+        <select id="dashTermFilter" onchange="updateDashboard()">
+          <option value="term1">Term 1</option>
+          <option value="term2">Term 2</option>
+          <option value="term3">Term 3</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview heading -->
+  <div class="dash-section-head">
+    <div>
+      <span class="dash-kicker">OVERVIEW</span>
+      <h3>Performance at a Glance</h3>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="dash-kpi-row">
+    <div class="dash-kpi dash-kpi-blue">
+      <div class="dash-kpi-icon"><i class="fas fa-user-graduate"></i></div>
+      <div>
+        <span class="dash-kpi-label">Total Students</span>
+        <strong id="totalStudents">0</strong>
+      </div>
+    </div>
+    <div class="dash-kpi dash-kpi-teal">
+      <div class="dash-kpi-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div>
+        <span class="dash-kpi-label">Students Passed</span>
+        <strong id="dashPassedCount">0</strong>
+        <small id="passRate">0% Pass Rate</small>
+      </div>
+    </div>
+    <div class="dash-kpi dash-kpi-purple">
+      <div class="dash-kpi-icon"><i class="fas fa-award"></i></div>
+      <div>
+        <span class="dash-kpi-label">Distinctions (A)</span>
+        <strong id="dashDistinctions">0</strong>
+        <small id="dashDistinctionPct">0% of total</small>
+      </div>
+    </div>
+    <div class="dash-kpi dash-kpi-orange">
+      <div class="dash-kpi-icon"><i class="fas fa-chart-line"></i></div>
+      <div>
+        <span class="dash-kpi-label">Average Score</span>
+        <strong id="avgScore">0%</strong>
+        <small id="highestScore">Highest 0%</small>
+      </div>
+    </div>
+    <div class="dash-kpi dash-kpi-pink">
+      <div class="dash-kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
+      <div>
+        <span class="dash-kpi-label">Fail Rate</span>
+        <strong id="dashFailRate">0%</strong>
+        <small id="dashFailCount">0 students</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="dash-main-grid">
+    <div class="dash-card">
+      <h4>Result Summary</h4>
+      <div class="dash-chart-wrap"><canvas id="gradeChart"></canvas></div>
+    </div>
+    <div class="dash-card">
+      <h4>Average Score by Subject</h4>
+      <div class="dash-chart-wrap"><canvas id="subjectChart"></canvas></div>
+    </div>
+    <div class="dash-card dash-card-top">
+      <h4><i class="fas fa-trophy" style="color:#f59e0b;margin-right:6px;"></i>Top Performing Students</h4>
+      <ol id="dashTopStudents" class="dash-top-list">
+        <li class="dash-top-empty">No student averages yet</li>
+      </ol>
+      <!-- keep hidden canvas for compatibility -->
+      <canvas id="topChart" style="display:none;"></canvas>
+    </div>
+  </div>
+
+  <div class="dash-secondary-grid">
+    <div class="dash-card dash-card-table">
+      <h4>Class Performance Overview</h4>
+      <div class="dash-table-wrap">
+        <table class="dash-class-table">
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Students</th>
+              <th>Average</th>
+              <th>Pass Rate</th>
+              <th>Distinctions</th>
+              <th>Fail Rate</th>
+            </tr>
+          </thead>
+          <tbody id="dashClassTableBody">
+            <tr><td colspan="6" style="text-align:center;opacity:.7;">No class data yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dash-side-col">
+      <div class="dash-card">
+        <h4>Pass vs Fail</h4>
+        <div class="dash-chart-wrap dash-chart-sm"><canvas id="passChart"></canvas></div>
+      </div>
+      <div class="dash-quote-card">
+        <div class="dash-quote-icon"><i class="fas fa-trophy"></i></div>
+        <p>“Education is the key to success. Keep learning, keep growing!”</p>
+        <small>Nabeng-SBA</small>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+
+
+
+
+<div id="studentsPage" class="page">
+
+    <!-- ==========================================
+         PAGE HEADER
+    =========================================== -->
+
+    <div class="students-page-header">
+
+        <div>
+            <span class="students-badge">STUDENT MANAGEMENT</span>
+
+            <h3>
+                <i class="fas fa-user-graduate"></i>
+                Student Management
+            </h3>
+
+            <p>
+                Manage student records, admissions, portal accounts
+                and bulk student registration.
+            </p>
+        </div>
+
+        <div class="students-header-icon">
+            <i class="fas fa-users"></i>
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         SEARCH
+    =========================================== -->
+
+    <div class="student-search-card">
+
+        <label for="searchStudent">
+            <i class="fas fa-search"></i>
+            Search Students
+        </label>
+
+        <div class="student-search-box">
+
+            <i class="fas fa-search"></i>
+
+            <input
+                id="searchStudent"
+                placeholder="Search by student name..."
+                onkeyup="searchStudent()">
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         ADMIN / MANAGEMENT ACTIONS
+    =========================================== -->
+
+    <div
+        id="studentManagementActions"
+        class="student-management-actions"
+    >
+
+        <!-- GENERATE PORTAL ACCOUNTS -->
+
+        <button
+            id="generateAccountsBtn"
+            class="student-management-btn portal-account-btn"
+            onclick="generateStudentPortalAccounts()"
+            style="display:none;"
+        >
+
+            <span class="student-action-icon">
+                <i class="fas fa-user-lock"></i>
+            </span>
+
+            <span class="student-action-text">
+                <strong>Generate Portal Accounts</strong>
+                <small>Create student login accounts</small>
+            </span>
+
+            <i class="fas fa-chevron-right student-action-arrow"></i>
+
+        </button>
+
+
+        <!-- ADMISSION -->
+
+        <button
+            id="admissionBtn"
+            class="student-management-btn admission-btn"
+            onclick="openAdmissionModal()"
+            style="display:none;"
+        >
+
+            <span class="student-action-icon">
+                <i class="fas fa-user-plus"></i>
+            </span>
+
+            <span class="student-action-text">
+                <strong>New Admission</strong>
+                <small>Register a new student</small>
+            </span>
+
+            <i class="fas fa-chevron-right student-action-arrow"></i>
+
+        </button>
+
+    </div>
+
+
+    <!-- ==========================================
+         ADD STUDENT
+    =========================================== -->
+
+    <div
+        id="addStudentSection"
+        class="add-student-card"
+    >
+
+        <div class="student-card-header">
+
+            <div>
+                <span>STUDENT REGISTRATION</span>
+
+                <h4>
+                    <i class="fas fa-user-plus"></i>
+                    Add New Student
+                </h4>
+            </div>
+
+            <div class="student-card-header-icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+
+        </div>
+
+
+        <!-- MANUAL ADD -->
+
+        <div class="student-form-grid">
+
+            <div class="student-form-field">
+
+                <label for="studentname">
+                    Student Name
+                </label>
+
+                <div class="student-input-wrapper">
+
+                    <i class="fas fa-user"></i>
+
+                    <input
+                        id="studentname"
+                        placeholder="Enter student name">
+
+                </div>
+
+            </div>
+
+
+            <div class="student-form-field">
+
+                <label for="studentClass">
+                    Class
+                </label>
+
+                <div class="student-input-wrapper">
+
+                    <i class="fas fa-school"></i>
+
+                    <input
+                        type="text"
+                        id="studentClass"
+                        placeholder="Enter class">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="add-student-btn"
+            onclick="addStudentFromPage()"
+        >
+
+            <i class="fas fa-plus-circle"></i>
+
+            Add Student
+
+        </button>
+
+
+        <!-- BULK IMPORT -->
+
+        <div class="bulk-import-section">
+
+            <div class="bulk-import-header">
+
+                <div>
+                    <span>BULK REGISTRATION</span>
+
+                    <h4>
+                        <i class="fas fa-file-import"></i>
+                        Import Students
+                    </h4>
+
+                    <p>
+                        Upload a CSV file to register multiple
+                        students at once.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <label
+                for="csvFile"
+                class="csv-upload-box"
+            >
+
+                <i class="fas fa-cloud-upload-alt"></i>
+
+                <strong>
+                    Choose CSV File
+                </strong>
+
+                <small>
+                    Click here to select your student CSV file
+                </small>
+
+                <input
+                    type="file"
+                    id="csvFile"
+                    accept=".csv"
+                    onchange="handleCSV(event)"
+                >
+
+            </label>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         STUDENTS TABLE
+    =========================================== -->
+
+    <div class="students-table-card">
+
+        <div class="student-card-header">
+
+            <div>
+                <span>STUDENT RECORDS</span>
+
+                <h4>
+                    <i class="fas fa-users"></i>
+                    Registered Students
+                </h4>
+            </div>
+
+            <div class="student-card-header-icon">
+                <i class="fas fa-table"></i>
+            </div>
+
+        </div>
+
+
+        <div id="studentsTable"></div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+<div id="subjectsPage" class="page">
+
+    <!-- PAGE HEADER -->
+    <div class="subjects-page-header">
+        <div>
+            <span class="subjects-badge">ACADEMIC MANAGEMENT</span>
+            <h3>
+                <i class="fas fa-book-open"></i>
+                Subjects & Marks
+            </h3>
+            <p>Manage student subjects, assessments, marks and performance.</p>
+        </div>
+    </div>
+
+    <!-- CLASS FILTER -->
+    <div class="subjects-filter-card">
+        <label for="classFilter">
+            <i class="fas fa-users"></i>
+            Select Class
+        </label>
+
+        <select id="classFilter" onchange="filterStudentsByClass()">
+            <option value="">Select Class</option>
+        </select>
+    </div>
+
+    <!-- SUBJECT LIST -->
+    <div class="subjects-list-section">
+        <div class="section-title">
+            <div>
+                <span>SUBJECTS</span>
+                <h4>Select a Subject</h4>
+            </div>
+            <i class="fas fa-layer-group"></i>
+        </div>
+
+        <div id="subjectList" class="cards"></div>
+    </div>
+
+    <!-- STUDENTS LIST -->
+    <div class="students-list-section">
+        <div class="section-title">
+            <div>
+                <span>STUDENTS</span>
+                <h4>Select Student</h4>
+            </div>
+            <i class="fas fa-user-graduate"></i>
+        </div>
+
+        <div id="studentsList" class="cards"></div>
+    </div>
+
+
+    <!-- MARKS MODAL -->
+    <div id="marksModal" class="marks-modal">
+
+        <div class="marks-modal-content">
+
+            <!-- MODAL TOP BAR -->
+            <div class="marks-modal-header">
+                <div>
+                    <span class="modal-badge">STUDENT ASSESSMENT</span>
+                    <h2>
+                        <i class="fas fa-clipboard-check"></i>
+                        Student Marks
+                    </h2>
+                    <p>Enter assessment scores and student performance details.</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="marks-close-btn"
+                    onclick="closeMarksModal()"
+                    title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+
+            <!-- FORM GENERATED BY selectStudent() -->
+            <div id="subjectForm" class="subjects-section"></div>
+
+
+            <!-- MODAL FOOTER -->
+            <div class="marks-modal-footer">
+
+                <button
+                    type="button"
+                    class="marks-cancel-btn"
+                    onclick="closeMarksModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="saveMarksBtn"
+                    class="marks-save-btn"
+                    onclick="saveMarks()">
+                    <i class="fas fa-save"></i>
+                    Save Marks
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- =========================================================
+     REPORT PAGE
+========================================================= -->
+
+<div id="reportsPage" class="page">
+
+    <!-- PAGE HEADER -->
+    <div class="reports-page-header">
+
+        <div>
+            <span class="reports-badge">ACADEMIC REPORTING</span>
+
+            <h3>
+                <i class="fas fa-chart-line"></i>
+                Student Reports
+            </h3>
+
+            <p>
+                Search students, generate academic reports,
+                download results and manage student promotion.
+            </p>
+        </div>
+
+        <div class="reports-header-icon">
+            <i class="fas fa-file-invoice"></i>
+        </div>
+
+    </div>
+
+
+    <!-- SEARCH & TERM -->
+    <div class="report-control-card">
+
+        <div class="report-card-title">
+            <div>
+                <span>REPORT SEARCH</span>
+                <h4>Find Student Report</h4>
+            </div>
+
+            <i class="fas fa-search"></i>
+        </div>
+
+
+        <div class="report-controls-grid">
+
+            <!-- STUDENT SEARCH -->
+            <div class="report-field">
+
+                <label for="reportSearch">
+                    <i class="fas fa-user-graduate"></i>
+                    Student Name
+                </label>
+
+                <div class="report-search-box">
+
+                    <i class="fas fa-search"></i>
+
+                    <input
+                        id="reportSearch"
+                        placeholder="Enter student name"
+                        list="studentSuggestions"
+                        oninput="updateStudentSuggestions()">
+
+                </div>
+
+                <datalist id="studentSuggestions"></datalist>
+
+            </div>
+
+
+            <!-- TERM -->
+            <div class="report-field">
+
+                <label for="reportTerm">
+                    <i class="fas fa-calendar-alt"></i>
+                    Select Term
+                </label>
+
+                <select id="reportTerm">
+
+                    <option value="term1">
+                        Term 1
+                    </option>
+
+                    <option value="term2">
+                        Term 2
+                    </option>
+
+                    <option value="term3">
+                        Term 3
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PROMOTION MANAGEMENT -->
+    <div class="report-management-card">
+
+        <div class="report-card-title">
+
+            <div>
+                <span>STUDENT MANAGEMENT</span>
+                <h4>Promotion Management</h4>
+            </div>
+
+            <i class="fas fa-graduation-cap"></i>
+
+        </div>
+
+
+        <div class="report-action-grid">
+
+            <!-- PROMOTE -->
+            <button
+                type="button"
+                id="promoteStudentsBtn"
+                class="report-action-btn promote-btn"
+                onclick="promoteStudents()"
+                style="display:none;"
+                disabled
+                title="Only the administrator can promote students after Term 3 ends">
+
+                <span class="report-action-icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </span>
+
+                <span class="report-action-text">
+                    <strong>Promote Students</strong>
+                    <small>Admin only · available after Term 3 ends</small>
+                </span>
+
+                <i class="fas fa-chevron-right action-arrow"></i>
+
+            </button>
+
+
+            <!-- RESTORE -->
+            <button
+                type="button"
+                class="report-action-btn restore-btn"
+                onclick="restoreFromHistory(
+                    academicYear = currentAcademicYear
+                )">
+
+                <span class="report-action-icon">
+                    <i class="fas fa-history"></i>
+                </span>
+
+                <span class="report-action-text">
+                    <strong>Restore Promotion</strong>
+                    <small>Restore students from promotion history</small>
+                </span>
+
+                <i class="fas fa-chevron-right action-arrow"></i>
+
+            </button>
+
+        </div>
+
+        <p id="promotionEligibilityMessage" class="promotion-eligibility-message" style="display:none; margin:12px 0 0; font-size:13px; color:#64748b;"></p>
+
+    </div>
+
+
+    <!-- REPORT GENERATION -->
+    <div class="report-generation-card">
+
+        <div class="report-card-title">
+
+            <div>
+                <span>REPORT GENERATION</span>
+                <h4>Generate & Download</h4>
+            </div>
+
+            <i class="fas fa-file-pdf"></i>
+
+        </div>
+
+
+        <div class="report-generation-actions">
+
+            <button
+                type="button"
+                class="download-report-btn"
+                onclick="downloadStudentReport()">
+
+                <i class="fas fa-download"></i>
+
+                <span>
+                    <strong>Download Student Report</strong>
+                    <small>Download the selected student's report</small>
+                </span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="generate-all-btn"
+                onclick="generateAllReports()">
+
+                <i class="fas fa-file-pdf"></i>
+
+                <span>
+                    <strong>Generate All Reports</strong>
+                    <small>Create PDF reports for all students</small>
+                </span>
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- REPORT OUTPUT -->
+    <div class="report-output-card">
+
+        <div class="report-output-header">
+
+            <div>
+                <span>REPORT PREVIEW</span>
+                <h4>Generated Report</h4>
+            </div>
+
+            <i class="fas fa-file-alt"></i>
+
+        </div>
+
+
+        <div
+            id="reportOutput"
+            class="report-output-content">
+        </div>
+
+
+        <div
+            id="singleReportDownloadArea"
+            class="single-report-download-area">
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- =========================================================
+     STUDENT ATTENDANCE
+     ========================================================= -->
+
+<div id="attendancePage" class="page attendance-modern">
+
+    <!-- =========================
+         ATTENDANCE HEADER
+         ========================= -->
+
+    <div class="attendance-header">
+
+        <div class="attendance-header-left">
+
+            <div class="attendance-header-icon">
+                <i class="fa-solid fa-calendar-check"></i>
+            </div>
+
+            <div>
+                <span class="attendance-eyebrow">
+                    SCHOOL MANAGEMENT
+                </span>
+
+                <h3>
+                    Student Attendance
+                </h3>
+
+                <p>
+                    Record, monitor and manage student attendance.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="attendance-header-badge">
+            <i class="fa-solid fa-circle-check"></i>
+            Attendance Management
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         ATTENDANCE CONTROLS
+         ========================= -->
+
+    <div class="attendance-control-card">
+
+        <!-- DATE -->
+
+        <div class="attendance-field">
+
+            <label for="attendanceDate">
+                <i class="fa-regular fa-calendar"></i>
+                Select Date
+            </label>
+
+            <input
+                type="date"
+                id="attendanceDate"
+                onchange="loadAttendanceTable()"
+            >
+
+        </div>
+
+
+        <!-- TERM -->
+
+        <div class="attendance-field">
+
+            <label for="attendanceTerm">
+                <i class="fa-solid fa-layer-group"></i>
+                Select Term
+            </label>
+
+            <select
+    id="attendanceTerm"
+    onchange="updateAttendanceTermSummary()"
+>
+
+                <option value="term1">
+                    Term 1
+                </option>
+
+                <option value="term2">
+                    Term 2
+                </option>
+
+                <option value="term3">
+                    Term 3
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- MARK ALL PRESENT -->
+
+        <button
+            type="button"
+            class="attendance-mark-all"
+            onclick="markAllPresent()"
+        >
+
+            <i class="fa-solid fa-user-check"></i>
+
+            Mark All Present
+
+        </button>
+
+    </div>
+
+
+    <!-- =========================
+         ATTENDANCE SUMMARY
+         ========================= -->
+
+    <div class="attendance-summary-grid">
+
+        <!-- DAILY SUMMARY -->
+
+        <div class="attendance-summary-card">
+
+            <div class="summary-card-heading">
+                <i class="fa-solid fa-chart-simple"></i>
+                Daily Attendance
+            </div>
+
+            <div
+                id="attendanceStats"
+            >
+                Select a date to view attendance.
+            </div>
+
+        </div>
+
+
+        <!-- TERM SUMMARY -->
+
+        <div class="attendance-summary-card">
+
+            <div class="summary-card-heading">
+                <i class="fa-solid fa-chart-line"></i>
+                Term Attendance
+            </div>
+
+            <div
+                id="termAttendanceSummary"
+            >
+                Select a term to view the summary.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         ATTENDANCE TABLE
+         ========================= -->
+
+    <div class="attendance-table-card">
+
+        <div class="attendance-table-header">
+
+            <div class="attendance-table-title">
+
+                <span>
+                    STUDENT RECORDS
+                </span>
+
+                <h3>
+                    Attendance Register
+                </h3>
+
+            </div>
+
+            <div class="attendance-table-icon">
+
+                <i class="fa-solid fa-users"></i>
+
+            </div>
+
+        </div>
+
+
+        <div class="attendance-table-scroll">
+
+            <div id="attendanceTable"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+<!-- =========================================================
+     MODERN HOMEWORK PAGE
+========================================================= -->
+
+<div id="homeworkPage" class="page" style="display:none;">
+
+
+<!-- =====================================================
+     HOMEWORK HEADER
+====================================================== -->
+<div class="hw-page-header">
+
+    <div class="hw-header-left">
+
+        <div class="hw-header-icon">
+            <i class="fas fa-book-open"></i>
+        </div>
+
+        <div>
+
+            <span class="hw-eyebrow">
+                ACADEMIC WORK
+            </span>
+
+            <h1>
+                Home Work
+            </h1>
+
+            <p>
+                Create, manage, receive and mark student homework.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="hw-header-action">
+
+        <button
+            class="hw-create-btn"
+            onclick="document.getElementById('homeworkCreateCard').scrollIntoView({behavior:'smooth'})"
+        >
+
+            <i class="fas fa-plus"></i>
+
+            <span>
+                Create Homework
+            </span>
+
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     HOMEWORK STATISTICS
+====================================================== -->
+<div class="hw-stats-grid">
+
+
+    <!-- THIS WEEK -->
+    <div class="hw-stat-card">
+
+        <div class="hw-stat-icon">
+            <i class="fas fa-book"></i>
+        </div>
+
+        <div>
+
+            <span>
+                This Week
+            </span>
+
+            <strong id="homeworkTotalCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+    <!-- TERM TOTAL -->
+    <div class="hw-stat-card">
+
+        <div class="hw-stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+
+        <div>
+
+            <span id="homeworkTermTotalLabel">
+                Term Total
+            </span>
+
+            <strong id="homeworkTermTotalCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- PENDING -->
+    <div class="hw-stat-card">
+
+        <div class="hw-stat-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+
+        <div>
+
+            <span>
+                Pending
+            </span>
+
+            <strong id="homeworkPendingCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- SUBMITTED -->
+    <div class="hw-stat-card">
+
+        <div class="hw-stat-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+
+        <div>
+
+            <span>
+                Student Submissions
+            </span>
+
+            <strong id="homeworkSubmittedCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- OVERDUE -->
+    <div class="hw-stat-card">
+
+        <div class="hw-stat-icon">
+            <i class="fas fa-calendar-times"></i>
+        </div>
+
+        <div>
+
+            <span>
+                Overdue
+            </span>
+
+            <strong id="homeworkOverdueCount">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     TEACHER / ADMIN HOMEWORK AREA
+====================================================== -->
+<div id="teacherHomeworkArea">
+
+
+    <!-- =================================================
+         CREATE HOMEWORK
+    ================================================== -->
+    <div
+        class="hw-main-card"
+        id="homeworkCreateCard"
+    >
+
+        <div class="hw-card-heading">
+
+            <div class="hw-heading-icon">
+                <i class="fas fa-pen"></i>
+            </div>
+
+            <div>
+
+                <h2>
+                    Create New Homework
+                </h2>
+
+                <p>
+                    Prepare and publish an assignment for your students.
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="hw-form">
+
+
+            <!-- CLASS -->
+            <div class="hw-form-group">
+
+                <label for="homeworkClass">
+
+                    <i class="fas fa-users"></i>
+
+                    Class
+
+                </label>
+
+
+                <div class="hw-input-wrapper">
+
+                    <select id="homeworkClass">
+
+                        <option value="">
+                            Select Class
+                        </option>
+
+                    </select>
+
+                    <i class="fas fa-chevron-down"></i>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- SUBJECT -->
+            <div class="hw-form-group">
+
+                <label for="homeworkSubject">
+
+                    <i class="fas fa-book"></i>
+
+                    Subject
+
+                </label>
+
+
+                <div class="hw-input-wrapper">
+
+                    <select id="homeworkSubject">
+
+                        <option value="">
+                            Select Subject
+                        </option>
+
+                    </select>
+
+                    <i class="fas fa-chevron-down"></i>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- TITLE -->
+            <div class="hw-form-group hw-full">
+
+                <label for="homeworkTitle">
+
+                    <i class="fas fa-heading"></i>
+
+                    Homework Title
+
+                </label>
+
+
+                <input
+                    type="text"
+                    id="homeworkTitle"
+                    placeholder="e.g. Mathematics Exercise 1"
+                >
+
+            </div>
+
+
+
+            <!-- DESCRIPTION -->
+            <div class="hw-form-group hw-full">
+
+                <label for="homeworkDescription">
+
+                    <i class="fas fa-align-left"></i>
+
+                    Instructions / Questions
+
+                </label>
+
+
+                <textarea
+                    id="homeworkDescription"
+                    rows="8"
+                    placeholder="Write the homework questions or instructions here..."
+                ></textarea>
+
+
+                <div class="hw-field-footer">
+
+                    <span>
+
+                        <i class="fas fa-info-circle"></i>
+
+                        Give clear instructions to your students.
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- DATE GIVEN -->
+            <div class="hw-form-group">
+
+                <label for="homeworkDate">
+
+                    <i class="fas fa-calendar-alt"></i>
+
+                    Date Given
+
+                </label>
+
+
+                <div class="hw-date-input">
+
+                    <i class="fas fa-calendar"></i>
+
+                    <input
+                        type="date"
+                        id="homeworkDate"
+                    >
+
+                </div>
+
+            </div>
+
+
+
+            <!-- DEADLINE -->
+            <div class="hw-form-group">
+
+                <label for="homeworkDeadline">
+
+                    <i class="fas fa-calendar-check"></i>
+
+                    Submission Deadline
+
+                </label>
+
+
+                <div class="hw-date-input">
+
+                    <i class="fas fa-calendar"></i>
+
+                    <input
+                        type="date"
+                        id="homeworkDeadline"
+                    >
+
+                </div>
+
+            </div>
+
+
+
+            <!-- ATTACHMENT -->
+            <div class="hw-form-group hw-full">
+
+                <label>
+
+                    <i class="fas fa-paperclip"></i>
+
+                    Attachment
+
+                    <span class="hw-optional">
+                        Optional
+                    </span>
+
+                </label>
+
+
+                <label
+                    for="homeworkAttachment"
+                    class="hw-upload-box"
+                >
+
+                    <div class="hw-upload-icon">
+
+                        <i class="fas fa-cloud-upload-alt"></i>
+
+                    </div>
+
+
+                    <div class="hw-upload-text">
+
+                        <strong>
+                            Click to upload a file
+                        </strong>
+
+                        <span>
+                            PDF, Word document, JPG or PNG
+                        </span>
+
+                    </div>
+
+
+                    <i class="fas fa-plus hw-upload-plus"></i>
+
+                </label>
+
+
+                <input
+                    type="file"
+                    id="homeworkAttachment"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    style="display:none;"
+                >
+
+
+                <div
+                    id="homeworkFileName"
+                    class="hw-selected-file"
+                    style="display:none;"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- FORM ACTIONS -->
+        <div class="hw-form-actions">
+
+
+            <button
+                type="button"
+                class="hw-clear-btn"
+                onclick="clearHomeworkForm()"
+            >
+
+                <i class="fas fa-undo"></i>
+
+                Clear
+
+            </button>
+
+
+            <button
+                type="button"
+                class="hw-publish-btn"
+                onclick="createHomework()"
+            >
+
+                <i class="fas fa-paper-plane"></i>
+
+                Publish Homework
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         PUBLISHED HOMEWORK
+    ================================================== -->
+    <div class="hw-main-card">
+
+
+        <div class="hw-section-header">
+
+
+            <div class="hw-card-heading">
+
+                <div class="hw-heading-icon purple">
+
+                    <i class="fas fa-layer-group"></i>
+
+                </div>
+
+
+                <div>
+
+                    <h2>
+                        Published Homework
+                    </h2>
+
+                    <p>
+                        Manage assignments and review student submissions.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- WEEK + FILTER -->
+            <div class="hw-toolbar-filters" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+
+                <div class="hw-term-select-wrap" style="display:flex;align-items:center;gap:6px;">
+                    <label for="homeworkTermFilter" style="font-size:11px;font-weight:700;opacity:.8;">Term</label>
+                    <select id="homeworkTermFilter" onchange="onHomeworkTermChange()" style="min-height:36px;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:600;">
+                        <option value="term1">Term 1</option>
+                        <option value="term2">Term 2</option>
+                        <option value="term3">Term 3</option>
+                    </select>
+                </div>
+
+                <div class="hw-week-switcher" style="display:flex;align-items:center;gap:6px;background:rgba(37,99,235,.08);border-radius:10px;padding:4px;">
+                    <button type="button" class="hw-week-btn" onclick="shiftHomeworkWeek(-1)" title="Previous week" style="border:0;background:transparent;cursor:pointer;padding:8px 10px;border-radius:8px;color:#2563eb;">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="homeworkWeekLabel" style="font-size:12px;font-weight:700;min-width:160px;text-align:center;color:inherit;">This week</span>
+                    <button type="button" class="hw-week-btn" onclick="shiftHomeworkWeek(1)" title="Next week" style="border:0;background:transparent;cursor:pointer;padding:8px 10px;border-radius:8px;color:#2563eb;">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button type="button" onclick="resetHomeworkWeek()" title="Jump to this week" style="border:0;background:#2563eb;color:#fff;cursor:pointer;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;">
+                        Today
+                    </button>
+                </div>
+
+                <div class="hw-filter">
+                    <i class="fas fa-filter"></i>
+                    <select id="homeworkFilter" onchange="filterTeacherHomework()">
+                        <option value="all">All this week</option>
+                        <option value="active">Active</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="submitted">Has Submissions</option>
+                        <option value="unmarked">Needs Marking</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             HOMEWORK LIST
+        ================================================== -->
+        <div
+            id="teacherHomeworkList"
+            class="hw-card-list"
+        >
+
+            <div class="hw-empty-state">
+
+                <div class="hw-empty-icon">
+
+                    <i class="fas fa-spinner fa-spin"></i>
+
+                </div>
+
+
+                <h3>
+                    Loading Homework...
+                </h3>
+
+
+                <p>
+                    Please wait while your homework is loaded.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         STUDENT SUBMISSIONS / MARKING
+    ================================================== -->
+    <div
+        class="hw-main-card"
+        id="homeworkSubmissionsCard"
+        style="margin-top:20px;"
+    >
+
+
+        <!-- HEADER -->
+        <div class="hw-section-header">
+
+
+            <div class="hw-card-heading">
+
+                <div class="hw-heading-icon">
+
+                    <i class="fas fa-user-check"></i>
+
+                </div>
+
+
+                <div>
+
+                    <h2>
+                        Student Submissions
+                    </h2>
+
+                    <p>
+                        View submitted homework, mark students and give feedback.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- REFRESH -->
+            <button
+                type="button"
+                class="hw-create-btn"
+                onclick="loadHomeworkSubmissions()"
+                style="padding:10px 16px;"
+            >
+
+                <i class="fas fa-sync-alt"></i>
+
+                Refresh
+
+            </button>
+
+        </div>
+
+
+
+        <!-- SUBMISSION SUMMARY -->
+        <div
+            id="homeworkSubmissionSummary"
+            style="
+                display:grid;
+                grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+                gap:12px;
+                margin-bottom:20px;
+            "
+        >
+
+
+            <div
+                style="
+                    padding:15px;
+                    border-radius:12px;
+                    background:rgba(59,130,246,.08);
+                    border:1px solid rgba(59,130,246,.15);
+                "
+            >
+
+                <span
+                    style="
+                        display:block;
+                        font-size:13px;
+                        opacity:.75;
+                    "
+                >
+                    Total Submitted
+                </span>
+
+
+                <strong
+                    id="totalHomeworkSubmissions"
+                    style="
+                        display:block;
+                        font-size:25px;
+                        margin-top:5px;
+                    "
+                >
+                    0
+                </strong>
+
+            </div>
+
+
+
+            <div
+                style="
+                    padding:15px;
+                    border-radius:12px;
+                    background:rgba(34,197,94,.08);
+                    border:1px solid rgba(34,197,94,.15);
+                "
+            >
+
+                <span
+                    style="
+                        display:block;
+                        font-size:13px;
+                        opacity:.75;
+                    "
+                >
+                    Marked
+                </span>
+
+
+                <strong
+                    id="markedHomeworkSubmissions"
+                    style="
+                        display:block;
+                        font-size:25px;
+                        margin-top:5px;
+                    "
+                >
+                    0
+                </strong>
+
+            </div>
+
+
+
+            <div
+                style="
+                    padding:15px;
+                    border-radius:12px;
+                    background:rgba(245,158,11,.08);
+                    border:1px solid rgba(245,158,11,.15);
+                "
+            >
+
+                <span
+                    style="
+                        display:block;
+                        font-size:13px;
+                        opacity:.75;
+                    "
+                >
+                    Needs Marking
+                </span>
+
+
+                <strong
+                    id="unmarkedHomeworkSubmissions"
+                    style="
+                        display:block;
+                        font-size:25px;
+                        margin-top:5px;
+                    "
+                >
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- SUBMISSIONS LIST -->
+        <div
+            id="teacherHomeworkSubmissionsList"
+            class="hw-card-list"
+        >
+
+            <div class="hw-empty-state">
+
+                <div class="hw-empty-icon">
+
+                    <i class="fas fa-inbox"></i>
+
+                </div>
+
+
+                <h3>
+                    No Student Submissions
+                </h3>
+
+
+                <p>
+                    When students submit homework, their work will appear here for marking.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+</div>
+
+
+
+<!-- =========================================================
+     NOTICES PAGE
+========================================================= -->
+<!-- TIMETABLE PAGE -->
+<div id="timetablePage" class="page timetable-page" style="display:none;">
+  <div class="timetable-header">
+    <div>
+      <span class="timetable-eyebrow">SCHOOL OPERATIONS</span>
+      <h1><i class="fas fa-calendar-alt"></i> School Timetable</h1>
+      <p>Create, manage and view the weekly class timetable.</p>
+    </div>
+    <div class="timetable-header-badge"><i class="fas fa-clock"></i> <span id="timetableActiveTerm">Current Term</span></div>
+  </div>
+
+  <div class="timetable-toolbar">
+    <div class="timetable-filter-group"><label>Class</label><select id="timetableClassFilter" onchange="loadTimetableGrid()"><option value="">Select Class</option></select></div>
+    <div class="timetable-filter-group"><label>Term</label><select id="timetableTermFilter" onchange="loadTimetableGrid()"><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option></select></div>
+    <div class="timetable-filter-group"><label>Academic Year</label><input id="timetableYearFilter" placeholder="e.g. 2026/2027"></div>
+    <button type="button" class="timetable-primary-btn" onclick="openTimetableForm()"><i class="fas fa-plus"></i> Add Period</button>
+    <button type="button" class="timetable-secondary-btn" onclick="loadTimetableGrid()"><i class="fas fa-sync-alt"></i> Refresh</button>
+  </div>
+
+  <div id="timetableMessage" class="timetable-message" style="display:none;"></div>
+
+  <div class="timetable-summary-grid">
+    <div class="timetable-summary-card"><i class="fas fa-calendar-week"></i><div><span>Periods</span><strong id="timetablePeriodCount">0</strong></div></div>
+    <div class="timetable-summary-card"><i class="fas fa-chalkboard"></i><div><span>Class</span><strong id="timetableSelectedClass">—</strong></div></div>
+    <div class="timetable-summary-card"><i class="fas fa-user-tie"></i><div><span>Teachers</span><strong id="timetableTeacherCount">0</strong></div></div>
+  </div>
+
+  <div class="timetable-grid-wrapper">
+    <table class="timetable-grid">
+      <thead><tr><th>Time</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th></tr></thead>
+      <tbody id="timetableGridBody"><tr><td colspan="6" class="timetable-empty">Select a class to view its timetable.</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="timetable-entries-wrap">
+    <div class="timetable-section-heading"><h2>Timetable Entries</h2><p>Edit or remove individual periods.</p></div>
+    <div class="timetable-table-scroll">
+      <table class="timetable-entry-table">
+        <thead><tr><th>Day</th><th>Time</th><th>Subject</th><th>Teacher</th><th>Room</th><th>Actions</th></tr></thead>
+        <tbody id="timetableEntriesBody"><tr><td colspan="6" class="timetable-empty">No timetable entries yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="timetableModal" class="timetable-modal" style="display:none;">
+  <div class="timetable-modal-content">
+    <button type="button" class="timetable-modal-close" onclick="closeTimetableForm()">&times;</button>
+    <div class="timetable-modal-header">
+      <div class="timetable-modal-icon"><i class="fas fa-calendar-plus"></i></div>
+      <div><h2 id="timetableModalTitle">Add Timetable Period</h2><p>Assign a subject, teacher and time to a class period.</p></div>
+    </div>
+    <input type="hidden" id="timetableEntryId">
+    <div class="timetable-form-grid">
+      <div class="timetable-form-group"><label>Class</label><select id="timetableFormClass"></select></div>
+      <div class="timetable-form-group"><label>Day</label><select id="timetableFormDay"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option></select></div>
+      <div class="timetable-form-group"><label>Subject</label><select id="timetableFormSubject"></select></div>
+      <div class="timetable-form-group"><label>Teacher</label><select id="timetableFormTeacher"></select></div>
+      <div class="timetable-form-group"><label>Start Time</label><input id="timetableFormStart" type="time"></div>
+      <div class="timetable-form-group"><label>End Time</label><input id="timetableFormEnd" type="time"></div>
+      <div class="timetable-form-group"><label>Period</label><input id="timetableFormPeriod" type="number" min="1" max="20"></div>
+      <div class="timetable-form-group"><label>Room / Venue</label><input id="timetableFormRoom" placeholder="Optional"></div>
+      <div class="timetable-form-group"><label>Term</label><select id="timetableFormTerm"><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option></select></div>
+      <div class="timetable-form-group"><label>Academic Year</label><input id="timetableFormYear" placeholder="e.g. 2026/2027"></div>
+    </div>
+    <div id="timetableConflictBox" class="timetable-conflict-box" style="display:none;"></div>
+    <div class="timetable-modal-actions">
+      <button type="button" class="timetable-cancel-btn" onclick="closeTimetableForm()">Cancel</button>
+      <button type="button" class="timetable-primary-btn" onclick="saveTimetableEntry()"><i class="fas fa-save"></i> Save Period</button>
+    </div>
+  </div>
+</div>
+
+<div id="noticesPage" class="page" style="display:none;">
+
+    <!-- PAGE HEADER -->
+    <div class="notices-page-header">
+
+        <div class="notices-header-left">
+
+            <div class="notices-header-icon">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+
+            <div>
+
+                <span class="notices-eyebrow">
+                    SCHOOL COMMUNICATION
+                </span>
+
+                <h1>School Notices</h1>
+
+                <p>
+                    Create and share important announcements with students.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="notices-create-btn"
+            onclick="document.getElementById('noticeTitle')?.focus()"
+        >
+            <i class="fas fa-plus"></i>
+            Create Notice
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         NOTICE STATISTICS
+    ====================================================== -->
+    <div class="notices-stats-grid">
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon blue">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+
+            <div>
+                <span>Total Notices</span>
+                <strong id="noticeTotalCount">0</strong>
+            </div>
+
+        </div>
+
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <div>
+                <span>Normal</span>
+                <strong id="noticeNormalCount">0</strong>
+            </div>
+
+        </div>
+
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon orange">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+
+            <div>
+                <span>Important</span>
+                <strong id="noticeImportantCount">0</strong>
+            </div>
+
+        </div>
+
+
+        <div class="notice-stat-card">
+
+            <div class="notice-stat-icon red">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+
+            <div>
+                <span>Urgent</span>
+                <strong id="noticeUrgentCount">0</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ADMIN / TEACHER AREA
+    ====================================================== -->
+    <div id="teacherNoticeArea">
+
+
+        <!-- =================================================
+             CREATE NOTICE
+        ================================================== -->
+        <div class="notices-main-card">
+
+            <div class="notices-card-header">
+
+                <div class="notices-card-title">
+
+                    <div class="notices-title-icon">
+                        <i class="fas fa-pen-to-square"></i>
+                    </div>
+
+                    <div>
+
+                        <h2>Create New Notice</h2>
+
+                        <p>
+                            Prepare and publish an announcement for your school.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="notices-form">
+
+
+                <!-- TITLE -->
+                <div class="notices-form-group notices-full">
+
+                    <label for="noticeTitle">
+                        <i class="fas fa-heading"></i>
+                        Notice Title
+                    </label>
+
+                    <input
+                        type="text"
+                        id="noticeTitle"
+                        placeholder="e.g. School Reopening"
+                    >
+
+                </div>
+
+
+                <!-- MESSAGE -->
+                <div class="notices-form-group notices-full">
+
+                    <label for="noticeMessage">
+                        <i class="fas fa-align-left"></i>
+                        Notice Message
+                    </label>
+
+                    <textarea
+                        id="noticeMessage"
+                        rows="7"
+                        placeholder="Write your announcement here..."
+                    ></textarea>
+
+                    <div class="notice-character-count">
+                        <span id="noticeCharacterCount">0</span>
+                        characters
+                    </div>
+
+                </div>
+
+
+                <!-- DATE -->
+                <div class="notices-form-group">
+
+                    <label for="noticeDate">
+                        <i class="fas fa-calendar"></i>
+                        Notice Date
+                    </label>
+
+                    <div class="notice-date-wrapper">
+
+                        <i class="fas fa-calendar-days"></i>
+
+                        <input
+                            type="date"
+                            id="noticeDate"
+                        >
+
+                    </div>
+
+                </div>
+
+		<div
+    id="noticeRecipientSection"
+    class="notice-form-group"
+>
+
+    <label for="noticeRecipientType">
+
+        <i class="fas fa-users"></i>
+
+        Send Notice To
+
+    </label>
+
+
+    <select
+        id="noticeRecipientType"
+        class="notice-input"
+    >
+
+        <option value="school">
+            Everyone
+        </option>
+
+        <option value="class">
+            Specific Class
+        </option>
+
+    </select>
+
+
+    <!-- CLASS -->
+
+    <div
+        id="noticeClassWrapper"
+        style="display:none; margin-top:12px;"
+    >
+
+        <label for="noticeRecipientClass">
+
+            <i class="fas fa-graduation-cap"></i>
+
+            Select Class
+
+        </label>
+
+
+        <select
+            id="noticeRecipientClass"
+            class="notice-input"
+        >
+
+            <option value="">
+                Select Class
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- PREVIEW -->
+
+    <div
+        id="noticeRecipientPreview"
+        class="notice-recipient-preview"
+    >
+
+        <i class="fas fa-users"></i>
+
+        <span>
+            This notice will be sent to everyone.
+        </span>
+
+    </div>
+
+</div>
+
+                <!-- PRIORITY -->
+                <div class="notices-form-group">
+
+                    <label for="noticePriority">
+                        <i class="fas fa-flag"></i>
+                        Priority
+                    </label>
+
+                    <div class="notice-priority-wrapper">
+
+                        <select id="noticePriority">
+
+                            <option value="normal">
+                                Normal
+                            </option>
+
+                            <option value="important">
+                                Important
+                            </option>
+
+                            <option value="urgent">
+                                Urgent
+                            </option>
+
+                        </select>
+
+                        <i class="fas fa-chevron-down"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+<!-- =====================================================
+     NOTICE RECIPIENT
+===================================================== -->
+
+
+
+            <!-- PRIORITY PREVIEW -->
+            <div
+                id="noticePriorityPreview"
+                class="notice-priority-preview normal"
+            >
+
+                <div class="notice-preview-icon">
+                    <i class="fas fa-info"></i>
+                </div>
+
+                <div>
+
+                    <strong>Normal Notice</strong>
+
+                    <p>
+                        This announcement will be displayed as a regular school notice.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="notices-form-actions">
+
+                <button
+                    type="button"
+                    class="notice-clear-btn"
+                    onclick="clearNoticeForm()"
+                >
+                    <i class="fas fa-undo"></i>
+                    Clear
+                </button>
+
+
+                <button
+    class="primary-btn notice-publish-btn"
+    onclick="publishNotice()"
+>
+    <i class="fas fa-bullhorn"></i>
+    Publish Notice
+</button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             PUBLISHED NOTICES
+        ================================================== -->
+        <div class="notices-main-card">
+
+            <div class="notices-section-header">
+
+                <div class="notices-card-title">
+
+                    <div class="notices-title-icon purple">
+                        <i class="fas fa-list"></i>
+                    </div>
+
+                    <div>
+
+                        <h2>Published Notices</h2>
+
+                        <p>
+                            Manage announcements that have been published.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="notice-filter">
+
+                    <i class="fas fa-filter"></i>
+
+                    <select id="noticeFilter">
+
+                        <option value="all">
+                            All Notices
+                        </option>
+
+                        <option value="normal">
+                            Normal
+                        </option>
+
+                        <option value="important">
+                            Important
+                        </option>
+
+                        <option value="urgent">
+                            Urgent
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div id="adminNoticeList" class="notices-list">
+
+                <div class="notices-empty-state">
+
+                    <div class="notices-empty-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+
+                    <h3>No Notices Yet</h3>
+
+                    <p>
+                        Published school announcements will appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+<!-- ==========================================
+     CHAT PAGE
+========================================== -->
+<div id="chat" class="page">
+
+    <div id="chatLayout">
+
+        <!-- ==========================================
+             LEFT SIDEBAR
+        ========================================== -->
+        <aside id="usersPanel" class="chat-sidebar">
+
+            <!-- Header -->
+            <div class="sidebar-header">
+
+                <div class="sidebar-title">
+
+                    <h2>Messages</h2>
+
+                </div>
+
+                <!-- Search -->
+                <div class="search-wrapper">
+
+                    <i class="fas fa-search"></i>
+
+                    <input
+                        type="text"
+                        id="searchChat"
+                        placeholder="Search people..."
+                        autocomplete="off">
+
+                </div>
+
+             
+
+            </div>
+
+            <!-- Users -->
+            <div
+                id="userList"
+                class="chat-users">
+
+            </div>
+
+        </aside>
+
+        <!-- ==========================================
+             CHAT SECTION
+        ========================================== -->
+        <section
+            id="conversationPanel"
+            class="conversation-panel">
+
+            <!-- Header -->
+            <header class="conversation-header">
+
+                <button
+                    id="backToUsers"
+                    class="back-btn"
+                    onclick="backToUsers()">
+
+                    <i class="fas fa-arrow-left"></i>
+
+                </button>
+
+                <div class="header-user">
+
+                    <div class="header-avatar-wrapper">
+
+                        <img
+                            id="chatUserAvatar"
+                            class="header-avatar"
+                            src=""
+                            style="display:none;">
+
+                        <div
+                            id="headerAvatarPlaceholder"
+                            class="avatar-placeholder">
+
+                            <i class="fas fa-user"></i>
+
+                        </div>
+
+
+                    </div>
+
+                    <div class="header-details">
+
+                        <h3 id="chatUserName">
+
+                            Select a Conversation
+
+                        </h3>
+
+                        <span id="chatUserStatus">
+
+                            No chat selected
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </header>
+
+            <!-- Typing -->
+            <div
+                id="typingIndicator"
+                class="typing-indicator">
+
+            </div>
+
+            <!-- Messages -->
+            <div
+                id="chatBox"
+                class="chat-box">
+
+                <!-- Empty State -->
+
+                <div class="empty-chat">
+
+                    <i class="fas fa-comments"></i>
+
+                    <h2>
+
+                        Welcome to Nabeng Chat
+
+                    </h2>
+
+                    <p>
+
+                        Select a teacher or student to begin chatting.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- Reply Box -->
+
+            <div
+                id="replyPreview"
+                class="reply-preview"
+                style="display:none;">
+
+                <div class="reply-line"></div>
+
+                <div class="reply-content">
+
+                    <div id="replyName">
+
+                    </div>
+
+                    <div id="replyText">
+
+                    </div>
+
+                </div>
+
+                <button
+                    class="close-reply"
+                    onclick="cancelReply()">
+
+                    <i class="fas fa-times"></i>
+
+                </button>
+
+            </div>
+
+            <!-- Attachment Preview -->
+
+            <div
+                id="previewContainer"
+                class="preview-container"
+                style="display:none;">
+
+                <div
+                    id="previewContent">
+
+                </div>
+
+                <button
+                    class="remove-preview-btn"
+                    onclick="removePreview()">
+
+                    <i class="fas fa-times"></i>
+
+                </button>
+
+            </div>
+
+            <!-- Input -->
+
+            <div class="chat-input-container">
+
+                <label class="attach-btn">
+
+    <i class="fas fa-paperclip"></i>
+
+    <input
+        hidden
+        id="mediaInput"
+        type="file"
+        accept="image/*,video/*,.pdf,.doc,.docx,.xlsx,.ppt,.pptx"
+        onchange="previewMedia(event)">
+
+</label>
+
+                <input
+                    id="chatInput"
+                    class="chat-input"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Write a message..."
+                    onkeypress="if(event.key==='Enter')sendMessage();">
+
+
+                <button
+                    class="send-btn"
+                    onclick="sendMessage()">
+
+                    <i class="fas fa-paper-plane"></i>
+
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+<!-- ==========================================
+     CONTEXT MENU
+========================================== -->
+
+<div
+    id="contextMenu"
+    class="context-menu">
+
+    <div onclick="replyMessage()">
+
+        <i class="fas fa-reply"></i>
+
+        Reply
+
+    </div>
+
+    <div onclick="forwardMessage()">
+
+        <i class="fas fa-share"></i>
+
+        Forward
+
+    </div>
+
+    <div onclick="copyMessage()">
+
+        <i class="fas fa-copy"></i>
+
+        Copy
+
+    </div>
+
+    <div onclick="deleteSelectedMessage()">
+
+        <i class="fas fa-trash"></i>
+
+        Delete
+
+    </div>
+
+</div>
+
+<!-- ==========================================
+     IMAGE VIEWER
+========================================== -->
+
+<div
+    id="imageViewer"
+    class="image-viewer"
+    style="display:none;">
+
+    <span
+        class="close-image"
+        onclick="closeImageViewer()">
+
+        &times;
+
+    </span>
+
+    <img
+        id="viewerImage"
+        src="">
+
+</div>
+
+
+
+
+
+
+        <div id="userProfilePage" class="page">
+
+    <div class="modern-profile-card">
+
+        <!-- =========================
+             PROFILE HEADER
+        ========================== -->
+        <div class="profile-header">
+
+            <div class="profile-photo-area">
+
+                <div class="profile-photo-wrapper" onclick="uploadProfilePic()">
+
+    <img
+        id="profilePic"
+        alt="Profile Picture"
+    >
+
+    <div class="profile-photo-edit">
+        <i class="fa-solid fa-camera"></i>
+    </div>
+
+</div>
+
+<!-- Hidden profile picture selector -->
+<input
+    type="file"
+    id="profilePicInput"
+    accept="image/*"
+    style="display:none;"
+>
+                <div class="profile-photo-text">
+                    <h2 id="profileDisplayName">My Profile</h2>
+                    <p>Manage your personal information</p>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             PERSONAL INFORMATION
+        ========================== -->
+        <div class="profile-section">
+
+            <div class="profile-section-title">
+
+                <div class="section-icon">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+
+                <div>
+                    <h3>Personal Information</h3>
+                    <p>Update your account information</p>
+                </div>
+
+            </div>
+
+
+            <div class="modern-form-grid">
+
+                <!-- FIRST NAME -->
+                <div class="modern-field">
+
+                    <label for="pFirstName">
+                        First Name
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-solid fa-user input-icon"></i>
+
+                        <input
+                            id="pFirstName"
+                            type="text"
+                            placeholder="Enter first name"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- SURNAME -->
+                <div class="modern-field">
+
+                    <label for="pSurname">
+                        Surname
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-solid fa-user input-icon"></i>
+
+                        <input
+                            id="pSurname"
+                            type="text"
+                            placeholder="Enter surname"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- USERNAME -->
+                <div class="modern-field">
+
+                    <label for="pUsername">
+                        Username
+                    </label>
+
+                    <div class="input-wrapper disabled-field">
+
+                        <i class="fa-solid fa-at input-icon"></i>
+
+                        <input
+                            id="pUsername"
+                            type="text"
+                            placeholder="Username"
+                            disabled
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- EMAIL -->
+                <div class="modern-field">
+
+                    <label for="pEmail">
+                        Email Address
+                    </label>
+
+                    <div class="input-wrapper disabled-field">
+
+                        <i class="fa-solid fa-envelope input-icon"></i>
+
+                        <input
+                            id="pEmail"
+                            type="email"
+                            placeholder="Email address"
+                            disabled
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- PHONE -->
+                <div class="modern-field">
+
+                    <label for="pPhone">
+                        Phone Number
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <i class="fa-solid fa-phone input-icon"></i>
+
+                        <input
+                            id="pPhone"
+                            type="tel"
+                            placeholder="Enter phone number"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- ROLE -->
+                <div class="modern-field">
+
+                    <label for="pRole">
+                        Account Role
+                    </label>
+
+                    <div class="input-wrapper disabled-field">
+
+                        <i class="fa-solid fa-shield-halved input-icon"></i>
+
+                        <input
+                            id="pRole"
+                            type="text"
+                            placeholder="Account role"
+                            disabled
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             DIGITAL SIGNATURE
+        ========================== -->
+        <div class="profile-section signature-section">
+
+            <div class="profile-section-title">
+
+                <div class="section-icon signature-icon">
+                    <i class="fa-solid fa-signature"></i>
+                </div>
+
+                <div>
+                    <h3>Digital Signature</h3>
+                    <p>Add or update your official signature</p>
+                </div>
+
+            </div>
+
+
+            <div
+                class="signature-upload-box"
+                onclick="uploadSignature()"
+            >
+
+                <img
+                    id="signaturePreview"
+                    src=""
+                    alt="Digital Signature"
+                >
+
+                <div
+                    id="signaturePlaceholder"
+                    class="signature-placeholder"
+                >
+
+                    <div class="signature-upload-icon">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+
+                    <strong>
+                        Upload Your Signature
+                    </strong>
+
+                    <span>
+                        Click here to select a PNG or JPG image
+                    </span>
+
+                </div>
+
+                <div class="signature-overlay">
+                    <i class="fa-solid fa-pen"></i>
+                    <span>Change Signature</span>
+                </div>
+
+            </div>
+
+
+            <input
+                type="file"
+                id="signatureInput"
+                accept="image/png,image/jpeg,image/jpg"
+                style="display:none;"
+                onchange="handleSignatureUpload(event)"
+            >
+
+        </div>
+
+
+        <!-- =========================
+             SAVE AREA
+        ========================== -->
+        <div class="profile-actions">
+
+            <button
+                type="button"
+                class="save-profile-btn"
+                onclick="saveProfile()"
+            >
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Save Changes</span>
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+        <!-- =========================================================
+     SUBJECTS / TEACHER ASSIGNMENT
+========================================================= -->
+
+<div id="profileSubjectsPage" class="page">
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <div class="profile-section-header">
+        <div>
+            <span class="section-badge">
+                ACADEMIC MANAGEMENT
+            </span>
+
+            <h2>
+                <i class="fas fa-book-open"></i>
+                Subjects & Teaching Assignments
+            </h2>
+
+            <p>
+                Manage teacher classes and subject assignments.
+            </p>
+        </div>
+    </div>
+
+
+    <!-- =====================================================
+         ADMIN LAYOUT
+    ====================================================== -->
+
+    <div id="adminSubjectAssignment" style="display:none;">
+
+        <!-- ADMIN HEADER -->
+
+        <div class="assignment-header-card">
+
+            <div class="assignment-header-icon">
+                <i class="fas fa-user-shield"></i>
+            </div>
+
+            <div>
+                <h3>Teacher Assignment</h3>
+
+                <p>
+                    Select a teacher and assign the classes and
+                    subjects they will teach.
+                </p>
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SELECT TEACHER
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+                    <span class="assignment-step">
+                        STEP 1
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-user-tie"></i>
+                        Select Teacher
+                    </h3>
+
+                    <p>
+                        Choose the teacher you want to manage.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <label for="teacherSelect">
+                Teacher
+            </label>
+
+            <select
+                id="teacherSelect"
+                onchange="loadSelectedTeacherSubjects()"
+            >
+
+                <option value="">
+                    -- Select Teacher --
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- =================================================
+             ASSIGN CLASSES
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+                    <span class="assignment-step">
+                        STEP 2
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-school"></i>
+                        Assign Classes
+                    </h3>
+
+                    <p>
+                        Enter the class or classes this teacher
+                        is responsible for.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <label for="teacherClass">
+                Assigned Classes
+            </label>
+
+            <input
+                id="teacherClass"
+                type="text"
+                placeholder="Example: 1A, 2B, 3A"
+            >
+
+            <small class="assignment-help">
+                Separate multiple classes with commas.
+            </small>
+
+        </div>
+
+
+        <!-- =================================================
+             ASSIGN SUBJECTS
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+                    <span class="assignment-step">
+                        STEP 3
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-book"></i>
+                        Assign Subjects
+                    </h3>
+
+                    <p>
+                        Select all subjects this teacher is
+                        allowed to teach.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- SUBJECT CHECKBOXES -->
+
+            <div
+                id="subjectCheckboxes"
+                class="subject-checkbox-grid"
+            ></div>
+
+
+            <!-- SAVE BUTTON -->
+
+            <div class="assignment-actions">
+
+                <button
+                    id="saveSubjectsBtn"
+                    class="primary-assignment-btn"
+                    onclick="saveTeacherSubjects()"
+                >
+                    <i class="fas fa-save"></i>
+                    Save Assignment
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             ASSIGNMENT INFORMATION
+        ================================================== -->
+
+        <div class="assignment-info-card">
+
+            <div class="assignment-info-icon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+
+            <div>
+
+                <h4>
+                    Assignment Information
+                </h4>
+
+                <p>
+                    Teachers will only be able to access the
+                    classes and subjects assigned to them.
+                    You can return here at any time to update
+                    their assignments.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TEACHER LAYOUT
+    ====================================================== -->
+
+    <div id="teacherAssignedSubjects" style="display:none;">
+
+        <!-- TEACHER HEADER -->
+
+        <div class="assignment-header-card">
+
+            <div class="assignment-header-icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+
+            <div>
+
+                <h3>
+                    My Teaching Assignment
+                </h3>
+
+                <p>
+                    View the classes and subjects assigned
+                    to you by the school administrator.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             MY CLASSES
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+
+                    <span class="assignment-step">
+                        MY CLASSES
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-school"></i>
+                        Assigned Classes
+                    </h3>
+
+                    <p>
+                        These are the classes assigned to you.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="myAssignedClassesList"
+                class="assigned-classes-grid"
+            >
+                <div class="empty-state">
+                    <i class="fas fa-school"></i>
+                    <h4>Loading classes…</h4>
+                    <p>Your assigned classes will appear here.</p>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             MY SUBJECTS
+        ================================================== -->
+
+        <div class="assignment-card">
+
+            <div class="assignment-card-header">
+
+                <div>
+
+                    <span class="assignment-step">
+                        MY SUBJECTS
+                    </span>
+
+                    <h3>
+                        <i class="fas fa-book-open"></i>
+                        Assigned Subjects
+                    </h3>
+
+                    <p>
+                        These are the subjects you are permitted
+                        to teach and enter marks for.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="myAssignedSubjectsList"
+                class="assigned-subjects-grid"
+            >
+                <div class="empty-state">
+                    <i class="fas fa-book-open"></i>
+                    <h4>Loading subjects…</h4>
+                    <p>Your assigned subjects will appear here.</p>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             TEACHER INFORMATION
+        ================================================== -->
+
+        <div class="assignment-info-card">
+
+            <div class="assignment-info-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+
+            <div>
+
+                <h4>
+                    Read-Only Assignment
+                </h4>
+
+                <p>
+                    Your teaching assignments are managed by
+                    the school administrator. Contact the
+                    administrator if you need a class or
+                    subject added or changed.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+<!-- =========================================================
+     TERM SETTINGS
+     ========================================================= -->
+
+<div id="profileTermPage" class="page">
+
+    <div class="modern-term-card">
+
+        <!-- =========================
+             HEADER
+        ========================== -->
+        <div class="term-header">
+
+            <div class="term-title-area">
+
+                <div class="term-main-icon">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+
+                <div>
+                    <h2>Term Settings</h2>
+
+                    <p>
+                        Configure the start and end dates for each academic term.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             ACADEMIC YEAR MANAGEMENT
+        ========================== -->
+        <section id="academicYearPanel" class="academic-year-panel">
+            <div class="academic-year-heading">
+                <div class="academic-year-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                <div>
+                    <span class="academic-year-eyebrow">SCHOOL YEAR CONTROL</span>
+                    <h3>Academic Year Management</h3>
+                    <p>Switch between school years while keeping each year's records separate.</p>
+                </div>
+            </div>
+
+            <div class="academic-year-controls">
+                <div class="academic-year-field">
+                    <label for="academicYearSelect">Academic year to open</label>
+                    <select id="academicYearSelect"></select>
+                    <small id="academicYearCurrentLabel">Current academic year: loading…</small>
+                </div>
+                <button type="button" class="academic-year-switch-btn" onclick="switchAcademicYear()">
+                    <i class="fa-solid fa-right-left"></i>
+                    Switch Academic Year
+                </button>
+            </div>
+
+            <div class="academic-year-notice">
+                <i class="fa-solid fa-shield-halved"></i>
+                <div>
+                    <strong>Records are protected</strong>
+                    <p>Before switching, Nabeng-SBA saves the current year's student records. A new year starts with fresh marks and assessments. Returning to an archived year restores its saved records.</p>
+                </div>
+            </div>
+            <p id="academicYearStatus" class="academic-year-status" role="status"></p>
+        </section>
+
+        <!-- =========================
+             TERM SETTINGS CONTENT
+        ========================== -->
+        <div class="term-settings-content">
+
+            <div class="term-grid">
+
+
+                <!-- =========================
+                     TERM 1
+                ========================== -->
+                <div class="term-card">
+
+                    <div class="term-card-header">
+
+                        <div class="term-number">
+                            01
+                        </div>
+
+                        <div>
+                            <h3>Term 1</h3>
+
+                            <span>
+                                First Academic Term
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="term-fields">
+
+                        <!-- START DATE -->
+                        <div class="term-field">
+
+                            <label for="t1start">
+                                <i class="fa-solid fa-play"></i>
+                                Start Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t1start"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- END DATE -->
+                        <div class="term-field">
+
+                            <label for="t1end">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                End Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar-check date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t1end"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================
+                     TERM 2
+                ========================== -->
+                <div class="term-card">
+
+                    <div class="term-card-header">
+
+                        <div class="term-number">
+                            02
+                        </div>
+
+                        <div>
+                            <h3>Term 2</h3>
+
+                            <span>
+                                Second Academic Term
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="term-fields">
+
+                        <!-- START DATE -->
+                        <div class="term-field">
+
+                            <label for="t2start">
+                                <i class="fa-solid fa-play"></i>
+                                Start Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t2start"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- END DATE -->
+                        <div class="term-field">
+
+                            <label for="t2end">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                End Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar-check date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t2end"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================
+                     TERM 3
+                ========================== -->
+                <div class="term-card">
+
+                    <div class="term-card-header">
+
+                        <div class="term-number">
+                            03
+                        </div>
+
+                        <div>
+                            <h3>Term 3</h3>
+
+                            <span>
+                                Third Academic Term
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="term-fields">
+
+                        <!-- START DATE -->
+                        <div class="term-field">
+
+                            <label for="t3start">
+                                <i class="fa-solid fa-play"></i>
+                                Start Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t3start"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- END DATE -->
+                        <div class="term-field">
+
+                            <label for="t3end">
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                End Date
+                            </label>
+
+                            <div class="date-input-wrapper">
+
+                                <i class="fa-regular fa-calendar-check date-icon"></i>
+
+                                <input
+                                    type="date"
+                                    id="t3end"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 SAVE AREA
+            ========================== -->
+            <div class="term-actions">
+
+                <button
+                    type="button"
+                    class="save-term-btn"
+                    onclick="saveTermSettings()"
+                >
+
+                    <i class="fa-solid fa-floppy-disk"></i>
+
+                    <span>
+                        Save Term Settings
+                    </span>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     LESSON PLAN PAGE
+========================================================= -->
+<div id="profilePlanPage" class="page">
+
+    <div class="lesson-header">
+        <div>
+            <span class="lesson-badge">ACADEMIC WORK</span>
+            <h2>📗 Lesson Plan Generator</h2>
+            <p>Create a structured Ghana GES-style lesson plan.</p>
+        </div>
+    </div>
+
+    <div class="lesson-form-grid">
+
+        <div class="lesson-field">
+            <label for="planTerm">Term</label>
+            <select id="planTerm">
+                <option value="term1">Term 1</option>
+                <option value="term2">Term 2</option>
+                <option value="term3">Term 3</option>
+            </select>
+        </div>
+
+        <div class="lesson-field">
+            <label for="planSubject">Subject</label>
+            <select id="planSubject"></select>
+        </div>
+
+        <div class="lesson-field">
+            <label for="planClass">Class</label>
+            <input
+                type="text"
+                id="planClass"
+                placeholder="e.g. Basic 5"
+            >
+        </div>
+
+        <div class="lesson-field">
+            <label for="planWeek">Week</label>
+            <input
+                type="text"
+                id="planWeek"
+                placeholder="e.g. Week 1"
+            >
+        </div>
+
+        <div class="lesson-field">
+            <label for="planTopic">Topic</label>
+            <input
+                type="text"
+                id="planTopic"
+                placeholder="Enter topic"
+            >
+        </div>
+
+        <div class="lesson-field">
+            <label for="planSubtopic">Sub-topic</label>
+            <input
+                type="text"
+                id="planSubtopic"
+                placeholder="Enter sub-topic"
+            >
+        </div>
+
+        <div class="lesson-field">
+            <label for="planDuration">Duration</label>
+            <input
+                type="text"
+                id="planDuration"
+                placeholder="e.g. 60 minutes"
+            >
+        </div>
+
+    </div>
+
+    <div class="lesson-actions">
+
+        <button
+            type="button"
+            class="lesson-btn primary"
+            onclick="generateLessonPlan()">
+            ⚡ Generate Lesson Plan
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn success"
+            onclick="savePlan()">
+            💾 Save Plan
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="exportLessonDocument('plan')">
+            📄 Export Word
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="printLessonDocument('plan')">
+            🖨️ Print
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn secondary"
+            onclick="loadPlans()">
+            📚 Saved Plans
+        </button>
+
+    </div>
+
+    <div id="planStatus" class="lesson-status"></div>
+
+    <div
+        id="planOutput"
+        class="lesson-output">
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">📗</div>
+            <h3>Your lesson plan will appear here</h3>
+            <p>Complete the lesson information and click Generate Lesson Plan.</p>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     LESSON NOTE PAGE
+========================================================= -->
+<div id="profileNotePage" class="page">
+
+    <div class="lesson-header">
+        <div>
+            <span class="lesson-badge">ACADEMIC WORK</span>
+            <h2>📝 Lesson Notes</h2>
+            <p>Create detailed classroom lesson notes.</p>
+        </div>
+    </div>
+
+    <div class="lesson-form-grid">
+
+        <div class="lesson-field">
+            <label for="noteTerm">Term</label>
+            <select id="noteTerm">
+                <option value="term1">Term 1</option>
+                <option value="term2">Term 2</option>
+                <option value="term3">Term 3</option>
+            </select>
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteWeek">Week</label>
+            <input
+                id="noteWeek"
+                placeholder="e.g. Week 1">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteSubject">Subject</label>
+            <select id="noteSubject"></select>
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteClass">Class</label>
+            <input
+                id="noteClass"
+                placeholder="e.g. Basic 5">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteTopic">Topic</label>
+            <input
+                id="noteTopic"
+                placeholder="Enter topic">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteSubtopic">Sub-topic</label>
+            <input
+                id="noteSubtopic"
+                placeholder="Enter sub-topic">
+        </div>
+
+        <div class="lesson-field">
+            <label for="noteDuration">Duration</label>
+            <input
+                id="noteDuration"
+                placeholder="e.g. 60 minutes">
+        </div>
+
+    </div>
+
+    <div class="lesson-actions">
+
+        <button
+            type="button"
+            class="lesson-btn primary"
+            onclick="generateLessonNote()">
+            🧠 Generate Lesson Note
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn success"
+            onclick="saveNote()">
+            💾 Save Note
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="exportLessonDocument('note')">
+            📄 Export Word
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn"
+            onclick="printLessonDocument('note')">
+            🖨️ Print
+        </button>
+
+        <button
+            type="button"
+            class="lesson-btn secondary"
+            onclick="loadNotes()">
+            📚 Saved Notes
+        </button>
+
+    </div>
+
+    <div id="noteStatus" class="lesson-status"></div>
+
+    <div
+        id="noteOutput"
+        class="lesson-output">
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">📝</div>
+            <h3>Your lesson note will appear here</h3>
+            <p>Complete the lesson information and click Generate Lesson Note.</p>
+        </div>
+    </div>
+
+</div>
+
+
+
+
+<!-- CONFIRMATION MODAL -->
+<div id="confirmModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Confirm Action</h3>
+    <p id="modalMessage">Are you sure?</p>
+
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn confirm" id="confirmBtn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /.sba-page-container -->
+</div><!-- /.sba-main -->
+</div><!-- /#app -->
+
+<div class="bottom-nav">
+<button id="installBtn" style="display:none;">📲 Install App</button>
+    <div class="nav-item" onclick="showPage('dashboardPage')">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </div>
+
+    <div class="nav-item" onclick="toggleAcademicsMenu()">
+    <i class="fas fa-graduation-cap"></i>
+    <span>Academics</span>
+</div>
+
+ <div class="nav-item" onclick="toggleSchoolMenu()">
+    <i class="fas fa-school"></i>
+    <span>School</span>
+</div>
+
+<div class="nav-item" onclick="openChatPage()">
+    <i class="fas fa-comments"></i>
+    <span>Chat</span>
+</div>
+
+<div class="nav-item" onclick="toggleProfileMenu()">
+    <i class="fas fa-user"></i>
+    <span>Profile</span>
+</div>
+
+</div>
+
+
+<div id="studentModal" class="student-detail-modal" style="display:none;" onclick="if(event.target===this)closeStudentModal()">
+    <div id="studentModalContent" class="student-detail-modal-panel" role="dialog" aria-modal="true"></div>
+</div>
+
+<div id="academicsMenu" class="academics-menu">
+
+    <div onclick="openAcademicPage('studentsPage')">
+        👨‍🎓 Students
+    </div>
+
+    <div onclick="openAcademicPage('subjectsPage')">
+        📚 Subjects
+    </div>
+
+    <div onclick="openAcademicPage('reportsPage')">
+        📄 Reports
+    </div>
+
+</div>
+
+
+
+<div id="profileMobileMenu" class="academics-menu" style="display:none">
+
+    <div onclick="showPage('userProfilePage')">
+        👤 User
+    </div>
+
+    <div onclick="showPage('profileSubjectsPage')">
+        📚 Subjects
+    </div>
+
+    <div onclick="showPage('profileTermPage')">
+        📅 Term Setup
+    </div>
+
+    <div onclick="showPage('profilePlanPage')">
+        📖 Plan
+    </div>
+
+    <div onclick="showPage('profileNotePage')">
+        📝 Note
+    </div>
+
+</div>
+
+
+
+        <!-- SCHOOL DROPDOWN -->
+<div id="SchoolMenu" class="academics-menu">
+
+       <div onclick="showPage('attendancePage')">
+            <i class="fas fa-clipboard-check"></i>
+            Attendance
+        </div>
+
+        <div onclick="showPage('homeworkPage')">
+            <i class="fas fa-book-open"></i>
+            Home Work
+        </div>
+
+         <div
+           onclick="showPage('timetablePage')">
+            <i class="fas fa-calendar-alt"></i>
+            Timetable
+        </div>
+
+         <div
+           onclick="showPage('noticesPage')">
+            <i class="fas fa-bullhorn"></i>
+            Notices
+         </div>
+
+    
+
+</div>
+
+
+
+<!-- =========================================================
+     PROMOTION CONFIRMATION MODAL
+     ========================================================= -->
+
+<div id="promotionModal" class="modal-overlay">
+
+    <div class="promotion-modal">
+
+        <!-- HEADER -->
+        <div class="promotion-header">
+
+            <div class="promotion-icon">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+
+            <div>
+                <h2>Promote Students</h2>
+                <p>Confirm end-of-session promotion</p>
+            </div>
+
+            <button
+                type="button"
+                class="promotion-close"
+                onclick="closePromotionModal()"
+                aria-label="Close promotion modal">
+
+                <i class="fas fa-times"></i>
+
+            </button>
+
+        </div>
+
+
+        <!-- BODY -->
+        <div class="promotion-body">
+
+            <div class="promotion-message">
+
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Ready to promote students?
+                </h3>
+
+                <p>
+                    You are about to promote all eligible students
+                    to their next class.
+                </p>
+
+            </div>
+
+
+            <!-- DYNAMIC SUMMARY -->
+            <div
+                id="promotionSummary"
+                class="promotion-summary">
+            </div>
+
+
+            <!-- WARNING -->
+            <div class="promotion-warning">
+
+                <div class="warning-title">
+
+                    <i class="fas fa-triangle-exclamation"></i>
+
+                    <strong>
+                        Please review before continuing
+                    </strong>
+
+                </div>
+
+                <ul>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Archive current academic records
+                    </li>
+
+                    <li>
+                        <i class="fas fa-check"></i>
+                        Promote students to the next class
+                    </li>
+
+                    <li>
+                        <i class="fas fa-rotate"></i>
+                        Reset marks for the new academic session
+                    </li>
+
+                    <li>
+                        <i class="fas fa-calendar-check"></i>
+                        Reset attendance
+                    </li>
+
+                    <li>
+                        <i class="fas fa-comment-dots"></i>
+                        Reset student remarks
+                    </li>
+
+                    <li>
+                        <i class="fas fa-calendar-days"></i>
+                        Set current term to Term 1
+                    </li>
+
+                </ul>
+
+                <div class="promotion-danger">
+
+                    <i class="fas fa-lock"></i>
+
+                    <span>
+                        This action cannot be undone.
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+        <div class="promotion-footer">
+
+            <button
+                type="button"
+                class="promotion-cancel-btn"
+                onclick="closePromotionModal()">
+
+                <i class="fas fa-times"></i>
+                Cancel
+
+            </button>
+
+            <button
+                type="button"
+                class="promotion-confirm-btn"
+                onclick="confirmPromotion()">
+
+                <i class="fas fa-arrow-up"></i>
+                Promote Students
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+<!-- ============================================================
+     DEVELOPER FEEDBACK POPUP
+============================================================ -->
+
+<div id="developerFeedbackModal"
+     class="feedback-modal-overlay">
+
+    <div class="feedback-modal">
+
+        <button
+            class="feedback-close"
+            onclick="closeDeveloperFeedback()">
+            &times;
+        </button>
+
+        <div class="feedback-icon">
+            <i class="fas fa-comment-dots"></i>
+        </div>
+
+        <h3>How are we doing?</h3>
+
+        <p>
+            Is there any feedback, suggestion or issue
+            you'd like to send to the software developer?
+        </p>
+
+        <div class="feedback-actions">
+
+            <button
+                class="feedback-send-btn"
+                onclick="sendDeveloperFeedback()">
+
+                <i class="fab fa-whatsapp"></i>
+                Send Feedback
+
+            </button>
+
+            <button
+                class="feedback-later-btn"
+                onclick="closeDeveloperFeedback()">
+
+                Maybe Later
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ==========================================
+     ADMIN ADMISSION MODAL
+========================================== -->
+
+<div
+    id="admissionModal"
+    class="admission-modal"
+    style="display:none;"
+>
+
+    <div class="admission-modal-content">
+
+        <!-- HEADER -->
+
+        <div class="admission-modal-header">
+
+            <div>
+                <h2>
+                    <i class="fas fa-user-plus"></i>
+                    Student Admission
+                </h2>
+
+                <p>
+                    Register a new student into the school.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="admission-close"
+                onclick="closeAdmissionModal()"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <!-- FORM -->
+
+        <form
+            id="admissionForm"
+            onsubmit="submitAdmission(event)"
+        >
+
+            <!-- STUDENT INFORMATION -->
+
+            <div class="admission-section">
+
+                <h3>
+                    <i class="fas fa-user"></i>
+                    Student Information
+                </h3>
+
+                <div class="admission-photo-upload">
+                    <div class="admission-photo-preview-wrap">
+                        <img
+                            id="admissionPhotoPreview"
+                            src="default-student.png"
+                            alt="Student photo preview"
+                            onerror="this.onerror=null; this.src='https://placehold.co/140x160?text=Student+Photo';"
+                        >
+                    </div>
+                    <div class="admission-photo-controls">
+                        <label for="admissionStudentPhoto">
+                            <i class="fas fa-camera"></i>
+                            Student Photograph
+                        </label>
+                        <p>Upload a clear passport-style photo (JPG, PNG or WebP; max 5 MB).</p>
+                        <input
+                            type="file"
+                            id="admissionStudentPhoto"
+                            accept="image/jpeg,image/png,image/webp"
+                            onchange="previewAdmissionPhoto(event)"
+                        >
+                        <button type="button" class="admission-photo-remove" onclick="clearAdmissionPhoto()">
+                            <i class="fas fa-times"></i> Remove photo
+                        </button>
+                    </div>
+                </div>
+
+                <div class="admission-grid">
+
+                    <div class="admission-field full">
+
+                        <label>
+                            Student Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionStudentName"
+                            placeholder="Enter student's full name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Class *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionStudentClass"
+                            placeholder="e.g. Basic 4"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Gender *
+                        </label>
+
+                        <select
+                            id="admissionGender"
+                            required
+                        >
+
+                            <option value="">
+                                Select Gender
+                            </option>
+
+                            <option value="Male">
+                                Male
+                            </option>
+
+                            <option value="Female">
+                                Female
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PARENT INFORMATION -->
+
+            <div class="admission-section">
+
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Parent / Guardian Information
+                </h3>
+
+                <div class="admission-grid">
+
+                    <div class="admission-field">
+
+                        <label>
+                            Parent / Guardian Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionParentName"
+                            placeholder="Full name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Phone Number *
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="admissionParentNumber"
+                            placeholder="Phone number"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Occupation
+                        </label>
+
+                        <input
+                            type="text"
+                            id="admissionParentOccupation"
+                            placeholder="Parent occupation"
+                        >
+
+                    </div>
+
+
+                    <div class="admission-field">
+
+                        <label>
+                            Address
+                        </label>
+
+                        <textarea
+                            id="admissionParentAddress"
+                            placeholder="Residential address"
+                            rows="3"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+
+            <div class="admission-actions">
+
+                <button
+                    type="button"
+                    class="admission-cancel"
+                    onclick="closeAdmissionModal()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="admission-submit"
+                >
+                    <i class="fas fa-check"></i>
+                    Admit Student
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+
+
+<style>
+.admission-photo-upload {
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:16px;
+    margin:16px 0 20px;
+    border:1px dashed #cbd5e1;
+    border-radius:14px;
+    background:rgba(148,163,184,.07);
+}
+.admission-photo-preview-wrap {
+    width:112px;
+    height:132px;
+    flex:0 0 112px;
+    overflow:hidden;
+    border-radius:10px;
+    border:1px solid #dbe2ea;
+    background:#fff;
+}
+.admission-photo-preview-wrap img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+}
+.admission-photo-controls { min-width:0; }
+.admission-photo-controls label {
+    display:block;
+    font-weight:700;
+    margin-bottom:6px;
+}
+.admission-photo-controls p {
+    margin:0 0 10px;
+    font-size:13px;
+    color:#64748b;
+}
+.admission-photo-controls input[type="file"] {
+    display:block;
+    max-width:100%;
+    font-size:13px;
+}
+.admission-photo-remove {
+    margin-top:9px;
+    padding:7px 10px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    background:transparent;
+    cursor:pointer;
+}
+@media(max-width:560px) {
+    .admission-photo-upload { align-items:flex-start; gap:12px; padding:12px; }
+    .admission-photo-preview-wrap { width:88px; height:108px; flex-basis:88px; }
+}
+</style>
+
+</div>
+
+</body>
+</html>
+
