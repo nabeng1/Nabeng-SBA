@@ -3,190 +3,436 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Nabeng School Management System brings student records, admissions, staff, attendance, academics, reports, timetables and school communication together in one platform.">
-<title>Nabeng | School Management System</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<meta name="description" content="Nabeng SBA — complete school management system for students, teachers and administrators. Marks, attendance, homework, timetable, reports and more.">
+<title>Nabeng SBA — School Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 <link rel="icon" type="image/png" href="/nabeng-sba-logo.png">
 <style>
-:root{--green:#00a878;--green2:#087d5b;--navy:#101d2b;--ink:#172536;--muted:#647487;--pale:#f4f7f8;--line:#e7edf0;--white:#fff}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scroll-padding-top:90px}
-body{font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;line-height:1.65;overflow-x:hidden}
-h1,h2,h3{font-family:Manrope,sans-serif;line-height:1.18;letter-spacing:-.035em}
-a{text-decoration:none}
-.wrap{width:min(1160px,90%);margin:auto}
-.navbar{height:82px;position:fixed;inset:0 0 auto;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 5%;background:rgba(13,27,41,.94);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.08);transition:.25s}
-.navbar.scrolled{box-shadow:0 10px 35px #08172535;background:rgba(13,27,41,.98)}
-.brand{display:flex;align-items:center;gap:11px;color:#fff}
-.brand img{width:45px;height:45px;object-fit:contain;border-radius:11px;background:#ffffff12;padding:4px}
-.brand strong{display:block;font:800 16px Manrope,sans-serif;letter-spacing:.01em}
-.brand small{display:block;color:#a8b8c5;font-size:9px;letter-spacing:.15em;font-weight:700}
-.nav-links{display:flex;align-items:center;gap:30px;list-style:none}
-.nav-links a{color:#d7e0e6;font-size:13px;font-weight:600;transition:.2s}
-.nav-links a:hover{color:#53d6a9}
-.nav-actions{display:flex;gap:10px;align-items:center}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:12px 19px;border-radius:9px;font-size:13px;font-weight:700;transition:.2s;border:1px solid transparent}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+:root{
+  --green:#00b878;--green-dark:#009463;--ink:#0f172a;--muted:#64748b;
+  --bg:#f4f7f8;--white:#fff;--navy:#0f172a;--line:#e2e8f0;
+  --shadow:0 20px 50px rgba(15,23,42,.12);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);line-height:1.6;overflow-x:hidden}
+a{color:inherit}
+
+.navbar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 6%;
+  background:rgba(15,23,42,.78);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.navbar.scrolled{background:rgba(15,23,42,.94);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none}
+.logo img{width:48px;height:48px;object-fit:contain;border-radius:12px;background:rgba(255,255,255,.1);padding:4px}
+.logo h2{font-size:18px;font-weight:700;line-height:1.15}
+.logo span{font-size:10px;font-weight:500;opacity:.75;letter-spacing:.06em}
+
+.nav-links{display:flex;gap:26px;list-style:none;align-items:center}
+.nav-links a{color:rgba(255,255,255,.9);text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--green)}
+.nav-buttons{display:flex;gap:10px;align-items:center}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 20px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px;
+  border:none;cursor:pointer;transition:transform .2s,box-shadow .2s,background .2s;
+}
 .btn:hover{transform:translateY(-2px)}
-.btn-primary{background:var(--green);color:#fff;box-shadow:0 8px 22px #00a87835}
-.btn-primary:hover{background:var(--green2)}
-.btn-light{background:#fff;color:var(--navy)}
-.btn-ghost{border-color:#ffffff65;color:#fff;background:#ffffff0a}
-.menu-toggle{display:none;width:42px;height:42px;border:1px solid #ffffff35;border-radius:9px;background:#ffffff10;color:#fff;font-size:18px}
-.hero{min-height:720px;padding:150px 5% 125px;background:radial-gradient(circle at 78% 30%,#087d5b70,transparent 30%),linear-gradient(120deg,#0d1b29 0%,#102b36 55%,#123e38 100%);color:#fff;position:relative;overflow:hidden}
-.hero:after{content:"";position:absolute;width:560px;height:560px;border:1px solid #ffffff12;border-radius:50%;right:-180px;bottom:-330px;box-shadow:0 0 0 55px #ffffff08,0 0 0 110px #ffffff05}
-.hero-grid{width:min(1160px,100%);margin:auto;display:grid;grid-template-columns:1.08fr .92fr;gap:65px;align-items:center;position:relative;z-index:1}
-.eyebrow{display:inline-flex;align-items:center;gap:9px;padding:7px 12px;border:1px solid #5be0b15c;background:#00a87820;border-radius:50px;color:#7ce5bf;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:22px}
-.hero h1{font-size:clamp(38px,5.1vw,62px);font-weight:800;max-width:690px;margin-bottom:22px}
-.hero h1 em{font-style:normal;color:#59d8aa}
-.hero-copy{font-size:16px;color:#c4d1d9;max-width:570px;line-height:1.85;margin-bottom:30px}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:38px}
-.trust-row{display:flex;gap:24px;flex-wrap:wrap;color:#b9c9d2;font-size:11px;font-weight:600}
-.trust-row span{display:flex;gap:8px;align-items:center}.trust-row i{color:#63dcb0}
-.dashboard-preview{background:#f7faf9;color:var(--ink);padding:17px;border-radius:18px;box-shadow:0 30px 80px #0005;transform:rotate(1deg);border:1px solid #ffffff50}
-.preview-top{display:flex;justify-content:space-between;align-items:center;padding:4px 5px 16px;border-bottom:1px solid var(--line)}
-.preview-brand{font:800 12px Manrope}.preview-status{font-size:9px;color:var(--green2);background:#dff7ed;padding:5px 8px;border-radius:20px;font-weight:700}
-.preview-title{font:800 18px Manrope;margin:17px 5px 4px}.preview-sub{font-size:10px;color:var(--muted);margin:0 5px 15px}
-.preview-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.preview-stat{background:#fff;border:1px solid var(--line);padding:13px 10px;border-radius:10px}
-.preview-stat i{font-size:13px;color:var(--green);margin-bottom:7px}.preview-stat b{display:block;font:800 19px Manrope}.preview-stat small{font-size:9px;color:var(--muted)}
-.preview-bottom{display:grid;grid-template-columns:1.15fr .85fr;gap:10px;margin-top:10px}
-.preview-panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px}
-.preview-panel strong{font:700 10px Manrope}.bars{display:flex;align-items:end;gap:8px;height:75px;margin-top:10px}
-.bars i{display:block;flex:1;background:linear-gradient(#35c99a,#0b9870);border-radius:4px 4px 0 0}
-.activity{display:flex;gap:7px;align-items:center;margin-top:10px;font-size:9px;color:#526273}.activity i{color:var(--green)}
-.section{padding:88px 0}
-.section-head{text-align:center;max-width:680px;margin:0 auto 42px}
-.kicker{color:var(--green2);font-size:11px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;display:block;margin-bottom:12px}
-.section-head h2{font-size:clamp(28px,3.5vw,40px);margin-bottom:13px}
+.btn-green{background:var(--green);color:#fff;box-shadow:0 8px 20px rgba(0,184,120,.3)}
+.btn-green:hover{background:var(--green-dark)}
+.btn-white{background:#fff;color:var(--ink)}
+.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45)}
+.btn-outline:hover{background:rgba(255,255,255,.1)}
+.menu-toggle{display:none;background:transparent;border:0;color:#fff;font-size:22px;cursor:pointer}
+
+.hero{
+  min-height:92vh;padding:130px 6% 80px;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(0,184,120,.25), transparent 45%),
+    radial-gradient(ellipse at 80% 10%, rgba(37,99,235,.28), transparent 40%),
+    linear-gradient(160deg,#0b1220 0%,#111827 50%,#0f172a 100%);
+  color:#fff;display:flex;align-items:center;
+}
+.hero-grid{width:100%;max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;
+  background:rgba(0,184,120,.15);border:1px solid rgba(0,184,120,.35);color:#86efac;
+  font-size:12px;font-weight:600;margin-bottom:18px;
+}
+.hero h1{font-size:clamp(32px,4.5vw,52px);line-height:1.12;font-weight:800;margin-bottom:16px}
+.hero h1 span{color:var(--green)}
+.hero p{font-size:16px;color:rgba(226,232,240,.88);max-width:540px;margin-bottom:28px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px}
+.hero-stats{display:flex;flex-wrap:wrap;gap:18px}
+.hero-stat{min-width:120px}
+.hero-stat strong{display:block;font-size:18px;font-weight:800}
+.hero-stat span{font-size:12px;opacity:.75}
+
+.hero-card{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:24px;padding:28px;backdrop-filter:blur(10px);
+  box-shadow:0 24px 60px rgba(0,0,0,.25);
+}
+.hero-card h3{font-size:18px;margin-bottom:16px}
+.hero-card-list{list-style:none;display:grid;gap:12px}
+.hero-card-list li{
+  display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:14px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:13px;
+}
+.hero-card-list i{color:var(--green);margin-top:3px}
+
+.section{padding:80px 6%}
+.section-inner{max-width:1180px;margin:0 auto}
+.section-head{text-align:center;max-width:720px;margin:0 auto 40px}
+.section-head .eyebrow{
+  display:inline-block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--green);margin-bottom:10px;
+}
+.section-head h2{font-size:clamp(26px,3vw,36px);font-weight:800;margin-bottom:12px;color:var(--ink)}
 .section-head p{color:var(--muted);font-size:15px}
-.intro{background:#fff;padding-top:76px;padding-bottom:45px}
-.intro-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:65px;align-items:center}
-.intro h2{font-size:34px;margin-bottom:18px}.intro p{color:var(--muted);font-size:14px;margin-bottom:15px}
-.intro-note{padding:22px;border-left:3px solid var(--green);background:#f0faf6;border-radius:0 12px 12px 0;color:#35584c;font-size:13px}
-.pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}
-.pillar{padding:19px;background:var(--pale);border:1px solid var(--line);border-radius:13px}
-.pillar i{color:var(--green2);font-size:19px;margin-bottom:10px}.pillar h3{font-size:14px;margin-bottom:5px}.pillar p{font-size:11px;color:var(--muted);margin:0}
-.modules{background:var(--pale)}
-.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:17px}
-.module{background:#fff;padding:25px 23px;border:1px solid #e9eff1;border-radius:14px;transition:.2s}
-.module:hover{transform:translateY(-4px);box-shadow:0 16px 35px #122b3b10;border-color:#b8e8d7}
-.module-icon{width:43px;height:43px;display:grid;place-items:center;border-radius:12px;background:#e4f7ef;color:var(--green2);font-size:18px;margin-bottom:17px}
-.module h3{font-size:15px;margin-bottom:8px}.module p{font-size:12px;color:var(--muted);line-height:1.7}
-.workflow{background:#fff}
-.workflow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;counter-reset:step}
-.workflow-item{padding:23px 20px;border:1px solid var(--line);border-radius:13px;position:relative}
-.workflow-item:before{counter-increment:step;content:"0" counter(step);font:800 24px Manrope;color:#b4e7d4;display:block;margin-bottom:16px}
-.workflow-item h3{font-size:14px;margin-bottom:8px}.workflow-item p{font-size:12px;color:var(--muted)}
-.access{background:#102333;color:#fff;padding:75px 0}
-.access-grid{display:grid;grid-template-columns:1fr 1fr;gap:25px}
-.access-card{padding:30px;border:1px solid #ffffff20;background:#ffffff0b;border-radius:16px}
-.access-card i{font-size:24px;color:#6de0b5;margin-bottom:15px}
-.access-card h3{font-size:20px;margin-bottom:9px}.access-card p{font-size:13px;color:#bdcbd3;margin-bottom:20px}
-.cta{padding:80px 5%;background:#eaf8f2;text-align:center}
-.cta h2{font-size:clamp(28px,4vw,40px);margin-bottom:13px}.cta p{max-width:570px;margin:0 auto 25px;color:var(--muted);font-size:14px}
-footer{background:#0b1723;color:#9eafba;padding:35px 5%;font-size:12px}
-.footer-inner{width:min(1160px,100%);margin:auto;display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
-.footer-brand{display:flex;align-items:center;gap:10px;color:#fff;font:800 13px Manrope}.footer-brand img{width:32px;height:32px;object-fit:contain}
-.footer-links{display:flex;gap:20px;flex-wrap:wrap}.footer-links a{color:#b7c4cc}.footer-links a:hover{color:#60dcb0}
-@media(max-width:950px){.menu-toggle{display:block}.nav-links,.nav-actions{display:none}.navbar.open .nav-links{display:flex;position:absolute;top:82px;left:0;right:0;background:#0d1b29;flex-direction:column;align-items:stretch;padding:20px 6%;gap:17px}.navbar.open .nav-actions{display:flex;position:absolute;top:300px;left:0;right:0;background:#0d1b29;padding:0 6% 22px;flex-direction:column}.navbar.open .nav-actions .btn{width:100%}.hero-grid{grid-template-columns:1fr;gap:42px}.dashboard-preview{max-width:600px;width:100%;margin:auto}.intro-grid{grid-template-columns:1fr;gap:30px}.module-grid{grid-template-columns:repeat(2,1fr)}.workflow-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.navbar{height:72px;padding:0 5%}.brand img{width:39px;height:39px}.brand strong{font-size:14px}.brand small{font-size:8px}.navbar.open .nav-links{top:72px}.hero{padding:125px 5% 85px;min-height:auto}.hero h1{font-size:39px}.hero-copy{font-size:14px}.hero-actions .btn{width:100%}.section{padding:65px 0}.pillars,.module-grid,.workflow-grid,.access-grid{grid-template-columns:1fr}.preview-bottom{grid-template-columns:1fr}.trust-row{gap:12px}.footer-inner{flex-direction:column;text-align:center}}
+
+.modules-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;
+}
+.module-card{
+  background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;
+  box-shadow:0 10px 28px rgba(15,23,42,.05);transition:transform .2s,box-shadow .2s;
+}
+.module-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(15,23,42,.1)}
+.module-icon{
+  width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  background:rgba(0,184,120,.12);color:var(--green);font-size:18px;margin-bottom:14px;
+}
+.module-card h3{font-size:16px;margin-bottom:8px}
+.module-card p{font-size:13px;color:var(--muted)}
+
+.flow{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.flow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.flow-step{
+  background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:22px 18px;position:relative;
+}
+.flow-num{
+  width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+  background:var(--navy);color:#fff;font-weight:800;font-size:13px;margin-bottom:12px;
+}
+.flow-step h3{font-size:15px;margin-bottom:8px}
+.flow-step p{font-size:13px;color:var(--muted)}
+
+.roles-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.role-card{
+  border-radius:20px;padding:26px 22px;color:#fff;min-height:230px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  box-shadow:0 16px 40px rgba(15,23,42,.15);
+}
+.role-admin{background:linear-gradient(145deg,#1d4ed8,#312e81)}
+.role-teacher{background:linear-gradient(145deg,#0f766e,#115e59)}
+.role-student{background:linear-gradient(145deg,#b45309,#9a3412)}
+.role-card h3{font-size:20px;margin:10px 0 8px}
+.role-card p{font-size:13px;opacity:.92;margin-bottom:16px}
+.role-card ul{list-style:none;display:grid;gap:8px;font-size:13px}
+.role-card li{display:flex;gap:8px;align-items:flex-start}
+.role-card li i{margin-top:3px;opacity:.9}
+
+.cta{
+  padding:70px 6% 90px;
+}
+.cta-box{
+  max-width:1180px;margin:0 auto;border-radius:28px;padding:48px 36px;
+  background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#0f766e 100%);
+  color:#fff;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;
+  box-shadow:0 24px 60px rgba(15,23,42,.25);
+}
+.cta-box h2{font-size:28px;font-weight:800;margin-bottom:8px}
+.cta-box p{opacity:.9;max-width:520px;font-size:14px}
+.cta-actions{display:flex;flex-wrap:wrap;gap:12px}
+
+footer{background:#0b1220;color:#fff;padding:48px 6% 28px}
+.footer-grid{
+  max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between;
+}
+.footer-grid p{margin-top:8px;opacity:.75;font-size:13px;max-width:280px}
+.footer-links{display:flex;gap:22px;flex-wrap:wrap;font-size:14px}
+.footer-links a{color:#fff;text-decoration:none;opacity:.9}
+.footer-links a:hover{color:var(--green)}
+.footer-copy{text-align:center;margin:28px 0 0;font-size:12px;opacity:.55}
+
+@media (max-width:980px){
+  .hero-grid,.modules-grid,.roles-grid{grid-template-columns:1fr 1fr}
+  .flow-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  .nav-links,.nav-buttons{display:none}
+  .nav-links.open,.nav-buttons.open{
+    display:flex;flex-direction:column;position:absolute;top:72px;left:0;right:0;
+    background:#0f172a;padding:18px 6% 22px;border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .nav-links.open{gap:14px;align-items:flex-start}
+  .nav-buttons.open{gap:10px;align-items:stretch}
+  .menu-toggle{display:inline-flex}
+  .hero-grid,.modules-grid,.roles-grid,.flow-grid{grid-template-columns:1fr}
+  .hero{padding-top:110px}
+}
 </style>
 </head>
 <body>
+
 <header>
-<nav class="navbar" id="navbar">
-<a class="brand" href="/"><img src="/nabeng-sba-logo.png" alt="Nabeng logo"><span><strong>NABENG</strong><small>SCHOOL MANAGEMENT</small></span></a>
-<ul class="nav-links">
-<li><a href="/">Home</a></li><li><a href="/about.html">About</a></li><li><a href="#modules">School Modules</a></li><li><a href="/contact.html">Contact</a></li>
-</ul>
-<div class="nav-actions"><a class="btn btn-ghost" href="/student.html">Student Portal</a><a class="btn btn-primary" href="/system.html">Staff Login <i class="fas fa-arrow-right"></i></a></div>
-<button class="menu-toggle" id="menuToggle" aria-label="Open navigation menu"><i class="fas fa-bars"></i></button>
-</nav>
+  <nav class="navbar" id="navbar">
+    <a href="/" class="logo">
+      <img src="/nabeng-sba-logo.png" alt="Nabeng SBA">
+      <div>
+        <h2>NABENG SBA</h2>
+        <span>SCHOOL MANAGEMENT</span>
+      </div>
+    </a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/">Home</a></li>
+      <li><a href="/about.html">About</a></li>
+      <li><a href="/contact.html">Contact</a></li>
+      <li><a href="/system.html">Staff Login</a></li>
+      <li><a href="/student.html">Student Portal</a></li>
+    </ul>
+
+    <div class="nav-buttons" id="navButtons">
+      <a href="/student.html" class="btn btn-green">Student Portal</a>
+      <a href="/system.html" class="btn btn-white">Staff Login</a>
+    </div>
+
+    <button type="button" class="menu-toggle" id="menuToggle" aria-label="Menu">
+      <i class="fas fa-bars"></i>
+    </button>
+  </nav>
 </header>
 
-<main>
 <section class="hero">
-<div class="hero-grid">
-<div>
-<div class="eyebrow"><i class="fas fa-school"></i> One connected platform for your school</div>
-<h1>Run your school with <em>clarity,</em> not complexity.</h1>
-<p class="hero-copy">Nabeng is a complete school management platform that brings everyday school operations together — from student admission and staff coordination to attendance, teaching, assessments, reports and communication.</p>
-<div class="hero-actions"><a class="btn btn-primary" href="/system.html"><i class="fas fa-lock"></i> Access School System</a><a class="btn btn-ghost" href="#modules">Explore the platform <i class="fas fa-arrow-down"></i></a></div>
-<div class="trust-row"><span><i class="fas fa-check-circle"></i> Connected school records</span><span><i class="fas fa-check-circle"></i> Role-based access</span><span><i class="fas fa-check-circle"></i> Works across devices</span></div>
-</div>
-<aside class="dashboard-preview" aria-label="Illustrative school dashboard preview">
-<div class="preview-top"><div class="preview-brand"><i class="fas fa-graduation-cap" style="color:#07966b;margin-right:6px"></i> NABENG SCHOOL</div><span class="preview-status">● SCHOOL OVERVIEW</span></div>
-<div class="preview-title">Your school at a glance</div><div class="preview-sub">A connected view of daily school activity</div>
-<div class="preview-stats">
-<div class="preview-stat"><i class="fas fa-user-graduate"></i><b>Students</b><small>Student records</small></div>
-<div class="preview-stat"><i class="fas fa-user-tie"></i><b>Staff</b><small>Teaching teams</small></div>
-<div class="preview-stat"><i class="fas fa-chart-line"></i><b>Progress</b><small>Academic insights</small></div>
-</div>
-<div class="preview-bottom"><div class="preview-panel"><strong>Academic activity</strong><div class="bars"><i style="height:42%"></i><i style="height:65%"></i><i style="height:54%"></i><i style="height:83%"></i><i style="height:70%"></i><i style="height:96%"></i></div></div>
-<div class="preview-panel"><strong>School updates</strong><div class="activity"><i class="fas fa-circle-check"></i> Attendance records</div><div class="activity"><i class="fas fa-book"></i> Teaching & learning</div><div class="activity"><i class="fas fa-bullhorn"></i> Notices & messages</div></div></div>
-</aside>
-</div>
+  <div class="hero-grid">
+    <div>
+      <div class="hero-badge"><i class="fas fa-school"></i> Full School Management System</div>
+      <h1>Run your whole school from one <span>secure portal</span></h1>
+      <p>
+        Nabeng SBA is more than marks entry. It is a complete school management system for
+        administration, teaching, learning and reporting — students, staff, classes, attendance,
+        homework, timetable, notices, chat and results in one place.
+      </p>
+      <div class="hero-actions">
+        <a href="/system.html" class="btn btn-green"><i class="fas fa-chalkboard-teacher"></i> Staff / Admin Login</a>
+        <a href="/student.html" class="btn btn-outline"><i class="fas fa-user-graduate"></i> Student Portal</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><strong>Admin</strong><span>School control</span></div>
+        <div class="hero-stat"><strong>Teachers</strong><span>Class & assessment</span></div>
+        <div class="hero-stat"><strong>Students</strong><span>Results & learning</span></div>
+      </div>
+    </div>
+
+    <aside class="hero-card">
+      <h3>What the system covers</h3>
+      <ul class="hero-card-list">
+        <li><i class="fas fa-check-circle"></i><span>Student records, classes and subject assignment</span></li>
+        <li><i class="fas fa-check-circle"></i><span>Continuous assessment, exams and report cards</span></li>
+        <li><i class="fas fa-check-circle"></i><span>Attendance register by class and term</span></li>
+        <li><i class="fas fa-check-circle"></i><span>Homework, timetable, notices and staff chat</span></li>
+        <li><i class="fas fa-check-circle"></i><span>Academic year, term setup and performance dashboard</span></li>
+      </ul>
+    </aside>
+  </div>
 </section>
 
-<section class="intro section">
-<div class="wrap intro-grid">
-<div><span class="kicker">More than assessment</span><h2>One system. The whole school.</h2><p>School administration should not mean juggling disconnected records and tools. Nabeng gives school leaders and teachers a shared digital workspace for the key tasks that keep a school organised.</p><p>From the first student record to classroom activity and end-of-term reporting, information is easier to manage and access in one place.</p><div class="intro-note"><strong>A connected school workflow</strong><br>Administrators coordinate the school, teachers manage their assigned work, and students access their learning information through the appropriate portal.</div></div>
-<div class="pillars">
-<div class="pillar"><i class="fas fa-users"></i><h3>People & records</h3><p>Organise student profiles, admissions information and staff assignments.</p></div>
-<div class="pillar"><i class="fas fa-chalkboard-teacher"></i><h3>Teaching & learning</h3><p>Support lesson planning, homework, subjects and classroom activity.</p></div>
-<div class="pillar"><i class="fas fa-clipboard-check"></i><h3>Academic tracking</h3><p>Record assessments, monitor performance and prepare student reports.</p></div>
-<div class="pillar"><i class="fas fa-comments"></i><h3>School communication</h3><p>Keep school notices and staff conversations in the same workspace.</p></div>
-</div>
-</div>
+<section class="section" id="modules">
+  <div class="section-inner">
+    <div class="section-head">
+      <span class="eyebrow">Platform modules</span>
+      <h2>Everything a modern school needs</h2>
+      <p>
+        From day-to-day classroom work to end-of-term reporting, Nabeng SBA connects
+        administrators, teachers and students in one workflow.
+      </p>
+    </div>
+
+    <div class="modules-grid">
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-user-graduate"></i></div>
+        <h3>Students & classes</h3>
+        <p>Register students, organise classes, manage profiles and control class membership for each academic year.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-book-open"></i></div>
+        <h3>Subjects & marks</h3>
+        <p>Assign subjects to teachers, enter test, project, group and exam scores, and track completion progress.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-file-alt"></i></div>
+        <h3>Reports & results</h3>
+        <p>Generate student reports, view performance summaries and keep academic records by term and year.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-calendar-check"></i></div>
+        <h3>Attendance</h3>
+        <p>Mark daily attendance, monitor present and absent counts, and build term attendance summaries.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-tasks"></i></div>
+        <h3>Homework</h3>
+        <p>Publish weekly homework, set deadlines, collect submissions and mark student work online.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-clock"></i></div>
+        <h3>Timetable</h3>
+        <p>Build class timetables so staff and students know periods, subjects and teaching times.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-bullhorn"></i></div>
+        <h3>Notices</h3>
+        <p>Share school announcements with the right audience and keep communication clear.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-comments"></i></div>
+        <h3>Staff chat</h3>
+        <p>Coordinate quickly between administrators and teachers inside the system.</p>
+      </article>
+      <article class="module-card">
+        <div class="module-icon"><i class="fas fa-chart-line"></i></div>
+        <h3>Dashboard analytics</h3>
+        <p>See pass rates, class performance, top students and subject averages at a glance.</p>
+      </article>
+    </div>
+  </div>
 </section>
 
-<section class="modules section" id="modules">
-<div class="wrap">
-<div class="section-head"><span class="kicker">A complete school workspace</span><h2>Manage the work behind a well-run school</h2><p>Bring essential school activities into a single, organised platform instead of treating assessment as the whole story.</p></div>
-<div class="module-grid">
-<article class="module"><div class="module-icon"><i class="fas fa-user-plus"></i></div><h3>Admissions & student records</h3><p>Register learners, maintain student profiles and keep important school information organised.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-user-tie"></i></div><h3>Staff & teaching assignments</h3><p>Coordinate teachers and assign the classes and subjects they are responsible for.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-calendar-check"></i></div><h3>Attendance management</h3><p>Record student attendance and maintain an accessible attendance register.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-book-open"></i></div><h3>Academics & assessment</h3><p>Manage subjects, class marks, continuous assessment and examination results.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-file-alt"></i></div><h3>Reports & promotion</h3><p>Review academic performance, generate report cards and manage student promotion.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-calendar-days"></i></div><h3>Timetables & term setup</h3><p>Organise school timetables, academic years and term dates.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-book-reader"></i></div><h3>Lesson planning & homework</h3><p>Prepare lesson plans and notes, publish homework and review student submissions.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-bullhorn"></i></div><h3>Notices & communication</h3><p>Share school notices and support communication among users in the system.</p></article>
-<article class="module"><div class="module-icon"><i class="fas fa-chart-pie"></i></div><h3>School overview & insights</h3><p>Use dashboard summaries and performance views to understand academic progress.</p></article>
-</div>
-</div>
+<section class="section flow" id="how-it-works">
+  <div class="section-inner">
+    <div class="section-head">
+      <span class="eyebrow">How the school runs on Nabeng SBA</span>
+      <h2>Simple flow for the whole term</h2>
+      <p>A clear path from setup to results — so every role knows what to do.</p>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <h3>Set up the school</h3>
+        <p>Admin creates the academic year, terms, classes and subjects, then assigns teachers.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <h3>Admit & organise students</h3>
+        <p>Students are registered into classes. Portal accounts can be generated for student access.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <h3>Teach & assess</h3>
+        <p>Teachers take attendance, set homework, follow the timetable and enter continuous assessment and exam marks.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <h3>Report & improve</h3>
+        <p>Reports are generated, dashboards show performance, and the school prepares for the next term or year.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
-<section class="workflow section">
-<div class="wrap">
-<div class="section-head"><span class="kicker">How the platform fits together</span><h2>From school setup to everyday management</h2><p>A practical workflow that connects the people, information and activities involved in running a school.</p></div>
-<div class="workflow-grid">
-<div class="workflow-item"><h3>Set up your school</h3><p>School administrators create the school workspace and configure users, classes, subjects and academic terms.</p></div>
-<div class="workflow-item"><h3>Organise people & roles</h3><p>Add student information and teaching staff, then allocate teachers to their classes and subjects.</p></div>
-<div class="workflow-item"><h3>Manage daily activities</h3><p>Use the system for attendance, lesson preparation, homework, timetables and school notices.</p></div>
-<div class="workflow-item"><h3>Track and report progress</h3><p>Record assessment results, review performance and generate reports to support academic decisions.</p></div>
-</div>
-</div>
-</section>
-
-<section class="access">
-<div class="wrap">
-<div class="section-head"><span class="kicker" style="color:#70dfb8">Access for your school community</span><h2 style="color:#fff">The right access for every role</h2><p style="color:#bdcbd3">A shared platform with separate entry points for school staff and students.</p></div>
-<div class="access-grid">
-<div class="access-card"><i class="fas fa-user-shield"></i><h3>School staff & administrators</h3><p>Sign in to manage school records, academic activities, staff assignments, attendance, reports and communication according to your role.</p><a class="btn btn-primary" href="/system.html">Open Staff System <i class="fas fa-arrow-right"></i></a></div>
-<div class="access-card"><i class="fas fa-user-graduate"></i><h3>Students</h3><p>Use the student portal to access the student-facing services and learning information made available by your school.</p><a class="btn btn-light" href="/student.html">Go to Student Portal <i class="fas fa-arrow-right"></i></a></div>
-</div>
-</div>
+<section class="section" id="roles">
+  <div class="section-inner">
+    <div class="section-head">
+      <span class="eyebrow">Built for every role</span>
+      <h2>Admin, teacher and student portals</h2>
+      <p>Each person sees the tools they need — nothing more, nothing less.</p>
+    </div>
+    <div class="roles-grid">
+      <article class="role-card role-admin">
+        <div>
+          <i class="fas fa-user-shield"></i>
+          <h3>Administrators</h3>
+          <p>Full control of school structure, staff access and academic settings.</p>
+          <ul>
+            <li><i class="fas fa-check"></i> Manage teachers, classes and subjects</li>
+            <li><i class="fas fa-check"></i> Term and academic year setup</li>
+            <li><i class="fas fa-check"></i> School-wide reports and dashboard</li>
+            <li><i class="fas fa-check"></i> Subscription and school profile</li>
+          </ul>
+        </div>
+      </article>
+      <article class="role-card role-teacher">
+        <div>
+          <i class="fas fa-chalkboard-teacher"></i>
+          <h3>Teachers</h3>
+          <p>Classroom tools for the subjects and classes assigned to them.</p>
+          <ul>
+            <li><i class="fas fa-check"></i> Enter and save student marks</li>
+            <li><i class="fas fa-check"></i> Attendance and homework</li>
+            <li><i class="fas fa-check"></i> Lesson plans and notes</li>
+            <li><i class="fas fa-check"></i> Class performance tracking</li>
+          </ul>
+        </div>
+      </article>
+      <article class="role-card role-student">
+        <div>
+          <i class="fas fa-user-graduate"></i>
+          <h3>Students</h3>
+          <p>A focused portal for learning progress and school information.</p>
+          <ul>
+            <li><i class="fas fa-check"></i> View results and reports</li>
+            <li><i class="fas fa-check"></i> Check homework and timetable</li>
+            <li><i class="fas fa-check"></i> Track academic performance</li>
+            <li><i class="fas fa-check"></i> Secure personal login</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </div>
 </section>
 
 <section class="cta">
-<div class="wrap"><span class="kicker">Bring your school together</span><h2>Make school management simpler.</h2><p>Give your school a more organised way to manage people, learning, records and everyday operations.</p><a class="btn btn-primary" href="/system.html">Enter Nabeng School Management <i class="fas fa-arrow-right"></i></a></div>
+  <div class="cta-box">
+    <div>
+      <h2>Ready to manage your school better?</h2>
+      <p>
+        Log in as staff to run administration and teaching, or open the student portal
+        for results, homework and timetable access.
+      </p>
+    </div>
+    <div class="cta-actions">
+      <a href="/system.html" class="btn btn-green">Open Staff System</a>
+      <a href="/student.html" class="btn btn-white">Open Student Portal</a>
+    </div>
+  </div>
 </section>
-</main>
-<footer><div class="footer-inner"><div class="footer-brand"><img src="/nabeng-sba-logo.png" alt=""> NABENG SCHOOL MANAGEMENT SYSTEM</div><div class="footer-links"><a href="/">Home</a><a href="/about.html">About</a><a href="/contact.html">Contact</a><a href="/system.html">Staff Login</a><a href="/student.html">Student Portal</a></div><div>© 2026 Nabeng School Management System. All rights reserved.</div></div></footer>
+
+<footer>
+  <div class="footer-grid">
+    <div>
+      <strong style="font-size:16px;">Nabeng SBA</strong>
+      <p>Complete school management for administration, teaching and student learning.</p>
+    </div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/system.html">Staff Login</a>
+      <a href="/student.html">Student Portal</a>
+    </div>
+  </div>
+  <p class="footer-copy">© Nabeng SBA — School Management System</p>
+</footer>
+
 <script>
-(()=>{const nav=document.getElementById('navbar'),toggle=document.getElementById('menuToggle');toggle?.addEventListener('click',()=>{nav.classList.toggle('open');const icon=toggle.querySelector('i');icon.className=nav.classList.contains('open')?'fas fa-xmark':'fas fa-bars'});document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>18));})();
+  const navbar = document.getElementById('navbar');
+  const menuToggle = document.getElementById('menuToggle');
+  const navLinks = document.getElementById('navLinks');
+  const navButtons = document.getElementById('navButtons');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  });
+  menuToggle?.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+    navButtons.classList.toggle('open');
+  });
 </script>
 </body>
 </html>

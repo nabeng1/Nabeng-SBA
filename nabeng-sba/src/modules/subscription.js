@@ -3,12 +3,41 @@
  */
 import { SBA } from "../runtime.js";
 
-const SBA_TERMLY_AMOUNT_PESEWAS = 10000; // GHS 100
-const SBA_YEARLY_AMOUNT_PESEWAS = 28000; // GHS 280
+// Display / net amounts (what the school sees on the form)
+const SBA_TERMLY_AMOUNT_PESEWAS = 10000; // GHS 100 — shown on form
+const SBA_YEARLY_AMOUNT_PESEWAS = 28000; // GHS 280 — shown on form
+
+/*
+ * Paystack deducts a processing fee from the merchant settlement.
+ * To land close to the full list price in your account, we charge a
+ * slightly higher amount at Paystack only. The subscription form still
+ * shows GHS 100 / GHS 280 — the fee uplift is not shown there.
+ *
+ * Default ~1.95% local rate + small buffer. Adjust SBA_PAYSTACK_FEE_RATE
+ * if your actual Paystack rate differs.
+ */
+const SBA_PAYSTACK_FEE_RATE =
+  (SBA.config && typeof SBA.config.paystackFeeRate === "number")
+    ? SBA.config.paystackFeeRate
+    : 0.0195; // 1.95%
+
 const SBA_PAYSTACK_PUBLIC_KEY =
   SBA.config?.paystackPublicKey ||
   "pk_live_d840cd5de76b748752770285dbdb00e940554827";
 const SBA_TRIAL_DAYS = SBA.config?.trialDays || 14;
+
+/**
+ * Gross amount (pesewas) to send to Paystack so settlement ≈ netAmount.
+ * Rounded up to the next pesewa.
+ */
+function sbaPaystackChargeAmount(netPesewas) {
+  const net = Math.max(0, Number(netPesewas) || 0);
+  const rate = Math.min(0.2, Math.max(0, Number(SBA_PAYSTACK_FEE_RATE) || 0));
+  if (rate <= 0) return Math.round(net);
+  // amount such that amount * (1 - rate) ≈ net  →  amount = net / (1 - rate)
+  const gross = net / (1 - rate);
+  return Math.ceil(gross); // pesewas, never undercharge
+}
 
 function client() {
   return window.supabaseClient || SBA.supabase;
@@ -105,13 +134,33 @@ function sbaShowSubscriptionLock(info) {
   const adminPlans = document.getElementById("subPlansAdmin");
   const teacherMsg = document.getElementById("subPlansTeacher");
   const meta = document.getElementById("subLockMeta");
+  const continueBtn = document.getElementById("subContinueTrialBtn");
   const role = String(user()?.role || "").toLowerCase();
+  const optional = !!(info && info.optional);
+
+  // Remember mode so payment / continue handlers know context
+  if (lock) lock.dataset.mode = optional ? "optional" : "locked";
 
   if (statusEl) {
-    if (info?.status === "pending") statusEl.textContent = "Payment submitted — waiting for confirmation…";
-    else if (info?.status === "locked") statusEl.textContent = "Your school subscription has ended. Renew to continue using Nabeng-SBA.";
-    else statusEl.textContent = "Choose a plan to continue using Nabeng-SBA for your school.";
+    if (info?.status === "pending") {
+      statusEl.textContent = "Payment submitted — waiting for confirmation…";
+    } else if (optional && info?.status === "trial") {
+      const ends = info.endsAt ? new Date(info.endsAt).toLocaleDateString() : "";
+      statusEl.textContent = ends
+        ? `You are on a free trial until ${ends}. You can subscribe now — no need to wait until it ends.`
+        : "You are on a free trial. You can subscribe now — no need to wait until it ends.";
+    } else if (optional && info?.status === "active") {
+      const ends = info.endsAt ? new Date(info.endsAt).toLocaleDateString() : "";
+      statusEl.textContent = ends
+        ? `Your school plan is active until ${ends}. Renew or change plan below.`
+        : "Your school plan is active. Renew or change plan below.";
+    } else if (info?.status === "locked") {
+      statusEl.textContent = "Your school subscription has ended. Renew to continue using Nabeng-SBA.";
+    } else {
+      statusEl.textContent = "Choose a plan to continue using Nabeng-SBA for your school.";
+    }
   }
+
   if (role === "admin") {
     if (adminPlans) adminPlans.style.display = "grid";
     if (teacherMsg) teacherMsg.style.display = "none";
@@ -119,6 +168,23 @@ function sbaShowSubscriptionLock(info) {
     if (adminPlans) adminPlans.style.display = "none";
     if (teacherMsg) teacherMsg.style.display = "block";
   }
+
+  // Optional (early subscribe): allow going back into the app
+  if (continueBtn) {
+    if (optional) {
+      continueBtn.style.display = "inline-flex";
+      if (info?.status === "trial") {
+        continueBtn.textContent = "Continue free trial";
+      } else if (info?.status === "active") {
+        continueBtn.textContent = "Back to app";
+      } else {
+        continueBtn.textContent = "Back to app";
+      }
+    } else {
+      continueBtn.style.display = "none";
+    }
+  }
+
   if (meta) {
     meta.textContent = role === "admin"
       ? "Termly = 16 weeks · Yearly = 12 months from payment date"
@@ -128,7 +194,44 @@ function sbaShowSubscriptionLock(info) {
 
 function sbaHideSubscriptionLock() {
   const lock = document.getElementById("subscriptionLockedScreen");
-  if (lock) lock.style.display = "none";
+  if (lock) {
+    lock.style.display = "none";
+    lock.dataset.mode = "";
+  }
+}
+
+/**
+ * Open subscription plans while still on trial (or active).
+ * Admin only. Does not force lock — user can continue trial.
+ */
+async function sbaOpenSubscriptionPlans() {
+  const u = user();
+  if (!u) {
+    alert("Please log in first.");
+    return;
+  }
+  if (String(u.role || "").toLowerCase() !== "admin") {
+    alert("Only the school administrator can manage the subscription.");
+    return;
+  }
+
+  const access = await sbaCheckSubscriptionAccess();
+  // Always open as optional when admin chooses Subscribe from the app
+  sbaShowSubscriptionLock({
+    ...access,
+    optional: true,
+    status: access.status || "trial"
+  });
+}
+
+/** Close optional subscription screen and return to the app (trial still running). */
+function sbaContinueFreeTrial() {
+  sbaHideSubscriptionLock();
+  const app = document.getElementById("app");
+  if (app) app.style.display = "block";
+  try {
+    if (typeof window.closeSbaSidebar === "function") window.closeSbaSidebar();
+  } catch (e) {}
 }
 
 function sbaSetLockMsg(text, type) {
@@ -149,8 +252,16 @@ async function sbaCheckSubscriptionAccess() {
   return access;
 }
 
+function sbaUpdateSubscriptionNavVisibility() {
+  const btn = document.getElementById("navSubscriptionBtn");
+  if (!btn) return;
+  const role = String(user()?.role || "").toLowerCase();
+  btn.style.display = role === "admin" ? "" : "none";
+}
+
 async function sbaGateAfterLogin() {
   const access = await sbaCheckSubscriptionAccess();
+  sbaUpdateSubscriptionNavVisibility();
   if (access.allowed) {
     sbaHideSubscriptionLock();
     return true;
@@ -169,7 +280,10 @@ async function startSbaPaystackPayment(plan) {
     sbaSetLockMsg("No school linked to this account.", "error");
     return;
   }
-  const amount = plan === "yearly" ? SBA_YEARLY_AMOUNT_PESEWAS : SBA_TERMLY_AMOUNT_PESEWAS;
+  // Net plan price (form still shows GHS 100 / 280). Charge gross at Paystack
+  // so fees are covered and settlement is closer to the full list price.
+  const netAmount = plan === "yearly" ? SBA_YEARLY_AMOUNT_PESEWAS : SBA_TERMLY_AMOUNT_PESEWAS;
+  const amount = sbaPaystackChargeAmount(netAmount);
   const reference = sbaGeneratePaymentRef();
   const email = u.email || u.username || "";
   if (!email) {
@@ -198,7 +312,9 @@ async function startSbaPaystackPayment(plan) {
       schoolid: u.schoolid,
       user_id: u.id,
       plan,
-      product: "nabeng_sba_subscription"
+      product: "nabeng_sba_subscription",
+      list_price_pesewas: netAmount,
+      charged_pesewas: amount
     },
     callback: function (response) {
       sbaSetLockMsg("Payment received. Activating your school subscription…", "success");
@@ -251,3 +367,5 @@ window.sbaShowSubscriptionLock = sbaShowSubscriptionLock;
 window.sbaHideSubscriptionLock = sbaHideSubscriptionLock;
 window.sbaActivateSubscriptionAfterPayment = sbaActivateSubscriptionAfterPayment;
 window.sbaSubscriptionAllowed = sbaSubscriptionAllowed;
+window.sbaOpenSubscriptionPlans = sbaOpenSubscriptionPlans;
+window.sbaContinueFreeTrial = sbaContinueFreeTrial;

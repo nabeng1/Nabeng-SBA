@@ -12,7 +12,9 @@ SBA.config = {
   paystackPublicKey: "pk_live_d840cd5de76b748752770285dbdb00e940554827",
   termlyAmountPesewas: 10000,
   yearlyAmountPesewas: 28000,
-  trialDays: 14
+  trialDays: 14,
+  // Paystack fee rate used to gross-up charge (not shown on form)
+  paystackFeeRate: 0.0195
 };
 
 SBA.state = SBA.state || {

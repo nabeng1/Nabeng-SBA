@@ -646,6 +646,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
     <div class="sba-sub-meta" id="subLockMeta"></div>
 
+    <button type="button" id="subContinueTrialBtn" class="sba-sub-continue" style="display:none;" onclick="sbaContinueFreeTrial()">
+      Continue free trial
+    </button>
+
     <button type="button" class="sba-sub-signout" onclick="logout()">Sign out</button>
   </div>
 </div>
@@ -722,6 +726,9 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     </button>
     <button type="button" class="sba-nav-link" data-page="profileNotePage" onclick="showPage('profileNotePage')">
       <i class="fas fa-sticky-note"></i><span>Note</span>
+    </button>
+    <button type="button" class="sba-nav-link" id="navSubscriptionBtn" onclick="sbaOpenSubscriptionPlans(); return false;">
+      <i class="fas fa-credit-card"></i><span>Subscription</span>
     </button>
   </nav>
 
