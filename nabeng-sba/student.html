@@ -4872,6 +4872,1268 @@ body.dark .portal-account-divider {
 
 <style>
 .student-timetable-page{min-height:100vh;background:#f4f6fb;padding:25px 18px 50px}.student-timetable-container{max-width:1200px;margin:0 auto}.student-timetable-topbar{background:#fff;border-radius:20px;padding:20px 22px;display:flex;align-items:center;gap:18px;box-shadow:0 8px 25px rgba(0,0,0,.06);margin-bottom:18px}.student-timetable-topbar h2{margin:0;text-align:left;color:#20253a;font-size:24px}.student-timetable-topbar p{margin:4px 0 0;color:#8a8fa3;font-size:13px}.student-timetable-back-btn{width:auto;display:flex;align-items:center;gap:8px;padding:11px 17px;border-radius:12px;background:#eef1ff;color:#3F51B5;box-shadow:none}.student-timetable-back-btn:hover{background:#e2e7ff;transform:none}.student-timetable-term{margin-left:auto;display:flex;flex-direction:column;gap:4px}.student-timetable-term label{font-size:11px;color:#777d91;font-weight:600}.student-timetable-term select{padding:9px 12px;border:1px solid #e0e3ec;border-radius:10px;background:#f8f9fc;color:#303549;outline:none}.student-timetable-status{margin-bottom:14px;padding:11px 14px;border-radius:11px;background:#eef1ff;color:#3F51B5;font-size:13px}.student-timetable-status.error{background:#ffe8e8;color:#c93636}.student-timetable-scroll{overflow-x:auto;background:#fff;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}.student-timetable-grid{width:100%;min-width:900px;border-collapse:collapse}.student-timetable-grid th{padding:15px 12px;background:#3F51B5;color:#fff;font-size:12px;text-align:center}.student-timetable-grid td{padding:9px;border-bottom:1px solid #eef0f5;border-right:1px solid #eef0f5;vertical-align:top;min-width:145px;height:90px}.student-timetable-time{width:115px;min-width:115px;color:#697086;font-weight:700;text-align:center;white-space:nowrap}.student-timetable-slot.empty{color:#c7cad4;text-align:center;vertical-align:middle}.student-timetable-card{background:#eef1ff;border-left:4px solid #3F51B5;border-radius:9px;padding:9px;text-align:left}.student-timetable-card strong{display:block;color:#252a3d;font-size:12px}.student-timetable-card span{display:block;color:#68708a;font-size:10px;margin-top:4px}.student-timetable-card small{display:block;color:#777d91;font-size:9px;margin-top:5px}.student-timetable-empty{text-align:center!important;padding:45px!important;color:#8a8fa3!important}@media(max-width:600px){.student-timetable-topbar{flex-wrap:wrap}.student-timetable-term{width:100%;margin-left:0}}
+
+
+#studentPortal.app-shell {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100%;
+  min-height: 100vh;
+  pointer-events: none; /* let feature pages receive clicks in main area */
+}
+#studentPortal .app-sidebar,
+#studentPortal .app-sidebar-overlay,
+#studentPortal .app-main {
+  pointer-events: auto;
+}
+#studentPortal .app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-left: var(--sb-width);
+  height: 100vh;
+  overflow: hidden; /* topbar fixed; only content scrolls */
+  background: transparent; /* feature pages show through when dashboard hidden */
+  pointer-events: none; /* allow clicks on feature pages below */
+}
+#studentPortal .app-topbar {
+  pointer-events: auto;
+}
+#studentPortal .app-content {
+  pointer-events: auto;
+  overflow: auto;
+}
+#studentPortal .app-sidebar {
+  /* already fixed */
+}
+
+/* ============================================================
+   MODERN SIDEBAR + DASHBOARD SHELL
+============================================================ */
+:root {
+  --sb-width: 280px;
+  --sb-bg: #0f172a;
+  --sb-bg-2: #1e293b;
+  --accent: #6366f1;
+  --accent-2: #818cf8;
+  --surface: #f1f5f9;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --radius: 16px;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+body.app-logged-in {
+  background: var(--surface);
+}
+
+/* App shell */
+.app-shell {
+  display: none;
+  min-height: 100vh;
+}
+
+body.app-logged-in .app-shell {
+  display: flex;
+}
+
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sb-width);
+  height: 100vh;
+  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 55%, #312e81 100%);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  box-shadow: 8px 0 40px rgba(15, 23, 42, 0.25);
+  transition: transform 0.3s ease;
+}
+
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.app-sidebar-brand .brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+}
+
+.app-sidebar-brand h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+.app-sidebar-brand span {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.app-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  margin: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.app-sidebar-user img {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.25);
+  background: #334155;
+}
+
+.app-sidebar-user .user-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.app-sidebar-user .user-meta strong {
+  display: block;
+  font-size: 13px;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-sidebar-user .user-meta span {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.app-sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px 20px;
+}
+
+.app-sidebar-nav .nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #64748b;
+  padding: 12px 12px 8px;
+  text-transform: uppercase;
+}
+
+.app-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  margin-bottom: 4px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.app-nav-item i {
+  width: 22px;
+  text-align: center;
+  font-size: 15px;
+  opacity: 0.9;
+}
+
+.app-nav-item:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.app-nav-item.active {
+  background: linear-gradient(135deg, rgba(99,102,241,0.95), rgba(139,92,246,0.9));
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(99, 102, 241, 0.35);
+}
+
+.app-nav-item .nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-sidebar-footer {
+  padding: 14px 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.app-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.app-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fecaca;
+}
+
+/* Main area */
+.app-main {
+  margin-left: var(--sb-width);
+  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+:root {
+  --topbar-height: 72px;
+}
+
+.app-topbar {
+  position: fixed;
+  top: 0;
+  left: var(--sb-width);
+  right: 0;
+  height: var(--topbar-height);
+  z-index: 200; /* above feature pages */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 28px;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.app-menu-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-topbar-title h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 750;
+  color: var(--text);
+}
+
+.app-topbar-title p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app-topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-topbar .student-notification-bell {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  color: #475569;
+}
+
+.app-content {
+  padding: 24px 28px 40px;
+  flex: 1;
+  margin-top: var(--topbar-height, 72px);
+  height: calc(100vh - var(--topbar-height, 72px));
+  overflow: auto;
+  box-sizing: border-box;
+  background: var(--surface, #f1f5f9);
+}
+
+/* Modern dashboard home */
+.dash-welcome {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 28px 30px;
+  margin-bottom: 22px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 16px 40px rgba(79, 70, 229, 0.28);
+}
+
+.dash-welcome::before {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: -60px;
+  top: -80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+
+.dash-welcome::after {
+  content: "";
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  right: 80px;
+  bottom: -50px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+
+.dash-welcome-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dash-welcome h2 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  text-align: left;
+}
+
+.dash-welcome p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+  max-width: 480px;
+}
+
+.dash-welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.18);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.dash-date-chip {
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.dash-stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dash-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.1);
+}
+
+.dash-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.dash-stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+.dash-stat-icon.emerald { background: #ecfdf5; color: #059669; }
+.dash-stat-icon.amber { background: #fffbeb; color: #d97706; }
+.dash-stat-icon.rose { background: #fff1f2; color: #e11d48; }
+
+.dash-stat-card span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.dash-stat-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 18px;
+}
+
+.dash-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.dash-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.dash-panel-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 750;
+  color: var(--text);
+}
+
+.dash-panel-head a,
+.dash-panel-head button.linkish {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dash-quick {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.dash-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+  font-family: inherit;
+}
+
+.dash-quick-btn:hover {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  transform: translateY(-2px);
+}
+
+.dash-quick-btn .qi {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.dash-quick-btn strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.dash-quick-btn span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.dash-activity {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dash-activity-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+}
+
+.dash-activity-item .ai {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #eef2ff;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.dash-activity-item strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.dash-activity-item span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.app-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 999;
+}
+
+body.sidebar-open .app-sidebar-overlay {
+  display: block;
+}
+
+
+/* Prevent stacked feature pages from showing through */
+body.app-logged-in #profilePage[style*="display: none"],
+body.app-logged-in #resultsPage[style*="display: none"],
+body.app-logged-in #subjectsPage[style*="display: none"],
+body.app-logged-in #messagesPage[style*="display: none"],
+body.app-logged-in #downloadsPage[style*="display: none"],
+body.app-logged-in #notificationsPage[style*="display: none"],
+body.app-logged-in #studentTimetablePage[style*="display: none"],
+body.app-logged-in #studentHomeworkPage[style*="display: none"],
+body.app-logged-in #attendancePage[style*="display: none"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Feature pages: under persistent topbar, beside sidebar */
+body.app-logged-in #profilePage,
+body.app-logged-in #resultsPage,
+body.app-logged-in #subjectsPage,
+body.app-logged-in #messagesPage,
+body.app-logged-in #downloadsPage,
+body.app-logged-in #notificationsPage,
+body.app-logged-in #studentTimetablePage,
+body.app-logged-in #studentHomeworkPage,
+body.app-logged-in #attendancePage {
+  margin-left: var(--sb-width) !important;
+  width: calc(100% - var(--sb-width)) !important;
+  max-width: calc(100% - var(--sb-width));
+  box-sizing: border-box;
+  min-height: calc(100vh - var(--topbar-height, 72px));
+  padding-top: calc(var(--topbar-height, 72px) + 12px) !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Profile page layout polish */
+.student-profile-page {
+  padding: 20px 24px 40px !important;
+  background: var(--surface, #f1f5f9);
+}
+.student-profile-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.student-profile-heading {
+  margin: 0 0 18px;
+}
+.student-profile-heading h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+  color: var(--text, #0f172a);
+  text-align: left;
+}
+body.dark-mode .student-profile-page {
+  background: #0b1220 !important;
+}
+body.dark-mode .student-profile-heading h2 {
+  color: #f8fafc !important;
+}
+
+body.app-logged-in #studentPortal {
+  /* fixed shell — does not push page content */
+}
+
+/* Hide old header/dashboard styles interference */
+#studentPortal .header,
+#studentPortal .dashboard {
+  display: none !important;
+}
+
+@media (max-width: 1100px) {
+  .dash-stats { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  :root { --sb-width: 260px; }
+  .app-sidebar {
+    transform: translateX(-105%);
+  }
+  body.sidebar-open .app-sidebar {
+    transform: translateX(0);
+  }
+  .app-main {
+    margin-left: 0;
+  }
+  .app-menu-toggle {
+    display: flex;
+  }
+
+  .app-topbar {
+    left: 0;
+  }
+  body.app-logged-in #profilePage,
+  body.app-logged-in #resultsPage,
+  body.app-logged-in #subjectsPage,
+  body.app-logged-in #messagesPage,
+  body.app-logged-in #downloadsPage,
+  body.app-logged-in #notificationsPage,
+  body.app-logged-in #studentTimetablePage,
+  body.app-logged-in #studentHomeworkPage,
+  body.app-logged-in #attendancePage {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100%;
+  }
+  .app-content { padding: 16px 14px 30px; }
+  .app-topbar { padding: 12px 14px; }
+  .dash-welcome { padding: 22px 18px; }
+  .dash-welcome h2 { font-size: 20px; }
+  .dash-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dash-quick { grid-template-columns: 1fr; }
+}
+
+
+
+/* Login logo image */
+.logo.logo-with-image {
+    overflow: hidden;
+    padding: 8px;
+}
+.logo.logo-with-image img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    display: block;
+}
+.logo.logo-with-image .logo-fallback-icon {
+    display: none;
+}
+.logo.logo-with-image.logo-fallback .logo-fallback-icon {
+    display: block;
+    font-size: 42px;
+}
+
+/* Sidebar brand logo */
+.brand-icon.brand-icon-logo {
+    padding: 4px;
+    background: rgba(255,255,255,0.12);
+}
+.brand-icon.brand-icon-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.app-sidebar-school {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 14px 8px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.app-sidebar-school img {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: rgba(255,255,255,0.95);
+    padding: 3px;
+}
+.app-sidebar-school .school-meta span {
+    display: block;
+    font-size: 10px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+.app-sidebar-school .school-meta strong {
+    display: block;
+    margin-top: 2px;
+    font-size: 13px;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+}
+
+
+/* Sidebar replaces page back buttons */
+.notifications-back-btn,
+.student-timetable-back-btn,
+.student-homework-back,
+.download-back-btn,
+.portal-back-button,
+.student-attendance-back,
+.student-attendance-back-main,
+.results-topbar > .back-btn,
+.messages-topbar > .back-btn {
+  display: none !important;
+}
+
+/* Notification detail modal */
+.student-notice-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+}
+.student-notice-modal.open { display: flex; }
+.student-notice-dialog {
+  width: min(560px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgba(15, 23, 42, 0.28);
+}
+.student-notice-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 22px 22px 14px;
+  border-bottom: 1px solid #edf0f5;
+}
+.student-notice-modal-header h2 {
+  margin: 8px 0 6px;
+  font-size: 20px;
+  font-weight: 750;
+  color: #0f172a;
+  text-align: left;
+}
+.student-notice-modal-header p { margin: 0; font-size: 12px; color: #64748b; }
+.student-notice-modal-close {
+  width: 38px; height: 38px; border: none; border-radius: 50%;
+  background: #f1f5f9; color: #475569; cursor: pointer; flex-shrink: 0;
+}
+.student-notice-modal-body { padding: 20px 22px; }
+.student-notice-modal-body p {
+  margin: 0; font-size: 14px; line-height: 1.7; color: #334155;
+  white-space: pre-wrap; word-break: break-word;
+}
+.student-notice-modal-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 22px 20px; border-top: 1px solid #edf0f5;
+}
+.student-notice-modal-footer span { font-size: 12px; color: #64748b; }
+.student-notice-modal-done {
+  border: none; border-radius: 12px; padding: 10px 18px;
+  background: #4f46e5; color: #fff; font: 600 13px Poppins, sans-serif; cursor: pointer;
+}
+body.dark-mode .student-notice-dialog { background: #111827; }
+body.dark-mode .student-notice-modal-header,
+body.dark-mode .student-notice-modal-footer { border-color: #1f2937; }
+body.dark-mode .student-notice-modal-header h2 { color: #f8fafc; }
+body.dark-mode .student-notice-modal-body p,
+body.dark-mode .student-notice-modal-header p,
+body.dark-mode .student-notice-modal-footer span { color: #cbd5e1; }
+body.dark-mode .student-notice-modal-close { background: #1f2937; color: #e2e8f0; }
+
+/* Theme toggle buttons */
+.app-theme-toggle {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s ease;
+    font-size: 15px;
+}
+.app-theme-toggle:hover {
+    background: #eef2ff;
+    color: #4f46e5;
+    border-color: #c7d2fe;
+}
+
+.login-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 20px;
+    transition: 0.2s;
+}
+.login-theme-toggle:hover {
+    background: rgba(63, 81, 181, 0.08);
+    color: #3F51B5;
+}
+
+/* ============================================================
+   DARK MODE — GLOBAL + SHELL + DASHBOARD
+============================================================ */
+body.dark-mode {
+    background: #0b1220;
+    color: #e2e8f0;
+}
+
+body.dark-mode.app-logged-in {
+    background: #0b1220;
+}
+
+body.dark-mode {
+    --surface: #0b1220;
+    --card: #111827;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: #1f2937;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Login */
+body.dark-mode #loginPage {
+    background: #0b1220;
+}
+body.dark-mode .login-card {
+    background: #111827;
+    box-shadow:
+        12px 12px 28px rgba(0,0,0,.45),
+        -8px -8px 20px rgba(255,255,255,.03);
+}
+body.dark-mode .logo {
+    background: #111827;
+    color: #818cf8;
+    box-shadow:
+        8px 8px 16px rgba(0,0,0,.4),
+        -6px -6px 14px rgba(255,255,255,.04);
+}
+body.dark-mode .login-card h2 {
+    color: #a5b4fc;
+}
+body.dark-mode .subtitle,
+body.dark-mode .footer,
+body.dark-mode .login-theme-toggle {
+    color: #94a3b8;
+}
+body.dark-mode .input-box {
+    background: #0f172a;
+    box-shadow:
+        inset 4px 4px 10px rgba(0,0,0,.5),
+        inset -3px -3px 8px rgba(255,255,255,.03);
+}
+body.dark-mode .input-box input {
+    color: #e2e8f0;
+}
+body.dark-mode .input-box input::placeholder {
+    color: #64748b;
+}
+body.dark-mode .input-box i {
+    color: #64748b;
+}
+body.dark-mode .options {
+    color: #94a3b8;
+}
+body.dark-mode .options a {
+    color: #a5b4fc;
+}
+body.dark-mode .login-theme-toggle:hover {
+    background: rgba(129, 140, 248, 0.12);
+    color: #c7d2fe;
+}
+
+/* Topbar */
+body.dark-mode .app-topbar {
+    background: rgba(17, 24, 39, 0.92);
+    border-bottom-color: #1f2937;
+}
+body.dark-mode .app-topbar-title h1 {
+    color: #f8fafc;
+}
+body.dark-mode .app-topbar-title p {
+    color: #94a3b8;
+}
+body.dark-mode .app-menu-toggle,
+body.dark-mode .app-theme-toggle,
+body.dark-mode .app-topbar .student-notification-bell {
+    background: #1f2937;
+    border-color: #374151;
+    color: #cbd5e1;
+}
+body.dark-mode .app-theme-toggle:hover,
+body.dark-mode .app-menu-toggle:hover {
+    background: #312e81;
+    color: #c7d2fe;
+    border-color: #4f46e5;
+}
+
+/* Main surface */
+body.dark-mode .app-main {
+    background: #0b1220;
+}
+body.dark-mode .app-content {
+    background: transparent;
+}
+
+/* Dashboard cards */
+body.dark-mode .dash-stat-card,
+body.dark-mode .dash-panel {
+    background: #111827;
+    border-color: #1f2937;
+}
+body.dark-mode .dash-stat-card strong,
+body.dark-mode .dash-panel-head h3 {
+    color: #f8fafc;
+}
+body.dark-mode .dash-stat-card span {
+    color: #94a3b8;
+}
+body.dark-mode .dash-quick-btn {
+    background: #0f172a;
+    border-color: #1f2937;
+}
+body.dark-mode .dash-quick-btn:hover {
+    background: #1e1b4b;
+    border-color: #4f46e5;
+}
+body.dark-mode .dash-quick-btn strong {
+    color: #f1f5f9;
+}
+body.dark-mode .dash-quick-btn span {
+    color: #94a3b8;
+}
+body.dark-mode .dash-activity-item {
+    background: #0f172a;
+    border-color: #1f2937;
+}
+body.dark-mode .dash-activity-item strong {
+    color: #f1f5f9;
+}
+body.dark-mode .dash-activity-item span {
+    color: #94a3b8;
+}
+
+/* Feature pages common surfaces */
+body.dark-mode .results-page,
+body.dark-mode .downloads-page,
+body.dark-mode .student-homework-page,
+body.dark-mode .student-timetable-page,
+body.dark-mode .student-notifications-page,
+body.dark-mode #messagesPage,
+body.dark-mode #subjectsPage,
+body.dark-mode #profilePage {
+    background: #0b1220 !important;
+    color: #e2e8f0;
+}
+
+body.dark-mode .results-topbar,
+body.dark-mode .results-card,
+body.dark-mode .report-download-card,
+body.dark-mode .student-chat-layout,
+body.dark-mode .student-conversation,
+body.dark-mode .student-chat-contacts,
+body.dark-mode .student-hw-card,
+body.dark-mode .student-homework-tools,
+body.dark-mode .student-hw-stat,
+body.dark-mode .hw-loading-card,
+body.dark-mode .hw-empty-card,
+body.dark-mode .student-timetable-topbar,
+body.dark-mode .student-timetable-scroll,
+body.dark-mode .student-notification-card,
+body.dark-mode .notifications-empty,
+body.dark-mode .portal-profile {
+    background: #111827 !important;
+    border-color: #1f2937 !important;
+    color: #e2e8f0;
+}
+
+body.dark-mode .results-title h2,
+body.dark-mode .downloads-heading h2,
+body.dark-mode .student-homework-title h1,
+body.dark-mode .messages-topbar h2,
+body.dark-mode .notifications-heading h2,
+body.dark-mode .student-timetable-topbar h2,
+body.dark-mode .report-file-info h3,
+body.dark-mode .student-hw-card-heading h2,
+body.dark-mode .performance-info h3,
+body.dark-mode .subject-name,
+body.dark-mode .total-score {
+    color: #f8fafc !important;
+}
+
+body.dark-mode .results-title p,
+body.dark-mode .downloads-heading p,
+body.dark-mode .student-homework-title p,
+body.dark-mode .report-file-info p,
+body.dark-mode .report-file-info span,
+body.dark-mode .performance-info p,
+body.dark-mode .remark,
+body.dark-mode .notifications-heading p {
+    color: #94a3b8 !important;
+}
+
+body.dark-mode .results-table th {
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+    border-color: #1f2937 !important;
+}
+body.dark-mode .results-table td {
+    color: #cbd5e1 !important;
+    border-color: #1f2937 !important;
+}
+body.dark-mode .results-table tbody tr:hover {
+    background: #1e293b !important;
+}
+
+body.dark-mode .back-btn,
+body.dark-mode .student-homework-back,
+body.dark-mode .student-homework-refresh,
+body.dark-mode .student-timetable-back-btn,
+body.dark-mode .download-back-btn,
+body.dark-mode .notifications-back-btn {
+    background: #1f2937 !important;
+    color: #c7d2fe !important;
+    border-color: #374151 !important;
+}
+
+body.dark-mode .average-box,
+body.dark-mode .student-hw-search,
+body.dark-mode .student-homework-tools select,
+body.dark-mode .term-selector select,
+body.dark-mode .student-timetable-term select {
+    background: #0f172a !important;
+    border-color: #374151 !important;
+    color: #e2e8f0 !important;
+}
+
+body.dark-mode .student-message-composer,
+body.dark-mode .student-conversation-header,
+body.dark-mode .student-contacts-header {
+    background: #111827 !important;
+    border-color: #1f2937 !important;
+}
+body.dark-mode .student-messages {
+    background: #0b1220 !important;
+}
+body.dark-mode #studentReply {
+    background: #0f172a !important;
+    border-color: #374151 !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode .student-message-bubble.theirs {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode .student-contact-details strong,
+body.dark-mode .student-conversation-header h3 {
+    color: #f1f5f9 !important;
+}
+body.dark-mode .student-chat-contact:hover,
+body.dark-mode .student-chat-contact.active {
+    background: #1e293b !important;
+}
+
+body.dark-mode .student-notification-card.unread {
+    background: #172554 !important;
+    border-left-color: #6366f1 !important;
+}
+body.dark-mode .notification-card-title {
+    color: #f8fafc !important;
+}
+body.dark-mode .notification-card-message,
+body.dark-mode .notification-card-date,
+body.dark-mode .notification-card-sender {
+    color: #94a3b8 !important;
+}
+
+body.dark-mode .student-timetable-grid th {
+    background: #312e81 !important;
+}
+body.dark-mode .student-timetable-grid td {
+    border-color: #1f2937 !important;
+    background: #111827;
+}
+body.dark-mode .student-timetable-card {
+    background: #1e1b4b !important;
+    border-left-color: #818cf8 !important;
+}
+body.dark-mode .student-timetable-card strong {
+    color: #f8fafc !important;
+}
+body.dark-mode .student-timetable-card span,
+body.dark-mode .student-timetable-card small {
+    color: #94a3b8 !important;
+}
+body.dark-mode .student-timetable-time {
+    color: #94a3b8 !important;
+}
+
+body.dark-mode .hw-answer-dialog {
+    background: #111827 !important;
+    color: #e2e8f0;
+}
+body.dark-mode .hw-answer-header,
+body.dark-mode .hw-answer-footer {
+    border-color: #1f2937 !important;
+}
+body.dark-mode .hw-answer-header h2 {
+    color: #f8fafc !important;
+}
+body.dark-mode .hw-question-box {
+    background: #0f172a !important;
+    border-color: #1f2937 !important;
+}
+body.dark-mode #studentHomeworkAnswer {
+    background: #0f172a !important;
+    border-color: #374151 !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode .hw-cancel-btn {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #cbd5e1 !important;
+}
+
+body.dark-mode .student-hw-description,
+body.dark-mode .student-hw-details > div,
+body.dark-mode .student-hw-result-box,
+body.dark-mode .student-hw-mark,
+body.dark-mode .student-hw-feedback {
+    background: #0f172a !important;
+    border-color: #1f2937 !important;
+    color: #cbd5e1 !important;
+}
+
+/* Scrollbars subtle */
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+
 </style>
 </head>
 <body>
@@ -4880,8 +6142,13 @@ body.dark .portal-account-divider {
 
 <div class="login-card">
 
-    <div class="logo">
-        <i class="fas fa-user-graduate"></i>
+    <div class="logo logo-with-image">
+        <img
+            id="loginSbaLogo"
+            src="/nabeng-sba-logo.png"
+            alt="Nabeng SBA"
+            onerror="this.onerror=null; this.style.display='none'; this.parentElement.classList.add('logo-fallback');">
+        <i class="fas fa-user-graduate logo-fallback-icon"></i>
     </div>
 
     <h2>Nabeng SBA Student Portal</h2>
@@ -4938,107 +6205,228 @@ body.dark .portal-account-divider {
 
     </form>
 
-    <div class="footer">
-
-        © 2026 SBA Student Portal
-
+    <div class="footer" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+        <button type="button" class="login-theme-toggle" onclick="toggleAppTheme()" title="Toggle dark mode">
+            <i class="fas fa-moon" id="loginThemeToggleIcon"></i>
+            <span id="loginThemeToggleLabel">Dark mode</span>
+        </button>
+        <span>© 2026 SBA Student Portal</span>
     </div>
 
 </div>
 </div>
 
-<div id="studentPortal" style="display:none;">
-<div class="header">
+<div id="studentPortal" class="app-shell" style="display:none;">
 
-<div class="navbar">
+  <div class="app-sidebar-overlay" onclick="closeAppSidebar()"></div>
 
-    <h2>Home</h2>
+  <!-- SIDEBAR -->
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="app-sidebar-brand">
+      <div class="brand-icon brand-icon-logo">
+        <img
+          id="sidebarSbaLogo"
+          src="/nabeng-sba-logo.png"
+          alt="Nabeng SBA"
+          data-logo-step="0">
+        <i class="fas fa-graduation-cap" id="sidebarBrandFallbackIcon" style="display:none;"></i>
+      </div>
+      <div>
+        <h2 id="sidebarBrandTitle">Nabeng SBA</h2>
+        <span id="sidebarBrandSubtitle">Student Portal</span>
+      </div>
+    </div>
 
-    <div
-    class="student-notification-bell"
-    onclick="openStudentNotifications()"
-    title="Notifications"
->
+    <div class="app-sidebar-school" id="sidebarSchoolRow" style="display:none;">
+      <img id="sidebarSchoolLogo" alt="School logo" onerror="this.style.display='none';">
+      <div class="school-meta">
+        <span>School</span>
+        <strong id="sidebarSchoolName">—</strong>
+      </div>
+    </div>
 
-    <i class="fas fa-bell"></i>
+    <div class="app-sidebar-user">
+      <img id="portalStudentPhoto" src="" alt="Student" onerror="this.onerror=null; this.src=getDefaultStudentAvatar();">
+      <div class="user-meta">
+        <strong id="studentName">Student</strong>
+        <span id="studentClass">Class</span>
+      </div>
+    </div>
 
-    <span
-        id="studentNotificationBadge"
-        class="student-notification-badge"
-        style="display:none;"
-    >
-        0
-    </span>
+    <nav class="app-sidebar-nav">
+      <div class="nav-label">Main</div>
+      <button type="button" class="app-nav-item active" data-nav="home" onclick="goHome()">
+        <i class="fas fa-house"></i> Dashboard
+      </button>
+      <button type="button" class="app-nav-item" data-nav="profile" onclick="setActiveNav(this); openProfile()">
+        <i class="fas fa-user"></i> Profile
+      </button>
+      <button type="button" class="app-nav-item" data-nav="homework" onclick="setActiveNav(this); openHomework()">
+        <i class="fas fa-book"></i> Homework
+      </button>
+      <button type="button" class="app-nav-item" data-nav="results" onclick="setActiveNav(this); openResults()">
+        <i class="fas fa-chart-line"></i> Results
+      </button>
 
+      <div class="nav-label">School</div>
+      <button type="button" class="app-nav-item" data-nav="attendance" onclick="setActiveNav(this); openAttendance()">
+        <i class="fas fa-check-circle"></i> Attendance
+      </button>
+      <button type="button" class="app-nav-item" data-nav="timetable" onclick="setActiveNav(this); openStudentTimetable()">
+        <i class="fas fa-calendar-alt"></i> Timetable
+      </button>
+      <button type="button" class="app-nav-item" data-nav="subjects" onclick="setActiveNav(this); openSubjects()">
+        <i class="fas fa-book-open"></i> Subjects
+      </button>
+
+      <div class="nav-label">Communication</div>
+      <button type="button" class="app-nav-item" data-nav="messages" onclick="setActiveNav(this); openMessages()">
+        <i class="fas fa-comments"></i> Messages
+      </button>
+      <button type="button" class="app-nav-item" data-nav="notifications" onclick="setActiveNav(this); openStudentNotifications()">
+        <i class="fas fa-bell"></i> Notifications
+        <span id="sidebarNotificationBadge" class="nav-badge">0</span>
+      </button>
+      <button type="button" class="app-nav-item" data-nav="downloads" onclick="setActiveNav(this); openDownloads()">
+        <i class="fas fa-download"></i> Downloads
+      </button>
+    </nav>
+
+    <div class="app-sidebar-footer">
+      <button type="button" class="app-logout-btn" onclick="studentLogout()">
+        <i class="fas fa-right-from-bracket"></i> Log out
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="app-main">
+    <header class="app-topbar">
+      <button type="button" class="app-menu-toggle" onclick="toggleAppSidebar()" aria-label="Menu">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="app-topbar-title">
+        <h1 id="appPageTitle">Dashboard</h1>
+        <p id="appPageSubtitle">Welcome back to your student portal</p>
+      </div>
+      <div class="app-topbar-actions">
+        <button type="button" class="app-theme-toggle" id="appThemeToggle" onclick="toggleAppTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <i class="fas fa-moon" id="appThemeToggleIcon"></i>
+        </button>
+        <div class="student-notification-bell" onclick="openStudentNotifications()" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span id="studentNotificationBadge" class="student-notification-badge" style="display:none;">0</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-content" id="dashboardHome">
+      <section class="dash-welcome">
+        <div class="dash-welcome-inner">
+          <div>
+            <div class="dash-welcome-badge"><i class="fas fa-sparkles"></i> Student Portal</div>
+            <h2 id="dashGreeting">Welcome back</h2>
+            <p id="dashWelcomeText">Track your homework, results, attendance and messages in one place.</p>
+          </div>
+          <div class="dash-date-chip" id="dashDateChip">Today</div>
+        </div>
+      </section>
+
+      <section class="dash-stats">
+        <div class="dash-stat-card">
+          <div class="dash-stat-icon indigo"><i class="fas fa-book"></i></div>
+          <span>Homework</span>
+          <strong id="dashHwCount">—</strong>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-icon emerald"><i class="fas fa-chart-line"></i></div>
+          <span>Results</span>
+          <strong id="dashResultsLabel">View</strong>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-icon amber"><i class="fas fa-calendar-check"></i></div>
+          <span>Attendance</span>
+          <strong id="dashAttendanceLabel">Records</strong>
+        </div>
+        <div class="dash-stat-card">
+          <div class="dash-stat-icon rose"><i class="fas fa-bell"></i></div>
+          <span>Notifications</span>
+          <strong id="dashNotifCount">0</strong>
+        </div>
+      </section>
+
+      <section class="dash-grid">
+        <div class="dash-panel">
+          <div class="dash-panel-head">
+            <h3>Quick actions</h3>
+          </div>
+          <div class="dash-quick">
+            <button type="button" class="dash-quick-btn" onclick="setActiveNavByKey('homework'); openHomework()">
+              <div class="qi" style="background:#eef2ff;color:#4f46e5;"><i class="fas fa-pen"></i></div>
+              <div><strong>Homework</strong><span>Assignments & submissions</span></div>
+            </button>
+            <button type="button" class="dash-quick-btn" onclick="setActiveNavByKey('results'); openResults()">
+              <div class="qi" style="background:#ecfdf5;color:#059669;"><i class="fas fa-trophy"></i></div>
+              <div><strong>Results</strong><span>Term performance</span></div>
+            </button>
+            <button type="button" class="dash-quick-btn" onclick="setActiveNavByKey('timetable'); openStudentTimetable()">
+              <div class="qi" style="background:#fff7ed;color:#ea580c;"><i class="fas fa-clock"></i></div>
+              <div><strong>Timetable</strong><span>Weekly schedule</span></div>
+            </button>
+            <button type="button" class="dash-quick-btn" onclick="setActiveNavByKey('messages'); openMessages()">
+              <div class="qi" style="background:#f5f3ff;color:#7c3aed;"><i class="fas fa-message"></i></div>
+              <div><strong>Messages</strong><span>Chat with teachers</span></div>
+            </button>
+            <button type="button" class="dash-quick-btn" onclick="setActiveNavByKey('attendance'); openAttendance()">
+              <div class="qi" style="background:#eff6ff;color:#2563eb;"><i class="fas fa-user-check"></i></div>
+              <div><strong>Attendance</strong><span>Daily & monthly</span></div>
+            </button>
+            <button type="button" class="dash-quick-btn" onclick="setActiveNavByKey('downloads'); openDownloads()">
+              <div class="qi" style="background:#fff1f2;color:#e11d48;"><i class="fas fa-file-pdf"></i></div>
+              <div><strong>Downloads</strong><span>Report cards</span></div>
+            </button>
+          </div>
+        </div>
+
+        <div class="dash-panel">
+          <div class="dash-panel-head">
+            <h3>At a glance</h3>
+          </div>
+          <div class="dash-activity">
+            <div class="dash-activity-item">
+              <div class="ai"><i class="fas fa-user-graduate"></i></div>
+              <div>
+                <strong id="glanceName">Your profile</strong>
+                <span id="glanceClass">Class info</span>
+              </div>
+            </div>
+            <div class="dash-activity-item">
+              <div class="ai" style="background:#ecfdf5;color:#059669;"><i class="fas fa-book-open"></i></div>
+              <div>
+                <strong>Subjects & timetable</strong>
+                <span>Open from the sidebar anytime</span>
+              </div>
+            </div>
+            <div class="dash-activity-item">
+              <div class="ai" style="background:#fff7ed;color:#ea580c;"><i class="fas fa-download"></i></div>
+              <div>
+                <strong>Term reports</strong>
+                <span>Generate PDF report cards in Downloads</span>
+              </div>
+            </div>
+            <div class="dash-activity-item">
+              <div class="ai" style="background:#fef2f2;color:#dc2626;"><i class="fas fa-bell"></i></div>
+              <div>
+                <strong>Stay updated</strong>
+                <span>Check notifications for school announcements</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
 </div>
-</div>
-
-<div class="profile">
-
-<img id="portalStudentPhoto" src="" alt="Student Photo">
-
-<h3 id="studentName"></h3>
-
-<p id="studentClass"></p>
-
-</div>
-
-</div>
-
-<div class="dashboard">
-
-<div class="card" onclick="openProfile()">
-    <i class="fas fa-user"></i>
-    <h3>Profile</h3>
-    <p>View your personal information</p>
-</div>
-
-<div class="card" onclick="openHomework()">
-    <i class="fas fa-book"></i>
-    <h3>Homework</h3>
-    <p>Assignments and class work</p>
-</div>
-
-<div class="card" onclick="openResults()">
-    <i class="fas fa-chart-line"></i>
-    <h3>Results</h3>
-    <p>Academic performance</p>
-</div>
-
-<div class="card" onclick="openAttendance()">
-    <i class="fas fa-check-circle"></i>
-    <h3>Attendance</h3>
-    <p>Attendance records</p>
-</div>
-
-<div class="card" onclick="openStudentTimetable()">
-    <i class="fas fa-calendar-alt"></i>
-    <h3>Timetable</h3>
-    <p>View your weekly class timetable</p>
-</div>
-
-<div class="card" onclick="openSubjects()">
-    <i class="fas fa-book-open"></i>
-    <h3>Subjects</h3>
-    <p>Registered subjects</p>
-</div>
-
-<div class="card" onclick="openMessages()">
-    <i class="fas fa-comments"></i>
-    <h3>Messages</h3>
-    <p>Messages from teachers</p>
-</div>
-
-<div class="card" onclick="openDownloads()">
-    <i class="fas fa-download"></i>
-    <h3>Downloads</h3>
-    <p>Report cards and files</p>
-</div>
-
-
-</div>
-</div>
-
 
 
 <!-- =========================================================
@@ -5049,7 +6437,6 @@ body.dark .portal-account-divider {
 <div id="studentTimetablePage" class="student-timetable-page" style="display:none;">
   <div class="student-timetable-container">
     <div class="student-timetable-topbar">
-      <button class="student-timetable-back-btn" onclick="closeStudentTimetable()"><i class="fas fa-arrow-left"></i><span>Back</span></button>
       <div><h2>My Timetable</h2><p id="studentTimetableSubtitle">Weekly class schedule</p></div>
       <div class="student-timetable-term"><label>Term</label><select id="studentTimetableTerm" onchange="loadStudentTimetable()"><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option></select></div>
     </div>
@@ -5073,14 +6460,6 @@ body.dark .portal-account-divider {
 
         <!-- TOP BAR -->
         <div class="notifications-topbar">
-
-            <button
-                class="notifications-back-btn"
-                onclick="goHome()"
-            >
-                <i class="fas fa-arrow-left"></i>
-                <span>Back</span>
-            </button>
 
             <div class="notifications-heading">
 
@@ -5166,11 +6545,6 @@ body.dark .portal-account-divider {
     <div class="student-homework-container">
 
         <div class="student-homework-topbar">
-            <button type="button" class="student-homework-back" onclick="closeHomework()">
-                <i class="fas fa-arrow-left"></i>
-                <span>Back</span>
-            </button>
-
             <div class="student-homework-title">
                 <div class="student-homework-title-icon">
                     <i class="fas fa-book-open"></i>
@@ -5291,11 +6665,6 @@ body.dark .portal-account-divider {
         <!-- TOP BAR -->
         <div class="results-topbar">
 
-            <button class="back-btn" onclick="goHome()">
-                <i class="fas fa-arrow-left"></i>
-                <span>Back</span>
-            </button>
-
             <div class="results-title">
                 <h2>Academic Results</h2>
                 <p>View your academic performance</p>
@@ -5329,9 +6698,7 @@ body.dark .portal-account-divider {
 
 <div id="subjectsPage" style="display:none;padding:20px;">
 
-<button onclick="goHome()">⬅ Back</button>
-
-<h2>Subjects</h2>
+<!-- subjects heading handled by modern UI -->
 
 <div id="subjectsList"></div>
 
@@ -5354,14 +6721,6 @@ body.dark .portal-account-divider {
         ================================================= -->
 
         <div class="messages-topbar">
-
-            <button
-                class="back-btn"
-                onclick="goHome()"
-            >
-                <i class="fas fa-arrow-left"></i>
-                <span>Back</span>
-            </button>
 
             <h2>
                 Messages
@@ -5528,15 +6887,6 @@ body.dark .portal-account-divider {
         <!-- HEADER -->
 
         <div class="downloads-header">
-
-            <button
-                class="download-back-btn"
-                onclick="goHome()"
-            >
-                <i class="fas fa-arrow-left"></i>
-                <span>Back</span>
-            </button>
-
 
             <div class="downloads-heading">
 
@@ -5814,42 +7164,26 @@ document.getElementById("loginForm")
         student.studentclass || "";
 
 
-    // Load student photo
-    const studentPhoto =
-        document.querySelector(".profile img");
+    // Load student photo from main system column "student-photos"
+    applyStudentPhotoToPortal(student);
+
+    // SBA logo + school logo from schools.schoolLogo
+    loadPortalBranding(student);
 
 
-    if(studentPhoto){
-
-        if(student["student-photos"]){
-
-            studentPhoto.src =
-                student["student-photos"];
-
-            studentPhoto.style.display =
-                "block";
-
-        }else{
-
-            studentPhoto.src =
-                "default-user.png";
-
-            studentPhoto.style.display =
-                "block";
-
-        }
-
-    }
-
-
-    // Show dashboard
+    // Show modern shell
     document.getElementById("loginPage")
         .style.display = "none";
 
-    document.getElementById("studentPortal")
-        .style.display = "block";
-		
-		startStudentChatRealtime();
+    const portal = document.getElementById("studentPortal");
+    if (portal) {
+        portal.style.display = "flex";
+    }
+    document.body.classList.add("app-logged-in");
+    refreshDashboardHome(student);
+    if (typeof startStudentChatRealtime === "function") {
+        startStudentChatRealtime();
+    }
 
 });
 
@@ -5890,49 +7224,14 @@ function getLoggedStudent() {
 ========================================================= */
 
 async function openStudentNotifications() {
-
-    /* Hide all existing portal pages */
-
-    document
-        .getElementById("studentPortal")
-        .style.display = "none";
-
-    const pages = [
-        "profilePage",
-        "resultsPage",
-        "subjectsPage",
-        "messagesPage",
-        "downloadsPage",
+    showStudentPage(
         "notificationsPage",
-        "studentTimetablePage",
-        "studentHomeworkPage"
-    ];
-
-    pages.forEach(id => {
-
-        const page =
-            document.getElementById(id);
-
-        if (page) {
-
-            page.style.display =
-                id === "notificationsPage"
-                    ? "block"
-                    : "none";
-        }
-
-    });
-
-
-    /* Load notifications */
-
+        "Notifications",
+        "Messages and announcements from your school"
+    );
+    setActiveNavByKey("notifications");
     await loadStudentNotifications();
 }
-
-
-/* =========================================================
-   LOAD NOTIFICATIONS
-========================================================= */
 
 async function loadStudentNotifications() {
 
@@ -6273,11 +7572,9 @@ function renderStudentNotifications() {
                         student-notification-card
                         ${read ? "" : "unread"}
                     "
-                    onclick="
-                        openStudentNotification(
-                            '${notification.id}'
-                        )
-                    "
+                    data-notice-id="${String(notification.id ?? "").replace(/"/g, "")}"
+                    role="button"
+                    tabindex="0"
                 >
 
                     <div class="notification-card-icon">
@@ -6373,67 +7670,132 @@ function renderStudentNotifications() {
    OPEN ONE NOTIFICATION
 ========================================================= */
 
-async function openStudentNotification(
-    notificationId
-) {
 
-    const notification =
-        studentNotifications.find(
-            n =>
-                String(n.id) ===
-                String(notificationId)
-        );
+async function openStudentNotification(notificationId) {
+    const id = String(notificationId ?? "").trim();
+    if (!id) {
+        console.warn("openStudentNotification: empty id");
+        return;
+    }
 
-
-    if (!notification) return;
-
-
-    await markStudentNotificationRead(
-        notification
+    const notification = studentNotifications.find(
+        n => String(n.id) === id
     );
 
+    if (!notification) {
+        console.warn("Notice not found for id:", id, studentNotifications);
+        return;
+    }
 
-    /*
-     * Refresh badge.
-     */
+    showStudentNoticeModal(notification);
+
+    try {
+        await markStudentNotificationRead(notification);
+    } catch (err) {
+        console.error("Mark notice read failed:", err);
+    }
+
+    const statusEl = document.getElementById("studentNoticeModalReadStatus");
+    if (statusEl) statusEl.textContent = "Marked as read";
 
     updateStudentNotificationBadge();
-
-
-    /*
-     * Refresh current view.
-     */
-
     renderStudentNotifications();
-
 }
+
+function showStudentNoticeModal(notification) {
+    const modal = document.getElementById("studentNoticeModal");
+    if (!modal) {
+        console.error("studentNoticeModal missing from DOM");
+        return;
+    }
+
+    const title = document.getElementById("studentNoticeModalTitle");
+    const message = document.getElementById("studentNoticeModalMessage");
+    const meta = document.getElementById("studentNoticeModalMeta");
+    const priorityEl = document.getElementById("studentNoticeModalPriority");
+    const statusEl = document.getElementById("studentNoticeModalReadStatus");
+
+    const priority = String(notification.priority || "normal").toLowerCase();
+    const sender =
+        notification.sender_name ||
+        (String(notification.sender_role || "").toLowerCase() === "admin"
+            ? "School Administration"
+            : "Class Teacher");
+    const when = formatNotificationDate(
+        notification.created_at || notification.date
+    );
+
+    if (title) title.textContent = notification.title || "School Notification";
+    if (message) message.textContent = notification.message || "";
+    if (meta) meta.textContent = [sender, when].filter(Boolean).join(" · ");
+    if (priorityEl) {
+        priorityEl.className = "notification-priority " + priority;
+        priorityEl.textContent = priority;
+    }
+    if (statusEl) {
+        statusEl.textContent = isNotificationRead(notification)
+            ? "Already read"
+            : "Marking as read…";
+    }
+
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+}
+
+function closeStudentNoticeModal() {
+    const modal = document.getElementById("studentNoticeModal");
+    if (!modal) return;
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+}
+
+/* Click / keyboard open for notice cards (event delegation) */
+document.addEventListener("click", function (e) {
+    const card = e.target.closest && e.target.closest(".student-notification-card[data-notice-id]");
+    if (!card) return;
+    const id = card.getAttribute("data-notice-id");
+    if (id) openStudentNotification(id);
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeStudentNoticeModal();
+    if (e.key === "Enter" || e.key === " ") {
+        const card = e.target.closest && e.target.closest(".student-notification-card[data-notice-id]");
+        if (card) {
+            e.preventDefault();
+            const id = card.getAttribute("data-notice-id");
+            if (id) openStudentNotification(id);
+        }
+    }
+});
 
 
 /* =========================================================
    CHECK IF READ
 ========================================================= */
 
-function isNotificationRead(
-    notification
-) {
+function getStudentNoticeKeys(student) {
+    if (!student) return [];
+    return [student.studentid, student.studentId, student.id]
+        .filter(v => v !== undefined && v !== null && String(v).trim() !== "")
+        .map(v => String(v));
+}
 
-    const student =
-        getLoggedStudent();
+function isNotificationRead(notification) {
+    const student = getLoggedStudent();
+    if (!student || !notification) return false;
 
-    if (!student) return false;
+    let readBy = notification.read_by;
+    if (typeof readBy === "string") {
+        try { readBy = JSON.parse(readBy); } catch (e) { readBy = []; }
+    }
+    if (!Array.isArray(readBy)) readBy = [];
+    readBy = readBy.map(String);
 
-
-    const readBy =
-        Array.isArray(
-            notification.read_by
-        )
-            ? notification.read_by
-            : [];
-
-
-    return readBy.includes(
-        student.studentid
-    );
+    const keys = getStudentNoticeKeys(student);
+    return keys.some(k => readBy.includes(k));
 }
 
 
@@ -6441,80 +7803,49 @@ function isNotificationRead(
    MARK READ
 ========================================================= */
 
-async function markStudentNotificationRead(
-    notification
-) {
+async function markStudentNotificationRead(notification) {
+    const student = getLoggedStudent();
+    if (!student || !notification) return;
 
-    const student =
-        getLoggedStudent();
+    let readBy = notification.read_by;
+    if (typeof readBy === "string") {
+        try { readBy = JSON.parse(readBy); } catch (e) { readBy = []; }
+    }
+    if (!Array.isArray(readBy)) readBy = [];
+    readBy = [...readBy].map(String);
 
-    if (!student) return;
+    const keys = getStudentNoticeKeys(student);
+    const primaryKey = keys[0];
+    if (!primaryKey) return;
 
-
-    const readBy =
-        Array.isArray(
-            notification.read_by
-        )
-            ? [...notification.read_by]
-            : [];
-
-
-    if (
-        readBy.includes(
-            student.studentid
-        )
-    ) {
-
+    if (keys.some(k => readBy.includes(k))) {
         return;
     }
 
+    readBy.push(primaryKey);
 
-    readBy.push(
-        student.studentid
-    );
-
-
-    const {
-        data,
-        error
-    } = await supabaseClient
-
+    const { data, error } = await supabaseClient
         .from("notices")
-
-        .update({
-            read_by: readBy
-        })
-
-        .eq(
-            "id",
-            notification.id
-        )
-
+        .update({ read_by: readBy })
+        .eq("id", notification.id)
         .select()
         .single();
 
-
     if (error) {
-
-        console.error(
-            "Unable to mark notification read:",
-            error
-        );
-
+        console.error("Unable to mark notification read:", error);
+        // Still update local state so UI feels responsive
+        notification.read_by = readBy;
         return;
     }
 
+    notification.read_by = data?.read_by || readBy;
 
-    /*
-     * Update local copy.
-     */
-
-    notification.read_by =
-        data?.read_by ||
-        readBy;
-
+    // Keep array in sync
+    const idx = studentNotifications.findIndex(n => String(n.id) === String(notification.id));
+    if (idx >= 0) {
+        studentNotifications[idx].read_by = notification.read_by;
+    }
 }
-
 
 /* =========================================================
    NOTIFICATION BADGE
@@ -6539,26 +7870,28 @@ async function updateStudentNotificationBadge() {
         ).length;
 
 
+    const sideBadge = document.getElementById("sidebarNotificationBadge");
+    const dashNotif = document.getElementById("dashNotifCount");
+
     if (unreadCount <= 0) {
-
-        badge.style.display =
-            "none";
-
+        badge.style.display = "none";
         badge.textContent = "0";
-
+        if (sideBadge) {
+            sideBadge.style.display = "none";
+            sideBadge.textContent = "0";
+        }
+        if (dashNotif) dashNotif.textContent = "0";
         return;
     }
 
-
-    badge.style.display =
-        "flex";
-
-
-    badge.textContent =
-        unreadCount > 99
-            ? "99+"
-            : unreadCount;
-
+    const label = unreadCount > 99 ? "99+" : String(unreadCount);
+    badge.style.display = "flex";
+    badge.textContent = label;
+    if (sideBadge) {
+        sideBadge.style.display = "flex";
+        sideBadge.textContent = label;
+    }
+    if (dashNotif) dashNotif.textContent = label;
 }
 
 
@@ -6692,11 +8025,12 @@ async function openProfile() {
         document.getElementById("profilePage");
 
     if (studentPortal) {
-        studentPortal.style.display = "none";
-    }
-
-    if (profilePage) {
-        profilePage.style.display = "block";
+        showStudentPage(
+            "profilePage",
+            "Profile",
+            "Your personal and school information"
+        );
+        setActiveNavByKey("profile");
     }
 
     try {
@@ -6827,9 +8161,7 @@ async function openProfile() {
         // =================================================
 
         const studentPhoto =
-            data["student-photos"] ||
-            data.photo ||
-            "default-user.png";
+            getStudentPhotoUrl(data);
 
 
         // =================================================
@@ -7003,7 +8335,7 @@ async function openProfile() {
                                 src="${studentPhoto}"
                                 class="portal-profile-photo"
                                 onerror="
-                                    this.src='default-user.png';
+                                    this.src=getDefaultStudentAvatar();
                                 "
                                 alt="Student Photo">
 
@@ -7606,34 +8938,7 @@ async function openProfile() {
                          FOOTER
                     =================================== -->
 
-                    <div
-                        class="portal-profile-footer"
-                    >
-
-                        <button
-                            type="button"
-                            class="portal-back-button"
-                            onclick="
-                                document.getElementById(
-                                    'profilePage'
-                                ).style.display = 'none';
-
-                                document.getElementById(
-                                    'studentPortal'
-                                ).style.display = 'block';
-                            "
-                        >
-
-                            <i
-                                class="fas fa-arrow-left"
-                            ></i>
-
-                            Back to Portal
-
-                        </button>
-
-                    </div>
-
+                    <!-- sidebar nav -->
 
                 </div>
 
@@ -7788,23 +9093,12 @@ function openHomework() {
     const portal = document.getElementById("studentPortal");
     const page = document.getElementById("studentHomeworkPage");
 
-    if (portal) portal.style.display = "none";
-
-    // Hide all student pages so Homework opens cleanly.
-    [
-        "profilePage",
-        "resultsPage",
-        "subjectsPage",
-        "messagesPage",
-        "downloadsPage",
-        "notificationsPage",
-        "studentTimetablePage"
-    ].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = "none";
-    });
-
-    if (page) page.style.display = "block";
+    showStudentPage(
+        "studentHomeworkPage",
+        "Homework",
+        "Assignments and class work"
+    );
+    setActiveNavByKey("homework");
 
     // Ensure session is available for homework load
     const student = (typeof getPortalStudent === "function")
@@ -8626,17 +9920,19 @@ async function submitStudentHomework() {
 
 function closeHomework() {
     const page = document.getElementById("studentHomeworkPage");
-    const portal = document.getElementById("studentPortal");
-
     if (page) page.style.display = "none";
-    if (portal) portal.style.display = "block";
+    goHome();
 }
 
 
 async function openResults(){
 
-    document.getElementById("studentPortal").style.display="none";
-    document.getElementById("resultsPage").style.display="block";
+    showStudentPage(
+        "resultsPage",
+        "Results",
+        "Academic performance by term"
+    );
+    setActiveNavByKey("results");
 
     const loggedStudent =
     JSON.parse(localStorage.getItem("loggedStudent"));
@@ -9001,14 +10297,12 @@ async function openMessages() {
     }
 
 
-    document
-        .getElementById("studentPortal")
-        .style.display = "none";
-
-
-    document
-        .getElementById("messagesPage")
-        .style.display = "block";
+    showStudentPage(
+        "messagesPage",
+        "Messages",
+        "Chat with teachers and classmates"
+    );
+    setActiveNavByKey("messages");
 
 
     selectedStudentChatUser = null;
@@ -10487,37 +11781,20 @@ let selectedAttendanceMonth = "";
 
 async function openAttendance() {
 
-    const portal =
-        document.getElementById("studentPortal");
-
-    if (portal) {
-        portal.style.display = "none";
+    // Ensure attendance page exists before switching
+    let attendancePage = document.getElementById("attendancePage");
+    if (!attendancePage) {
+        attendancePage = document.createElement("div");
+        attendancePage.id = "attendancePage";
+        document.body.appendChild(attendancePage);
     }
 
-
-    // --------------------------------------------------------
-    // Hide other student portal pages
-    // --------------------------------------------------------
-
-    [
-        "profilePage",
-        "resultsPage",
-        "subjectsPage",
-        "messagesPage",
-        "downloadsPage",
-        "notificationsPage",
-        "studentHomeworkPage"
-    ].forEach(id => {
-
-        const page =
-            document.getElementById(id);
-
-        if (page) {
-            page.style.display = "none";
-        }
-
-    });
-
+    showStudentPage(
+        "attendancePage",
+        "Attendance",
+        "Daily, weekly and monthly records"
+    );
+    setActiveNavByKey("attendance");
 
     // --------------------------------------------------------
     // Get logged-in student
@@ -10686,33 +11963,22 @@ async function openAttendance() {
 
 
     // --------------------------------------------------------
-    // Create / get attendance page
+    // Attendance page element (already ensured above)
     // --------------------------------------------------------
 
-    let attendancePage =
-        document.getElementById(
-            "attendancePage"
-        );
-
+    attendancePage =
+        document.getElementById("attendancePage");
 
     if (!attendancePage) {
-
-        attendancePage =
-            document.createElement("div");
-
-        attendancePage.id =
-            "attendancePage";
-
-        document.body.appendChild(
-            attendancePage
+        attendancePage = document.createElement("div");
+        attendancePage.id = "attendancePage";
+        document.body.appendChild(attendancePage);
+        showStudentPage(
+            "attendancePage",
+            "Attendance",
+            "Daily, weekly and monthly records"
         );
-
     }
-
-
-    attendancePage.style.display =
-        "block";
-
 
     // --------------------------------------------------------
     // Current week / month
@@ -10748,22 +12014,7 @@ async function openAttendance() {
 
                 <div class="student-attendance-header">
 
-                    <button
-                        type="button"
-                        class="student-attendance-back"
-                        onclick="
-                            document.getElementById(
-                                'attendancePage'
-                            ).style.display = 'none';
-
-                            document.getElementById(
-                                'studentPortal'
-                            ).style.display = 'block';
-                        "
-                    >
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Portal
-                    </button>
+                    
 
 
                     <div class="student-attendance-title">
@@ -10846,22 +12097,7 @@ async function openAttendance() {
 
                     <div class="student-attendance-container">
 
-                        <button
-                            type="button"
-                            class="student-attendance-back"
-                            onclick="
-                                document.getElementById(
-                                    'attendancePage'
-                                ).style.display = 'none';
-
-                                document.getElementById(
-                                    'studentPortal'
-                                ).style.display = 'block';
-                            "
-                        >
-                            <i class="fas fa-arrow-left"></i>
-                            Back to Portal
-                        </button>
+                        
 
 
                         <div class="student-attendance-error">
@@ -10928,22 +12164,7 @@ async function openAttendance() {
 
                 <div class="student-attendance-container">
 
-                    <button
-                        type="button"
-                        class="student-attendance-back"
-                        onclick="
-                            document.getElementById(
-                                'attendancePage'
-                            ).style.display = 'none';
-
-                            document.getElementById(
-                                'studentPortal'
-                            ).style.display = 'block';
-                        "
-                    >
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Portal
-                    </button>
+                    
 
 
                     <div class="student-attendance-error">
@@ -11159,25 +12380,7 @@ function renderStudentAttendanceDashboard(
 
                 <div class="student-attendance-header">
 
-                    <button
-                        type="button"
-                        class="student-attendance-back"
-                        onclick="
-                            document.getElementById(
-                                'attendancePage'
-                            ).style.display = 'none';
-
-                            document.getElementById(
-                                'studentPortal'
-                            ).style.display = 'block';
-                        "
-                    >
-
-                        <i class="fas fa-arrow-left"></i>
-
-                        Back to Portal
-
-                    </button>
+                    
 
 
                     <div class="student-attendance-title">
@@ -11688,25 +12891,7 @@ function renderStudentAttendanceDashboard(
 
                 <div class="student-attendance-footer">
 
-                    <button
-                        type="button"
-                        class="student-attendance-back-main"
-                        onclick="
-                            document.getElementById(
-                                'attendancePage'
-                            ).style.display = 'none';
-
-                            document.getElementById(
-                                'studentPortal'
-                            ).style.display = 'block';
-                        "
-                    >
-
-                        <i class="fas fa-arrow-left"></i>
-
-                        Back to Student Portal
-
-                    </button>
+                    
 
                 </div>
 
@@ -13118,13 +14303,12 @@ async function openSubjects() {
        SHOW SUBJECTS PAGE
     ========================================================= */
 
-    if (studentPortal) {
-        studentPortal.style.display = "none";
-    }
-
-    if (subjectsPage) {
-        subjectsPage.style.display = "block";
-    }
+    showStudentPage(
+        "subjectsPage",
+        "Subjects",
+        "Registered subjects for your class"
+    );
+    setActiveNavByKey("subjects");
 
     if (!subjectsList) {
         console.error("subjectsList element not found.");
@@ -13918,14 +15102,17 @@ function getLoggedStudentForTimetable(){try{return JSON.parse(localStorage.getIt
 function studentTimetableTime(a,b){return `${a?a.slice(0,5):""}${a||b?" – ":""}${b?b.slice(0,5):""}`;}
 function showStudentTimetableStatus(msg,error=false){const b=document.getElementById("studentTimetableStatus");if(!b)return;b.textContent=msg;b.className="student-timetable-status "+(error?"error":"info");}
 async function openStudentTimetable(){
-  document.getElementById("studentPortal").style.display="none";
-  ["profilePage","studentHomeworkPage","resultsPage","subjectsPage","messagesPage","downloadsPage","notificationsPage"].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display="none";});
-  const p=document.getElementById("studentTimetablePage");if(p)p.style.display="block";
+  showStudentPage(
+    "studentTimetablePage",
+    "Timetable",
+    "Your weekly class schedule"
+  );
+  setActiveNavByKey("timetable");
   const s=getLoggedStudentForTimetable();if(!s)return showStudentTimetableStatus("Student session not found. Please log in again.",true);
   document.getElementById("studentTimetableTerm").value=s.currentTerm||"term1";
   await loadStudentTimetable();
 }
-function closeStudentTimetable(){const p=document.getElementById("studentTimetablePage");if(p)p.style.display="none";document.getElementById("studentPortal").style.display="block";}
+function closeStudentTimetable(){const p=document.getElementById("studentTimetablePage");if(p)p.style.display="none";goHome();}
 async function loadStudentTimetable(){
   const s = getLoggedStudentForTimetable();
   if (!s) return;
@@ -14055,50 +15242,411 @@ async function openFees(){
 }
 
 
-function goHome() {
-
-    const pages = [
-        "profilePage",
-        "resultsPage",
-        "subjectsPage",
-        "messagesPage",
-        "downloadsPage",
-        "notificationsPage"
-    ];
 
 
-    pages.forEach(id => {
+/* ============================================================
+   THEME (DARK MODE)
+============================================================ */
 
-        const page =
-            document.getElementById(id);
+/* ============================================================
+   STUDENT PHOTO + BRANDING (from main SBA system)
+   - students."student-photos"  → public URL from storage bucket student-photos
+   - schools.schoolLogo         → public URL from storage bucket school-logos
+   - /nabeng-sba-logo.png       → app logo (same as main system)
+============================================================ */
 
-        if (page) {
-
-            page.style.display =
-                "none";
-        }
-
-    });
-
-
-    document.getElementById(
-        "studentPortal"
-    ).style.display = "block";
-
+function getDefaultStudentAvatar() {
+    // Inline SVG avatar so it works even if default-user.png is missing
+    return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ccircle cx='40' cy='30' r='14' fill='%2394a3b8'/%3E%3Cpath d='M12 70c4-16 18-24 28-24s24 8 28 24' fill='%2394a3b8'/%3E%3C/svg%3E";
 }
 
+function getStudentPhotoUrl(student) {
+    if (!student || typeof student !== "object") {
+        return getDefaultStudentAvatar();
+    }
+
+    const raw =
+        student["student-photos"] ||
+        student.student_photos ||
+        student.photo ||
+        student.studentPhoto ||
+        student.studentphoto ||
+        "";
+
+    const url = String(raw || "").trim();
+
+    if (!url || url === "null" || url === "undefined") {
+        return getDefaultStudentAvatar();
+    }
+
+    return url;
+}
+
+function applyStudentPhotoToPortal(student) {
+    const img = document.getElementById("portalStudentPhoto");
+    if (!img) return;
+
+    const url = getStudentPhotoUrl(student);
+    img.onerror = function () {
+        this.onerror = null;
+        this.src = getDefaultStudentAvatar();
+    };
+    img.src = url;
+    img.style.display = "block";
+}
+
+function bindSbaLogoImage(img) {
+    if (!img || img.dataset.logoBound === "1") return;
+    img.dataset.logoBound = "1";
+
+    const candidates = [
+        "/nabeng-sba-logo.png",
+        "nabeng-sba-logo.png",
+        "./nabeng-sba-logo.png",
+        "assets/nabeng-sba-logo.png",
+        "/assets/nabeng-sba-logo.png"
+    ];
+
+    img.dataset.logoStep = "0";
+    img.style.display = "block";
+
+    img.onerror = function () {
+        const step = Number(this.dataset.logoStep || "0") + 1;
+        this.dataset.logoStep = String(step);
+        if (step < candidates.length) {
+            this.src = candidates[step];
+            return;
+        }
+        // All paths failed — show graduation-cap fallback
+        this.style.display = "none";
+        const fallback = document.getElementById("sidebarBrandFallbackIcon");
+        if (fallback) fallback.style.display = "block";
+        const loginParent = this.closest && this.closest(".logo");
+        if (loginParent) loginParent.classList.add("logo-fallback");
+    };
+
+    img.onload = function () {
+        this.style.display = "block";
+        const fallback = document.getElementById("sidebarBrandFallbackIcon");
+        if (fallback) fallback.style.display = "none";
+        const loginParent = this.closest && this.closest(".logo");
+        if (loginParent) loginParent.classList.remove("logo-fallback");
+    };
+
+    img.src = candidates[0];
+}
+
+async function loadPortalBranding(student) {
+    // Brand icon = Nabeng SBA app logo (same as main system)
+    bindSbaLogoImage(document.getElementById("sidebarSbaLogo"));
+    bindSbaLogoImage(document.getElementById("loginSbaLogo"));
+
+    if (!student) return;
+
+    const schoolId =
+        student.schoolid ||
+        student.schoolID ||
+        student.schoolId ||
+        "";
+
+    if (!schoolId || typeof supabaseClient === "undefined") {
+        return;
+    }
+
+    try {
+        const { data: school, error } = await supabaseClient
+            .from("schools")
+            .select("schoolname, schoolLogo")
+            .eq("schoolid", schoolId)
+            .maybeSingle();
+
+        if (error) {
+            console.warn("School branding load:", error);
+            return;
+        }
+
+        if (!school) return;
+
+        const schoolName = school.schoolname || "";
+        const schoolLogo = (school.schoolLogo || "").trim();
+
+        const row = document.getElementById("sidebarSchoolRow");
+        const nameEl = document.getElementById("sidebarSchoolName");
+        const logoEl = document.getElementById("sidebarSchoolLogo");
+        const subtitle = document.getElementById("sidebarBrandSubtitle");
+
+        if (nameEl && schoolName) {
+            nameEl.textContent = schoolName;
+        }
+
+        // School logo only in the school row — not in the Nabeng SBA brand icon
+        if (logoEl && schoolLogo) {
+            logoEl.style.display = "block";
+            logoEl.onerror = function () {
+                this.style.display = "none";
+            };
+            logoEl.src = schoolLogo;
+        }
+
+        if (row && (schoolName || schoolLogo)) {
+            row.style.display = "flex";
+        }
+
+        if (subtitle && schoolName) {
+            subtitle.textContent = schoolName;
+        }
+
+    } catch (err) {
+        console.warn("loadPortalBranding:", err);
+    }
+}
+
+
+function getPreferredTheme() {
+    try {
+        const saved = localStorage.getItem("studentPortalTheme");
+        if (saved === "dark" || saved === "light") return saved;
+    } catch (e) {}
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        return "dark";
+    }
+    return "light";
+}
+
+function applyAppTheme(theme) {
+    const isDark = theme === "dark";
+    document.body.classList.toggle("dark-mode", isDark);
+    document.body.classList.toggle("dark", isDark);
+
+    try {
+        localStorage.setItem("studentPortalTheme", isDark ? "dark" : "light");
+    } catch (e) {}
+
+    const icon = document.getElementById("appThemeToggleIcon");
+    if (icon) {
+        icon.className = isDark ? "fas fa-sun" : "fas fa-moon";
+    }
+
+    const loginIcon = document.getElementById("loginThemeToggleIcon");
+    if (loginIcon) {
+        loginIcon.className = isDark ? "fas fa-sun" : "fas fa-moon";
+    }
+
+    const loginLabel = document.getElementById("loginThemeToggleLabel");
+    if (loginLabel) {
+        loginLabel.textContent = isDark ? "Light mode" : "Dark mode";
+    }
+
+    const toggleBtn = document.getElementById("appThemeToggle");
+    if (toggleBtn) {
+        toggleBtn.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+    }
+}
+
+function toggleAppTheme() {
+    const next = document.body.classList.contains("dark-mode") ? "light" : "dark";
+    applyAppTheme(next);
+}
+
+function initAppTheme() {
+    applyAppTheme(getPreferredTheme());
+}
+
+// Apply as early as possible to reduce flash
+initAppTheme();
+
+
+function showAppShell() {
+    const portal = document.getElementById("studentPortal");
+    if (portal) portal.style.display = "flex";
+    document.body.classList.add("app-logged-in");
+    const sb = document.getElementById("appSidebar");
+    if (sb) sb.style.display = "flex";
+}
+
+function setAppPageHeader(title, subtitle) {
+    const t = document.getElementById("appPageTitle");
+    const s = document.getElementById("appPageSubtitle");
+    if (t && title) t.textContent = title;
+    if (s && subtitle !== undefined) s.textContent = subtitle;
+}
+
+const STUDENT_FEATURE_PAGES = [
+    "profilePage",
+    "resultsPage",
+    "subjectsPage",
+    "messagesPage",
+    "downloadsPage",
+    "notificationsPage",
+    "studentTimetablePage",
+    "studentHomeworkPage",
+    "attendancePage"
+];
+
+function hideAllStudentFeaturePages() {
+    STUDENT_FEATURE_PAGES.forEach(id => {
+        const page = document.getElementById(id);
+        if (page) {
+            page.style.display = "none";
+            page.setAttribute("aria-hidden", "true");
+        }
+    });
+}
+
+/**
+ * Central page switcher — only one feature page (or dashboard) visible.
+ * Keeps sidebar + topbar mounted.
+ */
+function showStudentPage(pageId, title, subtitle) {
+    showAppShell();
+
+    const main = document.querySelector("#studentPortal .app-main");
+    if (main) main.style.display = "flex";
+
+    // Always clear every feature page first
+    hideAllStudentFeaturePages();
+
+    const home = document.getElementById("dashboardHome");
+
+    if (!pageId || pageId === "dashboard" || pageId === "home") {
+        if (home) home.style.display = "block";
+        setAppPageHeader(
+            title || "Dashboard",
+            subtitle !== undefined ? subtitle : "Overview of your academic portal"
+        );
+        closeAppSidebar();
+        return;
+    }
+
+    if (home) home.style.display = "none";
+
+    const page = document.getElementById(pageId);
+    if (page) {
+        page.style.display = "block";
+        page.setAttribute("aria-hidden", "false");
+        // Scroll page content to top
+        try { page.scrollTop = 0; } catch (e) {}
+        window.scrollTo(0, 0);
+    } else {
+        console.warn("showStudentPage: missing page", pageId);
+    }
+
+    if (title) setAppPageHeader(title, subtitle || "");
+    closeAppSidebar();
+}
+
+function hideDashboardMainOnly() {
+    /* Back-compat: hide dashboard home, keep shell/topbar */
+    showAppShell();
+    const main = document.querySelector("#studentPortal .app-main");
+    if (main) main.style.display = "flex";
+    const home = document.getElementById("dashboardHome");
+    if (home) home.style.display = "none";
+    hideAllStudentFeaturePages();
+    closeAppSidebar();
+}
+
+function showDashboardMain() {
+    showStudentPage("dashboard");
+}
+
+function setActiveNav(btn) {
+    document.querySelectorAll(".app-nav-item").forEach(el => el.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+    closeAppSidebar();
+}
+
+function setActiveNavByKey(key) {
+    const btn = document.querySelector(`.app-nav-item[data-nav="${key}"]`);
+    setActiveNav(btn);
+}
+
+function toggleAppSidebar() {
+    document.body.classList.toggle("sidebar-open");
+}
+
+function closeAppSidebar() {
+    document.body.classList.remove("sidebar-open");
+}
+
+function studentLogout() {
+    try {
+        localStorage.removeItem("loggedStudent");
+    } catch (e) {}
+    currentStudent = null;
+    document.body.classList.remove("app-logged-in", "sidebar-open");
+    const portal = document.getElementById("studentPortal");
+    if (portal) portal.style.display = "none";
+    if (typeof hideAllStudentFeaturePages === "function") {
+        hideAllStudentFeaturePages();
+    }
+    const login = document.getElementById("loginPage");
+    if (login) login.style.display = "flex";
+}
+
+function refreshDashboardHome(student) {
+    if (!student) {
+        try {
+            student = JSON.parse(localStorage.getItem("loggedStudent") || "null");
+        } catch (e) { student = null; }
+    }
+    if (!student) return;
+
+    applyStudentPhotoToPortal(student);
+
+    const name = student.name || "Student";
+    const cls = student.studentclass || student.studentClass || "";
+    const first = String(name).split(" ")[0];
+
+    const greet = document.getElementById("dashGreeting");
+    if (greet) greet.textContent = `Welcome back, ${first}`;
+
+    const welcome = document.getElementById("dashWelcomeText");
+    if (welcome) {
+        welcome.textContent = cls
+            ? `You are logged in as ${name} · ${cls}. Use the sidebar to open any section.`
+            : `You are logged in as ${name}. Use the sidebar to open any section.`;
+    }
+
+    const glanceName = document.getElementById("glanceName");
+    if (glanceName) glanceName.textContent = name;
+    const glanceClass = document.getElementById("glanceClass");
+    if (glanceClass) glanceClass.textContent = cls ? `Class ${cls}` : "Class not set";
+
+    const chip = document.getElementById("dashDateChip");
+    if (chip) {
+        chip.textContent = new Date().toLocaleDateString([], {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+    }
+
+    const title = document.getElementById("appPageTitle");
+    if (title) title.textContent = "Dashboard";
+    const sub = document.getElementById("appPageSubtitle");
+    if (sub) sub.textContent = "Overview of your academic portal";
+}
+
+function goHome() {
+    showStudentPage("dashboard");
+    document.querySelectorAll(".app-nav-item").forEach(el => el.classList.remove("active"));
+    const homeBtn = document.querySelector('.app-nav-item[data-nav="home"]');
+    if (homeBtn) homeBtn.classList.add("active");
+    refreshDashboardHome();
+}
+
+
 async function openDownloads(){
-
-    document.getElementById("studentPortal")
-        .style.display = "none";
-
-    document.getElementById("downloadsPage")
-        .style.display = "block";
-
-
-    document.getElementById("downloadStatus")
-        .innerHTML = "";
-
+    showStudentPage(
+        "downloadsPage",
+        "Downloads",
+        "Report cards and files"
+    );
+    setActiveNavByKey("downloads");
+    const status = document.getElementById("downloadStatus");
+    if (status) status.innerHTML = "";
 }
 
 /* ============================================================
@@ -14112,28 +15660,14 @@ async function openDownloads(){
    ============================================================ */
 
 async function openDownloads() {
-
-    const portal =
-        document.getElementById("studentPortal");
-
-    const downloads =
-        document.getElementById("downloadsPage");
-
-    if (portal) {
-        portal.style.display = "none";
-    }
-
-    if (downloads) {
-        downloads.style.display = "block";
-    }
-
-    const status =
-        document.getElementById("downloadStatus");
-
-    if (status) {
-        status.innerHTML = "";
-    }
-
+    showStudentPage(
+        "downloadsPage",
+        "Downloads",
+        "Report cards and files"
+    );
+    setActiveNavByKey("downloads");
+    const status = document.getElementById("downloadStatus");
+    if (status) status.innerHTML = "";
 }
 
 
@@ -14146,16 +15680,11 @@ function closeDownloads() {
     const downloads =
         document.getElementById("downloadsPage");
 
-    const portal =
-        document.getElementById("studentPortal");
-
     if (downloads) {
         downloads.style.display = "none";
     }
 
-    if (portal) {
-        portal.style.display = "block";
-    }
+    goHome();
 
 }
 
@@ -15903,6 +17432,29 @@ async function generateStudentTermReport(term) {
 
 </script>
 
+
+
+<div id="studentNoticeModal" class="student-notice-modal" aria-hidden="true" onclick="if(event.target===this)closeStudentNoticeModal()">
+  <div class="student-notice-dialog" role="dialog" aria-modal="true">
+    <div class="student-notice-modal-header">
+      <div>
+        <span id="studentNoticeModalPriority" class="notification-priority normal">normal</span>
+        <h2 id="studentNoticeModalTitle">Notice</h2>
+        <p id="studentNoticeModalMeta"></p>
+      </div>
+      <button type="button" class="student-notice-modal-close" onclick="closeStudentNoticeModal()" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="student-notice-modal-body">
+      <p id="studentNoticeModalMessage"></p>
+    </div>
+    <div class="student-notice-modal-footer">
+      <span id="studentNoticeModalReadStatus"></span>
+      <button type="button" class="student-notice-modal-done" onclick="closeStudentNoticeModal()">Done</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
