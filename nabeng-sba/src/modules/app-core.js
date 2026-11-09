@@ -9371,7 +9371,7 @@ if(downloadArea){
 }
 
 // AUTO LOGIN AFTER REFRESH
-window.onload = async function () {
+async function __nabengWindowOnLoad () {
 
 
     let savedUser = JSON.parse(
@@ -9525,14 +9525,14 @@ window.onload = async function () {
 
     }
 
+}
+
 /* ============================================================
    SHOW DEVELOPER FEEDBACK AFTER EVERY PAGE REFRESH
 ============================================================ */
 
-window.addEventListener("load", () => {
-
+function __nabengShowFeedbackAfterLoad() {
     setTimeout(() => {
-
         const loggedInUser =
             localStorage.getItem("loggedInUser");
 
@@ -9543,24 +9543,27 @@ window.addEventListener("load", () => {
         const app =
             document.getElementById("app");
 
-        /*
-         * Only show it when the main application
-         * is actually visible.
-         */
-
         if (
             app &&
             app.style.display !== "none"
         ) {
-
             showDeveloperFeedback();
-
         }
-
     }, 800);
+}
 
-});
-};
+// Safe boot for Vite late-loaded classic script (DOM may already be ready)
+(function __nabengBoot() {
+    const run = () => {
+        __nabengWindowOnLoad();
+        __nabengShowFeedbackAfterLoad();
+    };
+    if (document.readyState === "complete") {
+        run();
+    } else {
+        window.addEventListener("load", run);
+    }
+})();
 
 async function refreshCurrentUser() {
 
@@ -16899,14 +16902,14 @@ function initializeFeesPage() {
    FEE PAGE INITIALIZATION
 --------------------------------------------------------- */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-
-        initializeFeesPage();
-
+(function () {
+    function run() { initializeFeesPage(); }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", run);
+    } else {
+        run();
     }
-);
+})();
 
 
 
@@ -18947,14 +18950,14 @@ function initializeNoticesPage() {
    PAGE LOAD
 --------------------------------------------------------- */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-
-        initializeNoticesPage();
-
+(function () {
+    function run() { initializeNoticesPage(); }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", run);
+    } else {
+        run();
     }
-);
+})();
 
 
 
