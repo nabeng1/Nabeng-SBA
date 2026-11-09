@@ -1,0 +1,22669 @@
+/**
+ * Nabeng-SBA application core (legacy global script)
+ * Loaded after runtime.js installs window.supabaseClient and state.
+ * Kept as a classic script (not an ES module) so existing function/global style keeps working.
+ */
+
+function applySidebarAvatar(user) {
+    const u = user || (typeof currentUser !== "undefined" ? currentUser : null);
+    const photo = document.getElementById("sidebarUserPhoto");
+    const fallback = document.getElementById("sidebarUserAvatar");
+    if (!photo && !fallback) return;
+
+    const url = (u && (u.profilePic || u.profile_pic || u.photo || u.avatar)) || "";
+
+    if (url && photo) {
+        photo.src = url;
+        photo.style.display = "block";
+        photo.onerror = function () {
+            photo.style.display = "none";
+            if (fallback) fallback.style.display = "grid";
+        };
+        if (fallback) fallback.style.display = "none";
+    } else {
+        if (photo) {
+            photo.removeAttribute("src");
+            photo.style.display = "none";
+        }
+        if (fallback) fallback.style.display = "grid";
+    }
+
+    // Keep name in sync if provided
+    const sideName = document.getElementById("sidebarUserName");
+    if (sideName && u) {
+        const name = [u.firstname, u.surname].filter(Boolean).join(" ").trim()
+            || u.name
+            || u.username
+            || "User";
+        sideName.textContent = name;
+    }
+}
+
+
+let selectedMediaFile = null;
+let filteredStudents = [];
+let gradeChartInstance = null;
+let topChartInstance = null;
+let subjectChartInstance = null;
+let passChartInstance = null;
+let selectedMessageId = null;
+let activeTerm = "term1";
+let selectedMarkTerm = "term1";
+let selectedUser = null;
+let selectedUserType = null;
+let chatCache = [];
+let chatCacheLoaded = false;
+let chatCacheLoading = false;
+let chatContacts = [];
+let teacherHomeworkData = [];
+let teacherHomeworkSubmissions = [];
+let homeworkWeekOffset = 0; // 0 = current week, -1 = last week, +1 = next week
+let homeworkTermSelected = "term1";
+
+
+
+
+// Show signup if no users exist
+if(users.length === 0){
+    document.getElementById("signupSection").style.display = "block";
+    document.getElementById("loginSection").style.display = "none";
+}
+document.getElementById("roleSelect").addEventListener("change", function(){
+    let role = this.value;
+
+    let schoolCodeInput = document.getElementById("schoolCode");
+
+    if(role === "admin"){
+        document.getElementById("schoolNameBox").style.display = "block";
+
+        schoolCodeInput.placeholder = "Create School Code";
+        schoolCodeInput.value = "SCH_" + Math.floor(Math.random() * 100000); // auto-generate
+    } 
+    else {
+        document.getElementById("schoolNameBox").style.display = "none";
+
+        schoolCodeInput.placeholder = "Enter School Code";
+        schoolCodeInput.value = "";
+    }
+});
+
+
+
+async function loadUsers() {
+
+    if (!currentUser) {
+        console.error("currentUser is not available");
+        users = [];
+        return [];
+    }
+
+    const { data, error } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .order("firstname");
+
+    if (error) {
+        console.error("Load Users Error:", error);
+        users = [];
+        return [];
+    }
+
+    users = data || [];
+
+    console.log("Users Loaded:", users);
+    console.log("Total Users:", users.length);
+
+    if (currentUser.role === "admin") {
+        loadTeachers();
+    }
+
+    return users;
+}
+
+
+function calculateSubjectResult(data) {
+
+    let test1 = Number(data.test1 || 0);
+    let test2 = Number(data.test2 || 0);
+    let project = Number(data.project || 0);
+    let group = Number(data.group || 0);
+    let exam = Number(data.exam || 0);
+
+    // Continuous Assessment (100 marks)
+    let classTotal =
+        test1 +
+        test2 +
+        project +
+        group;
+
+    // Convert to 50%
+    let classScore =
+        Number(((classTotal / 100) * 50).toFixed(2));
+
+    // Convert Exam to 50%
+    let examScore =
+        Number(((exam / 100) * 50).toFixed(2));
+
+    // Final score out of 100
+    let totalScore =
+        Number((classScore + examScore).toFixed(2));
+
+    let grade = getGrade(totalScore);
+
+	let remark = getRemark(totalScore);
+
+    return {
+
+        test1,
+        test2,
+        project,
+        group,
+        exam,
+
+        classTotal,
+        classScore,
+        examScore,
+        totalScore,
+
+        grade,
+        remark
+
+    };
+
+}
+
+function calculateStudentAverage(student, term){
+
+    if(!student.subjects){
+
+        student.average = 0;
+        return;
+
+    }
+
+    let total = 0;
+    let count = 0;
+
+    Object.keys(student.subjects).forEach(subject=>{
+
+        let result =
+        student.subjects[subject]?.[term];
+
+        if(!result) return;
+
+        if(result.totalScore === undefined) return;
+
+        total += Number(result.totalScore);
+
+        count++;
+
+    });
+
+    student.average =
+    count
+    ? Number((total / count).toFixed(2))
+    : 0;
+
+}
+
+
+
+
+
+async function signup() {
+
+    let firstname =
+        document.getElementById("firstname").value.trim();
+
+    let surname =
+        document.getElementById("surname").value.trim();
+
+    let username =
+        document.getElementById("signupUsername").value.trim();
+
+    let email =
+        document.getElementById("signupEmail").value.trim();
+
+    let phone =
+        document.getElementById("signupPhone").value.trim();
+
+    let password =
+        document.getElementById("signupPassword").value.trim();
+
+    let role =
+        document.getElementById("roleSelect").value;
+
+    let schoolname =
+        document.getElementById("schoolnamesignup").value.trim();
+
+    let schoolCode =
+        document.getElementById("schoolCode").value.trim();
+
+    // =========================
+    // VALIDATION
+    // =========================
+
+    if (
+        !firstname ||
+        !surname ||
+        !username ||
+        !email ||
+        !phone ||
+        !password
+    ) {
+        return alert("Please fill all fields");
+    }
+
+    // =========================
+    // ADMIN VALIDATION
+    // =========================
+
+    if (role === "admin") {
+
+        if (!schoolname) {
+            return alert("Enter school name");
+        }
+
+        if (!schoolCode) {
+            return alert("Enter school code");
+        }
+
+        // CHECK IF SCHOOL CODE EXISTS
+        const { data: existingSchool } =
+            await supabaseClient
+                .from("schools")
+                .select("*")
+                .eq("schoolid", schoolCode)
+                .maybeSingle();
+
+        if (existingSchool) {
+            return alert("School code already exists");
+        }
+    }
+
+    // =========================
+    // TEACHER VALIDATION
+    // =========================
+
+    if (role === "teacher") {
+
+        if (!schoolCode) {
+            return alert("Enter school code");
+        }
+
+        const { data: schoolExists } =
+            await supabaseClient
+                .from("schools")
+                .select("*")
+                .eq("schoolid", schoolCode)
+                .maybeSingle();
+
+        if (!schoolExists) {
+            return alert("Invalid school code");
+        }
+    }
+
+    // =========================
+    // CREATE AUTH ACCOUNT
+    // =========================
+
+    const {
+        data: authData,
+        error: authError
+    } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+    });
+
+    if (authError) {
+        console.error(authError);
+        return alert(authError.message);
+    }
+
+    const authUser = authData.user;
+
+    // =========================
+    // CREATE SCHOOL (ADMIN)
+    // =========================
+
+    if (role === "admin") {
+
+        const { error: schoolError } =
+            await supabaseClient
+                .from("schools")
+                .insert([
+                    {
+                        schoolname: schoolname,
+                        schoolid: schoolCode,
+                        adminid: authUser.id
+                    }
+                ]);
+
+        if (schoolError) {
+            console.error(schoolError);
+            return alert(schoolError.message);
+        }
+    }
+
+    // =========================
+    // CREATE USER PROFILE
+    // =========================
+
+    const { error: userError } =
+        await supabaseClient
+            .from("users")
+            .insert([
+                {
+                    id: authUser.id,
+                    firstname: firstname,
+                    surname: surname,
+                    username: username,
+                    email: email,
+                    phone: phone,
+                    role: role,
+                    schoolid: schoolCode,
+                    schoolname:
+                        role === "admin"
+                            ? schoolname
+                            : ""
+                }
+            ]);
+
+    if (userError) {
+        console.error(userError);
+        return alert(userError.message);
+    }
+
+    alert("Account created successfully!");
+
+    backToLogin();
+}
+// SHOW SIGNUP
+function showSignup(){
+	
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("signupSection").style.display = "block";
+    document.getElementById("forgotSection").style.display = "none";
+
+    
+}
+
+
+
+// BACK TO LOGIN
+function backToLogin(){
+    document.getElementById("loginSection").style.display = "block";
+    document.getElementById("signupSection").style.display = "none";
+    document.getElementById("forgotSection").style.display = "none";
+}
+
+
+async function login() {
+
+    let email =
+        document.getElementById("username").value.trim();
+
+    let password =
+        document.getElementById("password").value.trim();
+
+    // =========================
+    // LOGIN
+    // =========================
+
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+
+    if (error) {
+
+        console.error(error);
+
+        document.getElementById("loginMsg").innerText =
+            error.message;
+
+        return;
+    }
+document.body.style.background = "#000";
+document.body.classList.add("logged-in");
+    // =========================
+    // GET AUTH USER
+    // =========================
+
+    const authUser = data.user;
+
+    // =========================
+    // FETCH PROFILE
+    // =========================
+
+    const {
+        data: profile,
+        error: profileError
+    } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+    if (profileError || !profile) {
+
+        console.error(profileError);
+
+        document.getElementById("loginMsg").innerText =
+            "Profile not found";
+
+        return;
+    }
+
+    currentUser = profile;
+
+    // =========================
+    // DEFAULT ARRAYS
+    // =========================
+
+    currentUser.classes =
+        currentUser.classes || [];
+
+    currentUser.subjects =
+        currentUser.subjects || [];
+
+    // =========================
+    // DEFAULT MAIN CLASS
+    // =========================
+
+    if (
+        !currentUser.mainClass &&
+        currentUser.classes.length > 0
+    ) {
+        currentUser.mainClass =
+            currentUser.classes[0];
+    }
+
+    // =========================
+    // INIT
+    // =========================
+
+    initDefaultClasses();
+
+    // SAVE SESSION
+    localStorage.setItem(
+        "loggedInUser",
+        JSON.stringify(currentUser)
+    );
+
+    // SHOW APP (subscription gate first)
+    document.getElementById("loginBox").style.display =
+        "none";
+
+    const subOk = (typeof sbaGateAfterLogin === "function")
+        ? await sbaGateAfterLogin()
+        : true;
+
+    if (!subOk) {
+        return; // locked screen is visible
+    }
+
+    document.getElementById("app").style.display =
+        "block";
+
+    // WELCOME TEXT (sidebar + dashboard header)
+    const welcomeMsg = "👋 Welcome, " + currentUser.firstname;
+    const welcomeEl = document.getElementById("welcomeUser");
+    if (welcomeEl) welcomeEl.innerText = welcomeMsg;
+    const dashWelcome = document.getElementById("dashWelcomeUser");
+    if (dashWelcome) dashWelcome.innerText = welcomeMsg;
+    const sideName = document.getElementById("sidebarUserName");
+    if (sideName) sideName.textContent = currentUser.firstname || currentUser.username || "User";
+    if (typeof applySidebarAvatar === "function") applySidebarAvatar(currentUser);
+
+    // LOAD DATA
+	
+	await initializeSystem();
+    await loadStudents();
+    updateDashboard();
+    populateStudentList();
+    showPage("dashboardPage");
+    loadLogo();
+	await displaySchoolName();
+    await loadTheme();
+	await loadTermSettings();
+activeTerm = await getCurrentTerm();
+    updateOnlineStatus();
+	await loadNotices();
+
+/* ============================================================
+   DEVELOPER FEEDBACK POPUP
+   Show after successful login
+============================================================ */
+
+setTimeout(() => {
+    showDeveloperFeedback();
+}, 800);
+	
+	
+}
+
+
+async function displaySchoolName() {
+
+
+    if (!currentUser || !currentUser.schoolid) {
+
+        console.warn("No schoolid found for user");
+
+        document.getElementById("schoolNameText").innerText =
+            "No School Assigned";
+
+        return;
+    }
+
+    try {
+
+        const { data, error } = await supabaseClient
+            .from("schools")
+            .select("schoolname")
+            .eq("schoolid", currentUser.schoolid)
+            .single();
+
+
+        if (error) {
+
+            console.error("School fetch error:", error);
+
+            document.getElementById("schoolNameText").innerText =
+    data.schoolname;
+
+            return;
+        }
+
+        let schoolName =
+            data?.schoolname ||
+            currentUser.schoolname ||
+            "Your School";
+
+        let displayText = schoolName;
+
+        // Show school code only for admin
+        if (currentUser.role === "admin") {
+            displayText +=
+                " (Code: " + currentUser.schoolid + ")";
+        }
+
+        const sn = document.getElementById("schoolNameText");
+        if (sn) sn.innerText = displayText;
+        const sideSchool = document.getElementById("sidebarSchoolName");
+        if (sideSchool) sideSchool.textContent = schoolName;
+
+        // Show edit icon only for admin
+        document.getElementById("editSchoolIcon").style.display =
+            currentUser.role === "admin"
+                ? "inline"
+                : "none";
+
+    } catch (err) {
+
+        console.error("Display School Name Error:", err);
+
+        document.getElementById("schoolNameText").innerText =
+            "Error Loading School";
+    }
+}
+async function editSchoolName() {
+
+    if (currentUser.role !== "admin") return;
+
+    let newName = prompt(
+        "Edit School Name:",
+        currentUser.schoolname
+    );
+
+    if (newName && newName.trim()) {
+
+        newName = newName.trim();
+
+        // Update current user object
+        currentUser.schoolname = newName;
+
+        // Update school table
+        const { error: schoolError } = await supabaseClient
+            .from("schools")
+            .update({
+                schoolname: newName
+            })
+            .eq("schoolid", currentUser.schoolid);
+
+        // Update current admin user
+        const { error: userError } = await supabaseClient
+            .from("users")
+            .update({
+                schoolname: newName
+            })
+            .eq("username", currentUser.username);
+
+        if (schoolError || userError) {
+
+            console.log(
+                schoolError || userError
+            );
+
+            alert("Failed to update school name");
+
+            return;
+        }
+
+        // Save current session locally
+        localStorage.setItem(
+            "loggedInUser",
+            JSON.stringify(currentUser)
+        );
+
+        displaySchoolName();
+    }
+}
+async function loadTheme() {
+
+    // Fetch theme from Supabase
+    const { data, error } = await supabaseClient
+        .from("users")
+        .select("theme")
+        .eq("username", currentUser.username)
+        .single();
+
+    let theme = data?.theme || "light";
+    applyAppTheme(theme === "light" ? "light" : "dark");
+}
+
+function applyAppTheme(theme) {
+    const isLight = theme === "light";
+    document.body.classList.toggle("light-mode", isLight);
+    document.body.classList.toggle("dark-mode", !isLight);
+    document.documentElement.setAttribute("data-theme", isLight ? "light" : "dark");
+
+    // Update any theme icons (topbar + sidebar)
+    document.querySelectorAll("#themeBtn i, #sidebarThemeIcon, #themeIcon").forEach(icon => {
+        if (!icon) return;
+        icon.className = isLight ? "fas fa-moon" : "fas fa-sun";
+    });
+    // Older code sometimes set className on the button itself
+    const themeBtn = document.getElementById("themeBtn");
+    if (themeBtn && themeBtn.tagName === "BUTTON") {
+        // keep button class, only ensure inner icon is correct
+        let icon = themeBtn.querySelector("i");
+        if (!icon) {
+            icon = document.createElement("i");
+            themeBtn.appendChild(icon);
+        }
+        icon.className = isLight ? "fas fa-moon" : "fas fa-sun";
+    }
+}
+function showForgot(){
+
+    document.getElementById("loginSection")
+        .style.display = "none";
+
+    document.getElementById("signupSection")
+        .style.display = "none";
+
+    document.getElementById("forgotSection")
+        .style.display = "block";
+    showForgotStep(1);
+
+    document.getElementById("fpUsername").value = "";
+    document.getElementById("fpContact").value = "";
+    document.getElementById("fpOTP").value = "";
+    document.getElementById("fpNewPassword").value = "";
+    document.getElementById("fpConfirmPassword").value = "";
+
+    resetUsername = "";
+    resetContact = "";
+    resetUserId = "";
+    resetEmail = "";
+    resetVerified = false;
+}
+
+
+// ==========================================
+// PASSWORD RESET STATE
+// ==========================================
+
+let resetUsername = "";
+let resetContact = "";
+let resetUserId = "";
+let resetEmail = "";
+let resetVerified = false;
+
+
+function showForgotStep(step) {
+
+    const steps = [
+        "forgotStep1",
+        "forgotStep2",
+        "forgotStep3",
+        "forgotStep4"
+    ];
+
+    steps.forEach(id => {
+
+        const element =
+            document.getElementById(id);
+
+        if (element) {
+            element.style.display = "none";
+        }
+
+    });
+
+    const selected =
+        document.getElementById(
+            "forgotStep" + step
+        );
+
+    if (selected) {
+        selected.style.display = "block";
+    }
+}
+
+async function resetPassword() {
+
+    // ==============================
+    // GET USER INPUT
+    // ==============================
+
+    const u =
+        document.getElementById("fpUsername").value.trim();
+
+    const contact =
+        document.getElementById("fpContact").value.trim();
+
+    if (!u || !contact) {
+        alert("Fill all fields");
+        return;
+    }
+
+
+    // ==============================
+    // FIND USER
+    // ==============================
+
+    const {
+        data: user,
+        error
+    } = await supabaseClient
+        .from("users")
+        .select("id, username, email, phone")
+        .eq("username", u)
+        .or(`email.eq.${contact},phone.eq.${contact}`)
+        .single();
+
+
+    if (error || !user) {
+
+        console.error(error);
+
+        alert(
+            "User not found or incorrect details."
+        );
+
+        return;
+    }
+
+
+    // ==============================
+    // GENERATE OTP
+    // ==============================
+
+    generatedOTP =
+        Math.floor(
+            100000 + Math.random() * 900000
+        ).toString();
+
+
+    // ==============================
+    // CURRENT OTP METHOD
+    // ==============================
+
+    alert(
+        "Your OTP is: " +
+        generatedOTP
+    );
+
+
+    // ==============================
+    // VERIFY OTP
+    // ==============================
+
+    const enteredOTP =
+        prompt("Enter the OTP sent to you");
+
+
+    if (!enteredOTP) {
+        alert("OTP verification cancelled.");
+        return;
+    }
+
+
+    if (enteredOTP.trim() !== generatedOTP) {
+
+        alert("Incorrect OTP.");
+
+        return;
+    }
+
+
+    // ==============================
+    // OTP VERIFIED
+    // ==============================
+
+    alert("OTP verified successfully.");
+
+
+    // ==============================
+    // NEW PASSWORD
+    // ==============================
+
+    const newPass =
+        prompt("Enter your new password");
+
+
+    if (!newPass) {
+
+        alert(
+            "Password cannot be empty."
+        );
+
+        return;
+    }
+
+
+    // ==============================
+    // PASSWORD LENGTH
+    // ==============================
+
+    if (newPass.length < 6) {
+
+        alert(
+            "Password must be at least 6 characters."
+        );
+
+        return;
+    }
+
+
+    // ==============================
+    // CONFIRM PASSWORD
+    // ==============================
+
+    const confirmPass =
+        prompt("Confirm your new password");
+
+
+    if (!confirmPass) {
+
+        alert(
+            "Please confirm your password."
+        );
+
+        return;
+    }
+
+
+    if (newPass !== confirmPass) {
+
+        alert(
+            "Passwords do not match."
+        );
+
+        return;
+    }
+
+
+    // ==============================
+    // CALL EDGE FUNCTION
+    // ==============================
+
+    try {
+
+        const {
+            data: result,
+            error: functionError
+        } = await supabaseClient.functions.invoke(
+            "reset-user-password",
+            {
+                body: {
+                    userId: user.id,
+                    newPassword: newPass
+                }
+            }
+        );
+
+
+        // ==============================
+        // EDGE FUNCTION ERROR
+        // ==============================
+
+        if (functionError) {
+
+            console.error(
+                "Password reset error:",
+                functionError
+            );
+
+            alert(
+                "Password reset failed. Please try again."
+            );
+
+            return;
+        }
+
+
+        // ==============================
+        // SERVER ERROR
+        // ==============================
+
+        if (!result || !result.success) {
+
+            console.error(
+                "Server response:",
+                result
+            );
+
+            alert(
+                result?.message ||
+                "Password reset failed."
+            );
+
+            return;
+        }
+
+
+        // ==============================
+        // SUCCESS
+        // ==============================
+
+        alert(
+            "Password changed successfully!\n\n" +
+            "You can now log in with your new password."
+        );
+
+
+        // ==============================
+        // RETURN TO LOGIN
+        // ==============================
+
+        backToLogin();
+
+
+    } catch (err) {
+
+        console.error(
+            "Reset password error:",
+            err
+        );
+
+        alert(
+            "Something went wrong while changing your password."
+        );
+    }
+}
+
+
+async function sendResetOTP() {
+
+    const username =
+        document.getElementById("fpUsername").value.trim();
+
+    const contact =
+        document.getElementById("fpContact").value.trim();
+
+    if (!username || !contact) {
+        alert("Please enter your username and email/phone.");
+        return;
+    }
+
+    const button =
+        document.querySelector("#forgotStep1 button");
+
+    if (button) {
+        button.disabled = true;
+        button.innerText = "Sending...";
+    }
+
+    try {
+
+        const response = await fetch(
+            "https://ftslcifbzohhgljqcgus.supabase.co/functions/v1/send-reset-otp",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    username: username,
+                    contact: contact
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        console.log("OTP response:", result);
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || "Unable to send OTP."
+            );
+        }
+
+        // Save reset information
+        resetUsername = username;
+        resetContact = contact;
+        resetUserId = result.userId;
+        resetEmail = result.email;
+
+        // TEMPORARY TEST
+        // The OTP will later be emailed.
+        alert("TEST OTP: " + result.otp);
+
+        showForgotStep(2);
+
+        document.getElementById("fpOTP").focus();
+
+    } catch (error) {
+
+        console.error("OTP ERROR:", error);
+
+        alert(
+            error.message ||
+            "Unable to send OTP. Please try again."
+        );
+
+    } finally {
+
+        if (button) {
+            button.disabled = false;
+            button.innerText = "Send OTP";
+        }
+    }
+}
+
+async function verifyResetOTP() {
+
+    const otp =
+        document.getElementById("fpOTP").value.trim();
+
+    if (!otp) {
+        alert("Please enter the OTP.");
+        return;
+    }
+
+    const button =
+        document.querySelector("#forgotStep2 button");
+
+    if (button) {
+        button.disabled = true;
+        button.innerText = "Verifying...";
+    }
+
+    try {
+
+        const response = await fetch(
+            "https://ftslcifbzohhgljqcgus.supabase.co/functions/v1/verify-reset-otp",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    userId: resetUserId,
+                    otp: otp
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        console.log("OTP verification:", result);
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || "OTP verification failed."
+            );
+        }
+
+        resetVerified = true;
+
+        alert("OTP verified successfully.");
+
+        showForgotStep(3);
+
+        document
+            .getElementById("fpNewPassword")
+            .focus();
+
+    } catch (error) {
+
+        console.error("VERIFY OTP ERROR:", error);
+
+        alert(
+            error.message ||
+            "Unable to verify OTP."
+        );
+
+    } finally {
+
+        if (button) {
+            button.disabled = false;
+            button.innerText = "Verify OTP";
+        }
+    }
+}
+
+async function changeResetPassword() {
+
+    // =========================
+    // CHECK OTP VERIFICATION
+    // =========================
+
+    if (!resetVerified) {
+        alert("Please verify the OTP first.");
+        return;
+    }
+
+    // =========================
+    // GET PASSWORDS
+    // =========================
+
+    const newPassword =
+        document.getElementById("fpNewPassword").value.trim();
+
+    const confirmPassword =
+        document.getElementById("fpConfirmPassword").value.trim();
+
+    // =========================
+    // VALIDATION
+    // =========================
+
+    if (!newPassword || !confirmPassword) {
+        alert("Please enter and confirm your new password.");
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        alert("Password must be at least 6 characters.");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert("Passwords do not match.");
+        return;
+    }
+
+    if (!resetUserId) {
+        alert("Reset session is missing. Please start again.");
+        return;
+    }
+
+    // =========================
+    // BUTTON
+    // =========================
+
+    const button =
+        document.querySelector("#forgotStep3 button");
+
+    if (button) {
+        button.disabled = true;
+        button.innerText = "Changing Password...";
+    }
+
+    try {
+
+        // =========================
+        // CALL SUPABASE FUNCTION
+        // =========================
+
+        const response = await fetch(
+            "https://ftslcifbzohhgljqcgus.supabase.co/functions/v1/rapid-responder",
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        "Bearer sb_publishable_xF3b2JXH72rrwvJ2MCfOuA_Lm_C-a2D",
+
+                    "apikey":
+                        "sb_publishable_xF3b2JXH72rrwvJ2MCfOuA_Lm_C-a2D",
+
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    userId: resetUserId,
+                    newPassword: newPassword
+                })
+            }
+        );
+
+        // =========================
+        // READ RESPONSE
+        // =========================
+
+        const result = await response.json();
+
+        console.log(
+            "PASSWORD RESET RESPONSE:",
+            result
+        );
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message ||
+                "Unable to change password."
+            );
+        }
+
+        // =========================
+        // SUCCESS
+        // =========================
+
+        resetVerified = false;
+
+        resetUsername = "";
+        resetContact = "";
+        resetUserId = "";
+        resetEmail = "";
+
+        document.getElementById("fpNewPassword").value = "";
+        document.getElementById("fpConfirmPassword").value = "";
+
+        showForgotStep(4);
+
+    } catch (error) {
+
+        console.error(
+            "PASSWORD RESET ERROR:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to change password. Please try again."
+        );
+
+    } finally {
+
+        if (button) {
+            button.disabled = false;
+            button.innerText = "Change Password";
+        }
+    }
+}
+
+
+function triggerLogoUpload(){
+    document.getElementById("schoolLogoPreview").onclick = function(){
+        if(currentUser.role !== "admin"){
+            alert("Only Admin can change school logo");
+            return;
+        }
+        document.getElementById("schoolLogoInput").click();
+    }
+}
+function uploadLogo(){
+    if(currentUser.role !== "admin"){
+        alert("Only Admin can change school logo");
+        return;
+    }
+
+    document.getElementById("schoolLogoInput").click();
+}
+async function loadLogo() {
+
+    const img = document.getElementById("schoolLogoPreview");
+
+    try {
+
+        const { data, error } = await supabaseClient
+            .from("schools")
+            .select("schoolLogo")
+            .eq("schoolid", currentUser.schoolid)
+            .single();
+
+		
+       
+
+        img.src = data?.schoolLogo || "default-school-logo.png";
+
+    } catch (err) {
+
+        console.error(err);
+
+        img.src = "default-school-logo.png";
+    }
+}
+
+function displayLogo(logo){
+    let img = document.getElementById("schoolLogoPreview");
+
+    img.src = logo;
+    img.style.display = "block";
+
+}
+
+document.getElementById("schoolLogoInput")
+.addEventListener("change", async function () {
+
+    let file = this.files[0];
+
+if (!file) return;
+
+const allowedTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp"
+];
+
+if (!allowedTypes.includes(file.type)) {
+    alert("Please upload JPG, PNG, or WEBP images only.");
+    return;
+}
+
+    // Unique filename
+    let fileName =
+        `${currentUser.schoolid}-${Date.now()}-${file.name}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabaseClient
+        .storage
+        .from("school-logos")
+        .upload(fileName, file);
+
+    if (error) {
+
+        console.log(error);
+
+        return alert("Logo upload failed");
+    }
+
+    // Get public URL
+   const { data: urlData } = await supabaseClient
+    .storage
+    .from("school-logos")
+    .getPublicUrl(fileName);
+
+    let logoUrl = urlData.publicUrl;
+
+    // Save URL in database
+    const { error: dbError } = await supabaseClient
+        .from("schools")
+        .update({
+            schoolLogo: logoUrl
+        })
+        .eq("schoolid", currentUser.schoolid);
+
+    if (dbError) {
+
+        console.log(dbError);
+
+        return alert("Failed to save logo");
+    }
+
+    // Display logo
+    document.getElementById(
+        "schoolLogoPreview"
+    ).src = logoUrl;
+
+    alert("Logo uploaded successfully");
+});
+
+function logout(){
+    localStorage.removeItem("loggedInUser"); // clear session
+    location.reload();
+}
+
+async function loadStudents() {
+
+    let query = supabaseClient
+        .from("students")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
+
+    const { data, error } = await query;
+
+    if(error){
+        console.log(error);
+        students = [];
+        return;
+    }
+
+    // Graduated students remain in Supabase and in year snapshots, but should
+    // not appear in the active year's everyday class, marks, or attendance lists.
+    let allStudents = (data || []).filter(student => !student.graduated);
+
+    // Teacher only sees assigned classes
+    if(currentUser.role === "teacher"){
+
+        students = allStudents.filter(s =>
+            (currentUser.classes || [])
+            .includes(s.studentclass)
+        );
+
+    } else {
+
+        students = allStudents;
+    }
+
+    // Sort: Males first, then Females, then alphabetically
+    students.sort((a, b) => {
+
+        const genderA = (a.gender || "").toLowerCase();
+        const genderB = (b.gender || "").toLowerCase();
+
+        if (genderA !== genderB) {
+            if (genderA === "male") return -1;
+            if (genderB === "male") return 1;
+        }
+
+        const nameA = `${a.firstname || ""} ${a.surname || ""}`.trim();
+        const nameB = `${b.firstname || ""} ${b.surname || ""}`.trim();
+
+        return nameA.localeCompare(nameB);
+    });
+
+    updateStudentSuggestions();
+}
+
+function generatePassword(length = 6) {
+
+    const chars =
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+
+    let password="";
+
+
+    for(let i=0;i<6;i++){
+
+
+        password += chars.charAt(
+
+            Math.floor(
+                Math.random()*chars.length
+            )
+
+        );
+
+
+    }
+
+
+    return password;
+
+
+}
+
+
+
+async function generateStudentId(){
+
+    let newID;
+    let found = false;
+
+
+    while(!found){
+
+        let randomNumber =
+        Math.floor(1000 + Math.random() * 9000);
+
+
+        newID =
+        "SBA26" + randomNumber;
+
+
+
+        const {data,error} =
+        await supabaseClient
+        .from("students")
+        .select("studentid")
+        .eq("studentid", newID);
+
+
+
+        if(error){
+
+            console.log(error);
+            return null;
+
+        }
+
+
+        if(!data || data.length === 0){
+
+            found = true;
+
+        }
+
+    }
+
+
+    return newID;
+
+}
+
+function copyStudentID() {
+
+    const idElement = document.getElementById("studentIDText");
+
+    if (!idElement) {
+        showToast("Student ID not found.");
+        return;
+    }
+
+    const studentID = idElement.innerText.trim();
+
+    if (!studentID || studentID === "Not Generated") {
+        showToast("Student ID is not available.");
+        return;
+    }
+
+    navigator.clipboard.writeText(studentID)
+        .then(() => {
+            showToast("Student ID copied.");
+        })
+        .catch(error => {
+            console.error("Copy Student ID error:", error);
+            showToast("Failed to copy Student ID.");
+        });
+}
+
+
+function copyStudentPassword() {
+
+    const passwordElement =
+        document.getElementById("studentPassword");
+
+    if (!passwordElement) {
+        showToast("Password not found.");
+        return;
+    }
+
+    const password = passwordElement.value.trim();
+
+    if (!password) {
+        showToast("Student password is not available.");
+        return;
+    }
+
+    navigator.clipboard.writeText(password)
+        .then(() => {
+            showToast("Password copied.");
+        })
+        .catch(error => {
+            console.error("Copy Password error:", error);
+            showToast("Failed to copy password.");
+        });
+}
+
+function togglePassword() {
+    const hidden = document.getElementById("studentPassword");
+    const text = document.getElementById("passwordText");
+    if (!hidden || !text) return;
+    if (text.innerText === "••••••••") {
+        text.innerText = hidden.value || "";
+    } else {
+        text.innerText = "••••••••";
+    }
+}
+
+
+
+async function saveStudents() {
+
+    if (!students || students.length === 0) {
+        return;
+    }
+
+    let preparedStudents = await Promise.all(
+
+students.map(async s => {
+
+
+    let studentID = s.studentid;
+
+    let studentPassword = s.studentpassword;
+
+
+    // New student account generation
+    if(!studentID){
+
+        studentID = await generateStudentId();
+
+        studentPassword = generatePassword();
+
+    }
+
+
+    return {
+
+        ...s,
+
+        schoolid: currentUser.schoolid,
+
+
+        teacher:
+        currentUser.role === "admin"
+        ? s.teacher || null
+        : currentUser.username,
+
+
+        studentid: studentID,
+
+        studentpassword: studentPassword,
+
+        passwordchanged:
+        s.passwordchanged || false
+
+    };
+
+
+})
+
+);
+
+    // Admin saves all
+    if (currentUser.role === "admin") {
+
+        const { error } = await supabaseClient
+            .from("students")
+            .upsert(preparedStudents);
+
+       if (error) {
+    console.error("SAVE ERROR:", error);
+    alert(error.message);
+    return;
+}
+
+console.log("Students saved successfully");
+
+        return;
+    }
+
+    // Teacher saves only own students
+    const { error } = await supabaseClient
+        .from("students")
+        .upsert(preparedStudents);
+
+    if (error) {
+        console.log(error);
+    }
+}
+
+async function generateStudentPortalAccounts(){
+
+
+    // Only admin allowed
+    if(!currentUser || currentUser.role !== "admin"){
+
+        alert("Only admin can generate student portal accounts");
+
+        return;
+
+    }
+
+
+    // Get students without accounts
+    const { data: students, error } = await supabaseClient
+
+        .from("students")
+
+        .select("*")
+
+        .eq("schoolid", currentUser.schoolid)
+
+        .is("studentid", null);
+
+
+
+    if(error){
+
+        console.error(error);
+
+        alert(error.message);
+
+        return;
+
+    }
+
+
+
+    if(!students || students.length === 0){
+
+        alert(
+            "All students already have portal accounts."
+        );
+
+        return;
+
+    }
+
+
+
+    let generatedAccounts = [];
+
+
+
+    for(let student of students){
+
+
+        // Generate student ID
+        let studentID =
+            await generateStudentId();
+
+
+
+        // Generate password
+        let tempPassword =
+            generatePassword();
+
+
+
+        // Update student record
+        const {error:updateError} =
+
+        await supabaseClient
+
+        .from("students")
+
+        .update({
+
+            studentid: studentID,
+
+            studentpassword: tempPassword,
+
+            passwordchanged: false
+
+        })
+
+        .eq("id", student.id);
+
+
+
+       if(updateError){
+
+    console.error(
+        "Failed:",
+        student.name,
+        updateError
+    );
+
+    continue;
+
+}
+
+
+generatedAccounts.push({
+
+    name:
+    student.name,
+
+    id:
+    studentID,
+
+    password:
+    tempPassword
+
+});
+
+
+
+    }
+
+
+
+    // Display results
+
+    let result = 
+    "STUDENT PORTAL ACCOUNTS CREATED\n\n";
+
+
+    generatedAccounts.forEach(account=>{
+
+
+        result +=
+        "Student: " + account.name +
+        "\nStudent ID: " + account.studentid +
+        "\nPassword: " + account.password +
+        "\n\n";
+
+
+    });
+
+
+
+    alert(result);
+
+
+
+    // Reload students list
+    await loadStudents();
+
+
+}
+
+function loadStudentManagement(){
+
+    if(currentUser.role === "admin"){
+
+        document.getElementById(
+        "generateAccountsBtn"
+        ).style.display="block";
+
+    }
+
+}
+
+
+async function showPage(id){
+
+    document.querySelectorAll('.page')
+    .forEach(p => p.style.display = 'none');
+
+    let page = document.getElementById(id);
+
+    if(page){
+        page.style.display = 'block';
+    }
+
+    // ACTIVE NAV (sidebar + bottom)
+    document.querySelectorAll('.nav-item')
+    .forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.sba-nav-link')
+    .forEach(item => item.classList.remove('is-active'));
+
+    document.querySelectorAll('.sba-nav-link[data-page="'+id+'"]')
+    .forEach(item => item.classList.add('is-active'));
+
+    if(id === 'dashboardPage')
+        document.querySelectorAll('.nav-item')[0]
+        ?.classList.add('active');
+
+    // Page title in topbar
+    const titles = {
+      dashboardPage:'Dashboard', studentsPage:'Students', subjectsPage:'Subjects',
+      reportsPage:'Reports', attendancePage:'Attendance', homeworkPage:'Homework',
+      timetablePage:'Timetable', noticesPage:'Notices', chat:'Chat',
+      userProfilePage:'Profile', profileSubjectsPage:'My Subjects',
+      profileTermPage:'Term Setup', profilePlanPage:'Plan', profileNotePage:'Note'
+    };
+    const titleEl = document.getElementById('sbaPageTitle');
+    if(titleEl) titleEl.textContent = titles[id] || 'Nabeng-SBA';
+
+    // Close mobile drawer after navigation
+    if(typeof closeSbaSidebar === 'function') closeSbaSidebar();
+
+    // Academic Year block: admin only
+    if (id === "profileTermPage") {
+        const yearPanel = document.getElementById("academicYearPanel") || document.querySelector("#profileTermPage .academic-year-panel");
+        const role = String(currentUser?.role || "").toLowerCase().trim();
+        if (yearPanel) {
+            yearPanel.style.display = (role === "admin") ? "" : "none";
+        }
+    }
+
+
+  await loadStudents();
+
+// SUBJECTS PAGE — no students until class is selected; remove top gap feel
+if (id === "subjectsPage") {
+    try {
+        const classFilter = document.getElementById("classFilter");
+        if (classFilter) {
+            // Rebuild class options if helper exists
+            if (typeof loadClassOptions === "function") {
+                try { await loadClassOptions(); } catch (e) {}
+            }
+            classFilter.value = "";
+        }
+        filteredStudents = [];
+        selectedSubject = null;
+        const subjectList = document.getElementById("subjectList");
+        if (subjectList) subjectList.innerHTML = "";
+        if (typeof showTeacherSubjects === "function") showTeacherSubjects();
+        const studentsListEl = document.getElementById("studentsList");
+        if (studentsListEl) {
+            studentsListEl.innerHTML = `
+                <div class="hw-empty-state" style="padding:28px;text-align:center;opacity:.85;">
+                    <div style="font-size:28px;margin-bottom:8px;"><i class="fas fa-users"></i></div>
+                    <h3 style="margin:0 0 6px;font-size:16px;">Select a class first</h3>
+                    <p style="margin:0;font-size:13px;opacity:.75;">Students will appear here after you choose a class.</p>
+                </div>`;
+        }
+        // Scroll main content to top to avoid large empty gap
+        const main = document.querySelector(".sba-main");
+        if (main) main.scrollTop = 0;
+        window.scrollTo(0, 0);
+        const pageEl = document.getElementById("subjectsPage");
+        if (pageEl) pageEl.scrollTop = 0;
+    } catch (e) {
+        console.warn("subjectsPage init:", e);
+    }
+}
+
+// ATTENDANCE
+if(id === "attendancePage"){
+
+    let attendanceDate =
+    document.getElementById("attendanceDate");
+
+    if(attendanceDate){
+        attendanceDate.valueAsDate =
+        new Date();
+    }
+
+    document.getElementById(
+        "attendanceTerm"
+    ).value = activeTerm;
+
+    loadAttendanceTable();
+}
+
+// TIMETABLE
+if(id === "timetablePage"){
+    await setupTimetablePage();
+}
+
+// REPORTS
+if(id === "reportsPage"){
+
+    let reportTerm =
+    document.getElementById("reportTerm");
+
+    if(reportTerm){
+        reportTerm.value = activeTerm;
+    }
+}
+
+if(id === "profilePlanPage"){
+    document.getElementById("planTerm").value = activeTerm;
+}
+
+if(id === "profileNotePage"){
+    document.getElementById("noteTerm").value = activeTerm;
+}
+
+    // WELCOME TEXT
+    let welcomeText =
+    document.getElementById("welcomeText");
+
+    if(welcomeText){
+
+        welcomeText.style.display =
+        id === "dashboardPage"
+        ? "block"
+        : "none";
+    }
+
+   // =========================================================
+// STUDENTS PAGE
+// =========================================================
+
+if (id === "studentsPage") {
+
+    loadStudentsTable();
+    loadClassOptions();
+
+
+    // -----------------------------------------
+    // GET ELEMENTS
+    // -----------------------------------------
+
+    const addSection =
+        document.getElementById(
+            "addStudentSection"
+        );
+
+    const generateBtn =
+        document.getElementById(
+            "generateAccountsBtn"
+        );
+
+    const admissionBtn =
+        document.getElementById(
+            "admissionBtn"
+        );
+
+
+    // -----------------------------------------
+    // GET USER ROLE
+    // -----------------------------------------
+
+    const role =
+        String(currentUser?.role || "")
+            .toLowerCase()
+            .trim();
+
+
+    // =========================================
+    // ADMIN
+    // =========================================
+
+    if (role === "admin") {
+
+        // Hide teacher Add Student section
+        if (addSection) {
+
+            addSection.style.display =
+                "none";
+
+        }
+
+
+        // Show Generate Student Accounts
+        if (generateBtn) {
+
+            generateBtn.style.display =
+                "inline-flex";
+
+        }
+
+
+        // Show Admission button
+        if (admissionBtn) {
+
+            admissionBtn.style.display =
+                "inline-flex";
+
+        }
+
+    }
+
+
+    // =========================================
+    // TEACHER
+    // =========================================
+
+    else {
+
+        // Show normal Add Student section
+        if (addSection) {
+
+            addSection.style.display =
+                "block";
+
+        }
+
+
+        // Hide Generate Student Accounts
+        if (generateBtn) {
+
+            generateBtn.style.display =
+                "none";
+
+        }
+
+
+        // Hide Admission button
+        if (admissionBtn) {
+
+            admissionBtn.style.display =
+                "none";
+
+        }
+
+    }
+
+}
+
+    // CHAT
+    if(id === 'chat'){
+
+        let chat =
+        document.getElementById('chat');
+
+        if(chat){
+            chat.style.display = 'block';
+        }
+		await loadUsers();
+        displayUsers();
+        
+
+    } else {
+
+        let chat =
+        document.getElementById('chat');
+
+        if(chat){
+            chat.style.display = 'none';
+        }
+    }
+	
+	let profilepage = document.getElementById(id);
+
+if(page){
+    page.style.display = "block";
+}
+
+if(id === "userProfilePage"){
+    loadProfileData();
+loadSignature();
+}
+
+// SCHOOL PAGES
+if(
+    id === "homeworkPage" ||
+    id === "feesPage" ||
+    id === "noticesPage"
+){
+
+    setupSchoolPages();
+	initHomeworkPage();
+
+}
+if (id === "noticesPage") {
+    await loadNotices();
+}
+}
+
+
+/* ============================================================
+   TIMETABLE MODULE
+============================================================ */
+let timetableCache = [];
+let editingTimetableId = null;
+const TIMETABLE_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+
+function timetableEscape(v){
+  return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+function showTimetableMessage(msg,type="info"){
+  const b=document.getElementById("timetableMessage"); if(!b)return;
+  b.textContent=msg; b.className="timetable-message "+type; b.style.display="block";
+  clearTimeout(window._timetableMsgTimer);
+  window._timetableMsgTimer=setTimeout(()=>b.style.display="none",4500);
+}
+async function getTimetableClasses(){
+  const {data,error}=await supabaseClient.from("classes").select("classname").eq("schoolid",currentUser.schoolid).order("classname");
+  if(error){console.error(error);return[];}
+  let list=(data||[]).map(x=>x.classname).filter(Boolean);
+  if(currentUser.role==="teacher") list=list.filter(c=>(currentUser.classes||[]).includes(c));
+  return [...new Set(list)];
+}
+async function populateTimetableClassSelects(){
+  const list=await getTimetableClasses();
+  const f=document.getElementById("timetableClassFilter"), m=document.getElementById("timetableFormClass");
+  if(f){const old=f.value;f.innerHTML='<option value="">Select Class</option>'+list.map(c=>`<option value="${timetableEscape(c)}">${timetableEscape(c)}</option>`).join("");if(list.includes(old))f.value=old;else if(list.length===1)f.value=list[0];}
+  if(m){const old=m.value;m.innerHTML='<option value="">Select Class</option>'+list.map(c=>`<option value="${timetableEscape(c)}">${timetableEscape(c)}</option>`).join("");if(list.includes(old))m.value=old;}
+}
+async function populateTimetableTeachers(){
+  const s=document.getElementById("timetableFormTeacher");if(!s)return;
+  let list=[];
+  if(currentUser.role==="admin"){
+    const {data,error}=await supabaseClient.from("users").select("id,firstname,surname,username,classes,subjects").eq("schoolid",currentUser.schoolid).eq("role","teacher").order("firstname");
+    if(error)console.error(error); else list=data||[];
+  }else list=[currentUser];
+  s.innerHTML='<option value="">Select Teacher</option>'+list.map(t=>`<option value="${timetableEscape(t.id)}">${timetableEscape((`${t.firstname||""} ${t.surname||""}`).trim()||t.username||"Teacher")}</option>`).join("");
+  s.dataset.teachers=JSON.stringify(list);
+}
+async function populateTimetableSubjects(teacherId=""){
+  const s=document.getElementById("timetableFormSubject");if(!s)return;
+  let list=currentUser.role==="teacher" ? (currentUser.subjects||[]) : subjects;
+  if(currentUser.role==="admin" && teacherId){
+    try{const ts=JSON.parse(document.getElementById("timetableFormTeacher")?.dataset.teachers||"[]");const t=ts.find(x=>String(x.id)===String(teacherId));if(t?.subjects?.length)list=t.subjects;}catch(e){}
+  }
+  list=[...new Set((list||[]).filter(Boolean))];
+  s.innerHTML='<option value="">Select Subject</option>'+list.map(x=>`<option value="${timetableEscape(x)}">${timetableEscape(x)}</option>`).join("");
+}
+async function setupTimetablePage(){
+  if(!currentUser)return;
+  const term=activeTerm||await getCurrentTerm();
+  document.getElementById("timetableTermFilter").value=term;
+  document.getElementById("timetableFormTerm").value=term;
+  document.getElementById("timetableActiveTerm").textContent=term.replace("term","Term ");
+  const year=localStorage.getItem("currentAcademicYear")||"";
+  if(!document.getElementById("timetableYearFilter").value)document.getElementById("timetableYearFilter").value=year;
+  if(!document.getElementById("timetableFormYear").value)document.getElementById("timetableFormYear").value=year;
+  await populateTimetableClassSelects(); await populateTimetableTeachers(); await populateTimetableSubjects(); await loadTimetableGrid();
+}
+async function loadTimetableGrid(){
+  if(!currentUser)return;
+  const cls=document.getElementById("timetableClassFilter")?.value||"";
+  const term=document.getElementById("timetableTermFilter")?.value||activeTerm||"term1";
+  const year=document.getElementById("timetableYearFilter")?.value.trim()||"";
+  document.getElementById("timetableSelectedClass").textContent=cls||"—";
+  if(!cls){timetableCache=[];renderTimetableGrid([]);renderTimetableEntries([]);updateTimetableStats([]);return;}
+  let q=supabaseClient.from("timetables").select("*").eq("schoolid",currentUser.schoolid).eq("class",cls).eq("term",term).order("period",{ascending:true}).order("start_time",{ascending:true});
+  if(year)q=q.eq("academic_year",year);
+  const {data,error}=await q;
+  if(error){console.error(error);showTimetableMessage("Unable to load timetable. Run the supplied SQL first.","error");return;}
+  timetableCache=data||[];renderTimetableGrid(timetableCache);renderTimetableEntries(timetableCache);updateTimetableStats(timetableCache);
+}
+function timetableTime(a,b){return `${a?a.slice(0,5):""}${a||b?" – ":""}${b?b.slice(0,5):""}`;}
+function renderTimetableGrid(list){
+  const body=document.getElementById("timetableGridBody");if(!body)return;
+  if(!list.length){body.innerHTML='<tr><td colspan="6" class="timetable-empty">No periods have been created for this class.</td></tr>';return;}
+  const times=[...new Set(list.map(e=>`${e.start_time||""}|${e.end_time||""}`))].sort();
+  body.innerHTML=times.map(k=>{const [a,b]=k.split("|");const cells=TIMETABLE_DAYS.map(d=>{const rows=list.filter(e=>e.day===d&&(e.start_time||"")===a&&(e.end_time||"")===b);if(!rows.length)return'<td class="timetable-slot empty">—</td>';return`<td class="timetable-slot">${rows.map(e=>`<div class="timetable-slot-card"><strong>${timetableEscape(e.subject)}</strong><span>${timetableEscape(e.teacher_name||"Teacher")}</span>${e.room?`<small><i class="fas fa-door-open"></i> ${timetableEscape(e.room)}</small>`:""}</div>`).join("")}</td>`}).join("");return`<tr><td class="timetable-time">${timetableTime(a,b)}</td>${cells}</tr>`}).join("");
+}
+function renderTimetableEntries(list){
+  const body=document.getElementById("timetableEntriesBody");if(!body)return;
+  if(!list.length){body.innerHTML='<tr><td colspan="6" class="timetable-empty">No timetable entries yet.</td></tr>';return;}
+  body.innerHTML=list.map(e=>`<tr><td>${timetableEscape(e.day)}</td><td>${timetableTime(e.start_time,e.end_time)}</td><td><strong>${timetableEscape(e.subject)}</strong></td><td>${timetableEscape(e.teacher_name||"—")}</td><td>${timetableEscape(e.room||"—")}</td><td><button class="action-btn edit-btn" onclick="editTimetableEntry('${e.id}')"><i class="fas fa-edit"></i></button> <button class="action-btn delete-btn" onclick="deleteTimetableEntry('${e.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join("");
+}
+function updateTimetableStats(list){document.getElementById("timetablePeriodCount").textContent=list.length;document.getElementById("timetableTeacherCount").textContent=new Set(list.map(x=>x.teacher_id).filter(Boolean)).size;}
+function openTimetableForm(entry=null){
+  editingTimetableId=entry?.id||null;document.getElementById("timetableEntryId").value=editingTimetableId||"";
+  document.getElementById("timetableModalTitle").textContent=entry?"Edit Timetable Period":"Add Timetable Period";
+  document.getElementById("timetableFormClass").value=entry?.class||document.getElementById("timetableClassFilter")?.value||"";
+  document.getElementById("timetableFormDay").value=entry?.day||"Monday";
+  document.getElementById("timetableFormStart").value=entry?.start_time||"";
+  document.getElementById("timetableFormEnd").value=entry?.end_time||"";
+  document.getElementById("timetableFormPeriod").value=entry?.period||"";
+  document.getElementById("timetableFormRoom").value=entry?.room||"";
+  document.getElementById("timetableFormTerm").value=entry?.term||document.getElementById("timetableTermFilter")?.value||activeTerm;
+  document.getElementById("timetableFormYear").value=entry?.academic_year||document.getElementById("timetableYearFilter")?.value||"";
+  const ts=document.getElementById("timetableFormTeacher");ts.value=entry?.teacher_id||(currentUser.role==="teacher"?currentUser.id:"");
+  populateTimetableSubjects(ts.value).then(()=>document.getElementById("timetableFormSubject").value=entry?.subject||"");
+  document.getElementById("timetableConflictBox").style.display="none";document.getElementById("timetableModal").style.display="flex";
+}
+function closeTimetableForm(){document.getElementById("timetableModal").style.display="none";editingTimetableId=null;}
+async function timetableConflicts(p){
+  let q=supabaseClient.from("timetables").select("id,class,day,start_time,end_time,subject,teacher_id,room").eq("schoolid",currentUser.schoolid).eq("term",p.term).eq("day",p.day);
+  if(p.academic_year)q=q.eq("academic_year",p.academic_year);
+  const {data,error}=await q;if(error)throw error;
+  const overlap=(a,b,c,d)=>a<d&&c<b;
+  return(data||[]).filter(r=>{if(editingTimetableId&&String(r.id)===String(editingTimetableId))return false;if(!overlap(p.start_time,p.end_time,r.start_time,r.end_time))return false;return r.class===p.class||(p.teacher_id&&r.teacher_id===p.teacher_id)||(p.room&&r.room&&r.room.toLowerCase()===p.room.toLowerCase());});
+}
+async function saveTimetableEntry(){
+  const p={schoolid:currentUser.schoolid,academic_year:document.getElementById("timetableFormYear").value.trim()||null,term:document.getElementById("timetableFormTerm").value,class:document.getElementById("timetableFormClass").value,day:document.getElementById("timetableFormDay").value,period:Number(document.getElementById("timetableFormPeriod").value),subject:document.getElementById("timetableFormSubject").value,teacher_id:document.getElementById("timetableFormTeacher").value,start_time:document.getElementById("timetableFormStart").value,end_time:document.getElementById("timetableFormEnd").value,room:document.getElementById("timetableFormRoom").value.trim()||null,created_by:currentUser.id};
+  if(!p.class||!p.subject||!p.teacher_id||!p.start_time||!p.end_time||!p.period)return alert("Please complete the class, subject, teacher, time and period fields.");
+  if(p.start_time>=p.end_time)return alert("End time must be later than start time.");
+  if(currentUser.role==="teacher" && (!(currentUser.classes||[]).includes(p.class)||!(currentUser.subjects||[]).includes(p.subject)||String(p.teacher_id)!==String(currentUser.id)))return alert("Teachers can only schedule their assigned classes and subjects.");
+  let teachers=[];try{teachers=JSON.parse(document.getElementById("timetableFormTeacher").dataset.teachers||"[]");}catch(e){}
+  const t=teachers.find(x=>String(x.id)===String(p.teacher_id))||currentUser;p.teacher_name=(`${t.firstname||""} ${t.surname||""}`).trim()||t.username||"Teacher";
+  try{
+    const conflicts=await timetableConflicts(p);
+    if(conflicts.length){const b=document.getElementById("timetableConflictBox");b.innerHTML="<strong>Timetable conflict detected</strong><p>"+conflicts.map(c=>`${timetableEscape(c.day)} ${timetableTime(c.start_time,c.end_time)} — ${timetableEscape(c.subject)} (${timetableEscape(c.class)})`).join("<br>")+"</p><small>Change the time, class, teacher or room.</small>";b.style.display="block";return;}
+    const result=editingTimetableId?await supabaseClient.from("timetables").update(p).eq("id",editingTimetableId).eq("schoolid",currentUser.schoolid):await supabaseClient.from("timetables").insert([p]);
+    if(result.error)throw result.error;const cls=p.class;closeTimetableForm();document.getElementById("timetableClassFilter").value=cls;showTimetableMessage(editingTimetableId?"Timetable period updated.":"Timetable period created.","success");await loadTimetableGrid();
+  }catch(e){console.error(e);showTimetableMessage(e.message||"Unable to save timetable.","error");}
+}
+function editTimetableEntry(id){const e=timetableCache.find(x=>String(x.id)===String(id));if(e)openTimetableForm(e);}
+async function deleteTimetableEntry(id){
+  const e=timetableCache.find(x=>String(x.id)===String(id));if(!e)return;
+  if(currentUser.role==="teacher"&&String(e.teacher_id)!==String(currentUser.id))return alert("You can only delete your own timetable entries.");
+  if(!confirm(`Delete ${e.subject} on ${e.day}?`))return;
+  const {error}=await supabaseClient.from("timetables").delete().eq("id",id).eq("schoolid",currentUser.schoolid);
+  if(error){console.error(error);return showTimetableMessage(error.message||"Unable to delete timetable.","error");}
+  showTimetableMessage("Timetable period deleted.","success");await loadTimetableGrid();
+}
+document.addEventListener("change",e=>{if(e.target?.id==="timetableFormTeacher")populateTimetableSubjects(e.target.value);});
+
+
+async function refreshDashboardClassTableOfficial() {
+    const tbody = document.getElementById("dashClassTableBody");
+    if (!tbody || typeof getOfficialSchoolClasses !== "function") return;
+    if (String(currentUser?.role || "").toLowerCase() !== "admin") return;
+
+    try {
+        const official = await getOfficialSchoolClasses();
+        if (!official.length) return;
+
+        // Re-run only the class table portion with official filter
+        const term = document.getElementById("dashTermFilter")?.value
+            || ((typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1");
+
+        function studentAvg(s) {
+            const stored = Number(s?.average);
+            if (!Number.isNaN(stored) && stored > 0) return stored;
+            const subs = s?.subjects || {};
+            const scores = [];
+            Object.keys(subs).forEach(sub => {
+                const d = subs[sub]?.[term];
+                if (!d) return;
+                const total = Number(d.totalScore);
+                if (!Number.isNaN(total) && total > 0) scores.push(total);
+            });
+            if (!scores.length) return 0;
+            return scores.reduce((a, b) => a + b, 0) / scores.length;
+        }
+        function studentGrade(avg) {
+            if (typeof getGrade === "function") return getGrade(avg);
+            if (avg >= 80) return "A";
+            if (avg >= 70) return "B";
+            if (avg >= 60) return "C";
+            if (avg >= 50) return "D";
+            return "F";
+        }
+
+        const list = Array.isArray(students) ? students : [];
+        const byClass = {};
+        official.forEach(cls => { byClass[cls] = []; });
+        list.forEach(s => {
+            const cls = String(s.studentclass || "").trim();
+            if (!byClass[cls]) return;
+            byClass[cls].push(s);
+        });
+
+        const rows = official.map(cls => {
+            const group = byClass[cls] || [];
+            const gAvgs = group.map(studentAvg);
+            const n = group.length;
+            const gAvg = n ? gAvgs.reduce((a, b) => a + b, 0) / n : 0;
+            const gPass = n ? gAvgs.filter(x => x >= 50).length / n * 100 : 0;
+            const gFail = Math.max(0, 100 - gPass);
+            const gDist = group.filter(s => studentGrade(studentAvg(s)) === "A").length;
+            return `<tr>
+                <td><strong>${String(cls).replace(/</g,"&lt;")}</strong></td>
+                <td>${n}</td>
+                <td>${gAvg.toFixed(1)}%</td>
+                <td>${gPass.toFixed(1)}%</td>
+                <td>${gDist}</td>
+                <td>${gFail.toFixed(1)}%</td>
+            </tr>`;
+        });
+        tbody.innerHTML = rows.join("");
+    } catch (e) {
+        console.warn("refreshDashboardClassTableOfficial:", e);
+    }
+}
+
+function updateDashboard(){
+
+    if (!Array.isArray(students)) return;
+
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    // Sync term filter with active term once
+    try {
+        const termSel = document.getElementById("dashTermFilter");
+        if (termSel && !termSel.dataset.synced) {
+            const term = (typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1";
+            termSel.value = term;
+            termSel.dataset.synced = "1";
+        }
+    } catch (e) {}
+
+    const term = document.getElementById("dashTermFilter")?.value
+        || (typeof activeTerm !== "undefined" && activeTerm)
+        || "term1";
+
+    function studentName(s) {
+        return s?.name
+            || [s?.firstname, s?.surname].filter(Boolean).join(" ").trim()
+            || s?.studentid
+            || "Student";
+    }
+
+    function studentAvg(s) {
+        const stored = Number(s?.average);
+        if (!Number.isNaN(stored) && stored > 0) return stored;
+        const subs = s?.subjects || {};
+        const scores = [];
+        Object.keys(subs).forEach(sub => {
+            const d = subs[sub]?.[term];
+            if (!d) return;
+            const totalScore = Number(d.totalScore);
+            if (!Number.isNaN(totalScore) && totalScore > 0) scores.push(totalScore);
+        });
+        if (!scores.length) return 0;
+        return scores.reduce((a, b) => a + b, 0) / scores.length;
+    }
+
+    function studentGrade(avg) {
+        if (typeof getGrade === "function") return getGrade(avg);
+        if (avg >= 80) return "A";
+        if (avg >= 70) return "B";
+        if (avg >= 60) return "C";
+        if (avg >= 50) return "D";
+        return "F";
+    }
+
+    const list = students.slice();
+    const total = list.length;
+    const avgs = list.map(studentAvg);
+    const passed = avgs.filter(x => x >= 50).length;
+    const failed = total - passed;
+    const distinctions = list.filter(s => studentGrade(studentAvg(s)) === "A").length;
+    const highest = total ? Math.max(...avgs, 0) : 0;
+    const average = total ? avgs.reduce((a, b) => a + b, 0) / total : 0;
+    const passRate = total ? (passed / total) * 100 : 0;
+    const failRate = total ? (failed / total) * 100 : 0;
+
+    setText("totalStudents", String(total));
+    setText("dashPassedCount", String(passed));
+    setText("passRate", passRate.toFixed(1) + "% Pass Rate");
+    setText("dashDistinctions", String(distinctions));
+    setText("dashDistinctionPct", total ? ((distinctions / total) * 100).toFixed(1) + "% of total" : "0% of total");
+    setText("avgScore", average.toFixed(1) + "%");
+    setText("highestScore", "Highest " + highest.toFixed(1) + "%");
+    setText("dashFailRate", failRate.toFixed(1) + "%");
+    setText("dashFailCount", failed + " student" + (failed === 1 ? "" : "s"));
+
+    // Top performing students list
+    const topList = document.getElementById("dashTopStudents");
+    if (topList) {
+        const ranked = list
+            .map(s => ({ name: studentName(s), avg: studentAvg(s) }))
+            .filter(x => x.avg > 0)
+            .sort((a, b) => b.avg - a.avg)
+            .slice(0, 5);
+
+        if (!ranked.length) {
+            topList.innerHTML = `<li class="dash-top-empty">No student averages yet</li>`;
+        } else {
+            topList.innerHTML = ranked.map((x, i) => `
+                <li>
+                    <span class="dash-rank">${i + 1}</span>
+                    <span class="dash-top-name">${String(x.name).replace(/</g,"&lt;")}</span>
+                    <span class="dash-top-score">${x.avg.toFixed(1)}%</span>
+                </li>`).join("");
+        }
+    }
+
+    // Class performance table — only real school classes (skip UUID / junk values)
+    const tbody = document.getElementById("dashClassTableBody");
+    if (tbody) {
+        const validClass = (value) => {
+            if (typeof isValidClassName === "function") return isValidClassName(value);
+            const cls = String(value || "").trim();
+            if (!cls) return false;
+            if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cls)) return false;
+            if (cls.length > 40) return false;
+            return true;
+        };
+
+        const byClass = {};
+        list.forEach(s => {
+            const cls = String(s.studentclass || s.class || "").trim();
+            if (!validClass(cls)) return; // hide invalid class rows
+            if (!byClass[cls]) byClass[cls] = [];
+            byClass[cls].push(s);
+        });
+
+        // Prefer official class order when available (async cache optional)
+        let classKeys = Object.keys(byClass).sort((a, b) =>
+            a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+        );
+
+        const rows = classKeys.map(cls => {
+            const group = byClass[cls];
+            const gAvgs = group.map(studentAvg);
+            const n = group.length;
+            const gAvg = n ? gAvgs.reduce((a, b) => a + b, 0) / n : 0;
+            const gPass = n ? gAvgs.filter(x => x >= 50).length / n * 100 : 0;
+            const gFail = Math.max(0, 100 - gPass);
+            const gDist = group.filter(s => studentGrade(studentAvg(s)) === "A").length;
+            return `<tr>
+                <td><strong>${String(cls).replace(/</g,"&lt;")}</strong></td>
+                <td>${n}</td>
+                <td>${gAvg.toFixed(1)}%</td>
+                <td>${gPass.toFixed(1)}%</td>
+                <td>${gDist}</td>
+                <td>${gFail.toFixed(1)}%</td>
+            </tr>`;
+        });
+        tbody.innerHTML = rows.length
+            ? rows.join("")
+            : `<tr><td colspan="6" style="text-align:center;opacity:.7;">No class data yet</td></tr>`;
+    }
+
+    drawCharts();
+
+    // Align class table to official school classes when available (admin)
+    if (typeof refreshDashboardClassTableOfficial === "function") {
+        refreshDashboardClassTableOfficial();
+    }
+}
+
+function displayStudents(){
+    let html=`<table>
+    <tr>
+        <th>Name</th>
+        <th>class</th>
+        <th>Actions</th>
+    </tr>`;
+
+    students.forEach((s,i)=>{
+        html += `<tr>
+           <td onclick="openStudentModal(${i})" style="cursor:pointer; color:#60a5fa;">
+    ${s.name}
+</td>
+        <td>${s.studentclass}</td>
+        <td>
+            <button class="action-btn edit-btn" onclick="editStudent(${i})">✏️ Edit</button>
+			<button class="action-btn delete-btn" onclick="deleteStudent(${i})">🗑 Delete</button>
+        </td>
+        </tr>`;
+    });
+
+    html += `</table>`;
+    tableContainer.innerHTML = html;
+}
+
+
+
+
+
+
+
+
+
+function saveMarksFromModal(){
+    saveMarks();  // use your existing function
+    closeStudentModal();
+    alert("Marks saved successfully ✅");
+}
+
+function importStudents(){
+    let data = document.getElementById("bulkData").value.trim();
+
+    if(!data) return alert("Paste student data first");
+
+    let lines = data.split("\n");
+
+    lines.forEach(line=>{
+        let parts = line.split(",");
+
+        if(parts.length < 2) return;
+
+        let name = parts[0].trim();
+        let cls = parts[1].trim();
+
+        if(name && cls){
+            students.push({
+    name,
+    studentclass: cls,
+    subjects: {},
+    currentTerm: "term1",
+    teacher: currentUser.username   // ✅ ADD THIS
+});
+        }
+    });
+
+    saveStudents();
+    populateStudentList();
+    updateDashboard();
+
+    alert("Students imported successfully!");
+    document.getElementById("bulkData").value = "";
+	
+if(!students.find(s => s.name === name && s.studentclass === cls)){
+    students.push({
+        name,
+        studentclass: cls,
+        subjects: {},
+        currentTerm: "term1"
+    });
+}
+}
+
+async function handleCSV(event){
+
+    let file = event.target.files[0];
+    if(!file) return;
+
+    let reader = new FileReader();
+
+    reader.onload = async function(e){
+
+        let text = e.target.result;
+        let lines = text.split("\n");
+
+        if(lines.length < 2){
+            return alert("CSV file is empty");
+        }
+
+        let importedStudents = [];
+
+        lines.slice(1).forEach(line => {
+
+            if(!line.trim()) return;
+
+            let values = line.split(",");
+
+            let student = {
+
+                name: values[0]?.trim(),
+                studentclass: values[1]?.trim(), // <-- change if needed
+                gender: values[2]?.trim() || "Male",
+
+                subjects: {},
+                currentTerm: "term1",
+                teacher: currentUser.username,
+                schoolid: currentUser.schoolid
+
+            };
+
+            subjects.forEach(sub => {
+
+                student.subjects[sub] = {};
+
+                student.subjects[sub]["term1"] = {
+                    test1: 0,
+                    test2: 0,
+                    project: 0,
+                    group: 0,
+                    exam: 0
+                };
+
+            });
+
+            if(student.name && student.studentclass){
+                importedStudents.push(student);
+            }
+
+        });
+
+        if(importedStudents.length === 0){
+            return alert("No valid students found in CSV");
+        }
+
+        const { error } = await supabaseClient
+            .from("students")
+            .insert(importedStudents);
+
+        if(error){
+
+            console.log(error);
+            return alert("Import failed");
+
+        }
+
+        await loadStudents();
+
+
+        loadStudentsTable();
+        updateDashboard();
+
+        alert(`✅ ${importedStudents.length} students imported successfully`);
+
+    };
+
+    reader.readAsText(file);
+}
+
+
+
+
+
+
+
+function populateStudentList() {
+
+    const term =
+        activeTerm ||
+        document.getElementById("termSelect")?.value ||
+        "term1";
+
+    const classFilterEl = document.getElementById("classFilter");
+    const selectedClass = (classFilterEl?.value || "").trim();
+    const studentsListEl =
+        document.getElementById("studentsList") ||
+        (typeof studentsList !== "undefined" ? studentsList : null);
+
+    // On Subjects page: never show students until a class is chosen
+    if (classFilterEl && !selectedClass) {
+        filteredStudents = [];
+        if (studentsListEl) {
+            studentsListEl.innerHTML = `
+                <div class="hw-empty-state" style="padding:28px;text-align:center;opacity:.85;">
+                    <div style="font-size:28px;margin-bottom:8px;"><i class="fas fa-users"></i></div>
+                    <h3 style="margin:0 0 6px;font-size:16px;">Select a class first</h3>
+                    <p style="margin:0;font-size:13px;opacity:.75;">Students will appear here after you choose a class.</p>
+                </div>`;
+        }
+        return;
+    }
+
+    const list =
+        (filteredStudents && filteredStudents.length)
+            ? filteredStudents
+            : (selectedClass
+                ? (students || []).filter(s => String(s.studentclass || "") === selectedClass)
+                : []);
+
+    // If a subject is selected, progress = how many of the 5 score fields are filled for THAT subject.
+    // Otherwise show overall progress across the teacher's/admin's subjects.
+    const scoreFields = ["test1", "test2", "project", "group", "exam"];
+
+    function fieldIsFilled(mark, field) {
+        if (!mark || typeof mark !== "object") return false;
+        // Preferred: explicit flags saved with the marks
+        if (mark._entered && typeof mark._entered[field] === "boolean") {
+            return mark._entered[field] === true;
+        }
+        // Legacy records (no _entered): count only values > 0
+        // (cannot reliably detect intentional zero without the flag)
+        const v = mark[field];
+        if (v === null || v === undefined || v === "") return false;
+        const n = Number(v);
+        return !Number.isNaN(n) && n > 0;
+    }
+
+    function getSubjectListForUser() {
+        const schoolSubjects = Array.isArray(subjects)
+            ? subjects.map(sub => (typeof sub === "string" ? sub : sub?.name)).filter(Boolean)
+            : [];
+
+        if (String(currentUser?.role || "").toLowerCase() === "teacher") {
+            const raw = Array.isArray(currentUser.subjects) ? currentUser.subjects : [];
+            return [...new Set(raw.map(s => (typeof s === "string" ? s : s?.name)).filter(Boolean))];
+        }
+        return [...new Set(schoolSubjects)];
+    }
+
+    const subjectList = getSubjectListForUser();
+
+    const html = list.map((s, i) => {
+        const displayName =
+            s.name ||
+            [s.firstname, s.surname].filter(Boolean).join(" ").trim() ||
+            "Unnamed Student";
+
+        let progress = 0;
+        let started = false;
+        let label = "Not Started";
+        let color = "#9ca3af";
+
+        if (selectedSubject) {
+            // --- Progress for the currently selected subject (5 components) ---
+            const mark = s.subjects?.[selectedSubject]?.[term] || {};
+            let filled = 0;
+            scoreFields.forEach(field => {
+                if (fieldIsFilled(mark, field)) filled++;
+            });
+            progress = Math.round((filled / scoreFields.length) * 100);
+            started = filled > 0;
+
+            if (progress === 100) {
+                label = "100% Complete";
+                color = "#22c55e";
+            } else if (started) {
+                label = `${progress}% Complete`;
+                color = "#f59e0b";
+            } else {
+                label = "Not Started";
+                color = "#9ca3af";
+            }
+        } else {
+            // --- Overall: how many subjects have all 5 fields filled ---
+            const totalSubjects = subjectList.length || 0;
+            let completed = 0;
+            let anyStarted = 0;
+
+            subjectList.forEach(subject => {
+                const mark = s.subjects?.[subject]?.[term];
+                if (!mark || typeof mark !== "object") return;
+
+                let filled = 0;
+                scoreFields.forEach(field => {
+                    if (fieldIsFilled(mark, field)) filled++;
+                });
+
+                if (filled > 0) anyStarted++;
+                if (filled === scoreFields.length) completed++;
+            });
+
+            progress = totalSubjects > 0
+                ? Math.round((completed / totalSubjects) * 100)
+                : 0;
+            started = anyStarted > 0;
+
+            if (progress === 100 && totalSubjects > 0) {
+                label = "100% Complete";
+                color = "#22c55e";
+            } else if (started) {
+                label = `${progress}% Complete`;
+                color = "#f59e0b";
+            } else {
+                label = "Not Started";
+                color = "#9ca3af";
+            }
+        }
+
+        return `
+        <div
+            class="card ${s.id === currentStudent?.id ? "active-student" : ""}"
+            onclick="selectSubjectStudent(${i})"
+        >
+            <div style="font-weight:bold;">
+                ${displayName}
+            </div>
+            <div style="
+                font-size:12px;
+                margin-top:4px;
+                color:${color};
+                font-weight:bold;
+            ">
+                ${label}
+            </div>
+        </div>
+        `;
+    }).join("");
+
+    if (studentsListEl) {
+        if (!list.length) {
+            studentsListEl.innerHTML = `
+                <div class="hw-empty-state" style="padding:28px;text-align:center;opacity:.85;">
+                    <div style="font-size:28px;margin-bottom:8px;"><i class="fas fa-user-graduate"></i></div>
+                    <h3 style="margin:0 0 6px;font-size:16px;">No students in this class</h3>
+                    <p style="margin:0;font-size:13px;opacity:.75;">There are no students assigned to the selected class.</p>
+                </div>`;
+        } else {
+            studentsListEl.innerHTML = html;
+        }
+    }
+
+}
+
+
+
+async function editStudent(index){
+
+    let s = students[index];
+
+    let newName = prompt("Edit Name:", s.name);
+    if(!newName) return;
+
+    let newClass = prompt(
+        "Edit Class:",
+        s.studentclass
+    );
+
+    if(!newClass) return;
+
+    let newGender = prompt(
+        "Gender (Male/Female):",
+        s.gender || "Male"
+    );
+
+    s.name = newName;
+    s.studentclass = newClass;
+    s.gender = newGender;
+
+    await saveStudents();
+
+    loadStudentsTable();
+    populateStudentList();
+    updateDashboard();
+
+    alert("Student updated successfully");
+}
+
+async function deleteStudent(studentid){
+
+    const { error } = await supabaseClient
+        .from("students")
+        .delete()
+        .eq("id", studentid);
+console.log("Deleting:", studentid);
+console.log("Delete Result:", error);
+    if(error){
+        console.log("Delete Error:", error);
+        return alert("Failed to delete student");
+    }
+
+    await loadStudents();
+    loadStudentsTable();
+
+    alert("Student deleted successfully");
+}
+
+function drawCharts(){
+
+    const gradeCanvas = document.getElementById("gradeChart");
+    const topCanvas = document.getElementById("topChart");
+    const subjectCanvas = document.getElementById("subjectChart");
+    const passCanvas = document.getElementById("passChart");
+    if (!gradeCanvas && !topCanvas && !subjectCanvas && !passCanvas) return;
+    if (typeof Chart === "undefined") return;
+
+    let grades = {A:0,B:0,C:0,D:0,F:0};
+    let pass = 0, fail = 0;
+
+    const list = Array.isArray(students) ? students : [];
+
+    function studentDisplayName(s) {
+        return (
+            s?.name ||
+            [s?.firstname, s?.surname].filter(Boolean).join(" ").trim() ||
+            s?.studentid ||
+            "Student"
+        );
+    }
+
+    function studentAverage(s) {
+        const avg = Number(s?.average);
+        if (!Number.isNaN(avg) && avg > 0) return avg;
+        // Fallback: compute from subject totals for active term
+        const term = (typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1";
+        const subs = s?.subjects || {};
+        const scores = [];
+        Object.keys(subs).forEach(sub => {
+            const d = subs[sub]?.[term];
+            if (!d) return;
+            const total = Number(d.totalScore);
+            if (!Number.isNaN(total) && total > 0) scores.push(total);
+        });
+        if (!scores.length) return 0;
+        return scores.reduce((a,b) => a + b, 0) / scores.length;
+    }
+
+    list.forEach(s => {
+        const avg = studentAverage(s);
+        const g = (typeof getGrade === "function") ? getGrade(avg) : "F";
+        if (grades[g] !== undefined) grades[g]++;
+        if (avg >= 50) pass++;
+        else fail++;
+    });
+
+    // DESTROY OLD CHARTS
+    if (gradeChartInstance) { try { gradeChartInstance.destroy(); } catch(e) {} gradeChartInstance = null; }
+    if (topChartInstance) { try { topChartInstance.destroy(); } catch(e) {} topChartInstance = null; }
+    if (subjectChartInstance) { try { subjectChartInstance.destroy(); } catch(e) {} subjectChartInstance = null; }
+    if (passChartInstance) { try { passChartInstance.destroy(); } catch(e) {} passChartInstance = null; }
+
+    // GRADE PIE
+    if (gradeCanvas) {
+        gradeChartInstance = new Chart(gradeCanvas, {
+            type: "pie",
+            data: {
+                labels: Object.keys(grades),
+                datasets: [{
+                    label: "Students",
+                    data: Object.values(grades),
+                    backgroundColor: ["#f472b6","#fb7185","#facc15","#4ade80","#f87171"]
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: "bottom" }
+                }
+            }
+        });
+    }
+
+    // TOP STUDENTS
+    const sorted = [...list]
+        .map(s => ({ s, avg: studentAverage(s) }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 5);
+
+    if (topCanvas) {
+        topChartInstance = new Chart(topCanvas, {
+            type: "bar",
+            data: {
+                labels: sorted.map(x => studentDisplayName(x.s)),
+                datasets: [{
+                    label: "Average %",
+                    data: sorted.map(x => Number(x.avg.toFixed(1))),
+                    backgroundColor: "#f472b6"
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+    }
+
+    // SUBJECT AVERAGE — compute from real student marks when possible
+    const term = document.getElementById("dashTermFilter")?.value
+        || ((typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1");
+    const subjectTotals = {};
+    const subjectCounts = {};
+    list.forEach(s => {
+        const subs = s?.subjects || {};
+        Object.keys(subs).forEach(sub => {
+            const d = subs[sub]?.[term];
+            if (!d) return;
+            const total = Number(d.totalScore);
+            if (Number.isNaN(total) || total <= 0) return;
+            subjectTotals[sub] = (subjectTotals[sub] || 0) + total;
+            subjectCounts[sub] = (subjectCounts[sub] || 0) + 1;
+        });
+    });
+    let subjectLabels = Object.keys(subjectTotals);
+    let subjectData = subjectLabels.map(sub =>
+        Number((subjectTotals[sub] / subjectCounts[sub]).toFixed(1))
+    );
+    // Fallback sample labels if no marks yet
+    if (!subjectLabels.length) {
+        subjectLabels = ["Math", "English", "Science", "ICT"];
+        subjectData = [0, 0, 0, 0];
+    }
+
+    if (subjectCanvas) {
+        subjectChartInstance = new Chart(subjectCanvas, {
+            type: "bar",
+            data: {
+                labels: subjectLabels,
+                datasets: [{
+                    label: "Subject Average %",
+                    data: subjectData,
+                    backgroundColor: "#fb7185"
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+    }
+
+    // PASS FAIL
+    if (passCanvas) {
+        passChartInstance = new Chart(passCanvas, {
+            type: "bar",
+            data: {
+                labels: ["Pass", "Fail"],
+                datasets: [{
+                    label: "Students",
+                    data: [pass, fail],
+                    backgroundColor: ["#4ade80", "#f87171"]
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+}
+
+async function addStudentFromPage(){
+
+if(currentUser.role === "admin"){
+    return alert("❌ Only teachers can add students");
+}
+    let name =
+        document.getElementById(
+            "studentname"
+        ).value.trim();
+
+    let cls =
+        document.getElementById(
+            "studentClass"
+        ).value.trim();
+
+    // VALIDATION
+    if(!name || !cls){
+
+        return alert(
+            "Enter name and class"
+        );
+    }
+
+    // TEACHER RESTRICTION
+   if(currentUser.role === "teacher"){
+
+    let allowedClasses =
+        currentUser.classes || [];
+
+    if(!allowedClasses.includes(cls)){
+
+        return alert(
+            "❌ You can only add students to your assigned classes"
+        );
+    }
+}
+
+    let gender =
+        prompt(
+            "Enter Gender (Male/Female)"
+        );
+
+    // SAVE TO SUPABASE
+    const { error } =
+        await supabaseClient
+            .from("students")
+            .insert([
+{
+    name: name,
+    studentclass: cls,
+    gender: gender || "Male",
+    teacher: currentUser.username,
+    schoolid: currentUser.schoolid,
+    subjects: {},
+    currentTerm: "term1",
+    average: 0
+}
+])
+
+    if(error){
+
+        console.log(error);
+
+        return alert(
+            "Failed to add student"
+        );
+    }
+
+    // RELOAD
+    await loadStudents();
+
+    document.getElementById(
+        "studentname"
+    ).value = "";
+
+    document.getElementById(
+        "studentClass"
+    ).value = "";
+
+    loadStudentsTable();
+    populateStudentList();
+    updateDashboard();
+
+    alert(
+        "Student added successfully ✅"
+    );
+	
+	updateStudentSuggestions();
+}
+
+function openStudentForm(index){
+    showPage('subjectsPage');   // go to subjects page
+    setTimeout(()=>{
+        selectStudent(index);   // open the form
+    }, 100);
+}
+
+
+function loadStudentsTable(){
+    let keyword =
+        document.getElementById("searchStudent")?.value
+        .toLowerCase() || "";
+
+    // FILTER STUDENTS
+    let filtered = students.filter(s =>
+        s.name.toLowerCase().includes(keyword) ||
+        s.studentclass.toLowerCase().includes(keyword)
+    );
+
+    // START TABLE
+    let html = `
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Gender</th>
+            <th>Actions</th>
+        </tr>
+    `;
+
+    // LOOP STUDENTS
+    filtered.forEach((s)=>{
+
+        // FIND REAL INDEX
+        let realIndex = students.findIndex(st =>
+            st.name === s.name &&
+            st.studentclass === s.studentclass
+        );
+
+        html += `
+        <tr>
+
+            <!-- CLICK STUDENT NAME -->
+            <td onclick="openStudentModal(${realIndex})"
+                style="
+                    cursor:pointer;
+                    color:#60a5fa;
+                    font-weight:bold;
+                "
+            >
+                ${s.name}
+            </td>
+
+            <!-- CLASS -->
+            <td>${s.studentclass}</td>
+
+            <!-- GENDER -->
+            <td>
+                <select
+                    onchange="updateGender(${realIndex}, this.value)"
+                >
+                    <option value="Male"
+                        ${s.gender === "Male" ? "selected" : ""}>
+                        Male
+                    </option>
+
+                    <option value="Female"
+                        ${s.gender === "Female" ? "selected" : ""}>
+                        Female
+                    </option>
+                </select>
+            </td>
+
+            <!-- ACTIONS -->
+            <td>
+
+                <button
+                    class="action-btn edit-btn"
+                    onclick="editStudent(${realIndex})"
+                >
+                    ✏️ Edit
+                </button>
+
+                <button
+    class="action-btn delete-btn"
+    onclick="deleteStudent('${s.id}')"
+>
+    🗑 Delete
+</button>
+
+            </td>
+
+        </tr>
+        `;
+    });
+
+    // NO STUDENTS
+    if(filtered.length === 0){
+        html += `
+        <tr>
+            <td colspan="4"
+                style="text-align:center; padding:20px;">
+                No students found
+            </td>
+        </tr>
+        `;
+    }
+
+    // CLOSE TABLE
+    html += `</table>`;
+
+    // DISPLAY TABLE
+    document.getElementById("studentsTable").innerHTML = html;
+}
+
+function updateGender(index, newGender){
+    students[index].gender = newGender;
+    saveStudents();
+}
+
+function searchStudent(){
+    loadStudentsTable();
+}
+
+/* ============================================================
+   CSV EXPORT HELPERS
+   ============================================================ */
+
+function downloadCSV(filename, rows) {
+    if (!rows || !rows.length) {
+        alert("No data to export");
+        return;
+    }
+
+    const escapeCell = (value) => {
+        const str = value == null ? "" : String(value);
+        if (/[",\n\r]/.test(str)) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    };
+
+    const csvContent = rows
+        .map(row => row.map(escapeCell).join(","))
+        .join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * Export students currently visible on the Students page (respects search filter).
+ */
+function exportStudentsCSV() {
+    const keyword =
+        (document.getElementById("searchStudent")?.value || "")
+            .toLowerCase()
+            .trim();
+
+    const list = (students || []).filter(s => {
+        if (!keyword) return true;
+        const name = (s.name || "").toLowerCase();
+        const cls = (s.studentclass || "").toLowerCase();
+        return name.includes(keyword) || cls.includes(keyword);
+    });
+
+    if (!list.length) {
+        alert("No students to export");
+        return;
+    }
+
+    const header = [
+        "Name",
+        "Class",
+        "Gender",
+        "Teacher",
+        "Student ID"
+    ];
+
+    const rows = [header];
+
+    list.forEach(s => {
+        // Use portal login ID (e.g. SBA26xxxx), not the Supabase UUID
+        const portalId =
+            s.studentid ||
+            s.portalId ||
+            s.portal_id ||
+            "";
+
+        rows.push([
+            s.name || "",
+            s.studentclass || "",
+            s.gender || "",
+            s.teacher || "",
+            portalId || "Not Generated"
+        ]);
+    });
+
+    const school = (currentUser?.schoolname || currentUser?.schoolid || "school")
+        .toString()
+        .replace(/[^\w\-]+/g, "_");
+    const date = new Date().toISOString().slice(0, 10);
+
+    downloadCSV(`students_${school}_${date}.csv`, rows);
+}
+
+/**
+ * Export students of the selected class on the Subjects page,
+ * including marks for the currently selected subject (if any).
+ */
+function exportClassStudentsCSV() {
+    const classFilter = document.getElementById("classFilter");
+    const selectedClass = (classFilter?.value || "").trim();
+
+    if (!selectedClass) {
+        alert("Please select a class first");
+        return;
+    }
+
+    const list = (students || []).filter(
+        s => String(s.studentclass || "") === selectedClass
+    );
+
+    if (!list.length) {
+        alert("No students found for this class");
+        return;
+    }
+
+    const term =
+        (typeof currentTerm !== "undefined" && currentTerm) ||
+        document.getElementById("termSelect")?.value ||
+        "term1";
+
+    const subject = selectedSubject || null;
+
+    const header = [
+        "Name",
+        "Class",
+        "Gender"
+    ];
+
+    if (subject) {
+        header.push(
+            "Subject",
+            "Test 1",
+            "Test 2",
+            "Project",
+            "Group Work",
+            "Exam",
+            "Class Score (50%)",
+            "Exam Score (50%)",
+            "Total",
+            "Grade",
+            "Remark"
+        );
+    } else {
+        header.push("Subjects Summary");
+    }
+
+    const rows = [header];
+
+    list.forEach(s => {
+        const base = [
+            s.name || "",
+            s.studentclass || "",
+            s.gender || ""
+        ];
+
+        if (subject) {
+            const mark = s.subjects?.[subject]?.[term] || {};
+            rows.push([
+                ...base,
+                subject,
+                mark.test1 ?? "",
+                mark.test2 ?? "",
+                mark.project ?? "",
+                mark.group ?? "",
+                mark.exam ?? "",
+                mark.classScore ?? "",
+                mark.examScore ?? "",
+                mark.totalScore ?? "",
+                mark.grade || "",
+                mark.remark || ""
+            ]);
+        } else {
+            const subs = s.subjects || {};
+            const summary = Object.keys(subs)
+                .map(subName => {
+                    const m = subs[subName]?.[term] || {};
+                    const total = m.totalScore ?? "";
+                    const grade = m.grade || "";
+                    return total !== "" || grade
+                        ? `${subName}: ${total}${grade ? " (" + grade + ")" : ""}`
+                        : subName;
+                })
+                .filter(Boolean)
+                .join("; ");
+
+            rows.push([...base, summary]);
+        }
+    });
+
+    const safeClass = selectedClass.replace(/[^\w\-]+/g, "_");
+    const safeSubject = subject
+        ? "_" + subject.replace(/[^\w\-]+/g, "_")
+        : "";
+    const date = new Date().toISOString().slice(0, 10);
+
+    downloadCSV(
+        `class_${safeClass}${safeSubject}_${date}.csv`,
+        rows
+    );
+}
+
+
+
+
+
+
+
+  // =========================
+    // ATTENDANCE SECTION
+    // =========================
+
+// Attendance data stored in localStorage: { date: { studentname: "Present"/"Absent" } }
+window.attendanceData = window.attendanceData || {};
+
+function isValidClassName(value) {
+    const cls = String(value || "").trim();
+    if (!cls) return false;
+    // Reject UUIDs and other non-class ids mistakenly stored as studentclass
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cls)) {
+        return false;
+    }
+    // Very long strings are unlikely to be class names
+    if (cls.length > 40) return false;
+    return true;
+}
+
+async function getOfficialSchoolClasses() {
+    const schoolid = currentUser?.schoolid;
+    if (!schoolid || typeof supabaseClient === "undefined") return [];
+
+    try {
+        const { data, error } = await supabaseClient
+            .from("classes")
+            .select("classname")
+            .eq("schoolid", schoolid)
+            .order("classname");
+
+        if (error) {
+            console.warn("Official classes load error:", error);
+            return [];
+        }
+
+        return (data || [])
+            .map(c => String(c.classname || "").trim())
+            .filter(isValidClassName);
+    } catch (e) {
+        console.warn("getOfficialSchoolClasses:", e);
+        return [];
+    }
+}
+
+async function loadAttendanceTable() {
+
+    let date = document.getElementById("attendanceDate")?.value;
+    if (!date) return;
+
+    if (!attendanceData[date]) {
+        attendanceData[date] = {};
+
+        (students || []).forEach(s => {
+            const key = s.name || [s.firstname, s.surname].filter(Boolean).join(" ").trim();
+            if (key) attendanceData[date][key] = attendanceData[date][key] || "";
+        });
+    }
+
+    // =========================
+    // ADMIN VIEW — only official school classes
+    // =========================
+    if (String(currentUser?.role || "").toLowerCase() === "admin") {
+
+        // Prefer classes created in Term/School class list
+        let officialClasses = await getOfficialSchoolClasses();
+
+        // Fallback: unique valid studentclass values only (no UUIDs / junk)
+        if (!officialClasses.length) {
+            officialClasses = [...new Set(
+                (students || [])
+                    .map(s => String(s.studentclass || "").trim())
+                    .filter(isValidClassName)
+            )].sort();
+        }
+
+        const grouped = {};
+        officialClasses.forEach(cls => {
+            grouped[cls] = {
+                total: 0,
+                present: 0,
+                absent: 0,
+                boys: 0,
+                girls: 0
+            };
+        });
+
+        (students || []).forEach(s => {
+            const cls = String(s.studentclass || "").trim();
+            if (!grouped[cls]) return; // skip students not in an official class
+
+            grouped[cls].total++;
+
+            const key = s.name || [s.firstname, s.surname].filter(Boolean).join(" ").trim();
+            const status = attendanceData[date][key];
+
+            if (status === "Present") {
+                grouped[cls].present++;
+                const gender = String(s.gender || "").toLowerCase();
+                if (gender === "male") grouped[cls].boys++;
+                if (gender === "female") grouped[cls].girls++;
+            } else {
+                // Unmarked counts as absent in the summary register
+                grouped[cls].absent++;
+            }
+        });
+
+        let html = `
+        <table>
+            <tr>
+                <th>Class</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Boys</th>
+                <th>Girls</th>
+                <th>Total</th>
+            </tr>
+        `;
+
+        if (!officialClasses.length) {
+            html += `
+            <tr>
+                <td colspan="6" style="text-align:center;opacity:.75;padding:18px;">
+                    No classes found. Create classes first, then assign students to them.
+                </td>
+            </tr>`;
+        } else {
+            officialClasses.forEach(cls => {
+                const g = grouped[cls];
+                html += `
+                <tr>
+                    <td><strong>${cls}</strong></td>
+                    <td>${g.present}</td>
+                    <td>${g.absent}</td>
+                    <td>${g.boys}</td>
+                    <td>${g.girls}</td>
+                    <td>${g.total}</td>
+                </tr>`;
+            });
+        }
+
+        html += `</table>`;
+
+        const tableHost = document.getElementById("attendanceTable");
+        if (tableHost) tableHost.innerHTML = html;
+
+        // Hide mark all button for admin summary view
+        const markAllBtn = document.querySelector("button[onclick='markAllPresent()']");
+        if (markAllBtn) markAllBtn.style.display = "none";
+
+        return;
+    }
+
+    // =========================
+    // TEACHER VIEW
+    // =========================
+let teacherStudents = students;
+
+if(currentUser.role === "teacher"){
+
+    teacherStudents = students.filter(s =>
+        (currentUser.classes || [])
+            .includes(s.studentclass)
+    );
+}
+    document.querySelector("button[onclick='markAllPresent()']").style.display = "block";
+
+    let tableHTML = `
+    <table>
+        <tr>
+            <th>Student Name</th>
+            <th>Class</th>
+            <th>Present</th>
+            <th>Absent</th>
+        </tr>
+    `;
+
+   teacherStudents.forEach(s => {
+
+        let status = attendanceData[date][s.name] || "";
+
+        tableHTML += `
+        <tr>
+            <td>${s.name}</td>
+            <td>${s.studentclass}</td>
+
+            <td>
+                <button class="present-btn ${status === "Present" ? "active" : ""}"
+                    onclick="markAttendanceManual('${s.name}', 'Present')">
+                    ✔️
+                </button>
+            </td>
+
+            <td>
+                <button class="absent-btn ${status === "Absent" ? "active" : ""}"
+                    onclick="markAttendanceManual('${s.name}', 'Absent')">
+                    ❌
+                </button>
+            </td>
+        </tr>
+        `;
+    });
+
+    tableHTML += `</table>`;
+
+    document.getElementById("attendanceTable").innerHTML = tableHTML;
+
+    updateAttendanceStats(date);
+
+    // =========================================================
+// CURRENT TERM SUMMARY
+// =========================================================
+
+const selectedTerm =
+    document.getElementById("attendanceTerm")?.value ||
+    getTermFromDate(date) ||
+    activeTerm ||
+    "term1";
+
+const termData =
+    calculateTermAttendance(selectedTerm);
+
+const termName =
+    selectedTerm === "term1"
+        ? "Term 1"
+        : selectedTerm === "term2"
+            ? "Term 2"
+            : "Term 3";
+
+document.getElementById(
+    "termAttendanceSummary"
+).innerHTML = `
+
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+    ">
+
+        <span>
+            ${termName}
+        </span>
+
+        <strong>
+            ${termData.percentage}%
+        </strong>
+
+    </div>
+
+    <div style="
+        margin-top:6px;
+        font-size:11px;
+        font-weight:500;
+        color:#6b7280;
+    ">
+
+        ${termData.totalDays} attendance day(s)
+        ·
+        ${termData.totalPresent} present records
+
+    </div>
+`;
+}
+
+
+// =========================================================
+// GET SELECTED TERM DATE RANGE
+// =========================================================
+function getTermDateBounds(term) {
+    const prefix = term === "term1" ? "t1" : term === "term2" ? "t2" : term === "term3" ? "t3" : null;
+    if (!prefix) return { start: null, end: null };
+    return {
+        start: termSettings?.[`${prefix}start`] || null,
+        end: termSettings?.[`${prefix}end`] || null
+    };
+}
+
+// =========================================================
+// GET STUDENT ATTENDANCE FOR SELECTED TERM
+// =========================================================
+
+async function getStudentAttendance(
+    studentName,
+    term
+) {
+
+    const bounds = getTermDateBounds(term);
+    if (!bounds.start || !bounds.end) {
+        return { totalDays: 0, daysPresent: 0, daysAbsent: 0, percentage: 0 };
+    }
+
+    const { data, error } = await supabaseClient
+        .from("attendance")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("studentname", studentName)
+        .gte("date", bounds.start)
+        .lte("date", bounds.end);
+
+    if (error) {
+
+        console.log(error);
+
+        return {
+            totalDays: 0,
+            daysPresent: 0,
+            daysAbsent: 0,
+            percentage: 0
+        };
+    }
+
+    const totalDays = data.length;
+
+    const daysPresent =
+        data.filter(
+            record =>
+                record.status === "Present"
+        ).length;
+
+    const daysAbsent =
+        data.filter(
+            record =>
+                record.status === "Absent"
+        ).length;
+
+    const percentage =
+        totalDays === 0
+            ? 0
+            : (
+                (daysPresent / totalDays) *
+                100
+            ).toFixed(1);
+
+    return {
+        totalDays,
+        daysPresent,
+        daysAbsent,
+        percentage: Number(percentage)
+    };
+}
+
+async function loadAttendanceData() {
+
+    if (!currentUser || !currentUser.schoolid) {
+        console.log(
+            "Cannot load attendance: school ID not available."
+        );
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("attendance")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
+
+    if (error) {
+
+        console.error(
+            "Attendance loading error:",
+            error
+        );
+
+        return;
+    }
+
+    console.log(
+        "Attendance records loaded:",
+        data
+    );
+
+    // Show only attendance inside the active academic year's configured
+    // date range. Historical attendance remains stored in Supabase.
+    const yearStart = termSettings?.t1start;
+    const yearEnd = termSettings?.t3end;
+    const yearRecords = (yearStart && yearEnd)
+        ? data.filter(record => record.date >= yearStart && record.date <= yearEnd)
+        : [];
+
+    // Reset local attendance cache
+    attendanceData = {};
+
+    // Rebuild attendanceData from the active academic year only
+    yearRecords.forEach(record => {
+
+        if (!attendanceData[record.date]) {
+            attendanceData[record.date] = {};
+        }
+
+        attendanceData[record.date][record.studentname] =
+            record.status;
+    });
+
+    console.log(
+        "Rebuilt attendanceData:",
+        attendanceData
+    );
+
+    // Refresh currently selected date
+    const dateInput =
+        document.getElementById("attendanceDate");
+
+    if (dateInput && dateInput.value) {
+        loadAttendanceTable();
+    }
+
+    // Refresh term summary
+    if (
+        typeof updateAttendanceTermSummary ===
+        "function"
+    ) {
+        updateAttendanceTermSummary();
+    }
+}
+
+// =========================================================
+// MARK ATTENDANCE
+// =========================================================
+
+async function markAttendance(
+    date,
+    studentname,
+    status
+) {
+
+    // -----------------------------------------------------
+    // CHECK DATE
+    // -----------------------------------------------------
+
+    if (!date) {
+
+        return alert(
+            "Please select an attendance date."
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // BLOCK WEEKENDS
+    // -----------------------------------------------------
+
+    if (isWeekend(date)) {
+
+        return alert(
+            "🚫 No attendance can be recorded on weekends."
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // DETERMINE TERM FROM DATE
+    // -----------------------------------------------------
+
+    const term =
+        getTermFromDate(date);
+
+
+    // -----------------------------------------------------
+    // CHECK WHETHER DATE BELONGS TO A TERM
+    // -----------------------------------------------------
+
+    if (!term) {
+
+        return alert(
+            "❌ Attendance cannot be recorded.\n\n" +
+            "The selected date is outside an active school term."
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // SAVE ATTENDANCE TO SUPABASE
+    // -----------------------------------------------------
+
+    const { error } =
+        await supabaseClient
+            .from("attendance")
+            .upsert(
+                [
+                    {
+                        schoolid:
+                            currentUser.schoolid,
+
+                        class:
+                            currentUser.mainClass,
+
+                        date:
+                            date,
+
+                        term:
+                            term,
+
+                        studentname:
+                            studentname,
+
+                        status:
+                            status,
+
+                        teacher:
+                            currentUser.username
+                    }
+                ],
+                {
+                    onConflict:
+                        "schoolid,date,studentname"
+                }
+            );
+
+
+    // -----------------------------------------------------
+    // CHECK SAVE ERROR
+    // -----------------------------------------------------
+
+    if (error) {
+
+        console.log(
+            "Attendance save error:",
+            error
+        );
+
+        return alert(
+            "Failed to save attendance."
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // UPDATE LOCAL ATTENDANCE CACHE
+    // -----------------------------------------------------
+
+    if (!attendanceData[date]) {
+
+        attendanceData[date] = {};
+    }
+
+
+    attendanceData[date][studentname] =
+        status;
+
+
+    // -----------------------------------------------------
+    // UPDATE STUDENT ATTENDANCE TOTALS
+    // -----------------------------------------------------
+
+    syncAttendanceToStudents();
+
+
+    // -----------------------------------------------------
+    // REFRESH ATTENDANCE TABLE
+    // -----------------------------------------------------
+
+    loadAttendanceTable();
+
+
+    // -----------------------------------------------------
+    // REFRESH TERM SUMMARY
+    // -----------------------------------------------------
+
+    updateAttendanceTermSummary();
+}
+
+// =========================================================
+// GET STUDENT ATTENDANCE SUMMARY FOR ONE TERM
+// =========================================================
+
+async function getAttendanceSummary(
+    studentName,
+    term
+) {
+
+    const { data, error } = await supabaseClient
+        .from("attendance")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("studentname", studentName)
+        .eq("term", term);
+
+    if (error) {
+
+        console.log(error);
+
+        return {
+            totalDays: 0,
+            daysPresent: 0,
+            daysAbsent: 0,
+            percentage: 0
+        };
+    }
+
+    const totalDays = data.length;
+
+    const daysPresent = data.filter(
+        record =>
+            record.status === "Present"
+    ).length;
+
+    const daysAbsent = data.filter(
+        record =>
+            record.status === "Absent"
+    ).length;
+
+    const percentage =
+        totalDays === 0
+            ? 0
+            : (
+                (daysPresent / totalDays) *
+                100
+            ).toFixed(1);
+
+    return {
+        totalDays,
+        daysPresent,
+        daysAbsent,
+        percentage: Number(percentage)
+    };
+}
+
+function updateAttendanceStats(date) {
+    let data = attendanceData[date];
+
+    let presentCount = 0;
+    let absentCount = 0;
+
+    let boysPresent = 0;
+    let girlsPresent = 0;
+
+    students.forEach(s => {
+        let status = data[s.name];
+
+        if(status === "Present"){
+            presentCount++;
+
+            if(s.gender === "Male") boysPresent++;
+            if(s.gender === "Female") girlsPresent++;
+        } else {
+            absentCount++;
+        }
+    });
+
+    document.getElementById("attendanceStats").innerText = 
+        `Present: ${presentCount} | Absent: ${absentCount} | 
+         Boys Present: ${boysPresent} | Girls Present: ${girlsPresent} | 
+         Total: ${students.length}`;
+}
+
+async function markAttendanceManual(studentname, status) {
+
+    const date =
+        document.getElementById("attendanceDate")?.value;
+
+    if (!date) {
+        return alert(
+            "Please select an attendance date first."
+        );
+    }
+
+    // =========================
+    // WEEKEND CHECK
+    // =========================
+
+    if (isWeekend(date)) {
+        return alert(
+            "No attendance can be recorded on weekends."
+        );
+    }
+
+    // =========================
+    // GET TERM FROM DATE
+    // =========================
+
+    const term = getTermFromDate(date);
+
+    if (!term) {
+        return alert(
+            "Attendance cannot be recorded.\n\n" +
+            "The selected date is outside an active school term."
+        );
+    }
+
+    // =========================
+    // CHECK USER
+    // =========================
+
+    if (
+        !currentUser ||
+        !currentUser.schoolid
+    ) {
+        return alert(
+            "School information is not available."
+        );
+    }
+
+    // =========================
+    // FIND STUDENT
+    // =========================
+
+    const student =
+        students.find(
+            s => String(s.name).trim() ===
+                 String(studentname).trim()
+        );
+
+    if (!student) {
+        return alert(
+            "Student could not be found."
+        );
+    }
+
+    const cleanStudentName =
+        String(student.name).trim();
+
+    // =========================
+    // PREPARE RECORD
+    // =========================
+
+    const attendanceRecord = {
+
+        schoolid:
+            currentUser.schoolid,
+
+        class:
+            student.studentclass || "",
+
+        date:
+            date,
+
+        studentname:
+            cleanStudentName,
+
+        status:
+            status,
+
+        teacher:
+            currentUser.username || "",
+
+        term:
+            term
+    };
+
+    console.log(
+        "Saving attendance:",
+        attendanceRecord
+    );
+
+    // =========================
+    // SAVE / UPDATE
+    // =========================
+
+    const { error } =
+        await supabaseClient
+            .from("attendance")
+            .upsert(
+                [attendanceRecord],
+                {
+                    onConflict:
+                        "schoolid,date,studentname"
+                }
+            );
+
+    if (error) {
+
+        console.error(
+            "Attendance save error:",
+            error
+        );
+
+        return alert(
+            "Failed to save attendance.\n\n" +
+            error.message
+        );
+    }
+
+    console.log(
+        "Attendance saved successfully."
+    );
+
+    // =========================
+    // UPDATE LOCAL CACHE
+    // =========================
+
+    if (!attendanceData[date]) {
+        attendanceData[date] = {};
+    }
+
+    attendanceData[date][cleanStudentName] =
+        status;
+
+    // =========================
+    // SYNC
+    // =========================
+
+    syncAttendanceToStudents();
+
+    // =========================
+    // REFRESH TABLE
+    // =========================
+
+    loadAttendanceTable();
+
+    // =========================
+    // REFRESH TERM SUMMARY
+    // =========================
+
+    if (
+        typeof updateAttendanceTermSummary ===
+        "function"
+    ) {
+        updateAttendanceTermSummary();
+    }
+}
+
+
+function isWeekend(dateStr){
+    let d = new Date(dateStr);
+    let day = d.getDay(); // 0 = Sunday, 6 = Saturday
+
+    return (day === 0 || day === 6);
+}
+
+// =========================================================
+// CALCULATE ATTENDANCE FOR ONE TERM ONLY
+// =========================================================
+
+function calculateTermAttendance(term = null) {
+
+    // If no term was supplied, use the selected term
+    // or determine it from the selected attendance date.
+    if (!term) {
+
+        const selectedTerm =
+            document.getElementById("attendanceTerm")?.value;
+
+        const selectedDate =
+            document.getElementById("attendanceDate")?.value;
+
+        term =
+            selectedTerm ||
+            (selectedDate ? getTermFromDate(selectedDate) : null) ||
+            activeTerm ||
+            "term1";
+    }
+
+    let totalDays = 0;
+    let totalPresent = 0;
+
+    // -----------------------------------------------------
+    // ONLY COUNT DATES BELONGING TO THIS TERM
+    // -----------------------------------------------------
+
+    for (let date in attendanceData) {
+
+        const dateTerm = getTermFromDate(date);
+
+        // Ignore attendance from other terms
+        if (dateTerm !== term) {
+            continue;
+        }
+
+        const dayData = attendanceData[date];
+
+        // Only count a day if attendance was actually marked
+        const marked = Object.values(dayData).some(
+            status =>
+                status === "Present" ||
+                status === "Absent"
+        );
+
+        if (!marked) {
+            continue;
+        }
+
+        // This is one valid attendance day
+        totalDays++;
+
+        // Count only students marked Present
+        students.forEach(student => {
+
+            if (
+                dayData[student.name] === "Present"
+            ) {
+                totalPresent++;
+            }
+
+        });
+    }
+
+    // -----------------------------------------------------
+    // CALCULATE PERCENTAGE
+    // -----------------------------------------------------
+
+    const totalPossibleAttendance =
+        students.length * totalDays;
+
+    const percentage =
+        totalPossibleAttendance === 0
+            ? 0
+            : (
+                (totalPresent / totalPossibleAttendance) *
+                100
+            ).toFixed(1);
+
+    return {
+        term,
+        totalDays,
+        totalPresent,
+        percentage: Number(percentage)
+    };
+}
+
+// =========================================================
+// ATTENDANCE TERM CHANGE
+// =========================================================
+
+function updateAttendanceTermSummary() {
+
+    const termSelect =
+        document.getElementById("attendanceTerm");
+
+    const summary =
+        document.getElementById(
+            "termAttendanceSummary"
+        );
+
+    if (!termSelect || !summary) {
+        return;
+    }
+
+    const selectedTerm =
+        termSelect.value;
+
+    const termData =
+        calculateTermAttendance(selectedTerm);
+
+    const termName =
+        selectedTerm === "term1"
+            ? "Term 1"
+            : selectedTerm === "term2"
+                ? "Term 2"
+                : "Term 3";
+
+    summary.innerHTML = `
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        ">
+
+            <span>
+                ${termName}
+            </span>
+
+            <strong>
+                ${termData.percentage}%
+            </strong>
+
+        </div>
+
+        <div style="
+            margin-top:6px;
+            color:#6b7280;
+            font-size:11px;
+            font-weight:500;
+        ">
+
+            Days: ${termData.totalDays}
+            ·
+            Present: ${termData.totalPresent}
+
+        </div>
+    `;
+}
+
+let deleteIndex = null;
+
+function syncAttendanceToStudents() {
+
+    students.forEach(s => {
+
+        let termStats = {
+            term1: {total:0, present:0},
+            term2: {total:0, present:0},
+            term3: {total:0, present:0}
+        };
+
+        for(let date in attendanceData){
+
+            let term = getTermFromDate(date);
+            if(!term) continue;
+
+            let dayData = attendanceData[date];
+
+            let marked = Object.values(dayData).some(v => v);
+            if(!marked) continue;
+
+            termStats[term].total++;
+
+            if(dayData[s.name] === "Present"){
+                termStats[term].present++;
+            }
+        }
+
+        s.totalDays = s.totalDays || {};
+        s.daysPresent = s.daysPresent || {};
+
+        ["term1","term2","term3"].forEach(t=>{
+            s.totalDays[t] = termStats[t].total;
+            s.daysPresent[t] = termStats[t].present;
+        });
+    });
+
+    saveStudents();
+}
+
+
+async function markAllPresent() {
+
+    const date =
+        document.getElementById("attendanceDate")?.value;
+
+    if (!date) {
+        return alert(
+            "Please select an attendance date first."
+        );
+    }
+
+    // =========================
+    // WEEKEND CHECK
+    // =========================
+
+    if (isWeekend(date)) {
+        return alert(
+            "No attendance can be recorded on weekends."
+        );
+    }
+
+    // =========================
+    // GET TERM
+    // =========================
+
+    const term =
+        getTermFromDate(date);
+
+    if (!term) {
+        return alert(
+            "Attendance cannot be recorded.\n\n" +
+            "The selected date is outside an active school term."
+        );
+    }
+
+    // =========================
+    // CHECK USER
+    // =========================
+
+    if (
+        !currentUser ||
+        !currentUser.schoolid
+    ) {
+        return alert(
+            "School information is not available."
+        );
+    }
+
+    if (!attendanceData[date]) {
+        attendanceData[date] = {};
+    }
+
+    // =========================
+    // CREATE RECORDS
+    // =========================
+
+    const attendanceRecords =
+        students.map(student => {
+
+            const cleanStudentName =
+                String(student.name).trim();
+
+            attendanceData[date][cleanStudentName] =
+                "Present";
+
+            return {
+
+                schoolid:
+                    currentUser.schoolid,
+
+                class:
+                    student.studentclass || "",
+
+                date:
+                    date,
+
+                studentname:
+                    cleanStudentName,
+
+                status:
+                    "Present",
+
+                teacher:
+                    currentUser.username || "",
+
+                term:
+                    term
+            };
+        });
+
+    console.log(
+        "Saving all attendance:",
+        attendanceRecords
+    );
+
+    // =========================
+    // SAVE / UPDATE ALL
+    // =========================
+
+    const { error } =
+        await supabaseClient
+            .from("attendance")
+            .upsert(
+                attendanceRecords,
+                {
+                    onConflict:
+                        "schoolid,date,studentname"
+                }
+            );
+
+    if (error) {
+
+        console.error(
+            "Mark all present error:",
+            error
+        );
+
+        return alert(
+            "Failed to save attendance.\n\n" +
+            error.message
+        );
+    }
+
+    console.log(
+        "All attendance saved successfully."
+    );
+
+    // =========================
+    // SYNC
+    // =========================
+
+    syncAttendanceToStudents();
+
+    // =========================
+    // REFRESH
+    // =========================
+
+    loadAttendanceTable();
+
+    if (
+        typeof updateAttendanceTermSummary ===
+        "function"
+    ) {
+        updateAttendanceTermSummary();
+    }
+}
+
+
+
+
+
+
+
+
+function openDeleteModal(index){
+    deleteIndex = index;
+
+    let studentname = students[index].name;
+
+    document.getElementById("modalTitle").innerText = "Delete Student";
+    document.getElementById("modalMessage").innerText =
+        `Delete ${studentname}? This action cannot be undone.`;
+
+    document.getElementById("confirmModal").style.display = "flex";
+
+    // ✅ FIXED: always bind correctly
+    document.getElementById("confirmBtn").onclick = function(){
+        confirmDelete();
+    };
+}
+
+function closeModal(){
+    document.getElementById("confirmModal").style.display = "none";
+    deleteIndex = null;
+	document.getElementById("confirmBtn").onclick = null;
+}
+
+function confirmDelete(){
+    if(deleteIndex !== null){
+        students.splice(deleteIndex,1);
+        saveStudents();
+
+        loadStudentsTable();
+        populateStudentList();
+        updateDashboard();
+    }
+
+    closeModal();
+}
+
+
+
+
+
+
+function openStudentModal(index) {
+
+    const s = students[index];
+
+    if (!s) {
+        alert("Student information not found.");
+        return;
+    }
+
+    // Store selected student
+    currentStudent = s;
+
+    // Safe values
+    const studentName = s.name || "";
+    const studentClass = s.studentclass || "";
+    const gender = s.gender || "Male";
+
+    const parentName = s.parent_name || "";
+    const parentNumber = s.parent_number || "";
+    const parentOccupation = s.parent_occupation || "";
+    const parentAddress = s.parent_address || "";
+
+    const studentPhoto =
+        s["student-photos"] ||
+        s.photo ||
+        "default-student.png";
+
+
+    document.getElementById("studentModalContent").innerHTML = `
+
+        <div class="student-profile">
+
+            <!-- =========================================
+                 PROFILE HEADER
+            ========================================== -->
+
+            <div class="profile-header">
+
+                <button
+                    class="modal-close"
+                    onclick="closeStudentModal()"
+                    aria-label="Close profile"
+                    type="button">
+
+                    <i class="fas fa-times"></i>
+
+                </button>
+
+
+                <div class="profile-header-content">
+
+                    <!-- STUDENT PHOTO -->
+
+                    <div class="photo-container">
+
+                        <img
+                            id="studentPhoto"
+                            src="${studentPhoto}"
+                            class="profile-photo"
+                            onclick="document.getElementById('photoUpload').click()"
+                            onerror="this.src='default-student.png'"
+                            alt="Student photo"
+                        >
+
+                        <div class="photo-hover">
+
+                            <i class="fas fa-camera"></i>
+
+                            <span>Change</span>
+
+                        </div>
+
+
+                        <input
+                            id="photoUpload"
+                            type="file"
+                            hidden
+                            accept="image/*"
+                            onchange="uploadStudentPhoto(${index}, this.files[0])"
+                        >
+
+                    </div>
+
+
+                    <!-- STUDENT DETAILS -->
+
+                    <div class="profile-heading">
+
+                        <div class="profile-name-row">
+
+                            <div>
+
+                                <h2>
+                                    ${studentName || "Student"}
+                                </h2>
+
+                                <p class="profile-subtitle">
+
+                                    <i class="fas fa-user-graduate"></i>
+
+                                    Student Profile
+
+                                </p>
+
+                            </div>
+
+
+                            <span class="student-status ${
+                                s.passwordchanged
+                                    ? "active"
+                                    : "warning"
+                            }">
+
+                                ${
+                                    s.passwordchanged
+                                        ? '<i class="fas fa-check-circle"></i> Active'
+                                        : '<i class="fas fa-clock"></i> Temporary Password'
+                                }
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="profile-meta">
+
+                            <span>
+
+                                <i class="fas fa-school"></i>
+
+                                ${studentClass || "Class not assigned"}
+
+                            </span>
+
+
+                            <span>
+
+                                <i class="fas fa-venus-mars"></i>
+
+                                ${gender}
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================================
+                 PROFILE BODY
+            ========================================== -->
+
+            <div class="profile-body">
+
+
+                <!-- =====================================
+                     STUDENT INFORMATION
+                ====================================== -->
+
+                <div class="profile-section">
+
+                    <div class="info-section-title">
+
+                        <div class="section-icon">
+
+                            <i class="fas fa-user-graduate"></i>
+
+                        </div>
+
+                        <div>
+
+                            <h3>Student Information</h3>
+
+                            <p>Basic student information</p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="info-grid">
+
+
+                        <!-- STUDENT NAME -->
+
+                        <div class="info-card">
+
+                            <label for="editStudentName">
+
+                                <i class="fas fa-user"></i>
+
+                                Student Name
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editStudentName"
+                                value="${studentName}"
+                                placeholder="Enter student name"
+                            >
+
+                        </div>
+
+
+                        <!-- CLASS -->
+
+                        <div class="info-card">
+
+                            <label for="editStudentClass">
+
+                                <i class="fas fa-school"></i>
+
+                                Class
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editStudentClass"
+                                value="${studentClass}"
+                                placeholder="Enter class"
+                            >
+
+                        </div>
+
+
+                        <!-- GENDER -->
+
+                        <div class="info-card">
+
+                            <label for="editStudentGender">
+
+                                <i class="fas fa-venus-mars"></i>
+
+                                Gender
+
+                            </label>
+
+                            <select id="editStudentGender">
+
+                                <option
+                                    value="Male"
+                                    ${gender === "Male" ? "selected" : ""}
+                                >
+                                    Male
+                                </option>
+
+                                <option
+                                    value="Female"
+                                    ${gender === "Female" ? "selected" : ""}
+                                >
+                                    Female
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     ACCOUNT INFORMATION
+                ====================================== -->
+
+                <div class="profile-section">
+
+                    <div class="info-section-title">
+
+                        <div class="section-icon account-icon">
+
+                            <i class="fas fa-shield-halved"></i>
+
+                        </div>
+
+                        <div>
+
+                            <h3>Account Information</h3>
+
+                            <p>Student portal login credentials</p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="info-grid account-grid">
+
+
+                        <!-- STUDENT ID -->
+
+                        <div class="info-card account-card">
+
+                            <div class="account-card-header">
+
+                                <label>
+
+                                    <i class="fas fa-id-card"></i>
+
+                                    Student ID
+
+                                </label>
+
+                                <span class="account-label">
+                                    LOGIN ID
+                                </span>
+
+                            </div>
+
+
+                            <div class="info-row">
+
+                                <span
+                                    id="studentIDText"
+                                    class="readonly-value"
+                                >
+                                    ${s.studentid || "Not Generated"}
+                                </span>
+
+
+                                <button
+                                    type="button"
+                                    class="icon-btn"
+                                    onclick="copyStudentID()"
+                                    title="Copy Student ID"
+                                    aria-label="Copy Student ID">
+
+                                    <i class="fas fa-copy"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- PASSWORD -->
+
+                        <div class="info-card account-card">
+
+                            <div class="account-card-header">
+
+                                <label>
+
+                                    <i class="fas fa-lock"></i>
+
+                                    Password
+
+                                </label>
+
+                                <span class="account-label">
+                                    LOGIN PASSWORD
+                                </span>
+
+                            </div>
+
+
+                            <div class="info-row">
+
+                                <span
+                                    id="passwordText"
+                                    class="readonly-value password-value"
+                                >
+                                    ••••••••
+                                </span>
+
+
+                                <input
+                                    id="studentPassword"
+                                    type="hidden"
+                                    value="${s.studentpassword || ''}"
+                                >
+
+
+                                <div class="action-icons">
+
+                                    <button
+                                        type="button"
+                                        class="icon-btn"
+                                        onclick="togglePassword()"
+                                        title="Show password"
+                                        aria-label="Show password">
+
+                                        <i class="fas fa-eye"></i>
+
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        class="icon-btn"
+                                        onclick="copyStudentPassword()"
+                                        title="Copy password"
+                                        aria-label="Copy password">
+
+                                        <i class="fas fa-copy"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =====================================
+                     PARENT / GUARDIAN
+                ====================================== -->
+
+                <div class="profile-section">
+
+                    <div class="info-section-title">
+
+                        <div class="section-icon parent-icon">
+
+                            <i class="fas fa-users"></i>
+
+                        </div>
+
+                        <div>
+
+                            <h3>Parent / Guardian</h3>
+
+                            <p>Parent or guardian contact details</p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="info-grid">
+
+
+                        <!-- PARENT NAME -->
+
+                        <div class="info-card">
+
+                            <label for="editParentName">
+
+                                <i class="fas fa-user-tie"></i>
+
+                                Parent / Guardian Name
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editParentName"
+                                value="${parentName}"
+                                placeholder="Enter parent or guardian name"
+                            >
+
+                        </div>
+
+
+                        <!-- PHONE -->
+
+                        <div class="info-card">
+
+                            <label for="editParentNumber">
+
+                                <i class="fas fa-phone"></i>
+
+                                Phone Number
+
+                            </label>
+
+                            <input
+                                type="tel"
+                                id="editParentNumber"
+                                value="${parentNumber}"
+                                placeholder="Enter phone number"
+                            >
+
+                        </div>
+
+
+                        <!-- OCCUPATION -->
+
+                        <div class="info-card">
+
+                            <label for="editParentOccupation">
+
+                                <i class="fas fa-briefcase"></i>
+
+                                Occupation
+
+                            </label>
+
+                            <input
+                                type="text"
+                                id="editParentOccupation"
+                                value="${parentOccupation}"
+                                placeholder="Enter occupation"
+                            >
+
+                        </div>
+
+
+                        <!-- ADDRESS -->
+
+                        <div class="info-card address-card">
+
+                            <label for="editParentAddress">
+
+                                <i class="fas fa-location-dot"></i>
+
+                                Address
+
+                            </label>
+
+                            <textarea
+                                id="editParentAddress"
+                                rows="3"
+                                placeholder="Enter parent / guardian address"
+                            >${parentAddress}</textarea>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =========================================
+                 PROFILE FOOTER
+            ========================================== -->
+
+            <div class="profile-footer">
+
+
+                <div class="footer-left">
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        onclick="document.getElementById('photoUpload').click()">
+
+                        <i class="fas fa-camera"></i>
+
+                        Change Photo
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        onclick="closeStudentModal()">
+
+                        <i class="fas fa-times"></i>
+
+                        Close
+
+                    </button>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="primary-btn"
+                    onclick="saveStudentProfile(${index})">
+
+                    <i class="fas fa-save"></i>
+
+                    Save Changes
+
+                </button>
+
+            </div>
+
+
+        </div>
+
+    `;
+
+
+    // Show modal
+    document.getElementById("studentModal").style.display = "flex";
+
+
+    console.log(
+        "SELECTED STUDENT:",
+        s
+    );
+
+}
+
+
+
+
+
+
+
+
+async function saveStudentProfile(index) {
+
+    const student = students[index];
+
+    if (!student || !student.id) {
+
+        alert("Student record not found.");
+
+        return;
+    }
+
+
+    // =========================================
+    // READ FORM VALUES
+    // =========================================
+
+    const name =
+        document.getElementById("editStudentName")
+            ?.value.trim();
+
+    const studentclass =
+        document.getElementById("editStudentClass")
+            ?.value.trim();
+
+    const gender =
+        document.getElementById("editStudentGender")
+            ?.value;
+
+    const parent_name =
+        document.getElementById("editParentName")
+            ?.value.trim();
+
+    const parent_number =
+        document.getElementById("editParentNumber")
+            ?.value.trim();
+
+    const parent_occupation =
+        document.getElementById("editParentOccupation")
+            ?.value.trim();
+
+    const parent_address =
+        document.getElementById("editParentAddress")
+            ?.value.trim();
+
+
+    // =========================================
+    // VALIDATION
+    // =========================================
+
+    if (!name) {
+
+        alert("Please enter the student's name.");
+
+        return;
+    }
+
+
+    if (!studentclass) {
+
+        alert("Please enter the student's class.");
+
+        return;
+    }
+
+
+    if (!gender) {
+
+        alert("Please select the student's gender.");
+
+        return;
+    }
+
+
+    if (!parent_name) {
+
+        alert("Please enter the parent / guardian name.");
+
+        return;
+    }
+
+
+    if (!parent_number) {
+
+        alert("Please enter the parent / guardian phone number.");
+
+        return;
+    }
+
+
+    // =========================================
+    // UPDATE SUPABASE
+    // =========================================
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+
+                .from("students")
+
+                .update({
+
+                    name: name,
+
+                    studentclass: studentclass,
+
+                    gender: gender,
+
+                    parent_name: parent_name,
+
+                    parent_number: parent_number,
+
+                    parent_occupation:
+                        parent_occupation || null,
+
+                    parent_address:
+                        parent_address || null
+
+                })
+
+                .eq("id", student.id)
+
+                .eq("schoolid", currentUser.schoolid)
+
+                .select()
+
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "Student profile update error:",
+                error
+            );
+
+            alert(
+                "Failed to save student information:\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+
+        // =========================================
+        // UPDATE LOCAL STUDENT OBJECT
+        // =========================================
+
+        students[index] = {
+
+            ...students[index],
+
+            ...data
+
+        };
+
+
+        // Update current student
+        currentStudent = students[index];
+
+
+        // =========================================
+        // REFRESH STUDENT LIST
+        // =========================================
+
+        await loadStudents();
+
+        loadStudentsTable();
+
+        populateStudentList();
+
+        updateDashboard();
+
+        updateStudentSuggestions();
+
+
+        // =========================================
+        // CLOSE MODAL
+        // =========================================
+
+        closeStudentModal();
+
+
+        alert(
+            "Student and parent information updated successfully ✅"
+        );
+
+
+        console.log(
+            "Updated student:",
+            data
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Save student profile error:",
+            error
+        );
+
+        alert(
+            "An error occurred while saving the student information."
+        );
+
+    }
+
+}
+
+
+async function uploadStudentPhoto(index, file) {
+
+    if (!file) return;
+
+    const student = students[index];
+
+    if (!student || !student.id) {
+        alert("Student information not found.");
+        return;
+    }
+
+    // Allow only images
+    if (!file.type.startsWith("image/")) {
+        alert("Please select an image file.");
+        return;
+    }
+
+    try {
+
+        const extension =
+            file.name.split(".").pop().toLowerCase();
+
+        const fileName =
+            `${student.id}-${Date.now()}.${extension}`;
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } =
+            await supabaseClient.storage
+                .from("student-photos")
+                .upload(fileName, file, {
+                    upsert: true,
+                    contentType: file.type
+                });
+
+        if (uploadError) {
+            console.error(
+                "Student Photo Upload Error:",
+                uploadError
+            );
+
+            alert(
+                "Photo upload failed: " +
+                uploadError.message
+            );
+
+            return;
+        }
+
+        // Get public URL
+        const { data: urlData } =
+            supabaseClient.storage
+                .from("student-photos")
+                .getPublicUrl(fileName);
+
+        const photoUrl =
+            urlData?.publicUrl;
+
+        if (!photoUrl) {
+            alert("Could not get the uploaded photo URL.");
+            return;
+        }
+
+        // Save photo URL to student record
+        const { error: dbError } =
+            await supabaseClient
+                .from("students")
+                .update({
+    "student-photos": photoUrl
+})
+                .eq("id", student.id);
+
+        if (dbError) {
+
+            console.error(
+                "Student Photo Database Error:",
+                dbError
+            );
+
+            alert(
+                "Photo uploaded, but could not save it: " +
+                dbError.message
+            );
+
+            return;
+        }
+
+        // Update local student object
+        student.photo = photoUrl;
+
+        // Reopen profile with new photo
+        openStudentModal(index);
+
+        alert("Student photo updated successfully.");
+
+    } catch (error) {
+
+        console.error(
+            "Student Photo Error:",
+            error
+        );
+
+        alert(
+            "An error occurred while uploading the photo."
+        );
+    }
+}
+
+
+function closeStudentModal(){
+    document.getElementById("studentModal").style.display = "none";
+}
+
+
+let currentStudent = null;
+let selectedSubject = null;
+let currentSubjectIndex = null;
+
+
+async function selectStudent(index, studentArray = students) {
+    let s = studentArray[index];
+	currentStudent = s;
+	console.log("OPENING:", s.name, s.id);
+	if(!s.currentTerm){
+    s.currentTerm = "term1";
+}
+    let term=s.currentTerm||"term1";
+    let html=`<label>Term</label>
+    <select id="termSelect" onchange="changeTerm()">
+    <option value="term1" ${term=="term1"?"selected":""}>Term 1</option>
+    <option value="term2" ${term=="term2"?"selected":""}>Term 2</option>
+    <option value="term3" ${term=="term3"?"selected":""}>Term 3</option>
+    </select>`;
+
+
+let sub = selectedSubject;
+
+let d = s.subjects?.[sub]?.[term] || {};
+
+ html += `
+    <h4>${sub}</h4>
+
+    <div class="marks-score-grid">
+    <input
+        type="number"
+        id="${sub}_test1"
+        value="${d.test1 > 0 ? d.test1 : ''}"
+        placeholder="Test 1"
+        min="0"
+        max="30"
+        oninput="if(this.value > 30) this.value = 30; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_test2"
+        value="${d.test2 > 0 ? d.test2 : ''}"
+        placeholder="Test 2"
+        min="0"
+        max="30"
+        oninput="if(this.value > 30) this.value = 30; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_project"
+        value="${d.project > 0 ? d.project : ''}"
+        placeholder="Project"
+        min="0"
+        max="20"
+        oninput="if(this.value > 20) this.value = 20; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_group"
+        value="${d.group > 0 ? d.group : ''}"
+        placeholder="Group"
+        min="0"
+        max="20"
+        oninput="if(this.value > 20) this.value = 20; if(this.value < 0) this.value = 0;">
+
+    <input
+        type="number"
+        id="${sub}_exam"
+        value="${d.exam > 0 ? d.exam : ''}"
+        placeholder="Exam"
+        min="0"
+        max="100"
+        oninput="if(this.value > 100) this.value = 100; if(this.value < 0) this.value = 0;">
+    </div>
+    `;
+;
+
+
+ html += `
+<hr><h3>Additional Assessment</h3>
+
+<label>Conduct</label>
+<select id="conduct">
+    <option value="">Select Conduct</option>
+
+    <option value="Very respectful and well-behaved." ${s.conduct?.[term] === "Very respectful and well-behaved." ? "selected" : ""}>Very respectful and well-behaved.</option>
+
+    <option value="Maintains good discipline at all times." ${s.conduct?.[term] === "Maintains good discipline at all times." ? "selected" : ""}>Maintains good discipline at all times.</option>
+
+    <option value="Relates well with teachers and peers." ${s.conduct?.[term] === "Relates well with teachers and peers." ? "selected" : ""}>Relates well with teachers and peers.</option>
+
+    <option value="Obeys school rules and regulations." ${s.conduct?.[term] === "Obeys school rules and regulations." ? "selected" : ""}>Obeys school rules and regulations.</option>
+
+    <option value="Shows good manners and self-control." ${s.conduct?.[term] === "Shows good manners and self-control." ? "selected" : ""}>Shows good manners and self-control.</option>
+
+    <option value="Generally well-behaved and cooperative." ${s.conduct?.[term] === "Generally well-behaved and cooperative." ? "selected" : ""}>Generally well-behaved and cooperative.</option>
+
+    <option value="Accepts correction positively." ${s.conduct?.[term] === "Accepts correction positively." ? "selected" : ""}>Accepts correction positively.</option>
+
+    <option value="Needs improvement in discipline." ${s.conduct?.[term] === "Needs improvement in discipline." ? "selected" : ""}>Needs improvement in discipline.</option>
+
+    <option value="Sometimes disregards classroom rules." ${s.conduct?.[term] === "Sometimes disregards classroom rules." ? "selected" : ""}>Sometimes disregards classroom rules.</option>
+
+    <option value="Requires closer supervision of conduct." ${s.conduct?.[term] === "Requires closer supervision of conduct." ? "selected" : ""}>Requires closer supervision of conduct.</option>
+</select>
+
+<label>Attitude</label>
+<select id="attitude">
+    <option value="">Select Attitude</option>
+
+    <option value="Works hard and completes assignments on time." ${s.attitude?.[term] === "Works hard and completes assignments on time." ? "selected" : ""}>Works hard and completes assignments on time.</option>
+
+    <option value="Shows commitment to academic work." ${s.attitude?.[term] === "Shows commitment to academic work." ? "selected" : ""}>Shows commitment to academic work.</option>
+
+    <option value="Participates actively in class activities." ${s.attitude?.[term] === "Participates actively in class activities." ? "selected" : ""}>Participates actively in class activities.</option>
+
+    <option value="Demonstrates a positive attitude towards learning." ${s.attitude?.[term] === "Demonstrates a positive attitude towards learning." ? "selected" : ""}>Demonstrates a positive attitude towards learning.</option>
+
+    <option value="Is attentive and eager to learn." ${s.attitude?.[term] === "Is attentive and eager to learn." ? "selected" : ""}>Is attentive and eager to learn.</option>
+
+    <option value="Makes good use of instructional time." ${s.attitude?.[term] === "Makes good use of instructional time." ? "selected" : ""}>Makes good use of instructional time.</option>
+
+    <option value="Shows satisfactory effort in class." ${s.attitude?.[term] === "Shows satisfactory effort in class." ? "selected" : ""}>Shows satisfactory effort in class.</option>
+
+    <option value="Needs to put more effort into studies." ${s.attitude?.[term] === "Needs to put more effort into studies." ? "selected" : ""}>Needs to put more effort into studies.</option>
+
+    <option value="Is often reluctant to complete tasks." ${s.attitude?.[term] === "Is often reluctant to complete tasks." ? "selected" : ""}>Is often reluctant to complete tasks.</option>
+
+    <option value="Must develop a more serious approach to work." ${s.attitude?.[term] === "Must develop a more serious approach to work." ? "selected" : ""}>Must develop a more serious approach to work.</option>
+</select>
+
+<label>Interest</label>
+<select id="interest">
+    <option value="">Select Interest</option>
+
+    <option value="Shows keen interest in learning." ${s.interest?.[term] === "Shows keen interest in learning." ? "selected" : ""}>Shows keen interest in learning.</option>
+
+    <option value="Participates actively in lessons." ${s.interest?.[term] === "Participates actively in lessons." ? "selected" : ""}>Participates actively in lessons.</option>
+
+    <option value="Demonstrates enthusiasm for school activities." ${s.interest?.[term] === "Demonstrates enthusiasm for school activities." ? "selected" : ""}>Demonstrates enthusiasm for school activities.</option>
+
+    <option value="Takes interest in class discussions." ${s.interest?.[term] === "Takes interest in class discussions." ? "selected" : ""}>Takes interest in class discussions.</option>
+
+    <option value="Shows a willingness to learn new things." ${s.interest?.[term] === "Shows a willingness to learn new things." ? "selected" : ""}>Shows a willingness to learn new things.</option>
+
+    <option value="Displays good interest in most subjects." ${s.interest?.[term] === "Displays good interest in most subjects." ? "selected" : ""}>Displays good interest in most subjects.</option>
+
+    <option value="Shows satisfactory interest in learning." ${s.interest?.[term] === "Shows satisfactory interest in learning." ? "selected" : ""}>Shows satisfactory interest in learning.</option>
+
+    <option value="Interest is improving steadily." ${s.interest?.[term] === "Interest is improving steadily." ? "selected" : ""}>Interest is improving steadily.</option>
+
+    <option value="Needs encouragement to participate more." ${s.interest?.[term] === "Needs encouragement to participate more." ? "selected" : ""}>Needs encouragement to participate more.</option>
+
+    <option value="Shows limited interest in classroom activities." ${s.interest?.[term] === "Shows limited interest in classroom activities." ? "selected" : ""}>Shows limited interest in classroom activities.</option>
+</select>
+
+<label>Teacher's Remark</label>
+<select id="teacherRemark">
+    <option value="">Select Remark</option>
+
+    <option value="Excellent performance. Keep it up." ${s.teacherRemark?.[term] === "Excellent performance. Keep it up." ? "selected" : ""}>Excellent performance. Keep it up.</option>
+
+    <option value="Very good work. Aim even higher." ${s.teacherRemark?.[term] === "Very good work. Aim even higher." ? "selected" : ""}>Very good work. Aim even higher.</option>
+
+    <option value="A hardworking and promising pupil." ${s.teacherRemark?.[term] === "A hardworking and promising pupil." ? "selected" : ""}>A hardworking and promising pupil.</option>
+
+    <option value="Shows steady academic progress." ${s.teacherRemark?.[term] === "Shows steady academic progress." ? "selected" : ""}>Shows steady academic progress.</option>
+
+    <option value="Continue to work hard for success." ${s.teacherRemark?.[term] === "Continue to work hard for success." ? "selected" : ""}>Continue to work hard for success.</option>
+
+    <option value="Good effort. Maintain the momentum." ${s.teacherRemark?.[term] === "Good effort. Maintain the momentum." ? "selected" : ""}>Good effort. Maintain the momentum.</option>
+
+    <option value="Can perform better with more effort." ${s.teacherRemark?.[term] === "Can perform better with more effort." ? "selected" : ""}>Can perform better with more effort.</option>
+
+    <option value="Needs to pay more attention in class." ${s.teacherRemark?.[term] === "Needs to pay more attention in class." ? "selected" : ""}>Needs to pay more attention in class.</option>
+
+    <option value="Improvement is needed in all areas." ${s.teacherRemark?.[term] === "Improvement is needed in all areas." ? "selected" : ""}>Improvement is needed in all areas.</option>
+</select>
+`;
+
+const totalDays = s.totalDays?.[term] || 0;
+const presentDays = s.daysPresent?.[term] || 0;
+const absentDays = totalDays - presentDays;
+
+html += `
+<hr>
+<h3>Attendance Summary</h3>
+
+<label>Total School Days</label>
+<input
+type="number"
+id="totalDaysInput"
+value="${totalDays}"
+oninput="previewAttendance()">
+
+<label>Days Present</label>
+<input
+type="number"
+id="daysPresentInput"
+value="${presentDays}"
+oninput="previewAttendance()">
+
+<label>Days Absent</label>
+<input
+type="number"
+id="daysAbsentInput"
+value="${absentDays}"
+readonly
+style="background:#f3f4f6;font-weight:bold;">
+
+<p style="color:#fbbf24;">
+You can edit attendance here if it was not recorded in the Attendance section.
+</p>
+`;
+    
+if (term === "term3") {
+
+    const promotionClass = s.promotionClass || "";
+
+    const classOptions =
+        await getPromotionClassOptions(promotionClass);
+
+    html += `
+    <hr>
+    <h3>Promotion</h3>
+
+    <label>Promote Student To</label>
+
+    <select id="promotionClass">
+        ${classOptions}
+    </select>
+    `;
+}
+
+
+//showTeacherSubjects();
+//populateStudentList();
+
+html = `
+<h3 style="color:#22c55e;">Editing: ${s.name}</h3>
+` + html;
+
+document.getElementById("subjectForm").innerHTML = html;
+
+document.getElementById("marksModal").style.display = "flex";
+}
+
+async function getPromotionClassOptions(selected = "") {
+
+    let { data: classes, error } = await supabaseClient
+        .from("classes")
+        .select("classname")
+        .eq("schoolid", currentUser.schoolid)
+        .order("classname");
+
+    if (error) {
+        console.error(error);
+        return `<option value="">Select Class</option>`;
+    }
+
+    let options = `<option value="">Select Class</option>`;
+
+    classes.forEach(c => {
+
+        options += `
+        <option value="${c.classname}"
+            ${selected === c.classname ? "selected" : ""}>
+            ${c.classname}
+        </option>`;
+
+    });
+
+    return options;
+}
+
+function closeMarksModal(){
+
+    document.getElementById("marksModal").style.display = "none";
+
+}
+
+function previewAttendance(){
+
+    const total =
+        students[currentStudent]
+        .totalDays?.[
+        students[currentStudent].currentTerm
+        ] || 0;
+
+    let present =
+        parseInt(
+        document.getElementById("daysPresentInput").value
+        ) || 0;
+
+    if(present < 0)
+        present = 0;
+
+    if(present > total)
+        present = total;
+
+    document.getElementById("daysPresentInput").value = present;
+
+    document.getElementById("daysAbsentInput").value =
+        total - present;
+}
+
+
+function selectFilteredStudent(index){
+    currentStudentIndex = index;
+    selectStudent(index, filteredStudents);
+}
+
+function showTeacherSubjects() {
+
+    const container = document.getElementById("subjectList");
+
+    container.innerHTML = "";
+
+    let allowedSubjects =
+        currentUser.role === "teacher"
+        ? currentUser.subjects || []
+        : subjects;
+
+    allowedSubjects.forEach(subject => {
+
+        const card = document.createElement("div");
+
+        card.className = "card";
+
+        card.innerHTML = `
+            <h4>${subject}</h4>
+        `;
+
+        card.onclick = () => selectSubject(subject, card);
+
+        container.appendChild(card);
+
+    });
+
+}
+
+function selectSubject(subject, card){
+
+    selectedSubject = subject;
+
+    document.querySelectorAll("#subjectList .card")
+        .forEach(el => el.classList.remove("active"));
+
+    if (card) card.classList.add("active");
+
+    // Rebuild student cards so % reflects this subject's score fields
+    populateStudentList();
+
+}
+
+
+
+async function changeTerm() {
+
+    const term = document.getElementById("termSelect").value;
+
+    currentStudent.currentTerm = term;
+
+    await saveStudents();
+
+    selectStudent(
+        students.findIndex(s => s.id === currentStudent.id)
+    );
+}
+
+let termSettings = {};
+
+function getLocalDateISO() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function updatePromotionButtonVisibility() {
+    const button = document.getElementById("promoteStudentsBtn");
+    const message = document.getElementById("promotionEligibilityMessage");
+    if (!button) return;
+
+    const isAdmin = String(currentUser?.role || "").toLowerCase() === "admin";
+    button.style.display = isAdmin ? "flex" : "none";
+    if (message) message.style.display = isAdmin ? "block" : "none";
+    if (!isAdmin) return;
+
+    const term3End = String(termSettings?.t3end || "").slice(0, 10);
+    const today = getLocalDateISO();
+    const termHasEnded = Boolean(term3End) && today > term3End;
+    button.disabled = !termHasEnded || academicYearSwitchInProgress;
+    button.title = termHasEnded
+        ? "Promote students to the next class"
+        : "Promotion becomes available after the Term 3 end date";
+
+    if (message) {
+        if (!term3End) {
+            message.textContent = "Set the Term 3 end date in Term Settings. Promotion will be enabled after that date has passed.";
+        } else if (!termHasEnded) {
+            message.textContent = `Promotion is locked until Term 3 has ended (${term3End}).`;
+        } else {
+            message.textContent = `Term 3 ended on ${term3End}. Promotion is available to the school administrator.`;
+        }
+    }
+}
+
+async function loadTermSettings() {
+
+    if (!currentUser || !currentUser.schoolid) {
+        console.log("School information not found.");
+        updatePromotionButtonVisibility();
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("termsettings")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .single();
+
+    if (error) {
+        console.log("Term settings load error:", error);
+
+        termSettings = {};
+        updatePromotionButtonVisibility();
+        return;
+    }
+
+    termSettings = data || {};
+    currentAcademicYear = data.academic_year || localStorage.getItem("nabengAcademicYear") || currentAcademicYear;
+    buildAcademicYearOptions(currentAcademicYear);
+
+    // Term 1
+    const t1start = document.getElementById("t1start");
+    const t1end = document.getElementById("t1end");
+
+    if (t1start) {
+        t1start.value = data.t1start || "";
+    }
+
+    if (t1end) {
+        t1end.value = data.t1end || "";
+    }
+
+    // Term 2
+    const t2start = document.getElementById("t2start");
+    const t2end = document.getElementById("t2end");
+
+    if (t2start) {
+        t2start.value = data.t2start || "";
+    }
+
+    if (t2end) {
+        t2end.value = data.t2end || "";
+    }
+
+    // Term 3
+    const t3start = document.getElementById("t3start");
+    const t3end = document.getElementById("t3end");
+
+    if (t3start) {
+        t3start.value = data.t3start || "";
+    }
+
+    if (t3end) {
+        t3end.value = data.t3end || "";
+    }
+
+    updatePromotionButtonVisibility();
+}
+
+async function saveTermSettings() {
+
+    if (!currentUser || !currentUser.schoolid) {
+        alert("School information not found.");
+        return;
+    }
+
+    const t1start =
+        document.getElementById("t1start").value;
+
+    const t1end =
+        document.getElementById("t1end").value;
+
+    const t2start =
+        document.getElementById("t2start").value;
+
+    const t2end =
+        document.getElementById("t2end").value;
+
+    const t3start =
+        document.getElementById("t3start").value;
+
+    const t3end =
+        document.getElementById("t3end").value;
+
+
+    // =========================
+    // CHECK ALL DATES
+    // =========================
+
+    if (
+        !t1start || !t1end ||
+        !t2start || !t2end ||
+        !t3start || !t3end
+    ) {
+        alert(
+            "Please enter the start and end dates for all three terms."
+        );
+
+        return;
+    }
+
+
+    // =========================
+    // CONVERT DATES
+    // =========================
+
+    const t1StartDate =
+        new Date(t1start + "T00:00:00");
+
+    const t1EndDate =
+        new Date(t1end + "T00:00:00");
+
+    const t2StartDate =
+        new Date(t2start + "T00:00:00");
+
+    const t2EndDate =
+        new Date(t2end + "T00:00:00");
+
+    const t3StartDate =
+        new Date(t3start + "T00:00:00");
+
+    const t3EndDate =
+        new Date(t3end + "T00:00:00");
+
+
+    // =========================
+    // CHECK DATE ORDER
+    // =========================
+
+    if (t1StartDate > t1EndDate) {
+        alert(
+            "Term 1 start date cannot be after the end date."
+        );
+
+        return;
+    }
+
+    if (t2StartDate > t2EndDate) {
+        alert(
+            "Term 2 start date cannot be after the end date."
+        );
+
+        return;
+    }
+
+    if (t3StartDate > t3EndDate) {
+        alert(
+            "Term 3 start date cannot be after the end date."
+        );
+
+        return;
+    }
+
+
+    // =========================
+    // CHECK TERM ORDER
+    // =========================
+
+    if (t2StartDate <= t1EndDate) {
+        alert(
+            "Term 2 cannot start before Term 1 has ended."
+        );
+
+        return;
+    }
+
+    if (t3StartDate <= t2EndDate) {
+        alert(
+            "Term 3 cannot start before Term 2 has ended."
+        );
+
+        return;
+    }
+
+
+    // =========================
+    // DATA TO SAVE
+    // =========================
+
+    const settingsData = {
+
+        schoolid:
+            currentUser.schoolid,
+
+        academic_year: currentAcademicYear,
+
+        t1start,
+        t1end,
+
+        t2start,
+        t2end,
+
+        t3start,
+        t3end
+    };
+
+
+    // =========================
+    // SAVE TO SUPABASE
+    // =========================
+
+    const { error } =
+        await supabaseClient
+            .from("termsettings")
+            .upsert(
+                settingsData,
+                {
+                    onConflict: "schoolid"
+                }
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Term settings save error:",
+            error
+        );
+
+        alert(
+            "Failed to save term settings."
+        );
+
+        return;
+    }
+
+
+    // =========================
+    // UPDATE LOCAL SETTINGS
+    // =========================
+
+    termSettings = settingsData;
+    localStorage.setItem("nabengAcademicYear", currentAcademicYear);
+    buildAcademicYearOptions(currentAcademicYear);
+    updatePromotionButtonVisibility();
+
+    alert(
+        "Term settings saved successfully!"
+    );
+}
+
+
+function getTermFromDate(dateStr) {
+
+    if (!dateStr || !termSettings) {
+        return null;
+    }
+
+    // Convert selected date to a date-only value
+    const date = new Date(dateStr + "T00:00:00");
+
+    if (isNaN(date.getTime())) {
+        return null;
+    }
+
+    // Convert term settings to date-only values
+    const t1start = new Date(
+        termSettings.t1start + "T00:00:00"
+    );
+
+    const t1end = new Date(
+        termSettings.t1end + "T23:59:59"
+    );
+
+    const t2start = new Date(
+        termSettings.t2start + "T00:00:00"
+    );
+
+    const t2end = new Date(
+        termSettings.t2end + "T23:59:59"
+    );
+
+    const t3start = new Date(
+        termSettings.t3start + "T00:00:00"
+    );
+
+    const t3end = new Date(
+        termSettings.t3end + "T23:59:59"
+    );
+
+    // =========================
+    // TERM 1
+    // =========================
+    if (
+        date >= t1start &&
+        date <= t1end
+    ) {
+        return "term1";
+    }
+
+    // =========================
+    // TERM 2
+    // =========================
+    if (
+        date >= t2start &&
+        date <= t2end
+    ) {
+        return "term2";
+    }
+
+    // =========================
+    // TERM 3
+    // =========================
+    if (
+        date >= t3start &&
+        date <= t3end
+    ) {
+        return "term3";
+    }
+
+    // Date is outside all school terms
+    return null;
+}
+
+function getTermEnd(term) {
+
+    if (term === "term1") {
+        return termSettings.t1end;
+    }
+
+    if (term === "term2") {
+        return termSettings.t2end;
+    }
+
+    if (term === "term3") {
+        return termSettings.t3end;
+    }
+
+    return null;
+}
+
+function getNextTermStart(term) {
+
+    if (term === "term1") {
+        return termSettings.t2start;
+    }
+
+    if (term === "term2") {
+        return termSettings.t3start;
+    }
+
+    if (term === "term3") {
+
+        // next academic year
+        return termSettings.t1start;
+    }
+
+    return null;
+}
+
+async function getCurrentTerm(){
+
+    const { data, error } = await supabaseClient
+        .from("termsettings")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .single();
+
+    if(error || !data){
+        return "term1";
+    }
+
+    let today = new Date();
+
+    if(
+        today >= new Date(data.t1start) &&
+        today <= new Date(data.t1end)
+    ){
+        return "term1";
+    }
+
+    if(
+        today >= new Date(data.t2start) &&
+        today <= new Date(data.t2end)
+    ){
+        return "term2";
+    }
+
+    if(
+        today >= new Date(data.t3start) &&
+        today <= new Date(data.t3end)
+    ){
+        return "term3";
+    }
+
+    return "term1";
+}
+
+async function initializeSystem(){
+
+    let currentTerm = await getCurrentTerm();
+
+    window.activeTerm = currentTerm;
+
+    // Ensure admin subject assignment has a usable subject catalog
+    if (typeof ensureSchoolSubjects === "function") {
+        try { ensureSchoolSubjects(); } catch (e) {}
+    }
+
+    console.log(
+        "Current Term:",
+        currentTerm
+    );
+
+}
+
+async function saveMarks() {
+
+    if (currentStudent === null) {
+        alert("Please select a student.");
+        return;
+    }
+
+    if (!selectedSubject) {
+        alert("Please select a subject.");
+        return;
+    }
+
+    let s = currentStudent;
+
+    let term = document.getElementById("termSelect").value;
+    let sub = selectedSubject;
+
+    if (!s.subjects) {
+        s.subjects = {};
+    }
+
+    // ============================
+    // READ MARKS (track which fields the teacher actually filled)
+    // ============================
+
+    const rawTest1 = document.getElementById(sub + "_test1")?.value;
+    const rawTest2 = document.getElementById(sub + "_test2")?.value;
+    const rawProject = document.getElementById(sub + "_project")?.value;
+    const rawGroup = document.getElementById(sub + "_group")?.value;
+    const rawExam = document.getElementById(sub + "_exam")?.value;
+
+    const entered = {
+        test1: rawTest1 !== undefined && rawTest1 !== null && String(rawTest1).trim() !== "",
+        test2: rawTest2 !== undefined && rawTest2 !== null && String(rawTest2).trim() !== "",
+        project: rawProject !== undefined && rawProject !== null && String(rawProject).trim() !== "",
+        group: rawGroup !== undefined && rawGroup !== null && String(rawGroup).trim() !== "",
+        exam: rawExam !== undefined && rawExam !== null && String(rawExam).trim() !== ""
+    };
+
+    let test1 = entered.test1 ? Number(rawTest1) : 0;
+    let test2 = entered.test2 ? Number(rawTest2) : 0;
+    let project = entered.project ? Number(rawProject) : 0;
+    let group = entered.group ? Number(rawGroup) : 0;
+    let exam = entered.exam ? Number(rawExam) : 0;
+
+    // ============================
+    // VALIDATION
+    // ============================
+
+    if (test1 < 0 || test1 > 30) {
+        alert("Test 1 score must be between 0 and 30.");
+        return;
+    }
+
+    if (test2 < 0 || test2 > 30) {
+        alert("Test 2 score must be between 0 and 30.");
+        return;
+    }
+
+    if (project < 0 || project > 20) {
+        alert("Project score must be between 0 and 20.");
+        return;
+    }
+
+    if (group < 0 || group > 20) {
+        alert("Group Work score must be between 0 and 20.");
+        return;
+    }
+
+    if (exam < 0 || exam > 100) {
+        alert("Exam score must be between 0 and 100.");
+        return;
+    }
+
+    // ============================
+    // ENSURE SUBJECT EXISTS
+    // ============================
+
+    if (!s.subjects[sub]) {
+        s.subjects[sub] = {};
+    }
+
+    // ============================
+    // CALCULATE RESULT
+    // ============================
+
+    const result = calculateSubjectResult({
+
+        test1,
+        test2,
+        project,
+        group,
+        exam
+
+    });
+
+    // Remember which score fields were actually filled (for progress %)
+    result._entered = entered;
+
+    // Save full result
+    s.subjects[sub][term] = result;
+
+    // ============================
+    // ADDITIONAL ASSESSMENT
+    // ============================
+
+    s.conduct = s.conduct || {};
+    s.attitude = s.attitude || {};
+    s.interest = s.interest || {};
+    s.teacherRemark = s.teacherRemark || {};
+
+    s.conduct[term] =
+        document.getElementById("conduct")?.value || "";
+
+    s.attitude[term] =
+        document.getElementById("attitude")?.value || "";
+
+    s.interest[term] =
+        document.getElementById("interest")?.value || "";
+
+    s.teacherRemark[term] =
+        document.getElementById("teacherRemark")?.value || "";
+
+    // ============================
+    // ATTENDANCE
+    // ============================
+
+    s.totalDays = s.totalDays || {};
+    s.daysPresent = s.daysPresent || {};
+
+    s.totalDays[term] =
+        parseInt(
+            document.getElementById("totalDaysInput")?.value
+        ) || 0;
+
+    s.daysPresent[term] =
+        parseInt(
+            document.getElementById("daysPresentInput")?.value
+        ) || 0;
+
+    // ============================
+    // PROMOTION
+    // ============================
+
+    if (term === "term3") {
+
+        s.promotionClass =
+            document.getElementById("promotionClass")?.value || "";
+
+    }
+
+    // ============================
+    // CALCULATE STUDENT AVERAGE
+    // ============================
+
+    calculateStudentAverage(s, term);
+
+    // ============================
+    // UPDATE STUDENT ARRAY
+    // ============================
+
+    const index =
+        students.findIndex(st => st.id === s.id);
+
+    if (index !== -1) {
+
+        students[index] = s;
+
+    }
+
+    // ============================
+    // SAVE TO SUPABASE
+    // ============================
+
+    await saveStudents();
+
+    // ============================
+    // REFRESH UI
+    // ============================
+
+    populateStudentList();
+
+    updateDashboard();
+
+    closeMarksModal();
+
+    alert(
+        sub + " marks saved successfully ✅"
+    );
+
+}
+
+// Grades and Remarks functions
+function getGrade(score){
+    if(score >= 80) return "A1";
+    if(score >= 70) return "B2";
+    if(score >= 65) return "B3";
+    if(score >= 60) return "C4";
+    if(score >= 55) return "C5";
+    if(score >= 50) return "C6";
+    if(score >= 45) return "D7";
+    if(score >= 40) return "E8";
+    return "F9";
+}
+
+function getRemark(score){
+    if(score >= 80) return "Excellent";
+    if(score >= 70) return "Very Good";
+    if(score >= 65) return "Good";
+    if(score >= 60) return "Credit";
+    if(score >= 55) return "Fair";
+    if(score >= 50) return "Pass";
+    if(score >= 45) return "Weak Pass";
+    if(score >= 40) return "Very Weak";
+    return "Fail";
+}
+async function confirmReport(){
+    let name = document.getElementById("reportSearch").value.trim().toLowerCase();
+    let term = document.getElementById("reportTerm").value;
+
+    let s = students.find(x => x.name.toLowerCase() === name);
+
+    if(!s){
+        alert("Student not found");
+        return;
+    }
+
+    let endDate = getTermEnd(term);
+    let nextDate = getNextTermStart(term);
+
+    if(!endDate || !nextDate){
+        alert("❌ Please set term dates in Profile first!");
+        return;
+    }
+
+    await generateReportWithTerm(s, term, endDate, nextDate);
+}
+
+
+
+function formatDate(dateStr){
+    let date = new Date(dateStr);
+
+    let day = date.getDate();
+    let month = date.toLocaleString('default', { month: 'long' });
+    let year = date.getFullYear();
+
+    function getOrdinal(n){
+        if(n > 3 && n < 21) return "th";
+        switch(n % 10){
+            case 1: return "st";
+            case 2: return "nd";
+            case 3: return "rd";
+            default: return "th";
+        }
+    }
+
+    return day + getOrdinal(day) + " " + month + ", " + year;
+}
+
+
+
+async function generateAllReports(){
+
+    if(!students || students.length === 0){
+
+        alert("No students available");
+        return;
+
+    }
+
+
+    let term =
+        document.getElementById("reportTerm").value;
+
+
+    let endDate =
+        getTermEnd(term);
+
+
+    let nextDate =
+        getNextTermStart(term);
+
+
+
+    if(!endDate || !nextDate){
+
+        alert(
+            "❌ Set term dates in Profile first!"
+        );
+
+        return;
+
+    }
+
+
+
+    const { jsPDF } =
+        window.jspdf;
+
+
+    let pdf =
+        new jsPDF(
+            "p",
+            "mm",
+            "a4"
+        );
+
+
+
+    // Calculate all averages first
+    students.forEach(s=>{
+
+        calculateStudentAverage(
+            s,
+            term
+        );
+
+    });
+
+
+
+    for(let i = 0; i < students.length; i++){
+
+
+        let s =
+            students[i];
+
+
+        try{
+
+
+            console.log(
+                `Generating report ${i+1}/${students.length}: ${s.name}`
+            );
+
+
+
+            // Generate report HTML only
+            let html =
+            await generateReportWithTerm(
+                s,
+                term,
+                endDate,
+                nextDate,
+                false
+            );
+
+
+
+            // Create hidden report container
+            let element =
+            document.createElement("div");
+
+
+            element.innerHTML = html;
+
+
+            element.style.width = "794px";
+            element.style.position = "absolute";
+            element.style.left = "-9999px";
+            element.style.top = "0";
+
+
+            document.body.appendChild(element);
+
+
+
+            // Convert to image
+            let canvas =
+            await html2canvas(
+                element,
+                {
+                    scale:1.5,
+                    useCORS:true,
+                    logging:false
+                }
+            );
+
+
+
+            // Remove temporary element
+            document.body.removeChild(element);
+
+
+
+            let imgData =
+            canvas.toDataURL(
+                "image/jpeg",
+                0.85
+            );
+
+
+
+            let imgWidth = 210;
+
+
+            let imgHeight =
+            (
+                canvas.height *
+                imgWidth
+            )
+            /
+            canvas.width;
+
+
+
+            if(i !== 0){
+
+                pdf.addPage();
+
+            }
+
+
+
+            pdf.addImage(
+
+                imgData,
+
+                "JPEG",
+
+                0,
+
+                0,
+
+                imgWidth,
+
+                imgHeight
+
+            );
+
+
+
+            // Release memory
+            canvas.width = 1;
+            canvas.height = 1;
+
+
+
+        }
+        catch(error){
+
+
+            console.error(
+                "Report generation failed for:",
+                s.name,
+                error
+            );
+
+
+        }
+
+
+    }
+
+
+
+    pdf.save(
+        `All_Student_Reports_${term}.pdf`
+    );
+
+
+    alert(
+        "✅ All student reports generated successfully"
+    );
+
+}
+
+if(currentUser && currentUser.role === "teacher" && (!currentUser.subjects || currentUser.subjects.length === 0)){
+    alert("No subjects assigned to you. Contact admin.");
+}
+
+
+
+
+
+
+
+
+
+
+
+// =========================================================
+// MODERN STUDENT TERMINAL REPORT
+// =========================================================
+
+async function generateReportWithTerm(
+    s,
+    term,
+    endDate,
+    nextDate,
+    showPreview = true
+) {
+
+    let formattedEnd = formatDate(endDate);
+    let formattedNext = formatDate(nextDate);
+
+    let totalStudents = students.length;
+    let position = getStudentPosition(s, term);
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // =========================================================
+    // LOAD SCHOOL INFORMATION
+    // =========================================================
+
+    const { data: schoolData, error: schoolError } =
+        await supabaseClient
+            .from("schools")
+            .select("schoolLogo, schoolname")
+            .eq("schoolid", currentUser.schoolid)
+            .single();
+
+    if (schoolError) {
+        console.error("School information error:", schoolError);
+    }
+
+    let logo = schoolData?.schoolLogo || "";
+
+    let schoolname =
+        schoolData?.schoolname ||
+        currentUser.schoolname ||
+        "Your School";
+
+
+    // =========================================================
+    // START REPORT
+    // =========================================================
+
+    let html = `
+
+<div id="printArea" style="
+    font-family:'Times New Roman', Times, serif;
+    width:794px;
+    min-height:1123px;
+    margin:auto;
+    padding:38px;
+    box-sizing:border-box;
+    background:#ffffff;
+    color:#111111;
+    position:relative;
+    overflow:hidden;
+">
+
+    <!-- =====================================================
+         WATERMARK
+         ===================================================== -->
+
+    ${logo ? `
+    <img src="${logo}" style="
+        position:absolute;
+        top:50%;
+        left:50%;
+        transform:translate(-50%,-50%);
+        width:430px;
+        height:430px;
+        object-fit:contain;
+        opacity:0.045;
+        z-index:0;
+        pointer-events:none;
+    ">
+    ` : ""}
+
+
+    <!-- =====================================================
+         OUTER BORDER
+         ===================================================== -->
+
+    <div style="
+        position:absolute;
+        top:25px;
+        left:25px;
+        right:25px;
+        bottom:25px;
+        border:2px solid #00075D;
+        pointer-events:none;
+    "></div>
+
+
+    <!-- =====================================================
+         INNER CONTENT
+         ===================================================== -->
+
+    <div style="
+        position:absolute;
+        top:10px;
+        left:10px;
+        right:10px;
+        bottom:10px;
+        border:10px solid #00075D;
+        pointer-events:none;
+    "></div>
+
+
+        <!-- =================================================
+             SCHOOL HEADER
+             ================================================= -->
+
+        <div style="
+            text-align:center;
+            padding-bottom:12px;
+            border-bottom:3px solid #00075D;
+        ">
+
+            <div style="
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                gap:18px;
+            ">
+
+                ${
+                    logo
+                    ? `
+                    <img src="${logo}" style="
+                        width:92px;
+                        height:92px;
+                        object-fit:contain;
+                    ">
+                    `
+                    : ""
+                }
+
+
+                <div style="
+                    text-align:center;
+                ">
+
+                    <div style="
+                        font-size:28px;
+                        font-weight:bold;
+                        color:#00075D;
+                        text-transform:uppercase;
+                        letter-spacing:0.5px;
+                    ">
+                        ${schoolname}
+                    </div>
+
+
+                    <div style="
+                        margin-top:5px;
+                        font-size:16px;
+                        font-weight:bold;
+                        letter-spacing:1px;
+                    ">
+                        STUDENT TERMINAL REPORT
+                    </div>
+
+
+                    <div style="
+                        margin-top:4px;
+                        font-size:14px;
+                        font-weight:bold;
+                        color:#555;
+                        text-transform:uppercase;
+                    ">
+                        ${term}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STUDENT INFORMATION
+             ================================================= -->
+
+        <div style="
+            margin-top:14px;
+            border:1px solid #b8b8b8;
+            border-radius:5px;
+            overflow:hidden;
+        ">
+
+            <div style="
+                background:#00075D;
+                color:white;
+                padding:6px 10px;
+                font-size:14px;
+                font-weight:bold;
+                letter-spacing:0.5px;
+            ">
+                STUDENT INFORMATION
+            </div>
+
+
+            <div style="
+                display:grid;
+                grid-template-columns:1.6fr 1fr 1fr;
+                font-size:14px;
+            ">
+
+                <div style="
+                    padding:8px 10px;
+                    border-right:1px solid #ddd;
+                    border-bottom:1px solid #ddd;
+                ">
+                    <b>Student Name</b><br>
+                    <span>${s.name || ""}</span>
+                </div>
+
+
+                <div style="
+                    padding:8px 10px;
+                    border-right:1px solid #ddd;
+                    border-bottom:1px solid #ddd;
+                ">
+                    <b>Class</b><br>
+                    <span>${s.studentclass || ""}</span>
+                </div>
+
+
+                <div style="
+                    padding:8px 10px;
+                    border-bottom:1px solid #ddd;
+                ">
+                    <b>Position</b><br>
+                    <span>${position || ""}</span>
+                </div>
+
+
+                <div style="
+                    padding:8px 10px;
+                    border-right:1px solid #ddd;
+                ">
+                    <b>Total Students</b><br>
+                    <span>${totalStudents}</span>
+                </div>
+
+
+                <div style="
+                    padding:8px 10px;
+                    border-right:1px solid #ddd;
+                ">
+                    <b>Term Ending</b><br>
+                    <span>${formattedEnd}</span>
+                </div>
+
+
+                <div style="
+                    padding:8px 10px;
+                ">
+                    <b>Next Term Begins</b><br>
+                    <span>${formattedNext}</span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             ACADEMIC PERFORMANCE
+             ================================================= -->
+
+        <div style="
+            margin-top:15px;
+        ">
+
+            <div style="
+                background:#00075D;
+                color:white;
+                padding:7px 10px;
+                font-size:14px;
+                font-weight:bold;
+                letter-spacing:0.5px;
+            ">
+                ACADEMIC PERFORMANCE
+            </div>
+
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                margin-top:0;
+                font-size:13px;
+            ">
+
+                <thead>
+
+                    <tr style="
+                        background:#eeeeee;
+                        color:#111;
+                    ">
+
+                        <th style="
+                            border:1px solid #999;
+                            padding:7px 5px;
+                            text-align:left;
+                        ">
+                            SUBJECT
+                        </th>
+
+                        <th style="
+                            border:1px solid #999;
+                            padding:7px 5px;
+                        ">
+                            CLASS<br>
+                            <span style="font-size:10px;">50%</span>
+                        </th>
+
+                        <th style="
+                            border:1px solid #999;
+                            padding:7px 5px;
+                        ">
+                            EXAMS<br>
+                            <span style="font-size:10px;">50%</span>
+                        </th>
+
+                        <th style="
+                            border:1px solid #999;
+                            padding:7px 5px;
+                        ">
+                            TOTAL<br>
+                            <span style="font-size:10px;">100%</span>
+                        </th>
+
+                        <th style="
+                            border:1px solid #999;
+                            padding:7px 5px;
+                        ">
+                            GRADE
+                        </th>
+
+                        <th style="
+                            border:1px solid #999;
+                            padding:7px 5px;
+                            text-align:left;
+                        ">
+                            REMARK
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+    `;
+
+
+    // =========================================================
+    // SUBJECTS
+    // =========================================================
+
+    let grandTotal = 0;
+
+    let allowedSubjects =
+        currentUser.role === "teacher"
+            ? (currentUser.subjects || [])
+            : subjects;
+
+
+    allowedSubjects.forEach((sub, index) => {
+
+        let d = s.subjects?.[sub]?.[term];
+
+        if (!d) return;
+
+
+        let classTotal =
+            Number(d.test1 || 0) +
+            Number(d.test2 || 0) +
+            Number(d.project || 0) +
+            Number(d.group || 0);
+
+
+        let classScore =
+            d.classScore !== undefined
+                ? Number(d.classScore)
+                : (classTotal / 100) * 50;
+
+
+        let examScore =
+            d.examScore !== undefined
+                ? Number(d.examScore)
+                : (Number(d.exam || 0) / 100) * 50;
+
+
+        let totalScore =
+            d.totalScore !== undefined
+                ? Number(d.totalScore)
+                : classScore + examScore;
+
+
+        let grade =
+            d.grade || getGrade(totalScore);
+
+
+        let remark =
+            d.remark || getRemark(totalScore);
+
+
+        grandTotal += totalScore;
+
+
+        let rowBackground =
+            index % 2 === 0
+                ? "#ffffff"
+                : "#f8f9fc";
+
+
+        html += `
+
+            <tr style="
+                background:${rowBackground};
+            ">
+
+                <td style="
+                    border:1px solid #999;
+                    padding:6px 7px;
+                    text-align:left;
+                    font-weight:bold;
+                ">
+                    ${sub.toUpperCase()}
+                </td>
+
+
+                <td style="
+                    border:1px solid #999;
+                    padding:6px;
+                ">
+                    ${Math.round(classScore)}
+                </td>
+
+
+                <td style="
+                    border:1px solid #999;
+                    padding:6px;
+                ">
+                    ${Math.round(examScore)}
+                </td>
+
+
+                <td style="
+                    border:1px solid #999;
+                    padding:6px;
+                    font-weight:bold;
+                ">
+                    ${Math.round(totalScore)}
+                </td>
+
+
+                <td style="
+                    border:1px solid #999;
+                    padding:6px;
+                    font-weight:bold;
+                    color:#00075D;
+                ">
+                    ${grade}
+                </td>
+
+
+                <td style="
+                    border:1px solid #999;
+                    padding:6px;
+                    text-align:left;
+                ">
+                    ${remark}
+                </td>
+
+            </tr>
+
+        `;
+    });
+
+
+    html += `
+                </tbody>
+            </table>
+
+
+            <!-- =================================================
+                 ATTENDANCE SUMMARY
+                 ================================================= -->
+
+    `;
+
+
+    // =========================================================
+    // ATTENDANCE
+    // =========================================================
+
+    let attendance =
+        await getStudentAttendance(s.name, term);
+
+
+    let totalDays =
+        s.totalDays?.[term] || 0;
+
+
+    let daysPresent =
+        s.daysPresent?.[term] || 0;
+
+
+    let daysAbsent =
+        totalDays - daysPresent;
+
+
+    let teacherName =
+        getClassTeacherName(s.studentclass);
+
+
+    // =========================================================
+    // LOAD CLASS TEACHER SIGNATURE
+    // =========================================================
+
+    let teacherSignature = "";
+
+
+    const { data: teacherUsers, error: teacherError } =
+        await supabaseClient
+            .from("users")
+            .select(`
+                id,
+                firstname,
+                surname,
+                username,
+                signature_name,
+                schoolid
+            `)
+            .eq("schoolid", currentUser.schoolid);
+
+
+    if (teacherError) {
+
+        console.error(
+            "Teacher users lookup error:",
+            teacherError
+        );
+
+    }
+
+
+    // =========================================================
+    // NORMALIZE TEACHER NAME
+    // =========================================================
+
+    const normalizeName = (name) => {
+
+        return String(name || "")
+            .trim()
+            .replace(/\s+/g, " ")
+            .toLowerCase();
+
+    };
+
+
+    const reportTeacherName =
+        normalizeName(teacherName);
+
+
+    // =========================================================
+    // FIND CLASS TEACHER
+    // =========================================================
+
+    const matchedTeacher =
+        (teacherUsers || []).find(user => {
+
+            const firstname =
+                normalizeName(user.firstname);
+
+
+            const surname =
+                normalizeName(user.surname);
+
+
+            const username =
+                normalizeName(user.username);
+
+
+            const fullName =
+                normalizeName(
+                    `${user.firstname || ""} ${user.surname || ""}`
+                );
+
+
+            const reverseName =
+                normalizeName(
+                    `${user.surname || ""} ${user.firstname || ""}`
+                );
+
+
+            return (
+                fullName === reportTeacherName ||
+                reverseName === reportTeacherName ||
+                username === reportTeacherName
+            );
+
+        });
+
+
+    if (matchedTeacher?.signature_name) {
+
+        teacherSignature =
+            matchedTeacher.signature_name;
+
+    }
+
+
+    // =========================================================
+    // LOAD HEADTEACHER
+    // =========================================================
+
+    let headSignature = "";
+
+
+    const { data: headteacher, error: headError } =
+        await supabaseClient
+            .from("users")
+            .select(`
+                id,
+                firstname,
+                surname,
+                username,
+                role,
+                signature_name,
+                schoolid
+            `)
+            .eq("role", "admin")
+            .eq("schoolid", currentUser.schoolid)
+            .maybeSingle();
+
+
+    if (headError) {
+
+        console.error(
+            "Headteacher lookup error:",
+            headError
+        );
+
+    }
+
+
+    if (headteacher?.signature_name) {
+
+        headSignature =
+            headteacher.signature_name;
+
+    }
+
+
+    let headteacherName =
+        "Headteacher";
+
+
+    if (headteacher) {
+
+        headteacherName =
+            `${headteacher.firstname || ""} ${headteacher.surname || ""}`.trim();
+
+
+        if (!headteacherName) {
+
+            headteacherName =
+                headteacher.username ||
+                "Headteacher";
+
+        }
+
+    }
+
+
+    // =========================================================
+    // CONTINUE REPORT
+    // =========================================================
+
+    html += `
+
+        <div style="
+            display:grid;
+            grid-template-columns:repeat(3, 1fr);
+            gap:8px;
+            margin-top:12px;
+        ">
+
+            <div style="
+                border:1px solid #b8b8b8;
+                padding:8px;
+                text-align:center;
+                background:#fafafa;
+            ">
+                <div style="
+                    font-size:11px;
+                    color:#555;
+                ">
+                    SCHOOL DAYS
+                </div>
+
+                <div style="
+                    font-size:19px;
+                    font-weight:bold;
+                    color:#00075D;
+                ">
+                    ${totalDays}
+                </div>
+            </div>
+
+
+            <div style="
+                border:1px solid #b8b8b8;
+                padding:8px;
+                text-align:center;
+                background:#fafafa;
+            ">
+                <div style="
+                    font-size:11px;
+                    color:#555;
+                ">
+                    DAYS PRESENT
+                </div>
+
+                <div style="
+                    font-size:19px;
+                    font-weight:bold;
+                    color:#00075D;
+                ">
+                    ${daysPresent}
+                </div>
+            </div>
+
+
+            <div style="
+                border:1px solid #b8b8b8;
+                padding:8px;
+                text-align:center;
+                background:#fafafa;
+            ">
+			
+			${
+            term === "term3"
+            ? `
+                <div style="
+                    font-size:11px;
+                    color:#555;
+                ">
+                    Promotion Class
+                </div>
+
+                <div style="
+                    font-size:19px;
+                    font-weight:bold;
+                    color:#00075D;
+                ">
+                    ${s.promotionClass || "Not Set"}
+            </div>
+            `
+            : ""
+        }
+            </div>
+
+        </div>
+
+
+
+
+        <!-- =================================================
+             AFFECTIVE DEVELOPMENT
+             ================================================= -->
+
+        <div style="
+            margin-top:13px;
+        ">
+
+            <div style="
+                background:#00075D;
+                color:white;
+                padding:7px 10px;
+                font-size:14px;
+                font-weight:bold;
+            ">
+                AFFECTIVE DEVELOPMENT
+            </div>
+
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                font-size:14px;
+            ">
+
+                <tr>
+
+                    <th style="
+                        width:22%;
+                        border:1px solid #999;
+                        padding:7px;
+                        background:#f0f0f0;
+                        text-align:left;
+                    ">
+                        Conduct
+                    </th>
+
+                    <td style="
+                        border:1px solid #999;
+                        padding:7px;
+                    ">
+                        ${s.conduct?.[term] || ""}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <th style="
+                        border:1px solid #999;
+                        padding:7px;
+                        background:#f0f0f0;
+                        text-align:left;
+                    ">
+                        Attitude
+                    </th>
+
+                    <td style="
+                        border:1px solid #999;
+                        padding:7px;
+                    ">
+                        ${s.attitude?.[term] || ""}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <th style="
+                        border:1px solid #999;
+                        padding:7px;
+                        background:#f0f0f0;
+                        text-align:left;
+                    ">
+                        Interest
+                    </th>
+
+                    <td style="
+                        border:1px solid #999;
+                        padding:7px;
+                    ">
+                        ${s.interest?.[term] || ""}
+                    </td>
+
+                </tr>
+
+            </table>
+
+        </div>
+
+
+        <!-- =================================================
+             CLASS TEACHER'S REMARK
+             ================================================= -->
+
+        <div style="
+            margin-top:12px;
+        ">
+
+            <div style="
+                background:#00075D;
+                color:white;
+                padding:7px 8px;
+                font-size:14px;
+                font-weight:bold;
+            ">
+                CLASS TEACHER'S REMARK
+            </div>
+
+
+            <div style="
+                min-height:30px;
+                border:1px solid #999;
+                padding:3px 5px;
+                font-size:14px;
+                line-height:1.4;
+                background:#ffffff;
+            ">
+                ${s.teacherRemark?.[term] || ""}
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SIGNATURES
+             ================================================= -->
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-end;
+            margin-top:18px;
+            padding:0 25px;
+        ">
+
+
+            <!-- CLASS TEACHER -->
+
+            <div style="
+                width:40%;
+                text-align:center;
+                font-size:13px;
+            ">
+
+                ${
+                    teacherSignature
+                    ? `
+                    <img
+                        src="${teacherSignature}"
+                        crossorigin="anonymous"
+                        style="
+                            width:170px;
+                            height:90px;
+                            object-fit:contain;
+                            display:block;
+                            margin:0 auto 3px;
+                        "
+                    >
+                    `
+                    : `
+                    <div style="
+                        width:160px;
+                        height:55px;
+                        margin:0 auto 3px;
+                    "></div>
+                    `
+                }
+
+
+                <div style="
+                    border-top:1px solid #111;
+                    padding-top:4px;
+                ">
+                    <b>${teacherName || "Class Teacher"}</b>
+                    <br>
+                    <span style="font-size:12px;">
+                        Class Teacher
+                    </span>
+                </div>
+
+            </div>
+
+
+            <!-- HEADTEACHER -->
+
+            <div style="
+                width:40%;
+                text-align:center;
+                font-size:13px;
+            ">
+
+                ${
+                    headSignature
+                    ? `
+                    <img
+                        src="${headSignature}"
+                        crossorigin="anonymous"
+                        style="
+                            width:170px;
+                            height:90px;
+                            object-fit:contain;
+                            display:block;
+                            margin:0 auto 3px;
+                        "
+                    >
+                    `
+                    : `
+                    <div style="
+                        width:160px;
+                        height:55px;
+                        margin:0 auto 3px;
+                    "></div>
+                    `
+                }
+
+
+                <div style="
+                    border-top:1px solid #111;
+                    padding-top:4px;
+                ">
+                    <b>${headteacherName}</b>
+                    <br>
+                    <span style="font-size:12px;">
+                        Headteacher
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+`;
+
+
+    // =========================================================
+    // SHOW REPORT PREVIEW
+    // =========================================================
+
+    if (showPreview) {
+
+        document.getElementById("reportOutput").innerHTML = html;
+
+    }
+
+
+    return html;
+
+}
+
+
+
+const promotionMap = {
+
+    "Nursery 1A":"Nursery 2A",
+	"Nursery 1B":"Nursery 2B",
+	
+    "Nursery 2A":"KG1A",
+	"Nursery 2B":"KG1B",
+	
+    "KG1A":"KG2A",
+	"KG1B":"KG2B",
+	
+    "KG2A":"1A",
+	"KG2B":"1B",
+
+
+	
+    "1A":"2A",
+    "1B":"2B",
+
+    "2A":"3A",
+    "2B":"3B",
+
+    "3A":"4A",
+    "3B":"4B",
+
+    "4A":"5A",
+    "4B":"5B",
+
+    "5A":"6A",
+    "5B":"6B",
+
+    "6A":"JHS 1",
+    "6B":"JHS 1",
+
+    "JHS 1":"JHS 2",
+    "JHS 2":"JHS 3"
+};
+
+let currentAcademicYear = "2025/2026";
+
+// Academic-year switching is school-scoped. Year-specific student
+// records are archived in academic_year_student_records before switching.
+let academicYearSwitchInProgress = false;
+
+function getAcademicYearParts(year) {
+    const match = String(year || "").trim().match(/^(\d{4})\s*\/\s*(\d{4})$/);
+    if (!match || Number(match[2]) !== Number(match[1]) + 1) return null;
+    return [Number(match[1]), Number(match[2])];
+}
+
+function buildAcademicYearOptions(selectedYear = currentAcademicYear) {
+    const select = document.getElementById("academicYearSelect");
+    if (!select) return;
+
+    const parts = getAcademicYearParts(selectedYear) || [2025, 2026];
+    const start = parts[0];
+    const years = new Set();
+
+    // Keep a practical history window and always include the selected year.
+    for (let y = start - 5; y <= start + 3; y++) {
+        years.add(`${y}/${y + 1}`);
+    }
+    years.add(selectedYear);
+
+    select.innerHTML = [...years]
+        .sort((a, b) => Number(a.slice(0, 4)) - Number(b.slice(0, 4)))
+        .map(year => `<option value="${year}">${year}</option>`)
+        .join("");
+
+    select.value = selectedYear;
+    const label = document.getElementById("academicYearCurrentLabel");
+    if (label) label.textContent = `Currently active academic year: ${currentAcademicYear}`;
+}
+
+function setAcademicYearStatus(message, isError = false) {
+    const status = document.getElementById("academicYearStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.style.color = isError ? "#fca5a5" : "";
+}
+
+async function saveAcademicYearSnapshot(year) {
+    if (!currentUser?.schoolid) throw new Error("School account was not found.");
+
+    // Snapshot all visible school students. For teachers, the global students
+    // array may be class-filtered, so fetch the full school roster as admin-safe
+    // archive data (RLS still applies).
+    const { data: roster, error: rosterError } = await supabaseClient
+        .from("students")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
+
+    if (rosterError) throw rosterError;
+    if (!roster?.length) return;
+
+    const rows = roster.map(student => ({
+        schoolid: currentUser.schoolid,
+        academic_year: year,
+        student_id: String(student.id),
+        student_data: student,
+        updated_at: new Date().toISOString()
+    }));
+
+    const { error } = await supabaseClient
+        .from("academic_year_student_records")
+        .upsert(rows, { onConflict: "schoolid,academic_year,student_id" });
+
+    if (error) throw error;
+}
+
+function resetYearSpecificStudentData(student) {
+    const fresh = { ...student };
+    fresh.subjects = {};
+    fresh.conduct = {};
+    fresh.attitude = {};
+    fresh.interest = {};
+    fresh.teacherRemark = {};
+    fresh.totalDays = {};
+    fresh.daysPresent = {};
+    fresh.average = 0;
+    fresh.currentTerm = "term1";
+    // Keep identity, portal credentials, contact details and current class.
+    return fresh;
+}
+
+async function loadAcademicYearSnapshot(year) {
+    const { data: archived, error } = await supabaseClient
+        .from("academic_year_student_records")
+        .select("student_id,student_data")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year);
+
+    if (error) throw error;
+    if (!archived?.length) return false;
+
+    const archiveById = new Map(archived.map(row => [String(row.student_id), row.student_data]));
+    const { data: roster, error: rosterError } = await supabaseClient
+        .from("students")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
+
+    if (rosterError) throw rosterError;
+
+    const updates = (roster || []).map(liveStudent => {
+        const oldRecord = archiveById.get(String(liveStudent.id));
+        if (!oldRecord) return resetYearSpecificStudentData(liveStudent);
+
+        // Restore academic fields from the chosen year but preserve current
+        // identity/portal account fields from the live student row.
+        return {
+            ...liveStudent,
+            studentclass: oldRecord.studentclass ?? liveStudent.studentclass,
+            subjects: oldRecord.subjects || {},
+            conduct: oldRecord.conduct || {},
+            attitude: oldRecord.attitude || {},
+            interest: oldRecord.interest || {},
+            teacherRemark: oldRecord.teacherRemark || {},
+            totalDays: oldRecord.totalDays || {},
+            daysPresent: oldRecord.daysPresent || {},
+            average: oldRecord.average || 0,
+            currentTerm: oldRecord.currentTerm || "term1",
+            graduated: oldRecord.graduated || false
+        };
+    });
+
+    if (updates.length) {
+        const { error: updateError } = await supabaseClient
+            .from("students")
+            .upsert(updates);
+        if (updateError) throw updateError;
+    }
+
+    return true;
+}
+
+async function saveAcademicYearSettings(year) {
+    const { data, error } = await supabaseClient
+        .from("termsettings")
+        .select("t1start,t1end,t2start,t2end,t3start,t3end")
+        .eq("schoolid", currentUser.schoolid)
+        .maybeSingle();
+    if (error) throw error;
+
+    const row = {
+        schoolid: currentUser.schoolid,
+        academic_year: year,
+        t1start: data?.t1start || null, t1end: data?.t1end || null,
+        t2start: data?.t2start || null, t2end: data?.t2end || null,
+        t3start: data?.t3start || null, t3end: data?.t3end || null,
+        updated_at: new Date().toISOString()
+    };
+    const { error: saveError } = await supabaseClient
+        .from("academic_year_settings")
+        .upsert(row, { onConflict: "schoolid,academic_year" });
+    if (saveError) throw saveError;
+}
+
+async function getAcademicYearPromotionState(year) {
+    const { data, error } = await supabaseClient
+        .from("academic_year_settings")
+        .select("promotion_completed,promoted_to_year")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year)
+        .maybeSingle();
+    if (error) throw error;
+    return data || { promotion_completed: false, promoted_to_year: null };
+}
+
+async function markAcademicYearPromoted(year, nextYear) {
+    const { error } = await supabaseClient
+        .from("academic_year_settings")
+        .update({
+            promotion_completed: true,
+            promoted_to_year: nextYear,
+            updated_at: new Date().toISOString()
+        })
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year);
+    if (error) throw error;
+}
+
+async function restoreAcademicYearSettings(year) {
+    const { data, error } = await supabaseClient
+        .from("academic_year_settings")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", year)
+        .maybeSingle();
+    if (error) throw error;
+    return data || null;
+}
+
+async function updateAcademicYearSetting(year, clearTermDates = false, savedSettings = null) {
+    const update = { academic_year: year };
+
+    if (clearTermDates) {
+        update.t1start = null; update.t1end = null;
+        update.t2start = null; update.t2end = null;
+        update.t3start = null; update.t3end = null;
+    } else if (savedSettings) {
+        update.t1start = savedSettings.t1start;
+        update.t1end = savedSettings.t1end;
+        update.t2start = savedSettings.t2start;
+        update.t2end = savedSettings.t2end;
+        update.t3start = savedSettings.t3start;
+        update.t3end = savedSettings.t3end;
+    }
+
+    const { data: existing, error: readError } = await supabaseClient
+        .from("termsettings")
+        .select("schoolid")
+        .eq("schoolid", currentUser.schoolid)
+        .maybeSingle();
+    if (readError) throw readError;
+
+    let result;
+    if (existing) {
+        result = await supabaseClient.from("termsettings")
+            .update(update).eq("schoolid", currentUser.schoolid);
+    } else {
+        result = await supabaseClient.from("termsettings")
+            .insert({ schoolid: currentUser.schoolid, ...update });
+    }
+    if (result.error) throw result.error;
+
+    currentAcademicYear = year;
+    termSettings = { ...(termSettings || {}), ...update, schoolid: currentUser.schoolid };
+    localStorage.setItem("nabengAcademicYear", year);
+}
+
+async function switchAcademicYear() {
+    if (academicYearSwitchInProgress) return;
+    if (!currentUser || currentUser.role !== "admin") {
+        alert("Only the school administrator can switch the academic year.");
+        return;
+    }
+
+    const select = document.getElementById("academicYearSelect");
+    const targetYear = select?.value;
+    if (!getAcademicYearParts(targetYear)) {
+        alert("Choose a valid academic year, for example 2026/2027.");
+        return;
+    }
+    if (targetYear === currentAcademicYear) {
+        setAcademicYearStatus(`${targetYear} is already the active academic year.`);
+        return;
+    }
+
+    const targetExists = await (async () => {
+        const { data, error } = await supabaseClient
+            .from("academic_year_student_records")
+            .select("student_id")
+            .eq("schoolid", currentUser.schoolid)
+            .eq("academic_year", targetYear)
+            .limit(1);
+        if (error) throw error;
+        return !!data?.length;
+    })().catch(error => {
+        console.error("Academic year check failed:", error);
+        setAcademicYearStatus("Could not check archived years. Confirm the database setup and try again.", true);
+        return null;
+    });
+    if (targetExists === null) return;
+
+    const selectedStart = getAcademicYearParts(targetYear)[0];
+    const currentStart = getAcademicYearParts(currentAcademicYear)?.[0];
+    if (!targetExists && selectedStart < currentStart) {
+        setAcademicYearStatus(`No archived records were found for ${targetYear}. Older years cannot be started as new years; restore a year only after it has been archived.`, true);
+        alert(`No archived records were found for ${targetYear}. Your current records have not been changed.`);
+        buildAcademicYearOptions(currentAcademicYear);
+        return;
+    }
+
+    const message = targetExists
+        ? `Switch from ${currentAcademicYear} to ${targetYear}?\n\nThe current year will be saved first, then ${targetYear}'s records will be restored.`
+        : `Start ${targetYear}?\n\nThe current year will be saved first. ${targetYear} has no archive yet, so student marks and assessments will start fresh. Student identities and portal accounts will remain.`;
+
+    if (!confirm(message)) return;
+
+    academicYearSwitchInProgress = true;
+    setAcademicYearStatus("Saving the current year and switching records…");
+    try {
+        const currentPromotionState = await getAcademicYearPromotionState(currentAcademicYear);
+        if (!currentPromotionState.promotion_completed) {
+            await saveAcademicYearSnapshot(currentAcademicYear);
+        }
+        await saveAcademicYearSettings(currentAcademicYear);
+
+        if (targetExists) {
+            const targetSettings = await restoreAcademicYearSettings(targetYear);
+            if (!targetSettings) {
+                throw new Error(`Student records exist for ${targetYear}, but its term dates have not been archived. Set up that year's term dates before switching to it.`);
+            }
+            await loadAcademicYearSnapshot(targetYear);
+            await updateAcademicYearSetting(targetYear, false, targetSettings);
+        } else {
+            const { data: roster, error } = await supabaseClient
+                .from("students")
+                .select("*")
+                .eq("schoolid", currentUser.schoolid);
+            if (error) throw error;
+
+            const freshRoster = (roster || []).map(resetYearSpecificStudentData);
+            if (freshRoster.length) {
+                const { error: resetError } = await supabaseClient
+                    .from("students")
+                    .upsert(freshRoster);
+                if (resetError) throw resetError;
+            }
+            await updateAcademicYearSetting(targetYear, true);
+            await saveAcademicYearSettings(targetYear);
+        }
+
+        await loadTermSettings();
+        await loadStudents();
+        activeTerm = await getCurrentTerm();
+        selectedMarkTerm = activeTerm || "term1";
+        updateDashboard();
+        populateStudentList();
+        if (typeof loadAttendanceData === "function") await loadAttendanceData();
+        if (typeof loadNotices === "function") await loadNotices();
+
+        buildAcademicYearOptions(currentAcademicYear);
+        setAcademicYearStatus(`Academic year switched successfully to ${currentAcademicYear}.`);
+        alert(`Academic year is now ${currentAcademicYear}.`);
+    } catch (error) {
+        console.error("Academic year switch failed:", error);
+        setAcademicYearStatus(`Switch failed: ${error.message || "Unknown error"}. No further changes were attempted.`, true);
+        alert("Academic year switch failed. Check the browser console and Supabase database setup before trying again.");
+    } finally {
+        academicYearSwitchInProgress = false;
+    }
+}
+
+
+async function promoteStudents() {
+    if (!currentUser || String(currentUser.role || "").toLowerCase() !== "admin") {
+        alert("Only the school administrator can promote students.");
+        return;
+    }
+    if (academicYearSwitchInProgress) return;
+
+    const term3End = String(termSettings?.t3end || "").slice(0, 10);
+    if (!term3End) {
+        alert("Promotion is locked. Please set the Term 3 end date in Term Settings first.");
+        updatePromotionButtonVisibility();
+        return;
+    }
+    if (getLocalDateISO() <= term3End) {
+        alert(`Promotion is only allowed after Term 3 has ended (${term3End}).`);
+        updatePromotionButtonVisibility();
+        return;
+    }
+
+    const parts = getAcademicYearParts(currentAcademicYear);
+    if (!parts) {
+        alert("The active academic year is invalid. Check Term Settings first.");
+        return;
+    }
+    const nextYear = `${parts[0] + 1}/${parts[1] + 1}`;
+
+    const { data: nextArchive, error: archiveCheckError } = await supabaseClient
+        .from("academic_year_student_records")
+        .select("student_id")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("academic_year", nextYear)
+        .limit(1);
+    if (archiveCheckError) {
+        console.error("Next-year archive check failed:", archiveCheckError);
+        alert("Could not verify the next academic year. Check the database setup and try again.");
+        return;
+    }
+    if (nextArchive?.length) {
+        alert(`Records for ${nextYear} already exist. Use the Academic Year switcher to restore that year instead of promoting again.`);
+        return;
+    }
+
+    const confirmed = confirm(
+        `Promote students from ${currentAcademicYear} to ${nextYear}?\n\n` +
+        `The current year's results will be archived first. Students will move to the next class, ` +
+        `year-specific marks and remarks will be cleared, and JHS 3 students will be marked as graduated. ` +
+        `Student IDs and portal credentials will be kept. This action should be done only once at year end.`
+    );
+    if (!confirmed) return;
+
+    academicYearSwitchInProgress = true;
+    updatePromotionButtonVisibility();
+    setAcademicYearStatus(`Archiving ${currentAcademicYear} and preparing ${nextYear}…`);
+    try {
+        // Preserve the complete pre-promotion year before changing live student rows.
+        await saveAcademicYearSnapshot(currentAcademicYear);
+        await saveAcademicYearSettings(currentAcademicYear);
+
+        const { data: roster, error: rosterError } = await supabaseClient
+            .from("students")
+            .select("*")
+            .eq("schoolid", currentUser.schoolid);
+        if (rosterError) throw rosterError;
+        if (!roster?.length) throw new Error("No student records were found for this school.");
+
+        const promotedRoster = roster.map(student => {
+            if (student.graduated) return student;
+
+            const currentClass = String(student.studentclass || "").trim();
+            const nextClass = promotionMap[currentClass];
+            const updated = resetYearSpecificStudentData(student);
+
+            if (currentClass === "JHS 3") {
+                updated.graduated = true;
+                return updated;
+            }
+            if (nextClass) updated.studentclass = nextClass;
+            return updated;
+        });
+
+        // Mark the previous year before mutating live rows. If the roster update
+        // fails, the pre-promotion archive remains protected and the operation can
+        // be reviewed safely before retrying.
+        await markAcademicYearPromoted(currentAcademicYear, nextYear);
+
+        // One school-scoped upsert updates the full roster in a single request.
+        const { error: updateError } = await supabaseClient
+            .from("students")
+            .upsert(promotedRoster);
+        if (updateError) throw updateError;
+
+        await updateAcademicYearSetting(nextYear, true);
+        await saveAcademicYearSettings(nextYear);
+
+        await loadTermSettings();
+        await loadStudents();
+        activeTerm = await getCurrentTerm();
+        selectedMarkTerm = activeTerm || "term1";
+        updateDashboard();
+        populateStudentList();
+        if (typeof loadAttendanceData === "function") await loadAttendanceData();
+        if (typeof loadNotices === "function") await loadNotices();
+
+        buildAcademicYearOptions(currentAcademicYear);
+        setAcademicYearStatus(`Students promoted successfully. Active academic year: ${currentAcademicYear}. Set the new term dates in Term Settings.`);
+        alert(`Promotion completed. The active academic year is now ${currentAcademicYear}. Set the new term dates before recording marks or attendance.`);
+    } catch (error) {
+        console.error("Student promotion failed:", error);
+        setAcademicYearStatus(`Promotion failed: ${error.message || "Unknown error"}. Check the database before retrying.`, true);
+        alert(`Promotion could not be completed fully. Do not click Promote again until you check the student records and browser console. Details: ${error.message || "Unknown error"}`);
+    } finally {
+        academicYearSwitchInProgress = false;
+        updatePromotionButtonVisibility();
+    }
+}
+
+
+// ==========================================
+// CLICK SIGNATURE TO SELECT A FILE
+// ==========================================
+function uploadSignature() {
+
+    document.getElementById("signatureInput").click();
+
+}
+
+
+// ==========================================
+// HANDLE SELECTED SIGNATURE
+// ==========================================
+async function handleSignatureUpload(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+
+    // ------------------------------------------
+    // ONLY ALLOW IMAGES
+    // ------------------------------------------
+    if (!file.type.startsWith("image/")) {
+
+        alert("Please select an image file.");
+
+        event.target.value = "";
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // SIZE LIMIT: 2MB
+    // ------------------------------------------
+    if (file.size > 2 * 1024 * 1024) {
+
+        alert("Signature image must be less than 2MB.");
+
+        event.target.value = "";
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // CHECK LOGGED-IN USER
+    // ------------------------------------------
+    if (!currentUser || !currentUser.id) {
+
+        alert("User information not available.");
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // SHOW PREVIEW IMMEDIATELY
+    // ------------------------------------------
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+
+        const preview =
+            document.getElementById("signaturePreview");
+
+        const placeholder =
+            document.getElementById("signaturePlaceholder");
+
+        preview.src = e.target.result;
+
+        preview.style.display = "block";
+
+        placeholder.style.display = "none";
+    };
+
+    reader.readAsDataURL(file);
+
+
+    // ------------------------------------------
+    // CREATE UNIQUE FILE NAME
+    // ------------------------------------------
+    const extension =
+        file.name.split(".").pop().toLowerCase();
+
+    const fileName =
+        `${currentUser.id}-${Date.now()}.${extension}`;
+
+
+    // ------------------------------------------
+    // UPLOAD TO SUPABASE STORAGE
+    // ------------------------------------------
+    const { error: uploadError } =
+        await supabaseClient.storage
+            .from("signatures")
+            .upload(fileName, file, {
+                cacheControl: "3600",
+                upsert: false
+            });
+
+
+    if (uploadError) {
+
+        console.error(
+            "Signature upload error:",
+            uploadError
+        );
+
+        alert(
+            "Signature upload failed: " +
+            uploadError.message
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // GET PUBLIC URL
+    // ------------------------------------------
+    const { data } =
+        supabaseClient.storage
+            .from("signatures")
+            .getPublicUrl(fileName);
+
+
+    const signatureUrl =
+        data?.publicUrl;
+
+
+    if (!signatureUrl) {
+
+        alert("Could not generate signature URL.");
+
+        return;
+    }
+
+
+    console.log(
+        "Signature URL:",
+        signatureUrl
+    );
+
+
+    // ------------------------------------------
+    // SAVE URL TO USERS TABLE
+    // IMPORTANT: COLUMN IS signature_name
+    // ------------------------------------------
+    const { error: dbError } =
+        await supabaseClient
+            .from("users")
+            .update({
+                signature_name: signatureUrl
+            })
+            .eq("id", currentUser.id);
+
+
+    if (dbError) {
+
+        console.error(
+            "Signature database error:",
+            dbError
+        );
+
+        alert(
+            "Signature uploaded, but could not be saved to your profile: " +
+            dbError.message
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // UPDATE CURRENT USER OBJECT
+    // ------------------------------------------
+    currentUser.signature_name =
+        signatureUrl;
+
+
+    // ------------------------------------------
+    // DISPLAY ACTUAL SUPABASE SIGNATURE
+    // ------------------------------------------
+    const preview =
+        document.getElementById("signaturePreview");
+
+    const placeholder =
+        document.getElementById("signaturePlaceholder");
+
+
+    preview.src =
+        signatureUrl;
+
+    preview.style.display =
+        "block";
+
+    placeholder.style.display =
+        "none";
+
+
+    // ------------------------------------------
+    // RESET FILE INPUT
+    // ------------------------------------------
+    event.target.value = "";
+
+
+    console.log(
+        "Signature saved successfully:",
+        signatureUrl
+    );
+
+}
+
+
+// ==========================================
+// LOAD SAVED SIGNATURE
+// ==========================================
+async function loadSignature() {
+
+    if (!currentUser || !currentUser.id) return;
+
+
+    const { data, error } =
+        await supabaseClient
+            .from("users")
+            .select("signature_name")
+            .eq("id", currentUser.id)
+            .maybeSingle();
+
+
+    if (error) {
+
+        console.error(
+            "Error loading signature:",
+            error
+        );
+
+        return;
+    }
+
+
+    const preview =
+        document.getElementById("signaturePreview");
+
+    const placeholder =
+        document.getElementById("signaturePlaceholder");
+
+
+    if (!preview || !placeholder) return;
+
+
+    // ------------------------------------------
+    // SIGNATURE EXISTS
+    // ------------------------------------------
+    if (data?.signature_name) {
+
+        preview.src =
+            data.signature_name;
+
+        preview.style.display =
+            "block";
+
+        placeholder.style.display =
+            "none";
+
+
+        // Keep currentUser synchronized
+        currentUser.signature_name =
+            data.signature_name;
+
+
+    } else {
+
+        // ------------------------------------------
+        // NO SIGNATURE
+        // ------------------------------------------
+        preview.src = "";
+
+        preview.style.display =
+            "none";
+
+        placeholder.style.display =
+            "flex";
+    }
+}
+
+
+
+function showPromotionModal(){
+
+    const modal =
+        document.getElementById(
+            "promotionModal"
+        );
+
+    let html = "<table style='width:100%;border-collapse:collapse'>";
+
+    html += `
+        <tr>
+            <th align="left">Current Class</th>
+            <th></th>
+            <th align="left">Next Class</th>
+        </tr>
+    `;
+
+    Object.keys(promotionMap).forEach(cls=>{
+
+        html+=`
+            <tr>
+                <td>${cls}</td>
+                <td style="text-align:center;">➜</td>
+                <td>${promotionMap[cls]}</td>
+            </tr>
+        `;
+    });
+
+    html+=`
+        <tr>
+            <td>JHS 3</td>
+            <td style="text-align:center;">➜</td>
+            <td>Graduated</td>
+        </tr>
+    `;
+
+    html+="</table>";
+
+    document.getElementById(
+        "promotionSummary"
+    ).innerHTML=html;
+
+    modal.style.display="flex";
+
+    return new Promise(resolve=>{
+
+        promotionResolve=resolve;
+
+    });
+
+}
+
+function closePromotionModal(){
+
+    document.getElementById(
+        "promotionModal"
+    ).style.display="none";
+
+    if(promotionResolve){
+
+        promotionResolve(false);
+
+        promotionResolve=null;
+    }
+
+}
+
+function confirmPromotion(){
+
+    document.getElementById(
+        "promotionModal"
+    ).style.display="none";
+
+    if(promotionResolve){
+
+        promotionResolve(true);
+
+        promotionResolve=null;
+    }
+
+}
+
+async function restoreFromHistory(
+    academicYear = currentAcademicYear
+){
+
+    if(
+        !confirm(
+            `Restore all students from ${academicYear}?\n\nThis will overwrite the current academic records.`
+        )
+    ) return;
+
+    try{
+
+        const { data: history, error } =
+            await supabaseClient
+                .from("student_history")
+                .select("*")
+                .eq("academic_year", academicYear);
+
+        if(error) throw error;
+
+        if(!history.length){
+
+            alert(
+                "No archived records found."
+            );
+
+            return;
+        }
+
+        history.forEach(record=>{
+
+            let student =
+                students.find(
+                    s=>s.id===record.studentid
+                );
+
+            // Fallback if old records have no studentid
+            if(!student){
+
+                student = students.find(
+                    s=>
+                        s.name.trim().toLowerCase() ===
+                        record.student_name.trim().toLowerCase()
+                );
+
+            }
+
+            if(!student){
+
+                console.log(
+                    "Student not found:",
+                    record.student_name
+                );
+
+                return;
+            }
+
+            student.studentclass =
+                record.student_class;
+
+            student.subjects =
+                record.subjects || {};
+
+            student.conduct =
+                record.conduct || {};
+
+            student.attitude =
+                record.attitude || {};
+
+            student.interest =
+                record.interest || {};
+
+            student.teacherRemark =
+                record.teacher_remark || {};
+
+            student.totalDays =
+                record.total_days || {};
+
+            student.daysPresent =
+                record.days_present || {};
+
+            student.average =
+                record.average || 0;
+
+            student.currentTerm = "term3";
+
+            // Student is no longer graduated
+            student.graduated = false;
+
+        });
+
+        await saveStudents();
+
+        alert(
+            "Students restored successfully!"
+        );
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(
+            "Failed to restore students."
+        );
+
+    }
+
+}
+function updateStudentSuggestions() {
+
+    let search =
+        document.getElementById("reportSearch")
+        .value
+        .toLowerCase();
+
+    let suggestionBox =
+        document.getElementById("studentSuggestions");
+
+    suggestionBox.innerHTML = "";
+
+    let filteredStudents = students;
+
+    // Teachers see only students in assigned classes
+    if (currentUser.role === "teacher") {
+
+        filteredStudents = students.filter(s =>
+            (currentUser.classes || [])
+            .includes(s.studentclass)
+        );
+    }
+
+    filteredStudents
+        .filter(s =>
+            s.name.toLowerCase().includes(search)
+        )
+        .slice(0, 10)
+        .forEach(student => {
+
+            let option =
+                document.createElement("option");
+
+            option.value = student.name;
+
+            suggestionBox.appendChild(option);
+        });
+}
+
+function getReportStudent() {
+
+    let name =
+        document.getElementById("reportSearch")
+        .value
+        .trim()
+        .toLowerCase();
+
+    let availableStudents = students;
+
+    if (currentUser.role === "teacher") {
+
+        availableStudents = students.filter(s =>
+            (currentUser.classes || [])
+            .includes(s.studentclass)
+        );
+    }
+
+    return availableStudents.find(s =>
+        s.name.toLowerCase() === name
+    );
+}
+
+function printReport(){
+    let content = document.getElementById("printArea").outerHTML;
+
+    let win = window.open("");
+
+    win.document.write(`
+        <html>
+        <head>
+            <style>
+                @page {
+                    size: A4;
+                    margin: 0;
+                }
+
+                body {
+                    margin: 0;
+                }
+            </style>
+        </head>
+        <body>${content}</body>
+        </html>
+    `);
+
+    win.document.close();
+    win.print();
+}
+
+
+function downloadSingleReport(){
+
+    if(!window.singleReportURL){
+
+        alert("Generate the report first");
+
+        return;
+
+    }
+
+
+    let link =
+    document.createElement("a");
+
+
+    link.href =
+    window.singleReportURL;
+
+
+    link.download =
+    window.singleReportName || "Student_Report.pdf";
+
+
+    document.body.appendChild(link);
+
+
+    link.click();
+
+
+    document.body.removeChild(link);
+
+}
+
+async function downloadPDF(){
+
+    let element = document.getElementById("printArea");
+
+    let studentname =
+        document.getElementById("reportSearch")
+        .value
+        .trim()
+        .replace(/\s+/g, "_");
+
+    let term =
+        document.getElementById("reportTerm").value;
+
+    term =
+        term.charAt(0).toUpperCase() +
+        term.slice(1);
+
+    let fileName = `${studentname}_${term}.pdf`;
+
+    const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/png", 1.0);
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF(
+        "p",
+        "mm",
+        "a4"
+    );
+
+    const imgWidth = 210;
+    const imgHeight =
+        (canvas.height * imgWidth) /
+        canvas.width;
+
+    doc.addImage(
+        imgData,
+        "PNG",
+        0,
+        0,
+        imgWidth,
+        imgHeight
+    );
+
+    doc.save(fileName);
+}
+async function downloadStudentReport(){
+
+    // Get student search value
+    let name =
+        document.getElementById("reportSearch")
+        .value
+        .trim()
+        .toLowerCase();
+
+
+    let term =
+        document.getElementById("reportTerm")
+        .value;
+
+
+    // Find student
+    let s =
+        students.find(
+            x =>
+            x.name.toLowerCase() === name
+        );
+
+
+    if(!s){
+
+        alert("Student not found");
+        return;
+
+    }
+
+
+    // Update latest average before report
+    calculateStudentAverage(
+        s,
+        term
+    );
+
+
+    // Get term dates
+    let endDate =
+        getTermEnd(term);
+
+    let nextDate =
+        getNextTermStart(term);
+
+
+    if(!endDate || !nextDate){
+
+        alert(
+            "❌ Please set term dates first!"
+        );
+
+        return;
+
+    }
+
+
+
+    // Generate report preview
+    await generateReportWithTerm(
+
+        s,
+
+        term,
+
+        endDate,
+
+        nextDate
+
+    );
+
+
+
+    // Allow HTML to render
+    await new Promise(
+        resolve =>
+        setTimeout(resolve,300)
+    );
+
+
+
+    let element =
+        document.getElementById(
+            "printArea"
+        );
+
+
+    if(!element){
+
+        alert(
+            "Report area not found!"
+        );
+
+        return;
+
+    }
+
+
+
+    // Convert report to image
+
+    const canvas =
+        await html2canvas(
+            element,
+            {
+                scale:3,
+                useCORS:true
+            }
+        );
+
+
+    const imgData =
+        canvas.toDataURL(
+            "image/png",
+            1.0
+        );
+
+
+
+    const { jsPDF } =
+        window.jspdf;
+
+
+
+    let doc =
+        new jsPDF(
+            "p",
+            "mm",
+            "a4"
+        );
+
+
+
+    let imgWidth = 210;
+
+
+    let imgHeight =
+        (
+            canvas.height *
+            imgWidth
+        )
+        /
+        canvas.width;
+
+
+
+    doc.addImage(
+
+        imgData,
+
+        "PNG",
+
+        0,
+
+        0,
+
+        imgWidth,
+
+        imgHeight
+
+    );
+
+
+
+    let fileName =
+        `${s.name.replace(/\s+/g,"_")}_${term}_Report.pdf`;
+
+
+
+    let pdfBlob = doc.output("blob");
+
+let pdfURL = URL.createObjectURL(pdfBlob);
+
+
+let downloadArea =
+document.getElementById("singleReportDownloadArea");
+
+
+if(downloadArea){
+
+    downloadArea.innerHTML = `
+
+    <div style="
+        margin-top:20px;
+        padding:15px;
+        background:#f1f5f9;
+        border-radius:10px;
+        text-align:center;
+    ">
+
+    <h4>
+    ✅ ${s.name}'s Report Generated
+    </h4>
+
+
+    <button 
+    onclick="downloadSingleReport()"
+    style="
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:12px 25px;
+    border-radius:8px;
+    cursor:pointer;
+    ">
+
+    <i class="fas fa-download"></i>
+    Download Report
+
+    </button>
+
+
+    </div>
+
+    `;
+
+
+    window.singleReportURL = pdfURL;
+
+    window.singleReportName = fileName;
+
+}
+
+
+}
+
+// AUTO LOGIN AFTER REFRESH
+async function __nabengWindowOnLoad () {
+
+
+    let savedUser = JSON.parse(
+        localStorage.getItem("loggedInUser")
+    );
+
+
+    if (savedUser) {
+
+
+        // Fetch latest user data from Supabase
+        const { data: user, error } = await supabaseClient
+
+            .from("users")
+
+            .select("*")
+
+            .eq("username", savedUser.username)
+
+            .single();
+
+
+
+        if (!error && user) {
+
+
+            currentUser = user;
+
+
+
+            // ===============================
+            // SHOW / HIDE GENERATE ACCOUNT BUTTON
+            // ===============================
+
+            const generateBtn =
+            document.getElementById(
+                "generateAccountsBtn"
+            );
+
+
+            if(generateBtn){
+
+
+                if(
+    currentUser.role &&
+    currentUser.role.toLowerCase() === "admin"
+){
+
+                    generateBtn.style.display =
+                    "block";
+
+                }else{
+
+                    generateBtn.style.display =
+                    "none";
+
+                }
+
+
+            }
+
+
+
+            // Update cached session
+            localStorage.setItem(
+
+                "loggedInUser",
+
+                JSON.stringify(user)
+
+            );
+
+
+
+            document.getElementById(
+                "loginBox"
+            ).style.display = "none";
+
+            const subOk = (typeof sbaGateAfterLogin === "function")
+                ? await sbaGateAfterLogin()
+                : true;
+            if (!subOk) {
+                return;
+            }
+
+            document.getElementById(
+                "app"
+            ).style.display = "block";
+
+            const welcomeMsg =
+                    "👋 Welcome, " +
+                    (user.firstname || "") +
+                    " " +
+                    (user.surname || "");
+            const welcomeEl = document.getElementById("welcomeUser");
+            if (welcomeEl) welcomeEl.innerText = welcomeMsg;
+            const dashWelcome = document.getElementById("dashWelcomeUser");
+            if (dashWelcome) dashWelcome.innerText = welcomeMsg;
+            const sideName = document.getElementById("sidebarUserName");
+            if (sideName) sideName.textContent = user.firstname || user.username || "User";
+            if (typeof applySidebarAvatar === "function") applySidebarAvatar(user || currentUser);
+
+            // Load system data
+			await loadUsers();
+			
+            await loadTermSettings();
+
+            await loadStudents();
+
+            await loadAttendanceData();
+
+            await loadLogo();
+
+            await displaySchoolName();
+
+            await loadTheme();
+
+			loadClassOptions();
+
+            updateDashboard();
+
+
+            populateStudentList();
+
+
+            showPage("dashboardPage");
+
+
+
+        } else {
+
+
+            // Invalid session
+
+            localStorage.removeItem(
+                "loggedInUser"
+            );
+
+
+        }
+
+
+
+    } else {
+
+
+        // Load default theme if no user
+
+        loadTheme();
+
+
+    }
+
+}
+
+/* ============================================================
+   SHOW DEVELOPER FEEDBACK AFTER EVERY PAGE REFRESH
+============================================================ */
+
+function __nabengShowFeedbackAfterLoad() {
+    setTimeout(() => {
+        const loggedInUser =
+            localStorage.getItem("loggedInUser");
+
+        if (!loggedInUser) {
+            return;
+        }
+
+        const app =
+            document.getElementById("app");
+
+        if (
+            app &&
+            app.style.display !== "none"
+        ) {
+            showDeveloperFeedback();
+        }
+    }, 800);
+}
+
+// Safe boot for Vite late-loaded classic script (DOM may already be ready)
+(function __nabengBoot() {
+    const run = () => {
+        __nabengWindowOnLoad();
+        __nabengShowFeedbackAfterLoad();
+    };
+    if (document.readyState === "complete") {
+        run();
+    } else {
+        window.addEventListener("load", run);
+    }
+})();
+
+async function refreshCurrentUser() {
+
+    const { data, error } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("username", currentUser.username)
+        .single();
+
+    if (!error && data) {
+
+        currentUser = data;
+
+        localStorage.setItem(
+            "loggedInUser",
+            JSON.stringify(currentUser)
+        );
+
+        if (typeof applySidebarAvatar === "function") {
+            applySidebarAvatar(currentUser);
+        }
+    }
+}
+
+
+async function showProfile(){
+
+    showPage("userProfilePage");
+
+    await loadUsers();
+
+    loadProfileData();
+
+    loadTermSettings();
+
+    loadSubjectSelection();
+
+    loadTeacherSubjects();
+}
+
+
+
+
+
+
+
+
+function loadProfileData(){
+
+    if(!currentUser){
+        console.error("currentUser not found");
+        return;
+    }
+
+    document.getElementById("pFirstName").value =
+        currentUser.firstname || "";
+
+    document.getElementById("pSurname").value =
+        currentUser.surname || "";
+
+    document.getElementById("pUsername").value =
+        currentUser.username || "";
+
+    document.getElementById("pEmail").value =
+        currentUser.email || "";
+
+    document.getElementById("pPhone").value =
+        currentUser.phone || "";
+
+    document.getElementById("pRole").value =
+        currentUser.role || "";
+
+    const img = document.getElementById("profilePic");
+
+    if(img){
+        img.src = currentUser.profilePic ||
+                  "assets/default-profile.png";
+    }
+
+    if (typeof applySidebarAvatar === "function") {
+        applySidebarAvatar(currentUser);
+    }
+}
+
+
+async function saveProfile() {
+
+    // Get form values
+    let firstname =
+        document.getElementById(
+            "pFirstName"
+        ).value.trim();
+
+    let surname =
+        document.getElementById(
+            "pSurname"
+        ).value.trim();
+
+    let email =
+        document.getElementById(
+            "pEmail"
+        ).value.trim();
+
+    let phone =
+        document.getElementById(
+            "pPhone"
+        ).value.trim();
+
+    // Update user in Supabase
+    const { error } = await supabaseClient
+        .from("users")
+        .update({
+            firstname: firstname,
+            surname: surname,
+            email: email,
+            phone: phone
+        })
+        .eq("username", currentUser.username);
+
+    if (error) {
+
+        console.log(error);
+
+        return alert(
+            "Failed to update profile"
+        );
+    }
+
+    // Update current user locally
+    currentUser.firstname = firstname;
+    currentUser.surname = surname;
+    currentUser.email = email;
+    currentUser.phone = phone;
+
+    // Update session cache
+    localStorage.setItem(
+        "loggedInUser",
+        JSON.stringify(currentUser)
+    );
+
+    // Update welcome text instantly
+    (function(){
+        const _wm = "👋 Welcome, " + currentUser.firstname + " " + currentUser.surname;
+        const _we = document.getElementById("welcomeUser");
+        if (_we) _we.innerText = _wm;
+        const _dw = document.getElementById("dashWelcomeUser");
+        if (_dw) _dw.innerText = _wm;
+    })();
+
+    alert("Profile updated successfully!");
+}
+
+function closeProfile(){
+    document.getElementById("profileModal").style.display = "none";
+}
+
+
+
+
+/* =========================================================
+   SUBJECT & TEACHER ASSIGNMENT
+   ADMIN + TEACHER
+========================================================= */
+
+
+/* =========================================================
+   LOAD SUBJECT SELECTION PAGE
+========================================================= */
+
+function loadSubjectSelection(user = currentUser) {
+
+    const adminSection =
+        document.getElementById("adminSubjectAssignment");
+
+    const teacherSection =
+        document.getElementById("teacherAssignedSubjects");
+
+    const teacherList =
+        document.getElementById("myAssignedSubjectsList");
+
+    const classList =
+        document.getElementById("myAssignedClassesList");
+
+    const subjectCheckboxes =
+        document.getElementById("subjectCheckboxes");
+
+
+    /* -----------------------------------------------------
+       SAFETY CHECK
+    ----------------------------------------------------- */
+
+    if (!user) {
+        console.error(
+            "loadSubjectSelection: No current user found."
+        );
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       NORMALIZE ROLE
+    ----------------------------------------------------- */
+
+    const role =
+        String(user.role || "")
+            .toLowerCase()
+            .trim();
+
+
+    /* =====================================================
+       TEACHER
+    ===================================================== */
+
+    if (role === "teacher") {
+
+        console.log(
+            "Loading Teacher Assignment..."
+        );
+
+
+        /* -------------------------------------------------
+           HIDE ADMIN
+        ------------------------------------------------- */
+
+        if (adminSection) {
+            adminSection.style.display = "none";
+        }
+
+
+        /* -------------------------------------------------
+           SHOW TEACHER
+        ------------------------------------------------- */
+
+        if (teacherSection) {
+            teacherSection.style.display = "block";
+        }
+
+
+        /* -------------------------------------------------
+           CLEAR ADMIN CONTENT
+        ------------------------------------------------- */
+
+        if (subjectCheckboxes) {
+            subjectCheckboxes.innerHTML = "";
+        }
+
+
+        /*
+         * Get assigned classes.
+         */
+
+        const assignedClasses =
+            Array.isArray(user.classes)
+                ? user.classes
+                    .map(c => String(c).trim())
+                    .filter(Boolean)
+                : [];
+
+
+        /*
+         * Get assigned subjects.
+         */
+
+        const assignedSubjects =
+            normalizeSubjectArray(
+                user.subjects || []
+            );
+
+
+        /* =================================================
+           DISPLAY CLASSES
+        ================================================== */
+
+        if (classList) {
+
+            if (!assignedClasses.length) {
+
+                classList.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fas fa-school"></i>
+
+                        <h4>No Classes Assigned</h4>
+
+                        <p>
+                            You have not been assigned
+                            any classes yet.
+                        </p>
+
+                    </div>
+                `;
+
+            } else {
+
+                classList.innerHTML =
+                    assignedClasses
+                        .map(className => `
+
+                            <div class="assigned-class-item">
+
+                                <div class="assigned-item-icon">
+                                    <i class="fas fa-school"></i>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        ${escapeAssignmentHTML(className)}
+                                    </strong>
+
+                                    <small>
+                                        Assigned Class
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        `)
+                        .join("");
+            }
+        }
+
+
+        /* =================================================
+           DISPLAY SUBJECTS
+        ================================================== */
+
+        if (teacherList) {
+
+            if (!assignedSubjects.length) {
+
+                teacherList.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fas fa-book-open"></i>
+
+                        <h4>No Subjects Assigned</h4>
+
+                        <p>
+                            You have not been assigned
+                            any subjects yet.
+                        </p>
+
+                    </div>
+                `;
+
+            } else {
+
+                teacherList.innerHTML =
+                    assignedSubjects
+                        .map(subject => `
+
+                            <div class="assigned-subject-item">
+
+                                <div class="assigned-item-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        ${escapeAssignmentHTML(subject)}
+                                    </strong>
+
+                                    <small>
+                                        Assigned Subject
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        `)
+                        .join("");
+            }
+        }
+
+
+        console.log(
+            "Teacher Classes:",
+            assignedClasses
+        );
+
+        console.log(
+            "Teacher Subjects:",
+            assignedSubjects
+        );
+
+
+        return;
+    }
+
+
+    /* =====================================================
+       ADMIN
+    ===================================================== */
+
+    if (role === "admin") {
+
+        console.log(
+            "Loading Admin Teacher Assignment..."
+        );
+
+
+        /* -------------------------------------------------
+           SHOW ADMIN
+        ------------------------------------------------- */
+
+        if (adminSection) {
+            adminSection.style.display = "block";
+        }
+
+
+        /* -------------------------------------------------
+           HIDE TEACHER
+        ------------------------------------------------- */
+
+        if (teacherSection) {
+            teacherSection.style.display = "none";
+        }
+
+
+        /* -------------------------------------------------
+           CLEAR TEACHER CONTENT
+        ------------------------------------------------- */
+
+        if (teacherList) {
+            teacherList.innerHTML = "";
+        }
+
+        if (classList) {
+            classList.innerHTML = "";
+        }
+
+
+        /*
+         * Load teachers for admin.
+         */
+
+        loadTeachers();
+
+        return;
+    }
+
+
+    /* =====================================================
+       UNKNOWN ROLE
+    ===================================================== */
+
+    if (adminSection) {
+        adminSection.style.display = "none";
+    }
+
+    if (teacherSection) {
+        teacherSection.style.display = "none";
+    }
+
+
+    console.warn(
+        "Unknown user role:",
+        user.role
+    );
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+   Prevent names/classes/subjects from breaking HTML
+========================================================= */
+
+
+/* =========================================================
+   SCHOOL SUBJECT CATALOG
+   Global `subjects` is often empty for new schools.
+   Provide a sensible default list (Ghana basic school)
+   and merge any already-assigned teacher subjects so
+   admin can always select subjects for teachers.
+========================================================= */
+
+const DEFAULT_SCHOOL_SUBJECTS = [
+    "English Language",
+    "Mathematics",
+    "RME",
+    "History",
+    "ICT",
+    "Creative Arts",
+    "Integrated Science",
+    "Social Studies",
+    "Ghanaian Language",
+    "French",
+    "Physical Education",
+    "Career Technology",
+    "Our World Our People",
+    "Writing",
+    "Numeracy",
+    "Literacy"
+];
+
+function getCustomSubjectsStorageKey() {
+    const schoolId =
+        (typeof currentUser !== "undefined" && currentUser && currentUser.schoolid)
+            ? String(currentUser.schoolid)
+            : "default";
+    return "nabeng_custom_subjects_" + schoolId;
+}
+
+function loadCustomSchoolSubjects() {
+    try {
+        const raw = localStorage.getItem(getCustomSubjectsStorageKey());
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .map(s => String(s || "").trim())
+            .filter(Boolean);
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCustomSchoolSubjects(list) {
+    const cleaned = [...new Set(
+        (Array.isArray(list) ? list : [])
+            .map(s => String(s || "").trim())
+            .filter(Boolean)
+    )];
+    try {
+        localStorage.setItem(
+            getCustomSubjectsStorageKey(),
+            JSON.stringify(cleaned)
+        );
+    } catch (e) {
+        console.warn("Could not save custom subjects:", e);
+    }
+    return cleaned;
+}
+
+function ensureSchoolSubjects(extra = []) {
+    const fromGlobal = Array.isArray(subjects)
+        ? subjects.map(s => (typeof s === "string" ? s : (s && s.name) || "")).map(s => String(s).trim()).filter(Boolean)
+        : [];
+
+    const fromExtra = (Array.isArray(extra) ? extra : [])
+        .map(s => (typeof s === "string" ? s : (s && (s.name || s.subject)) || ""))
+        .map(s => String(s).trim())
+        .filter(Boolean);
+
+    const fromCustom = loadCustomSchoolSubjects();
+
+    // Always include defaults + school customs + extras + current global
+    const merged = [...new Set([
+        ...DEFAULT_SCHOOL_SUBJECTS,
+        ...fromCustom,
+        ...fromGlobal,
+        ...fromExtra
+    ].map(s => s.trim()).filter(Boolean))];
+
+    try {
+        subjects = merged;
+    } catch (e) {
+        // ignore if subjects is not writable
+    }
+
+    return merged;
+}
+
+function getAvailableSubjectsForAdmin(teacherSubjects = []) {
+    return ensureSchoolSubjects(teacherSubjects);
+}
+
+/**
+ * Admin: add a subject that is not already on the school list.
+ * Saves to localStorage (per school) and refreshes the checkbox grid.
+ */
+function addAdminCustomSubject() {
+    if (
+        !currentUser ||
+        String(currentUser.role || "").toLowerCase().trim() !== "admin"
+    ) {
+        alert("Only administrators can add subjects.");
+        return;
+    }
+
+    const input = document.getElementById("customSubjectInput");
+    const name = (input?.value || "").trim();
+
+    if (!name) {
+        alert("Enter a subject name.");
+        input?.focus();
+        return;
+    }
+
+    const available = ensureSchoolSubjects();
+    const exists = available.some(
+        s => String(s).trim().toLowerCase() === name.toLowerCase()
+    );
+
+    if (exists) {
+        alert(`"${name}" is already in the subject list.`);
+        // Still check the matching box if present
+        const boxes = document.querySelectorAll("#subjectCheckboxes input[type='checkbox']");
+        boxes.forEach(cb => {
+            if (String(cb.value).trim().toLowerCase() === name.toLowerCase()) {
+                cb.checked = true;
+            }
+        });
+        if (input) input.value = "";
+        return;
+    }
+
+    const customs = loadCustomSchoolSubjects();
+    customs.push(name);
+    saveCustomSchoolSubjects(customs);
+    ensureSchoolSubjects([name]);
+
+    if (input) input.value = "";
+
+    // Refresh checkboxes; keep currently checked + auto-check the new one
+    const checkedNow = [];
+    document
+        .querySelectorAll("#subjectCheckboxes input[type='checkbox']:checked")
+        .forEach(cb => {
+            if (cb.value) checkedNow.push(cb.value.trim());
+        });
+    checkedNow.push(name);
+
+    if (typeof loadSelectedTeacherSubjects === "function") {
+        // Re-render from teacher record, then force-check new + previously checked
+        const teacherSelect = document.getElementById("teacherSelect");
+        const teacherId = teacherSelect?.value;
+        if (teacherId) {
+            loadSelectedTeacherSubjects().then(() => {
+                document
+                    .querySelectorAll("#subjectCheckboxes input[type='checkbox']")
+                    .forEach(cb => {
+                        const v = String(cb.value || "").trim().toLowerCase();
+                        if (checkedNow.some(c => c.toLowerCase() === v)) {
+                            cb.checked = true;
+                        }
+                    });
+            }).catch(() => {
+                appendSubjectCheckbox(name, true);
+            });
+        } else {
+            appendSubjectCheckbox(name, true);
+        }
+    } else {
+        appendSubjectCheckbox(name, true);
+    }
+}
+
+function appendSubjectCheckbox(subject, checked) {
+    const subjectContainer = document.getElementById("subjectCheckboxes");
+    if (!subjectContainer) return;
+
+    // Clear empty-state if present
+    const empty = subjectContainer.querySelector(".empty-state");
+    if (empty) subjectContainer.innerHTML = "";
+
+    const already = [...subjectContainer.querySelectorAll("input[type='checkbox']")]
+        .some(cb => String(cb.value).trim().toLowerCase() === String(subject).trim().toLowerCase());
+    if (already) return;
+
+    const escape =
+        typeof escapeAssignmentHTML === "function"
+            ? escapeAssignmentHTML
+            : (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+    const label = document.createElement("label");
+    label.className = "subject-checkbox-item";
+    label.innerHTML = `
+        <input type="checkbox" value="${escape(subject)}" ${checked ? "checked" : ""}>
+        <span class="subject-checkbox-content">
+            <span class="subject-checkbox-icon">
+                <i class="fas fa-book"></i>
+            </span>
+            <span>${escape(subject)}</span>
+        </span>
+    `;
+    subjectContainer.appendChild(label);
+}
+
+/**
+ * Admin: remove a custom subject from the school catalog (not from defaults).
+ */
+function removeAdminCustomSubject(subjectName) {
+    if (
+        !currentUser ||
+        String(currentUser.role || "").toLowerCase().trim() !== "admin"
+    ) {
+        return;
+    }
+
+    const name = String(subjectName || "").trim();
+    if (!name) return;
+
+    const isDefault = DEFAULT_SCHOOL_SUBJECTS.some(
+        s => s.toLowerCase() === name.toLowerCase()
+    );
+    if (isDefault) {
+        alert("Default subjects cannot be removed from the catalog.");
+        return;
+    }
+
+    const customs = loadCustomSchoolSubjects().filter(
+        s => s.toLowerCase() !== name.toLowerCase()
+    );
+    saveCustomSchoolSubjects(customs);
+
+    // Drop from global list
+    try {
+        if (Array.isArray(subjects)) {
+            subjects = subjects.filter(
+                s => String(s).trim().toLowerCase() !== name.toLowerCase()
+            );
+        }
+    } catch (e) {}
+
+    if (typeof loadSelectedTeacherSubjects === "function") {
+        const teacherSelect = document.getElementById("teacherSelect");
+        if (teacherSelect?.value) {
+            loadSelectedTeacherSubjects();
+            return;
+        }
+    }
+
+    const subjectContainer = document.getElementById("subjectCheckboxes");
+    if (subjectContainer) {
+        [...subjectContainer.querySelectorAll("label.subject-checkbox-item")].forEach(label => {
+            const cb = label.querySelector("input[type='checkbox']");
+            if (cb && String(cb.value).trim().toLowerCase() === name.toLowerCase()) {
+                label.remove();
+            }
+        });
+    }
+}
+
+
+function escapeAssignmentHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   SAVE TEACHER ASSIGNMENT
+========================================================= */
+
+async function saveTeacherSubjects() {
+
+    try {
+
+        /* =================================================
+           ADMIN SECURITY CHECK
+        ================================================== */
+
+        if (
+            !currentUser ||
+            String(currentUser.role)
+                .toLowerCase()
+                .trim() !== "admin"
+        ) {
+
+            alert(
+                "Only administrators can assign teachers."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           GET SELECTED TEACHER
+        ================================================== */
+
+        const teacherSelect =
+            document.getElementById(
+                "teacherSelect"
+            );
+
+        const teacherId =
+            teacherSelect?.value;
+
+
+        if (!teacherId) {
+
+            alert(
+                "Please select a teacher."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           GET CLASSES
+        ================================================== */
+
+        const classInput =
+            document.getElementById(
+                "teacherClass"
+            );
+
+
+        const classText =
+            classInput?.value
+                ?.trim() || "";
+
+
+        if (!classText) {
+
+            alert(
+                "Please enter at least one class."
+            );
+
+            classInput?.focus();
+
+            return;
+        }
+
+
+        /*
+         * Convert:
+         *
+         * 1A, 2B, 3A
+         *
+         * into:
+         *
+         * ["1A", "2B", "3A"]
+         */
+
+        const classList =
+            classText
+                .split(",")
+                .map(c => c.trim())
+                .filter(Boolean);
+
+
+        if (!classList.length) {
+
+            alert(
+                "Please enter a valid class."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           GET SUBJECTS
+        ================================================== */
+
+        const selectedSubjects = [];
+
+
+        document
+            .querySelectorAll(
+                "#subjectCheckboxes input[type='checkbox']:checked"
+            )
+            .forEach(checkbox => {
+
+                if (checkbox.value) {
+
+                    selectedSubjects.push(
+                        checkbox.value.trim()
+                    );
+
+                }
+
+            });
+
+
+        if (!selectedSubjects.length) {
+
+            alert(
+                "Please select at least one subject."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           REMOVE DUPLICATES
+        ================================================== */
+
+        const uniqueClasses =
+            [...new Set(classList)];
+
+        const uniqueSubjects =
+            [...new Set(selectedSubjects)];
+
+
+        /* =================================================
+           CREATE CLASSES IF NECESSARY
+        ================================================== */
+
+        for (const className of uniqueClasses) {
+
+            const {
+                data: existingClass,
+                error: checkError
+            } =
+                await supabaseClient
+                    .from("classes")
+                    .select("id")
+                    .eq(
+                        "classname",
+                        className
+                    )
+                    .eq(
+                        "schoolid",
+                        currentUser.schoolid
+                    )
+                    .maybeSingle();
+
+
+            if (checkError) {
+
+                console.error(
+                    "Class check error:",
+                    checkError
+                );
+
+                continue;
+            }
+
+
+            if (!existingClass) {
+
+                const {
+                    error: insertError
+                } =
+                    await supabaseClient
+                        .from("classes")
+                        .insert({
+
+                            classname:
+                                className,
+
+                            schoolid:
+                                currentUser.schoolid
+
+                        });
+
+
+                if (insertError) {
+
+                    console.error(
+                        "Class creation error:",
+                        insertError
+                    );
+
+                    alert(
+                        `Failed to create class "${className}".`
+                    );
+
+                    return;
+                }
+            }
+        }
+
+
+        /* =================================================
+           UPDATE TEACHER
+        ================================================== */
+
+        const {
+            error: updateError
+        } =
+            await supabaseClient
+                .from("users")
+                .update({
+
+                    mainClass:
+                        uniqueClasses[0],
+
+                    classes:
+                        uniqueClasses,
+
+                    subjects:
+                        uniqueSubjects
+
+                })
+                .eq(
+                    "id",
+                    teacherId
+                );
+
+
+        if (updateError) {
+
+            console.error(
+                "Teacher assignment update error:",
+                updateError
+            );
+
+            alert(
+                "Failed to save teacher assignment."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           REFRESH USERS
+        ================================================== */
+
+        if (
+            typeof loadUsers === "function"
+        ) {
+
+            await loadUsers();
+
+        }
+
+
+        /* =================================================
+           RELOAD TEACHERS
+        ================================================== */
+
+        await loadTeachers();
+
+
+        /* =================================================
+           RESELECT TEACHER
+        ================================================== */
+
+        if (teacherSelect) {
+
+            teacherSelect.value =
+                teacherId;
+
+        }
+
+
+        await loadSelectedTeacherSubjects();
+
+
+        /* =================================================
+           SUCCESS
+        ================================================== */
+
+        alert(
+            "✅ Teacher assignment saved successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "saveTeacherSubjects error:",
+            error
+        );
+
+        alert(
+            "An unexpected error occurred while saving the assignment."
+        );
+    }
+}
+
+
+/* =========================================================
+   LOAD TEACHERS
+========================================================= */
+
+async function loadTeachers() {
+
+    /* -----------------------------------------------------
+       ADMIN ONLY
+    ----------------------------------------------------- */
+
+    if (
+        !currentUser ||
+        String(currentUser.role)
+            .toLowerCase()
+            .trim() !== "admin"
+    ) {
+
+        return;
+    }
+
+
+    const select =
+        document.getElementById(
+            "teacherSelect"
+        );
+
+
+    if (!select) {
+
+        console.error(
+            "teacherSelect element not found."
+        );
+
+        return;
+    }
+
+
+    select.innerHTML =
+        `<option value="">
+            Loading teachers...
+        </option>`;
+
+
+    try {
+
+        /* =================================================
+           GET TEACHERS
+        ================================================== */
+
+        const {
+            data: rows,
+            error
+        } =
+            await supabaseClient
+                .from("users")
+                .select(
+                    "id, firstname, surname, username, role, schoolid, classes, subjects"
+                )
+                .eq(
+                    "schoolid",
+                    currentUser.schoolid
+                )
+                .order(
+                    "firstname",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Error loading teachers:",
+                error
+            );
+
+            select.innerHTML =
+                `<option value="">
+                    Failed to load teachers
+                </option>`;
+
+            return;
+        }
+
+        // Case-insensitive role filter so newly registered teachers always appear
+        const teachers = (rows || []).filter(u =>
+            String(u.role || "").toLowerCase().trim() === "teacher"
+        );
+
+
+        /* =================================================
+           NO TEACHERS
+        ================================================== */
+
+        if (
+            !teachers ||
+            teachers.length === 0
+        ) {
+
+            select.innerHTML =
+                `<option value="">
+                    No teachers found
+                </option>`;
+
+            clearAdminAssignmentForm();
+
+            return;
+        }
+
+
+        /* =================================================
+           POPULATE TEACHER DROPDOWN
+        ================================================== */
+
+        select.innerHTML =
+            `<option value="">
+                -- Select Teacher --
+            </option>`;
+
+
+        teachers.forEach(teacher => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                teacher.id;
+
+
+            option.textContent =
+                `${teacher.firstname || ""} ${teacher.surname || ""}`
+                    .trim() ||
+                teacher.username ||
+                "Unnamed Teacher";
+
+
+            select.appendChild(
+                option
+            );
+
+        });
+
+
+        /* =================================================
+           SELECT FIRST TEACHER
+        ================================================== */
+
+        if (teachers.length > 0) {
+
+            select.value =
+                teachers[0].id;
+
+            await loadSelectedTeacherSubjects();
+
+        }
+
+
+        console.log(
+            "Teachers loaded:",
+            teachers
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "loadTeachers error:",
+            error
+        );
+
+        select.innerHTML =
+            `<option value="">
+                Unable to load teachers
+            </option>`;
+    }
+}
+
+
+/* =========================================================
+   CLEAR ADMIN ASSIGNMENT FORM
+========================================================= */
+
+function clearAdminAssignmentForm() {
+
+    const classInput =
+        document.getElementById(
+            "teacherClass"
+        );
+
+    const subjectContainer =
+        document.getElementById(
+            "subjectCheckboxes"
+        );
+
+
+    if (classInput) {
+        classInput.value = "";
+    }
+
+
+    if (subjectContainer) {
+
+        subjectContainer.innerHTML = `
+            <div class="empty-state">
+
+                <i class="fas fa-user-tie"></i>
+
+                <h4>No Teacher Selected</h4>
+
+                <p>
+                    Select a teacher to view
+                    their assignment.
+                </p>
+
+            </div>
+        `;
+
+    }
+}
+
+
+/* =========================================================
+   LOAD SELECTED TEACHER ASSIGNMENT
+========================================================= */
+
+async function loadSelectedTeacherSubjects() {
+
+    /* -----------------------------------------------------
+       ADMIN ONLY
+    ----------------------------------------------------- */
+
+    if (
+        !currentUser ||
+        String(currentUser.role)
+            .toLowerCase()
+            .trim() !== "admin"
+    ) {
+
+        return;
+    }
+
+
+    const teacherSelect =
+        document.getElementById(
+            "teacherSelect"
+        );
+
+
+    const classInput =
+        document.getElementById(
+            "teacherClass"
+        );
+
+
+    const subjectContainer =
+        document.getElementById(
+            "subjectCheckboxes"
+        );
+
+
+    const teacherId =
+        teacherSelect?.value;
+
+
+    /* -----------------------------------------------------
+       NO TEACHER SELECTED
+    ----------------------------------------------------- */
+
+    if (!teacherId) {
+
+        clearAdminAssignmentForm();
+
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       LOADING STATE
+    ----------------------------------------------------- */
+
+    if (classInput) {
+
+        classInput.value =
+            "Loading...";
+
+    }
+
+
+    if (subjectContainer) {
+
+        subjectContainer.innerHTML = `
+            <div class="empty-state">
+
+                <i class="fas fa-spinner fa-spin"></i>
+
+                <p>
+                    Loading teacher assignment...
+                </p>
+
+            </div>
+        `;
+
+    }
+
+
+    try {
+
+        /* =================================================
+           GET TEACHER
+        ================================================== */
+
+        const {
+            data: teacher,
+            error
+        } =
+            await supabaseClient
+                .from("users")
+                .select(
+                    "id, firstname, surname, classes, subjects"
+                )
+                .eq(
+                    "id",
+                    teacherId
+                )
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "Error loading selected teacher:",
+                error
+            );
+
+            clearAdminAssignmentForm();
+
+            alert(
+                "Unable to load teacher assignment."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           NORMALIZE CLASSES
+        ================================================== */
+
+        const teacherClasses =
+            Array.isArray(teacher.classes)
+                ? teacher.classes
+                    .map(c => String(c).trim())
+                    .filter(Boolean)
+                : [];
+
+
+        /* =================================================
+           NORMALIZE SUBJECTS
+        ================================================== */
+
+        const teacherSubjects =
+            normalizeSubjectArray(
+                teacher.subjects || []
+            );
+
+
+        /* =================================================
+           DISPLAY CLASSES
+        ================================================== */
+
+        if (classInput) {
+
+            classInput.value =
+                teacherClasses.join(", ");
+
+        }
+
+
+        /* =================================================
+           BUILD SUBJECT CHECKBOXES
+           Use school subject catalog (with defaults) so
+           newly registered teachers can be assigned subjects
+           even when the global subjects list is still empty.
+        ================================================== */
+
+        if (subjectContainer) {
+
+            const availableSubjects =
+                typeof getAvailableSubjectsForAdmin === "function"
+                    ? getAvailableSubjectsForAdmin(teacherSubjects)
+                    : (Array.isArray(subjects) && subjects.length
+                        ? subjects
+                        : []);
+
+            if (
+                !Array.isArray(availableSubjects) ||
+                availableSubjects.length === 0
+            ) {
+
+                subjectContainer.innerHTML = `
+                    <div class="empty-state">
+
+                        <i class="fas fa-book"></i>
+
+                        <p>
+                            No subjects are available.
+                        </p>
+
+                    </div>
+                `;
+
+            } else {
+
+                subjectContainer.innerHTML =
+                    availableSubjects
+                        .map(subject => {
+
+                            const checked =
+                                teacherSubjects
+                                    .some(
+                                        assigned =>
+                                            String(assigned)
+                                                .trim()
+                                                .toLowerCase() ===
+                                            String(subject)
+                                                .trim()
+                                                .toLowerCase()
+                                    );
+
+
+                            return `
+
+                                <label class="subject-checkbox-item">
+
+                                    <input
+                                        type="checkbox"
+                                        value="${escapeAssignmentHTML(subject)}"
+                                        ${checked ? "checked" : ""}
+                                    >
+
+                                    <span class="subject-checkbox-content">
+
+                                        <span class="subject-checkbox-icon">
+                                            <i class="fas fa-book"></i>
+                                        </span>
+
+                                        <span>
+                                            ${escapeAssignmentHTML(subject)}
+                                        </span>
+
+                                    </span>
+
+                                </label>
+
+                            `;
+
+                        })
+                        .join("");
+            }
+        }
+
+
+        console.log(
+            "Selected teacher:",
+            teacher
+        );
+
+        console.log(
+            "Assigned classes:",
+            teacherClasses
+        );
+
+        console.log(
+            "Assigned subjects:",
+            teacherSubjects
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "loadSelectedTeacherSubjects error:",
+            error
+        );
+
+        clearAdminAssignmentForm();
+    }
+}
+
+
+
+
+
+function renderMyTeachingAssignments(user) {
+    const u = user || (typeof currentUser !== "undefined" ? currentUser : null);
+    const classList = document.getElementById("myAssignedClassesList");
+    const subjectList = document.getElementById("myAssignedSubjectsList");
+    if (!classList && !subjectList) {
+        console.warn("My Subjects lists not found in HTML");
+        return;
+    }
+
+    // Collect classes from common field names
+    let classes = [];
+    if (u) {
+        const rawClasses = u.classes || u.assignedClasses || u.class || [];
+        if (Array.isArray(rawClasses)) {
+            classes = rawClasses.map(c => {
+                if (typeof c === "string") return c.trim();
+                if (c && typeof c === "object") return String(c.name || c.classname || c.class || "").trim();
+                return String(c || "").trim();
+            }).filter(Boolean);
+        } else if (typeof rawClasses === "string" && rawClasses.trim()) {
+            classes = rawClasses.split(",").map(s => s.trim()).filter(Boolean);
+        }
+    }
+
+    // Collect subjects
+    let subjects = [];
+    if (u) {
+        const rawSubjects = u.subjects || u.assignedSubjects || [];
+        if (typeof normalizeSubjectArray === "function") {
+            subjects = normalizeSubjectArray(rawSubjects);
+        } else if (Array.isArray(rawSubjects)) {
+            subjects = rawSubjects.map(s => {
+                if (typeof s === "string") return s.trim();
+                if (s && typeof s === "object") return String(s.name || s.subject || "").trim();
+                return String(s || "").trim();
+            }).filter(Boolean);
+        }
+    }
+    subjects = [...new Set(subjects.filter(Boolean))];
+    classes = [...new Set(classes.filter(Boolean))];
+
+    const escape = (typeof escapeAssignmentHTML === "function")
+        ? escapeAssignmentHTML
+        : (v) => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+    if (classList) {
+        if (!classes.length) {
+            classList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-school"></i>
+                    <h4>No Classes Assigned</h4>
+                    <p>Ask the school administrator to assign classes to your account.</p>
+                </div>`;
+        } else {
+            classList.innerHTML = classes.map(className => `
+                <div class="assigned-class-item">
+                    <div class="assigned-item-icon"><i class="fas fa-school"></i></div>
+                    <div>
+                        <strong>${escape(className)}</strong>
+                        <small>Assigned Class</small>
+                    </div>
+                </div>`).join("");
+        }
+    }
+
+    if (subjectList) {
+        if (!subjects.length) {
+            subjectList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-book-open"></i>
+                    <h4>No Subjects Assigned</h4>
+                    <p>Ask the school administrator to assign subjects to your account.</p>
+                </div>`;
+        } else {
+            subjectList.innerHTML = subjects.map(subject => `
+                <div class="assigned-subject-item">
+                    <div class="assigned-item-icon"><i class="fas fa-book"></i></div>
+                    <div>
+                        <strong>${escape(subject)}</strong>
+                        <small>Assigned Subject</small>
+                    </div>
+                </div>`).join("");
+        }
+    }
+
+    console.log("My Subjects rendered — classes:", classes, "subjects:", subjects);
+}
+
+
+async function showProfileSubjects() {
+
+    // Open Subjects page
+    await showPage("profileSubjectsPage");
+
+    // Get both sections
+    const adminSection =
+        document.getElementById("adminSubjectAssignment");
+
+    const teacherSection =
+        document.getElementById("teacherAssignedSubjects");
+
+    // Hide both first
+    if (adminSection) {
+        adminSection.style.display = "none";
+    }
+
+    if (teacherSection) {
+        teacherSection.style.display = "none";
+    }
+
+    // Refresh current user from server so assignments are up to date
+    try {
+        if (typeof refreshCurrentUser === "function") {
+            await refreshCurrentUser();
+        } else if (currentUser?.username && typeof supabaseClient !== "undefined") {
+            const { data, error } = await supabaseClient
+                .from("users")
+                .select("*")
+                .eq("username", currentUser.username)
+                .single();
+            if (!error && data) {
+                currentUser = data;
+                localStorage.setItem("loggedInUser", JSON.stringify(currentUser));
+            }
+        }
+    } catch (e) {
+        console.warn("Could not refresh user for assignments:", e);
+    }
+
+    // Get current user's role
+    const role =
+        String(currentUser?.role || "")
+            .toLowerCase()
+            .trim();
+
+
+    // =====================================================
+    // ADMIN
+    // =====================================================
+
+    if (role === "admin") {
+
+        if (adminSection) {
+            adminSection.style.display = "block";
+        }
+
+        // Ensure subject catalog exists before assignment UI loads
+        if (typeof ensureSchoolSubjects === "function") {
+            try { ensureSchoolSubjects(); } catch (e) {}
+        }
+
+        // Load teachers
+        await loadUsers();
+
+        // Load available subjects / admin assignment UI
+        if (typeof loadSubjectSelection === "function") {
+            loadSubjectSelection(currentUser);
+        }
+
+    }
+
+
+    // =====================================================
+    // TEACHER (and any non-admin)
+    // =====================================================
+
+    else {
+
+        if (teacherSection) {
+            teacherSection.style.display = "block";
+        }
+
+        // Render class + subject cards on My Subjects
+        if (typeof renderMyTeachingAssignments === "function") {
+            renderMyTeachingAssignments(currentUser);
+        }
+        if (typeof loadSubjectSelection === "function") {
+            try { loadSubjectSelection(currentUser); } catch (e) {}
+        }
+        if (typeof loadTeacherSubjects === "function") {
+            try { await loadTeacherSubjects(); } catch (e) {}
+        }
+    }
+}
+
+
+
+
+async function updateProfile() {
+
+    let newFirst =
+        document.getElementById(
+            "profileFirstName"
+        ).value.trim();
+
+    let newSur =
+        document.getElementById(
+            "profileSurname"
+        ).value.trim();
+
+    let newUser =
+        document.getElementById(
+            "profileUsername"
+        ).value.trim();
+
+    let newEmail =
+        document.getElementById(
+            "profileEmail"
+        ).value.trim();
+
+    let newPhone =
+        document.getElementById(
+            "profilePhone"
+        ).value.trim();
+
+    if (
+        !newFirst ||
+        !newSur ||
+        !newUser ||
+        !newEmail ||
+        !newPhone
+    ) {
+
+        return alert("Fill all fields");
+    }
+
+    // =========================
+    // UPDATE DATABASE
+    // =========================
+
+    const { error } =
+        await supabaseClient
+            .from("users")
+            .update({
+                firstname: newFirst,
+                surname: newSur,
+                username: newUser,
+                email: newEmail,
+                phone: newPhone
+            })
+            .eq("id", currentUser.id);
+
+    if (error) {
+    console.error("Profile Update Error:", error);
+    alert(error.message);
+    return;
+}
+
+    // =========================
+    // UPDATE CURRENT USER
+    // =========================
+
+    currentUser.firstname =
+        newFirst;
+
+    currentUser.surname =
+        newSur;
+
+    currentUser.username =
+        newUser;
+
+    currentUser.email =
+        newEmail;
+
+    currentUser.phone =
+        newPhone;
+
+    // =========================
+    // SAVE SESSION
+    // =========================
+
+    localStorage.setItem(
+        "loggedInUser",
+        JSON.stringify(currentUser)
+    );
+
+    // =========================
+    // UPDATE WELCOME TEXT
+    // =========================
+
+    (function(){
+        const _wm = "👋 Welcome, " + currentUser.firstname + " " + currentUser.surname;
+        const _we = document.getElementById("welcomeUser");
+        if (_we) _we.innerText = _wm;
+        const _dw = document.getElementById("dashWelcomeUser");
+        if (_dw) _dw.innerText = _wm;
+    })();
+
+    alert(
+        "Profile updated successfully ✅"
+    );
+
+    closeProfile();
+}
+
+
+function uploadProfilePic() {
+
+    const input = document.getElementById("profilePicInput");
+
+    if (!input) {
+        console.error(
+            "profilePicInput was not found in the HTML."
+        );
+
+        alert(
+            "Profile picture selector is missing."
+        );
+
+        return;
+    }
+
+    input.click();
+}
+
+
+const profilePicInput =
+    document.getElementById("profilePicInput");
+
+
+if (profilePicInput) {
+
+    profilePicInput.addEventListener(
+        "change",
+        async function () {
+
+            const file = this.files[0];
+
+            if (!file) return;
+
+            // Make sure it is an image
+            if (!file.type.startsWith("image/")) {
+
+                alert(
+                    "Please select an image file."
+                );
+
+                this.value = "";
+                return;
+            }
+
+            // Optional file-size limit: 5 MB
+            if (file.size > 5 * 1024 * 1024) {
+
+                alert(
+                    "Please select an image smaller than 5 MB."
+                );
+
+                this.value = "";
+                return;
+            }
+
+
+            /* =========================================
+               CREATE UNIQUE FILE NAME
+               ========================================= */
+
+            const fileExtension =
+                file.name.split(".").pop();
+
+            const fileName =
+                `${currentUser.id}-${Date.now()}.${fileExtension}`;
+
+
+            /* =========================================
+               UPLOAD TO SUPABASE STORAGE
+               ========================================= */
+
+            const {
+                data: uploadData,
+                error: uploadError
+            } = await supabaseClient
+                .storage
+                .from("profile-picture")
+                .upload(
+                    fileName,
+                    file,
+                    {
+                        upsert: false
+                    }
+                );
+
+
+            if (uploadError) {
+
+                console.error(
+                    "Upload Error:",
+                    uploadError
+                );
+
+                alert(
+                    "Profile picture upload failed."
+                );
+
+                return;
+            }
+
+
+            /* =========================================
+               GET PUBLIC URL
+               ========================================= */
+
+            const {
+                data: urlData
+            } = supabaseClient
+                .storage
+                .from("profile-picture")
+                .getPublicUrl(fileName);
+
+
+            if (!urlData?.publicUrl) {
+
+                alert(
+                    "Could not create profile picture URL."
+                );
+
+                return;
+            }
+
+
+            const imageUrl =
+                urlData.publicUrl;
+
+            console.log(
+                "Profile Image URL:",
+                imageUrl
+            );
+
+
+            /* =========================================
+               SAVE URL TO USERS TABLE
+               ========================================= */
+
+            const {
+                error: dbError
+            } = await supabaseClient
+                .from("users")
+                .update({
+                    profilePic: imageUrl
+                })
+                .eq(
+                    "id",
+                    currentUser.id
+                );
+
+
+            if (dbError) {
+
+                console.error(
+                    "Database Error:",
+                    dbError
+                );
+
+                alert(
+                    "Failed to save profile picture."
+                );
+
+                return;
+            }
+
+
+            /* =========================================
+               UPDATE CURRENT USER
+               ========================================= */
+
+            currentUser.profilePic =
+                imageUrl;
+
+
+            localStorage.setItem(
+                "loggedInUser",
+                JSON.stringify(currentUser)
+            );
+
+            if (typeof applySidebarAvatar === "function") {
+                applySidebarAvatar(currentUser);
+            }
+
+            /* =========================================
+               DISPLAY NEW IMAGE
+               ========================================= */
+
+            const profilePic =
+                document.getElementById("profilePic");
+
+
+            if (profilePic) {
+
+                profilePic.src =
+                    imageUrl;
+
+                profilePic.style.display =
+                    "block";
+            }
+
+
+            /* =========================================
+               CLEAR INPUT
+               ========================================= */
+
+            this.value = "";
+
+
+            alert(
+                "Profile picture updated ✅"
+            );
+        }
+    );
+}
+
+
+
+function getStudentPosition(student, term){
+
+
+    let classStudents =
+    students.filter(
+        s => s.studentclass === student.studentclass
+    );
+
+
+
+    let ranked =
+    classStudents.map(s=>{
+
+
+        let totalScore = 0;
+
+
+
+        // Every subject contributes maximum 100
+        subjects.forEach(sub=>{
+
+
+            let d =
+            s.subjects?.[sub]?.[term];
+
+
+            if(!d){
+                return;
+            }
+
+
+
+            let classTotal =
+                Number(d.test1 || 0) +
+                Number(d.test2 || 0) +
+                Number(d.project || 0) +
+                Number(d.group || 0);
+
+
+
+            let classScore =
+                (classTotal / 100) * 50;
+
+
+
+            let examScore =
+                (Number(d.exam || 0) / 100) * 50;
+
+
+
+            let subjectTotal =
+                classScore + examScore;
+
+
+
+            totalScore += subjectTotal;
+
+
+        });
+
+
+
+        return {
+
+            id:s.id,
+
+            totalScore:Number(
+                totalScore.toFixed(2)
+            )
+
+        };
+
+
+    });
+
+
+
+    // Highest total out of the full subject total
+    ranked.sort(
+        (a,b)=>
+        b.totalScore - a.totalScore
+    );
+
+
+
+    console.table(ranked);
+
+
+
+    let index =
+    ranked.findIndex(
+        x=>x.id === student.id
+    );
+
+
+
+    if(index === -1){
+
+        return "-";
+
+    }
+
+
+
+    return formatPosition(
+        index + 1
+    );
+
+}
+function formatPosition(pos){
+    if(pos === 1) return "1st";
+    if(pos === 2) return "2nd";
+    if(pos === 3) return "3rd";
+    return pos + "th";
+}
+
+async function loadClassFilter(){
+
+    let { data: classes, error } = await supabaseClient
+        .from("classes")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid);
+
+    if(error){
+        console.error(error);
+        return;
+    }
+
+    // Convert objects to names ONCE
+    classes = classes.map(c => c.classname);
+
+  
+
+    // Only teachers are restricted
+    if(currentUser.role === "teacher"){
+        classes = classes.filter(c =>
+            (currentUser.classes || []).includes(c)
+        );
+    }
+
+    let html = `<option value="">Select Class</option>`;
+
+    classes.forEach(c => {
+        html += `<option value="${c}">${c}</option>`;
+    });
+
+    document.getElementById("classFilter").innerHTML = html;
+}
+
+
+async function initDefaultClasses(){
+
+    const defaultClasses = [
+        "1A",
+        "1B",
+        "2A",
+        "2B",
+        "3A"
+    ];
+
+    const { data: existing, error } = await supabaseClient
+        .from("classes")
+        .select("classname")
+        .eq("schoolid", currentUser.schoolid);
+
+    if(error){
+        console.error("Class Load Error:", error);
+        return;
+    }
+
+    const existingClasses =
+        (existing || []).map(c => c.classname);
+
+    const missingClasses =
+        defaultClasses.filter(
+            cls => !existingClasses.includes(cls)
+        );
+
+    if(missingClasses.length === 0){
+        console.log("All default classes already exist");
+        return;
+    }
+
+    const records = missingClasses.map(cls => ({
+        classname: cls,
+        schoolid: currentUser.schoolid
+    }));
+
+    const { error: insertError } = await supabaseClient
+        .from("classes")
+        .insert(records);
+
+    if(insertError){
+        console.error(
+            "Default Class Insert Error:",
+            insertError
+        );
+    }else{
+        console.log(
+            "Missing classes created:",
+            missingClasses
+        );
+    }
+}
+
+async function filterStudentsByClass(){
+
+    const classFilter = document.getElementById("classFilter");
+    const selectedClass = (classFilter?.value || "").trim();
+    const studentsListEl = document.getElementById("studentsList");
+    const subjectForm = document.getElementById("subjectForm");
+
+    // Reset subject selection when class changes
+    selectedSubject = null;
+
+    if (!selectedClass) {
+        filteredStudents = [];
+        if (studentsListEl) {
+            studentsListEl.innerHTML = `
+                <div class="hw-empty-state" style="padding:28px;text-align:center;opacity:.85;">
+                    <div style="font-size:28px;margin-bottom:8px;"><i class="fas fa-users"></i></div>
+                    <h3 style="margin:0 0 6px;font-size:16px;">Select a class first</h3>
+                    <p style="margin:0;font-size:13px;opacity:.75;">Students will appear here after you choose a class.</p>
+                </div>`;
+        }
+        if (typeof showTeacherSubjects === "function") showTeacherSubjects();
+        return;
+    }
+
+    let { data: filtered, error } = await supabaseClient
+        .from("students")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .eq("studentclass", selectedClass);
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    // Teacher Safety
+    if (String(currentUser?.role || "").toLowerCase() === "teacher") {
+        filtered = (filtered || []).filter(s =>
+            (currentUser.classes || []).includes(s.studentclass)
+        );
+    }
+
+    filteredStudents = filtered || [];
+
+    if (studentsListEl) studentsListEl.innerHTML = "";
+    if (subjectForm) subjectForm.innerHTML = "";
+
+    // Show subjects for this class context
+    if (typeof showTeacherSubjects === "function") showTeacherSubjects();
+
+    // Students only after a subject is picked — show placeholder
+    if (studentsListEl) {
+        studentsListEl.innerHTML = `
+            <div class="hw-empty-state" style="padding:28px;text-align:center;opacity:.85;">
+                <div style="font-size:28px;margin-bottom:8px;"><i class="fas fa-book"></i></div>
+                <h3 style="margin:0 0 6px;font-size:16px;">Select a subject</h3>
+                <p style="margin:0;font-size:13px;opacity:.75;">Choose a subject above to list students for marking.</p>
+            </div>`;
+    }
+}
+
+
+
+/* =========================================================
+   SUBJECT SECTION - SELECT STUDENT
+   Opens the subject marks form, NOT the student profile
+========================================================= */
+
+function selectSubjectStudent(index) {
+
+    const student = filteredStudents[index];
+
+    if (!student) {
+        alert("Student not found");
+        return;
+    }
+
+    // Make sure a subject has been selected first
+    if (!selectedSubject) {
+        alert("Please select a subject first.");
+        return;
+    }
+
+    // Find the student's real index in the main students array
+    const originalIndex = students.findIndex(
+        s => s.id === student.id
+    );
+
+    if (originalIndex === -1) {
+        alert("Student record not found");
+        return;
+    }
+
+    // Store current student
+    currentStudentIndex = originalIndex;
+    currentStudent = student;
+
+    // Open SUBJECT MARKS form
+    selectStudent(originalIndex, students);
+}
+
+
+/* =========================================================
+   STUDENT MANAGEMENT - PROFILE
+   This function is ONLY for the normal Student section
+========================================================= */
+
+function selectStudentProfile(index) {
+
+    const student = students[index];
+
+    if (!student) {
+        alert("Student not found");
+        return;
+    }
+
+    openStudentModal(index);
+}
+
+
+/* Make functions available globally */
+window.selectSubjectStudent = selectSubjectStudent;
+window.selectStudentProfile = selectStudentProfile;
+
+
+
+window.selectFilteredStudent = selectFilteredStudent;
+
+
+
+async function loadClassOptions(){
+
+    let { data: classes, error } = await supabaseClient
+    .from("classes")
+    .select("*")
+    .eq("schoolid", currentUser.schoolid);
+
+
+    if(error){
+        console.error("Class Load Error:", error);
+        return;
+    }
+
+    classes = classes.map(c => c.classname);
+
+
+    // Teacher should only see assigned classes
+    if(currentUser.role === "teacher"){
+
+        classes.forEach(c => {
+            console.log(
+                "Checking:",
+                c,
+                "Match:",
+                (currentUser.classes || []).includes(c)
+            );
+        });
+
+        classes = classes.filter(c =>
+            (currentUser.classes || []).includes(c)
+        );
+
+        
+    }
+
+    let html = `<option value="">Select Class</option>`;
+
+    classes.forEach(c => {
+        html += `<option value="${c}">${c}</option>`;
+    });
+
+    const classFilter = document.getElementById("classFilter");
+    if (classFilter) classFilter.innerHTML = html;
+
+    const studentClass = document.getElementById("studentClass");
+    if (studentClass) {
+        // Keep first placeholder if present, otherwise rebuild
+        const keepFirst = studentClass.options?.[0]?.value === ""
+            ? studentClass.options[0].outerHTML
+            : `<option value="">Select Class</option>`;
+        studentClass.innerHTML = keepFirst + classes.map(c => `<option value="${c}">${c}</option>`).join("");
+    }
+}
+
+function getClassTeacherName(studentclass){
+
+    let teacher = users.find(u =>
+        u.role === "teacher" &&
+        (u.classes || []).includes(studentclass)
+    );
+
+    if(!teacher){
+        return "Not Assigned";
+    }
+
+    return `${teacher.firstname} ${teacher.surname}`;
+}
+
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  document.getElementById("installBtn").style.display = "block";
+});
+
+document.getElementById("installBtn").addEventListener("click", async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+
+    const choice = await deferredPrompt.userChoice;
+    console.log(choice.outcome);
+
+    deferredPrompt = null;
+  }
+});
+
+async function ensureClassExists(classname){
+
+    if(!classname) return;
+
+    const { data } = await supabaseClient
+        .from("classes")
+        .select("*")
+        .eq("classname", classname)
+        .eq("schoolid", currentUser.schoolid)
+        .maybeSingle();
+
+    if(data) return;
+
+    const { error } = await supabaseClient
+        .from("classes")
+        .insert([
+            {
+                classname: classname,
+                schoolid: currentUser.schoolid
+            }
+        ]);
+
+    if(error){
+        console.error(
+            "Create Class Error:",
+            error
+        );
+    }
+}
+
+/* =========================================================
+   LOAD SUBJECTS FOR LESSON PLAN + LESSON NOTE
+========================================================= */
+
+async function loadTeacherSubjects() {
+
+    const planSelect =
+        document.getElementById("planSubject");
+
+    const noteSelect =
+        document.getElementById("noteSubject");
+
+    if (!planSelect || !noteSelect) {
+        console.warn(
+            "Lesson subject dropdowns not found."
+        );
+        return;
+    }
+
+    if (!currentUser) {
+        console.warn(
+            "currentUser is not available."
+        );
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       SHOW LOADING
+    ----------------------------------------------------- */
+
+    planSelect.innerHTML =
+        `<option value="">Loading subjects...</option>`;
+
+    noteSelect.innerHTML =
+        `<option value="">Loading subjects...</option>`;
+
+
+    try {
+
+        let subjectList = [];
+
+
+        /* =================================================
+           TEACHER
+        ================================================= */
+
+        if (
+            String(currentUser.role).toLowerCase()
+            === "teacher"
+        ) {
+
+            let teacherSubjects =
+                currentUser.subjects;
+
+
+            /*
+             * Get the latest teacher record
+             * directly from Supabase.
+             */
+
+            if (currentUser.id) {
+
+                const {
+                    data,
+                    error
+                } = await supabaseClient
+                    .from("users")
+                    .select("subjects, role")
+                    .eq(
+                        "id",
+                        currentUser.id
+                    )
+                    .single();
+
+
+                if (!error && data) {
+
+                    teacherSubjects =
+                        data.subjects;
+
+                    /*
+                     * Keep currentUser updated.
+                     */
+
+                    currentUser.subjects =
+                        normalizeSubjectArray(
+                            data.subjects
+                        );
+
+                    localStorage.setItem(
+                        "loggedInUser",
+                        JSON.stringify(
+                            currentUser
+                        )
+                    );
+
+                } else {
+
+                    console.warn(
+                        "Could not refresh teacher subjects:",
+                        error
+                    );
+
+                }
+
+            }
+
+
+            subjectList =
+                normalizeSubjectArray(
+                    teacherSubjects
+                );
+
+        }
+
+
+        /* =================================================
+           ADMIN
+        ================================================= */
+
+        else {
+
+            subjectList =
+                normalizeSubjectArray(
+                    subjects
+                );
+
+        }
+
+
+        /* =================================================
+           REMOVE DUPLICATES
+        ================================================= */
+
+        subjectList = [
+            ...new Set(
+                subjectList
+                    .map(s =>
+                        String(s).trim()
+                    )
+                    .filter(Boolean)
+            )
+        ];
+
+
+        /* =================================================
+           NO SUBJECTS
+        ================================================= */
+
+        if (subjectList.length === 0) {
+
+            planSelect.innerHTML = `
+                <option value="">
+                    No subjects available
+                </option>
+            `;
+
+            noteSelect.innerHTML = `
+                <option value="">
+                    No subjects available
+                </option>
+            `;
+
+            console.warn(
+                "No subjects available for current user."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           POPULATE PLAN
+        ================================================= */
+
+        planSelect.innerHTML = `
+            <option value="">
+                Select Subject
+            </option>
+        `;
+
+
+        subjectList.forEach(subject => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = subject;
+
+            option.textContent = subject;
+
+            planSelect.appendChild(option);
+
+        });
+
+
+        /* =================================================
+           POPULATE NOTE
+        ================================================= */
+
+        noteSelect.innerHTML = `
+            <option value="">
+                Select Subject
+            </option>
+        `;
+
+
+        subjectList.forEach(subject => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = subject;
+
+            option.textContent = subject;
+
+            noteSelect.appendChild(option);
+
+        });
+
+
+        /* =================================================
+           AUTO SELECT IF ONLY ONE
+        ================================================= */
+
+        if (subjectList.length === 1) {
+
+            planSelect.value =
+                subjectList[0];
+
+            noteSelect.value =
+                subjectList[0];
+
+        }
+
+
+        console.log(
+            "Lesson Plan Subjects:",
+            subjectList
+        );
+
+        console.log(
+            "Lesson Note Subjects:",
+            subjectList
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "loadTeacherSubjects error:",
+            error
+        );
+
+
+        planSelect.innerHTML = `
+            <option value="">
+                Failed to load subjects
+            </option>
+        `;
+
+        noteSelect.innerHTML = `
+            <option value="">
+                Failed to load subjects
+            </option>
+        `;
+
+    }
+
+}
+
+
+
+/* =========================================================
+   NORMALIZE SUBJECT DATA
+========================================================= */
+
+function normalizeSubjectArray(value) {
+
+    if (Array.isArray(value)) {
+
+        return value
+            .map(item => {
+
+                if (
+                    typeof item === "string"
+                ) {
+                    return item.trim();
+                }
+
+                if (
+                    item &&
+                    typeof item === "object"
+                ) {
+                    return String(
+                        item.name ||
+                        item.subject ||
+                        ""
+                    ).trim();
+                }
+
+                return "";
+
+            })
+            .filter(Boolean);
+
+    }
+
+
+    if (typeof value === "string") {
+
+        /*
+         * Try JSON first.
+         */
+
+        try {
+
+            const parsed =
+                JSON.parse(value);
+
+            if (Array.isArray(parsed)) {
+
+                return normalizeSubjectArray(
+                    parsed
+                );
+
+            }
+
+        } catch (error) {
+            // Continue with normal string parsing
+        }
+
+
+        /*
+         * PostgreSQL array:
+         * {"English Language","Mathematics"}
+         */
+
+        let cleaned =
+            value
+                .replace(/^\{|\}$/g, "")
+                .replace(/^\[|\]$/g, "");
+
+
+        return cleaned
+            .split(",")
+            .map(item =>
+                item
+                    .trim()
+                    .replace(/^"|"$/g, "")
+                    .replace(/^'|'$/g, "")
+            )
+            .filter(Boolean);
+
+    }
+
+
+    return [];
+
+}
+
+
+function isOnline(){
+    return navigator.onLine;
+	
+	if(!isOnline()){
+    document.getElementById("planOutput").innerHTML =
+        "❌ No internet connection. Please connect to generate lesson plan.";
+    return;
+}
+}
+
+/* =========================================================
+   LESSON PLAN & LESSON NOTE MODULE
+========================================================= */
+
+
+/* =========================================================
+   GET ELEMENT SAFELY
+========================================================= */
+
+function lessonEl(id) {
+    return document.getElementById(id);
+}
+
+
+/* =========================================================
+   TERM LABEL
+========================================================= */
+
+function getTermLabel(term) {
+
+    const terms = {
+        term1: "Term 1",
+        term2: "Term 2",
+        term3: "Term 3"
+    };
+
+    return terms[term] || term;
+}
+
+
+/* =========================================================
+   CHECK INTERNET
+========================================================= */
+
+function checkLessonConnection() {
+
+    if (!navigator.onLine) {
+        alert(
+            "❌ No internet connection.\n\n" +
+            "Please connect to the internet and try again."
+        );
+
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   GENERATE LESSON PLAN
+========================================================= */
+
+async function generateLessonPlan() {
+    if (!checkLessonConnection()) return;
+
+    const subject = lessonEl("planSubject")?.value?.trim();
+    const term = lessonEl("planTerm")?.value;
+    const week = lessonEl("planWeek")?.value?.trim();
+    const className = lessonEl("planClass")?.value?.trim();
+    const topic = lessonEl("planTopic")?.value?.trim();
+    const subtopic = lessonEl("planSubtopic")?.value?.trim();
+    const duration = lessonEl("planDuration")?.value?.trim();
+
+    if (!subject) {
+        alert("Please select a subject.");
+        return;
+    }
+
+    if (!className) {
+        alert("Please enter the class.");
+        lessonEl("planClass")?.focus();
+        return;
+    }
+
+    if (!topic) {
+        alert("Please enter the lesson topic.");
+        lessonEl("planTopic")?.focus();
+        return;
+    }
+
+    const output = lessonEl("planOutput");
+    const status = lessonEl("planStatus");
+
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">⏳</div>
+            <h3>Generating lesson plan...</h3>
+            <p>Please wait while AI prepares your lesson plan.</p>
+        </div>
+    `;
+
+    status.innerHTML = "🧠 AI is preparing your lesson plan...";
+
+    try {
+
+        /*
+         * Use the local backend while developing locally.
+         * When the SBA system is deployed, use the same domain.
+         */
+        const API_URL =
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1"
+                ? "http://localhost:3000"
+                : "";
+
+        const response = await fetch(
+            `${API_URL}/generate-plan`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    type: "lesson_plan",
+                    subject: subject,
+                    term: term,
+                    week: week,
+                    className: className,
+                    topic: topic,
+                    subtopic: subtopic,
+                    duration: duration
+                })
+            }
+        );
+
+        if (!response.ok) {
+            let errorMessage = `Server returned ${response.status}`;
+
+            try {
+                const errorData = await response.json();
+
+                if (errorData?.error) {
+                    errorMessage = errorData.error;
+                }
+
+            } catch (_) {
+                // Ignore JSON parsing errors
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+
+        if (!data || !data.result) {
+            throw new Error(
+                "The server did not return a lesson plan."
+            );
+        }
+
+        output.innerHTML = formatLessonContent(
+            data.result,
+            "Lesson Plan",
+            {
+                subject,
+                term,
+                week,
+                className,
+                topic,
+                subtopic,
+                duration
+            }
+        );
+
+        status.innerHTML =
+            "✅ Lesson plan generated successfully.";
+
+    } catch (error) {
+
+        console.error(
+            "Lesson Plan Error:",
+            error
+        );
+
+        let message = error?.message || "Unknown error";
+
+        if (
+            message.includes("Failed to fetch") ||
+            message.includes("ERR_CONNECTION_REFUSED")
+        ) {
+            message =
+                "The AI lesson-plan server is not running or cannot be reached.";
+        }
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+
+                <h3>Unable to generate lesson plan</h3>
+
+                <p>
+                    ${escapeLessonHTML(message)}
+                </p>
+
+                <button
+                    type="button"
+                    onclick="generateLessonPlan()"
+                    class="lesson-retry-btn"
+                >
+                    🔄 Try Again
+                </button>
+            </div>
+        `;
+
+        status.innerHTML =
+            "❌ Failed to generate lesson plan.";
+    }
+}
+
+/* =========================================================
+   GENERATE LESSON NOTE
+========================================================= */
+
+async function generateLessonNote() {
+
+    if (!checkLessonConnection()) return;
+
+    const subject = lessonEl("noteSubject")?.value?.trim();
+    const term = lessonEl("noteTerm")?.value;
+    const week = lessonEl("noteWeek")?.value?.trim();
+    const className = lessonEl("noteClass")?.value?.trim();
+    const topic = lessonEl("noteTopic")?.value?.trim();
+    const subtopic = lessonEl("noteSubtopic")?.value?.trim();
+    const duration = lessonEl("noteDuration")?.value?.trim();
+
+    if (!subject) {
+        alert("Please select a subject.");
+        return;
+    }
+
+    if (!className) {
+        alert("Please enter the class.");
+        lessonEl("noteClass")?.focus();
+        return;
+    }
+
+    if (!topic) {
+        alert("Please enter the lesson topic.");
+        lessonEl("noteTopic")?.focus();
+        return;
+    }
+
+    const output = lessonEl("noteOutput");
+    const status = lessonEl("noteStatus");
+
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">🧠</div>
+            <h3>Generating lesson note...</h3>
+            <p>Please wait.</p>
+        </div>
+    `;
+
+    status.innerHTML =
+        "🧠 AI is preparing your lesson note...";
+
+    try {
+
+        /*
+         * IMPORTANT:
+         * Do NOT call api.openai.com directly here.
+         *
+         * The request goes through your backend so that
+         * your OpenAI API key is not exposed in app.js.
+         */
+
+        const response = await fetch(
+            "http://localhost:3000/generate-plan",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    type: "lesson_note",
+
+                    subject: subject,
+
+                    term: term,
+
+                    week: week,
+
+                    className: className,
+
+                    topic: topic,
+
+                    subtopic: subtopic,
+
+                    duration: duration
+
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Server returned ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        if (!data || !data.result) {
+            throw new Error(
+                "No lesson note was returned."
+            );
+        }
+
+        output.innerHTML = formatLessonContent(
+            data.result,
+            "Lesson Note",
+            {
+                subject,
+                term,
+                week,
+                className,
+                topic,
+                subtopic,
+                duration
+            }
+        );
+
+        status.innerHTML =
+            "✅ Lesson note generated successfully.";
+
+    } catch (error) {
+
+        console.error(
+            "Lesson Note Error:",
+            error
+        );
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+                <h3>Unable to generate lesson note</h3>
+                <p>${escapeLessonHTML(error.message)}</p>
+            </div>
+        `;
+
+        status.innerHTML =
+            "❌ Failed to generate lesson note.";
+    }
+}
+
+
+/* =========================================================
+   FORMAT GENERATED CONTENT
+========================================================= */
+
+function formatLessonContent(
+    content,
+    title,
+    details
+) {
+
+    let clean = String(content || "")
+        .replace(/\r\n/g, "\n")
+        .trim();
+
+    /*
+     * Convert basic markdown formatting to HTML.
+     */
+
+    clean = escapeLessonHTML(clean);
+
+    clean = clean.replace(
+        /^### (.+)$/gm,
+        "<h3>$1</h3>"
+    );
+
+    clean = clean.replace(
+        /^## (.+)$/gm,
+        "<h3>$1</h3>"
+    );
+
+    clean = clean.replace(
+        /^# (.+)$/gm,
+        "<h2>$1</h2>"
+    );
+
+    clean = clean.replace(
+        /\*\*(.*?)\*\*/g,
+        "<strong>$1</strong>"
+    );
+
+    clean = clean.replace(
+        /\n- (.+)/g,
+        "<br>• $1"
+    );
+
+    clean = clean.replace(
+        /\n\d+\.\s(.+)/g,
+        "<br>$1"
+    );
+
+    clean = clean.replace(
+        /\n{2,}/g,
+        "<br><br>"
+    );
+
+    return `
+        <div class="generated-lesson">
+
+            <div class="generated-lesson-title">
+
+                <h2>
+                    ${escapeLessonHTML(title)}
+                </h2>
+
+                <p>
+                    ${escapeLessonHTML(
+                        details.subject || ""
+                    )}
+                    —
+                    ${escapeLessonHTML(
+                        details.className || ""
+                    )}
+                </p>
+
+            </div>
+
+            <table class="lesson-table">
+
+                <tr>
+                    <th>Term</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            getTermLabel(details.term)
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Week</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.week || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Subject</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.subject || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Class</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.className || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Topic</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.topic || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Sub-topic</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.subtopic || "—"
+                        )}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Duration</th>
+                    <td>
+                        ${escapeLessonHTML(
+                            details.duration || "—"
+                        )}
+                    </td>
+                </tr>
+
+            </table>
+
+            <div class="lesson-section">
+
+                ${clean}
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeLessonHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* =========================================================
+   SAVE LESSON PLAN
+========================================================= */
+
+async function savePlan() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("planOutput");
+
+    if (!output || !output.innerText.trim()) {
+        alert("There is no lesson plan to save.");
+        return;
+    }
+
+    const subject =
+        lessonEl("planSubject")?.value || "";
+
+    const term =
+        lessonEl("planTerm")?.value || "";
+
+    const week =
+        lessonEl("planWeek")?.value || "";
+
+    const className =
+        lessonEl("planClass")?.value || "";
+
+    const topic =
+        lessonEl("planTopic")?.value || "";
+
+    try {
+
+        const { error } = await supabaseClient
+            .from("plans")
+            .insert([
+                {
+                    schoolid: currentUser.schoolid,
+
+                    content: output.innerHTML,
+
+                    subject: subject,
+
+                    term: term,
+
+                    week: week,
+
+                    className: className,
+
+                    topic: topic,
+
+                    createdAt:
+                        new Date().toISOString()
+                }
+            ]);
+
+        if (error) {
+            console.error(
+                "Save Plan Error:",
+                error
+            );
+
+            alert(
+                "❌ Failed to save lesson plan.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+        alert("✅ Lesson plan saved successfully.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ Failed to save lesson plan."
+        );
+    }
+}
+
+
+/* =========================================================
+   SAVE LESSON NOTE
+========================================================= */
+
+async function saveNote() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("noteOutput");
+
+    if (!output || !output.innerText.trim()) {
+        alert("There is no lesson note to save.");
+        return;
+    }
+
+    try {
+
+        const { error } = await supabaseClient
+            .from("lesson_notes")
+            .insert([
+                {
+                    schoolid: currentUser.schoolid,
+
+                    content: output.innerHTML,
+
+                    subject:
+                        lessonEl("noteSubject")?.value || "",
+
+                    term:
+                        lessonEl("noteTerm")?.value || "",
+
+                    week:
+                        lessonEl("noteWeek")?.value || "",
+
+                    className:
+                        lessonEl("noteClass")?.value || "",
+
+                    topic:
+                        lessonEl("noteTopic")?.value || "",
+
+                    createdAt:
+                        new Date().toISOString()
+                }
+            ]);
+
+        if (error) {
+
+            console.error(
+                "Save Note Error:",
+                error
+            );
+
+            alert(
+                "❌ Failed to save lesson note.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+        alert("✅ Lesson note saved successfully.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ Failed to save lesson note."
+        );
+    }
+}
+
+
+/* =========================================================
+   LOAD SAVED PLANS
+========================================================= */
+
+async function loadPlans() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("planOutput");
+
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">⏳</div>
+            <h3>Loading saved plans...</h3>
+        </div>
+    `;
+
+    try {
+
+        const {
+            data: plans,
+            error
+        } = await supabaseClient
+            .from("plans")
+            .select("*")
+            .eq(
+                "schoolid",
+                currentUser.schoolid
+            )
+            .order(
+                "createdAt",
+                {
+                    ascending: false
+                }
+            );
+
+        if (error) throw error;
+
+        if (!plans || plans.length === 0) {
+
+            output.innerHTML = `
+                <div class="lesson-empty">
+                    <div class="lesson-empty-icon">📚</div>
+                    <h3>No saved lesson plans</h3>
+                    <p>Generate and save a lesson plan first.</p>
+                </div>
+            `;
+
+            return;
+        }
+
+        let html = `
+            <div class="generated-lesson">
+                <h2>📚 Saved Lesson Plans</h2>
+        `;
+
+        plans.forEach((plan, index) => {
+
+            html += `
+                <div class="saved-plan-card">
+
+                    <h4>
+                        ${escapeLessonHTML(
+                            plan.subject ||
+                            "Lesson Plan"
+                        )}
+                    </h4>
+
+                    <small>
+                        ${escapeLessonHTML(
+                            getTermLabel(
+                                plan.term
+                            )
+                        )}
+
+                        ${plan.week
+                            ? " • " +
+                              escapeLessonHTML(
+                                  plan.week
+                              )
+                            : ""
+                        }
+
+                        ${plan.topic
+                            ? " • " +
+                              escapeLessonHTML(
+                                  plan.topic
+                              )
+                            : ""
+                        }
+                    </small>
+
+                    <br>
+
+                    <button
+                        class="lesson-btn primary"
+                        onclick="viewSavedPlan(${index})">
+                        👁️ View
+                    </button>
+
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        output.innerHTML = html;
+
+        window.savedLessonPlans = plans;
+
+    } catch (error) {
+
+        console.error(
+            "Load Plans Error:",
+            error
+        );
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+                <h3>Unable to load saved plans</h3>
+                <p>${escapeLessonHTML(
+                    error.message
+                )}</p>
+            </div>
+        `;
+    }
+}
+
+
+/* =========================================================
+   VIEW SAVED PLAN
+========================================================= */
+
+function viewSavedPlan(index) {
+
+    const plan =
+        window.savedLessonPlans?.[index];
+
+    if (!plan) return;
+
+    lessonEl("planOutput").innerHTML =
+        plan.content || "";
+
+    if (lessonEl("planSubject")) {
+        lessonEl("planSubject").value =
+            plan.subject || "";
+    }
+
+    if (lessonEl("planTerm")) {
+        lessonEl("planTerm").value =
+            plan.term || "term1";
+    }
+
+    if (lessonEl("planWeek")) {
+        lessonEl("planWeek").value =
+            plan.week || "";
+    }
+
+    if (lessonEl("planClass")) {
+        lessonEl("planClass").value =
+            plan.className || "";
+    }
+
+    if (lessonEl("planTopic")) {
+        lessonEl("planTopic").value =
+            plan.topic || "";
+    }
+}
+
+
+/* =========================================================
+   LOAD SAVED NOTES
+========================================================= */
+
+async function loadNotes() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const output = lessonEl("noteOutput");
+
+    output.innerHTML = `
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">⏳</div>
+            <h3>Loading saved notes...</h3>
+        </div>
+    `;
+
+    try {
+
+        const {
+            data: notes,
+            error
+        } = await supabaseClient
+            .from("lesson_notes")
+            .select("*")
+            .eq(
+                "schoolid",
+                currentUser.schoolid
+            )
+            .order(
+                "createdAt",
+                {
+                    ascending: false
+                }
+            );
+
+        if (error) throw error;
+
+        if (!notes || notes.length === 0) {
+
+            output.innerHTML = `
+                <div class="lesson-empty">
+                    <div class="lesson-empty-icon">📚</div>
+                    <h3>No saved lesson notes</h3>
+                </div>
+            `;
+
+            return;
+        }
+
+        window.savedLessonNotes = notes;
+
+        let html = `
+            <div class="generated-lesson">
+                <h2>📚 Saved Lesson Notes</h2>
+        `;
+
+        notes.forEach((note, index) => {
+
+            html += `
+                <div class="saved-plan-card">
+
+                    <h4>
+                        ${escapeLessonHTML(
+                            note.subject ||
+                            "Lesson Note"
+                        )}
+                    </h4>
+
+                    <small>
+                        ${escapeLessonHTML(
+                            getTermLabel(
+                                note.term
+                            )
+                        )}
+
+                        ${note.week
+                            ? " • " +
+                              escapeLessonHTML(
+                                  note.week
+                              )
+                            : ""
+                        }
+
+                        ${note.topic
+                            ? " • " +
+                              escapeLessonHTML(
+                                  note.topic
+                              )
+                            : ""
+                        }
+                    </small>
+
+                    <br>
+
+                    <button
+                        class="lesson-btn primary"
+                        onclick="viewSavedNote(${index})">
+                        👁️ View
+                    </button>
+
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        output.innerHTML = html;
+
+    } catch (error) {
+
+        console.error(
+            "Load Notes Error:",
+            error
+        );
+
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">❌</div>
+                <h3>Unable to load saved notes</h3>
+                <p>${escapeLessonHTML(
+                    error.message
+                )}</p>
+            </div>
+        `;
+    }
+}
+
+
+/* =========================================================
+   VIEW SAVED NOTE
+========================================================= */
+
+function viewSavedNote(index) {
+
+    const note =
+        window.savedLessonNotes?.[index];
+
+    if (!note) return;
+
+    lessonEl("noteOutput").innerHTML =
+        note.content || "";
+
+    if (lessonEl("noteSubject")) {
+        lessonEl("noteSubject").value =
+            note.subject || "";
+    }
+
+    if (lessonEl("noteTerm")) {
+        lessonEl("noteTerm").value =
+            note.term || "term1";
+    }
+
+    if (lessonEl("noteWeek")) {
+        lessonEl("noteWeek").value =
+            note.week || "";
+    }
+
+    if (lessonEl("noteClass")) {
+        lessonEl("noteClass").value =
+            note.className || "";
+    }
+
+    if (lessonEl("noteTopic")) {
+        lessonEl("noteTopic").value =
+            note.topic || "";
+    }
+}
+
+
+/* =========================================================
+   WORD EXPORT
+========================================================= */
+
+async function exportLessonDocument(type) {
+
+    const output =
+        type === "note"
+            ? lessonEl("noteOutput")
+            : lessonEl("planOutput");
+
+    if (!output || !output.innerText.trim()) {
+
+        alert(
+            `There is no lesson ${type} to export.`
+        );
+
+        return;
+    }
+
+    if (
+        !window.docx ||
+        !window.docx.Document
+    ) {
+
+        alert(
+            "❌ Word export library is not loaded."
+        );
+
+        return;
+    }
+
+    const {
+        Document,
+        Packer,
+        Paragraph,
+        TextRun
+    } = window.docx;
+
+    const title =
+        type === "note"
+            ? "LESSON NOTE"
+            : "LESSON PLAN";
+
+    const lines =
+        output.innerText
+            .split("\n")
+            .map(line => line.trim())
+            .filter(Boolean);
+
+    const children = [
+
+        new Paragraph({
+            alignment: 1,
+            children: [
+                new TextRun({
+                    text: title,
+                    bold: true,
+                    size: 32
+                })
+            ]
+        })
+
+    ];
+
+    lines.forEach(line => {
+
+        children.push(
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: line,
+                        size: 22
+                    })
+                ],
+                spacing: {
+                    after: 120
+                }
+            })
+        );
+
+    });
+
+    const doc = new Document({
+
+        sections: [
+
+            {
+                children
+            }
+
+        ]
+
+    });
+
+    try {
+
+        const blob =
+            await Packer.toBlob(doc);
+
+        const link =
+            document.createElement("a");
+
+        link.href =
+            URL.createObjectURL(blob);
+
+        link.download =
+            type === "note"
+                ? "Lesson_Note.docx"
+                : "Lesson_Plan.docx";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        setTimeout(() => {
+            URL.revokeObjectURL(link.href);
+        }, 1000);
+
+    } catch (error) {
+
+        console.error(
+            "Word Export Error:",
+            error
+        );
+
+        alert(
+            "❌ Unable to export document."
+        );
+    }
+}
+
+
+/* =========================================================
+   PRINT
+========================================================= */
+
+function printLessonDocument(type) {
+
+    const output =
+        type === "note"
+            ? lessonEl("noteOutput")
+            : lessonEl("planOutput");
+
+    if (!output || !output.innerText.trim()) {
+
+        alert(
+            `There is no lesson ${type} to print.`
+        );
+
+        return;
+    }
+
+    const printWindow =
+        window.open(
+            "",
+            "_blank",
+            "width=900,height=700"
+        );
+
+    if (!printWindow) {
+
+        alert(
+            "Please allow pop-ups to print the document."
+        );
+
+        return;
+    }
+
+    printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html>
+
+        <head>
+
+            <title>
+                ${type === "note"
+                    ? "Lesson Note"
+                    : "Lesson Plan"}
+            </title>
+
+            <style>
+
+                body {
+                    font-family:
+                        Arial,
+                        sans-serif;
+
+                    padding: 35px;
+
+                    color: #111827;
+
+                    line-height: 1.6;
+                }
+
+                h2 {
+                    text-align: center;
+                    margin-bottom: 25px;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse:
+                        collapse;
+
+                    margin-bottom: 25px;
+                }
+
+                th,
+                td {
+                    border:
+                        1px solid #333;
+
+                    padding: 8px;
+
+                    text-align:
+                        left;
+
+                    vertical-align:
+                        top;
+                }
+
+                th {
+                    width: 25%;
+                    background:
+                        #f1f5f9;
+                }
+
+                h3 {
+                    margin-top: 22px;
+                    border-bottom:
+                        1px solid #999;
+
+                    padding-bottom: 5px;
+                }
+
+                @media print {
+
+                    body {
+                        padding: 15px;
+                    }
+
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${output.innerHTML}
+
+        </body>
+
+        </html>
+    `);
+
+    printWindow.document.close();
+
+    printWindow.focus();
+
+    setTimeout(() => {
+
+        printWindow.print();
+
+        printWindow.close();
+
+    }, 500);
+}
+
+
+/* =========================================================
+   ONLINE / OFFLINE
+========================================================= */
+
+window.addEventListener(
+    "offline",
+    () => {
+
+        const planStatus =
+            lessonEl("planStatus");
+
+        const noteStatus =
+            lessonEl("noteStatus");
+
+        if (planStatus) {
+            planStatus.innerHTML =
+                "⚠️ You are offline.";
+        }
+
+        if (noteStatus) {
+            noteStatus.innerHTML =
+                "⚠️ You are offline.";
+        }
+    }
+);
+
+
+window.addEventListener(
+    "online",
+    () => {
+
+        const planStatus =
+            lessonEl("planStatus");
+
+        const noteStatus =
+            lessonEl("noteStatus");
+
+        if (planStatus) {
+            planStatus.innerHTML =
+                "✅ Internet connection restored.";
+        }
+
+        if (noteStatus) {
+            noteStatus.innerHTML =
+                "✅ Internet connection restored.";
+        }
+    }
+);
+
+/* ============================================================
+   CHAT SYSTEM
+   ============================================================
+
+   Required existing globals:
+   currentUser
+   users
+   students
+   supabaseClient
+
+   Existing chat state:
+   selectedUser
+   selectedUserType
+   selectedMessageId
+   selectedMediaFile
+   chatCache
+   chatCacheLoading
+   chatCacheLoaded
+   ============================================================ */
+
+
+/* ============================================================
+   1. CHAT CONTACTS
+   ============================================================ */
+
+
+function loadChatContacts() {
+
+    if (!currentUser) return [];
+
+    chatContacts = [];
+
+    // ==========================================
+    // STAFF
+    // ==========================================
+
+    users
+        .filter(user =>
+            user.username !== currentUser.username &&
+            user.schoolid === currentUser.schoolid
+        )
+        .forEach(user => {
+
+            chatContacts.push({
+
+                id: user.username,
+
+                type: "user",
+
+                firstname: user.firstname || "",
+
+                surname: user.surname || "",
+
+                name:
+                    `${user.firstname || ""} ${user.surname || ""}`.trim(),
+
+                profilePic: user.profilePic || "",
+
+                photo: user.profilePic || "",
+
+                lastSeen: user.lastSeen || 0
+
+            });
+
+        });
+
+
+    // ==========================================
+    // STUDENTS
+    // Teachers and Admin
+    // ==========================================
+
+    if (
+        currentUser.role === "teacher" ||
+        currentUser.role === "admin"
+    ) {
+
+        students.forEach(student => {
+
+            chatContacts.push({
+
+                id: student.id,
+
+                type: "student",
+
+                firstname:
+                    student.name || "",
+
+                surname: "",
+
+                name:
+                    student.name || "Student",
+
+                profilePic:
+                    student.photo || "",
+
+                photo:
+                    student.photo || "",
+
+                studentclass:
+                    student.studentclass || "No Class",
+
+                class:
+                    student.studentclass || "No Class",
+
+                lastSeen: 0
+
+            });
+
+        });
+
+    }
+
+
+    return chatContacts;
+
+}
+
+
+/* ============================================================
+   2. CONTACT HELPERS
+   ============================================================ */
+
+function getChatContact(id, type) {
+
+    if (type === "user") {
+
+        return users.find(user =>
+            String(user.username) === String(id)
+        );
+
+    }
+
+    if (type === "student") {
+
+        return students.find(student =>
+            String(student.id) === String(id)
+        );
+
+    }
+
+    return null;
+}
+
+
+function getContactName(id, type) {
+
+    const person = getChatContact(id, type);
+
+    if (!person) return "Unknown";
+
+    if (type === "student") {
+        return person.name || "Student";
+    }
+
+    return `${person.firstname || ""} ${person.surname || ""}`.trim();
+}
+
+
+function getContactPhoto(id, type) {
+
+    const person = getChatContact(id, type);
+
+    if (!person) return "";
+
+    return type === "student"
+        ? person.photo || ""
+        : person.profilePic || "";
+}
+
+
+function isUserOnline(user) {
+
+    return Boolean(
+        user &&
+        user.lastSeen &&
+        Date.now() - user.lastSeen < 60000
+    );
+
+}
+
+
+/* ============================================================
+   3. DISPLAY CHAT USERS
+   ============================================================ */
+
+function displayUsers() {
+
+    if (!currentUser) return;
+
+    loadChatContacts();
+
+    const userList =
+        document.getElementById("userList");
+
+    if (!userList) return;
+
+    let html = "";
+
+    chatContacts.forEach(person => {
+
+        const isStudent =
+            person.type === "student";
+
+        const firstname =
+            person.firstname || "";
+
+        const surname =
+            person.surname || "";
+
+        const displayName =
+            isStudent
+                ? firstname
+                : `${firstname} ${surname}`.trim();
+
+        const initials =
+            isStudent
+                ? (firstname.charAt(0) || "?").toUpperCase()
+                : (
+                    (firstname.charAt(0) || "") +
+                    (surname.charAt(0) || "")
+                ).toUpperCase() || "?";
+
+        const online =
+            !isStudent &&
+            person.lastSeen &&
+            Date.now() - person.lastSeen < 60000;
+
+        const active =
+            String(selectedUser) === String(person.id) &&
+            selectedUserType === person.type
+                ? "active"
+                : "";
+
+        const avatar = buildAvatar(
+            person.profilePic || person.photo || "",
+            initials,
+            !isStudent,
+            online
+        );
+
+        const status =
+            isStudent
+                ? `🎓 ${person.studentclass || "No Class"}`
+                : online
+                    ? "🟢 Online"
+                    : "⚪ Offline";
+
+        html += `
+            <div
+                class="chat-user ${active}"
+                data-id="${escapeAttribute(person.id)}"
+                data-type="${escapeAttribute(person.type)}"
+                onclick="selectUser(
+                    '${escapeJS(person.id)}',
+                    '${escapeJS(person.type)}'
+                )"
+            >
+
+                ${avatar}
+
+                <div class="user-details">
+
+                    <div class="chat-name">
+                        ${escapeHTML(displayName)}
+                    </div>
+
+                    <div class="last-seen">
+                        ${escapeHTML(status)}
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+
+    });
+
+    userList.innerHTML = html;
+
+}
+
+
+/* ============================================================
+   4. AVATAR BUILDER
+   ============================================================ */
+
+function buildAvatar(photo, initials, showOnline = false, online = false) {
+
+    const onlineDot =
+        showOnline
+            ? `
+                <span class="online-dot ${online ? "online" : "offline"}"></span>
+              `
+            : "";
+
+    if (photo) {
+
+        return `
+            <div class="avatar-wrapper">
+
+                <img
+                    src="${escapeAttribute(photo)}"
+                    class="chat-avatar-img"
+                    onerror="
+                        this.style.display='none';
+                        this.nextElementSibling.style.display='flex';
+                    "
+                >
+
+                <div
+                    class="chat-avatar"
+                    style="display:none;"
+                >
+                    ${escapeHTML(initials)}
+                </div>
+
+                ${onlineDot}
+
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="avatar-wrapper">
+
+            <div class="chat-avatar">
+                ${escapeHTML(initials)}
+            </div>
+
+            ${onlineDot}
+
+        </div>
+    `;
+
+}
+
+
+/* ============================================================
+   5. OPEN / SELECT CHAT
+   ============================================================ */
+
+async function selectUser(id, type) {
+
+    selectedUser = id;
+    selectedUserType = type;
+
+    const person = getChatContact(id, type);
+
+    if (!person) {
+
+        console.error("Chat contact not found:", id, type);
+
+        return;
+
+    }
+
+    updateChatHeader(person, type);
+    highlightSelectedUser(id, type);
+    closeChatMenus();
+    updateMobileChatView(true);
+
+    try {
+
+        // Only load the complete cache if it has not been loaded yet.
+        await preloadChats();
+
+        refreshCurrentChat();
+
+        await markConversationSeen();
+
+    } catch (error) {
+
+        console.error("Failed to open conversation:", error);
+
+        showChatError();
+
+    }
+
+}
+
+
+/* ============================================================
+   6. UPDATE CHAT HEADER
+   ============================================================ */
+
+function updateChatHeader(person, type) {
+
+    const nameEl =
+        document.getElementById("chatUserName");
+
+    const statusEl =
+        document.getElementById("chatUserStatus");
+
+    const avatarEl =
+        document.getElementById("chatUserAvatar");
+
+    const placeholderEl =
+        document.getElementById("headerAvatarPlaceholder");
+
+    if (!nameEl || !statusEl || !avatarEl) return;
+
+    const isStudent = type === "student";
+
+    const name =
+        isStudent
+            ? person.name || "Student"
+            : `${person.firstname || ""} ${person.surname || ""}`.trim();
+
+    const online =
+        !isStudent && isUserOnline(person);
+
+    const status =
+        isStudent
+            ? `🎓 Student • ${person.studentclass || "No Class"}`
+            : online
+                ? "🟢 Online"
+                : "⚪ Offline";
+
+    const image =
+        isStudent
+            ? person.photo || ""
+            : person.profilePic || "";
+
+    nameEl.textContent = name;
+    statusEl.textContent = status;
+
+    // Reset avatar
+    avatarEl.removeAttribute("src");
+    avatarEl.style.display = "none";
+    avatarEl.style.background = "#d9d9d9";
+    avatarEl.onerror = null;
+
+    // Show placeholder by default (no profile picture)
+    if (placeholderEl) {
+        placeholderEl.style.display = "flex";
+    }
+
+    if (image) {
+        avatarEl.src = image;
+        avatarEl.style.display = "block";
+        avatarEl.style.background = "transparent";
+
+        // Hide the default avatar icon when a profile picture is present
+        if (placeholderEl) {
+            placeholderEl.style.display = "none";
+        }
+
+        avatarEl.onerror = function () {
+            this.removeAttribute("src");
+            this.style.display = "none";
+            this.style.background = "#d9d9d9";
+            // Fall back to placeholder if image fails to load
+            if (placeholderEl) {
+                placeholderEl.style.display = "flex";
+            }
+        };
+    }
+
+}
+
+
+/* ============================================================
+   7. HIGHLIGHT SELECTED CONTACT
+   ============================================================ */
+
+function highlightSelectedUser(id, type) {
+
+    document
+        .querySelectorAll(".chat-user")
+        .forEach(item => {
+
+            item.classList.remove("active");
+
+        });
+
+    const selected = Array.from(
+        document.querySelectorAll(".chat-user")
+    ).find(item =>
+        String(item.dataset.id) === String(id) &&
+        item.dataset.type === type
+    );
+
+    if (selected) {
+
+        selected.classList.add("active");
+
+    }
+
+}
+
+
+/* ============================================================
+   8. PRELOAD CHAT CACHE
+   ============================================================ */
+
+async function preloadChats() {
+
+    if (!currentUser) return [];
+
+    if (chatCacheLoaded) {
+
+        return chatCache;
+
+    }
+
+    if (chatCacheLoading) {
+
+        return waitForChatCache();
+
+    }
+
+    chatCacheLoading = true;
+
+    try {
+
+        const { data, error } = await supabaseClient
+            .from("chats")
+            .select("*")
+            .eq("schoolid", currentUser.schoolid)
+            .order("time", {
+                ascending: true
+            });
+
+        if (error) throw error;
+
+        chatCache = data || [];
+        chatCacheLoaded = true;
+
+        console.log(
+            "Chat cache loaded:",
+            chatCache.length
+        );
+
+        return chatCache;
+
+    } catch (error) {
+
+        console.error(
+            "Chat cache error:",
+            error
+        );
+
+        return [];
+
+    } finally {
+
+        chatCacheLoading = false;
+
+    }
+
+}
+
+
+/* ============================================================
+   9. WAIT FOR CACHE
+   ============================================================ */
+
+function waitForChatCache() {
+
+    return new Promise(resolve => {
+
+        const check = () => {
+
+            if (!chatCacheLoading) {
+
+                resolve(chatCache || []);
+
+                return;
+
+            }
+
+            setTimeout(check, 50);
+
+        };
+
+        check();
+
+    });
+
+}
+
+
+/* ============================================================
+   10. GET CURRENT CONVERSATION
+   ============================================================ */
+
+function getCurrentConversation() {
+
+    if (!selectedUser || !currentUser) {
+        return [];
+    }
+
+    const myId =
+        String(currentUser.username);
+
+    const otherId =
+        String(selectedUser);
+
+    return (chatCache || []).filter(message => {
+
+        const from =
+            String(message.from_user);
+
+        const to =
+            String(message.to_user);
+
+        // I SENT TO SELECTED USER
+        const sent =
+            from === myId &&
+            to === otherId;
+
+        // SELECTED USER SENT TO ME
+        const received =
+            from === otherId &&
+            to === myId;
+
+        return sent || received;
+
+    });
+
+}
+
+
+/*
+   Keep this old function name available in case another
+   part of your app already calls loadConversation().
+*/
+
+function loadConversation() {
+
+    return getCurrentConversation();
+
+}
+
+
+/* ============================================================
+   11. REFRESH CURRENT CHAT
+   ============================================================ */
+
+function refreshCurrentChat(scroll = true) {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    const messages =
+        getCurrentConversation();
+
+    if (!selectedUser) {
+
+        showEmptyConversation();
+
+        return;
+
+    }
+
+    if (!messages.length) {
+
+        showEmptyConversation();
+
+        return;
+
+    }
+
+    chatBox.innerHTML =
+        buildConversation(messages);
+
+    if (scroll) {
+
+        scrollChatToBottom();
+
+    }
+
+}
+
+
+/* ============================================================
+   12. DISPLAY CHAT
+   ============================================================ */
+
+async function displayChat() {
+
+    if (!selectedUser) {
+
+        showEmptyConversation();
+
+        return;
+
+    }
+
+    await preloadChats();
+
+    refreshCurrentChat();
+
+    await markConversationSeen();
+
+}
+
+
+/* ============================================================
+   13. SEND MESSAGE
+   ============================================================ */
+
+/* ============================================================
+   SEND MESSAGE
+   ============================================================ */
+
+async function sendMessage() {
+
+    if (!currentUser) {
+        alert("You are not logged in.");
+        return;
+    }
+
+    if (!selectedUser) {
+        alert("Select a user or student first.");
+        return;
+    }
+
+
+    const input =
+        document.getElementById("chatInput");
+
+    const text =
+        input?.value.trim() || "";
+
+    const file =
+        selectedMediaFile || null;
+
+
+    // Nothing to send
+    if (!text && !file) {
+        return;
+    }
+
+
+    const sendBtn =
+        document.querySelector(".send-btn");
+
+
+    if (sendBtn) {
+        sendBtn.disabled = true;
+    }
+
+
+    let uploadedPath = null;
+
+
+    try {
+
+        /* =====================================================
+           1. UPLOAD MEDIA
+           ===================================================== */
+
+        let mediaUrl = null;
+
+
+        if (file) {
+
+            console.log(
+                "Starting media upload:",
+                file.name
+            );
+
+
+            const schoolId =
+                currentUser.schoolid ||
+                "school";
+
+
+            const cleanName =
+                file.name
+                    .replace(/\s+/g, "_")
+                    .replace(
+                        /[^a-zA-Z0-9._-]/g,
+                        ""
+                    );
+
+
+            const fileName =
+                `${Date.now()}_${crypto.randomUUID()}_${cleanName}`;
+
+
+            uploadedPath =
+                `${schoolId}/${fileName}`;
+
+
+            console.log(
+                "Uploading to:",
+                uploadedPath
+            );
+
+
+            const {
+                data: uploadData,
+                error: uploadError
+            } =
+                await supabaseClient
+                    .storage
+                    .from("chat-media")
+                    .upload(
+                        uploadedPath,
+                        file,
+                        {
+                            cacheControl: "3600",
+                            upsert: false,
+                            contentType:
+                                file.type ||
+                                "application/octet-stream"
+                        }
+                    );
+
+
+            if (uploadError) {
+
+                console.error(
+                    "❌ STORAGE UPLOAD FAILED:",
+                    uploadError
+                );
+
+                throw new Error(
+                    uploadError.message
+                );
+            }
+
+
+            console.log(
+                "✅ STORAGE UPLOAD SUCCESS:",
+                uploadData
+            );
+
+
+            /* =================================================
+               2. GET PUBLIC URL
+               ================================================= */
+
+            const {
+                data: urlData
+            } =
+                supabaseClient
+                    .storage
+                    .from("chat-media")
+                    .getPublicUrl(
+                        uploadedPath
+                    );
+
+
+            mediaUrl =
+                urlData?.publicUrl;
+
+
+            if (!mediaUrl) {
+
+                throw new Error(
+                    "Could not generate media URL."
+                );
+
+            }
+
+
+            console.log(
+                "✅ MEDIA URL:",
+                mediaUrl
+            );
+        }
+
+
+        /* =====================================================
+           3. CREATE CHAT MESSAGE
+           ===================================================== */
+
+        const newMessage = {
+
+            schoolid:
+                currentUser.schoolid,
+
+            from_user:
+                currentUser.username,
+
+            from_type:
+                currentUser.role,
+
+            to_user:
+                selectedUser,
+
+            to_type:
+                selectedUserType,
+
+            text:
+                text || null,
+
+            media:
+                mediaUrl
+
+        };
+
+
+        console.log(
+            "Saving chat message:",
+            newMessage
+        );
+
+
+        /* =====================================================
+           4. INSERT INTO CHATS
+           ===================================================== */
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("chats")
+                .insert(newMessage)
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "❌ CHAT INSERT FAILED:",
+                error
+            );
+
+
+            // Remove uploaded file if DB insert failed
+            if (uploadedPath) {
+
+                await supabaseClient
+                    .storage
+                    .from("chat-media")
+                    .remove([
+                        uploadedPath
+                    ]);
+
+            }
+
+
+            throw new Error(
+                error.message
+            );
+        }
+
+
+        console.log(
+            "✅ MESSAGE SAVED:",
+            data
+        );
+
+
+        /* =====================================================
+           5. ADD TO LOCAL CACHE
+           ===================================================== */
+
+        if (data) {
+
+            const exists =
+                chatCache.some(
+                    msg =>
+                        String(msg.id) ===
+                        String(data.id)
+                );
+
+
+            if (!exists) {
+
+                chatCache.push(data);
+
+            }
+        }
+
+
+        /* =====================================================
+           6. CLEAR MESSAGE INPUT
+           ===================================================== */
+
+        if (input) {
+
+            input.value = "";
+
+        }
+
+
+        /* =====================================================
+           7. CLEAR ATTACHMENT
+           ===================================================== */
+
+        removePreview();
+
+
+        /* =====================================================
+           8. REFRESH CURRENT CHAT
+           ===================================================== */
+
+        refreshCurrentChat(false);
+
+
+        /* =====================================================
+           9. UPDATE USER LIST
+           ===================================================== */
+
+        displayUsers();
+
+
+        console.log(
+            "✅ MESSAGE SENT SUCCESSFULLY"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "❌ SEND MESSAGE ERROR:",
+            error
+        );
+
+
+        alert(
+            "Failed to send message:\n\n" +
+            error.message
+        );
+
+    }
+
+    finally {
+
+        if (sendBtn) {
+
+            sendBtn.disabled = false;
+
+        }
+
+    }
+}
+
+
+/* ============================================================
+   14. CREATE + SAVE MESSAGE
+   ============================================================ */
+
+async function createMessage(text, file = null) {
+
+    const message = {
+
+        schoolid: currentUser.schoolid,
+
+        from_user: currentUser.username,
+        from_type: currentUser.role,
+
+        to_user: selectedUser,
+        to_type: selectedUserType,
+
+        text: text || "",
+
+        type: file ? "media" : "text",
+
+        media: null,
+        mediatype: null,
+        filename: null,
+
+        time: Date.now()
+
+    };
+
+    // Convert media to Base64 if necessary
+    if (file) {
+
+        message.media =
+            await readFileAsDataURL(file);
+
+        message.mediatype =
+            file.type;
+
+        message.filename =
+            file.name;
+
+    }
+
+    /*
+       select().single() gives us the database-generated ID.
+       This is useful for double-click/context-menu/delete.
+    */
+
+    const { data, error } =
+        await supabaseClient
+            .from("chats")
+            .insert([message])
+            .select()
+            .single();
+
+    if (error) {
+
+        console.error(
+            "Message insert error:",
+            error
+        );
+
+        throw error;
+
+    }
+
+    return data || message;
+
+}
+
+
+/* ============================================================
+   15. READ MEDIA FILE
+   ============================================================ */
+
+function readFileAsDataURL(file) {
+
+    return new Promise((resolve, reject) => {
+
+        const reader =
+            new FileReader();
+
+        reader.onload =
+            event => resolve(event.target.result);
+
+        reader.onerror =
+            error => reject(error);
+
+        reader.readAsDataURL(file);
+
+    });
+
+}
+
+
+/* ============================================================
+   16. CLEAR MESSAGE INPUT
+   ============================================================ */
+
+function clearMessageInput() {
+
+    const input =
+        document.getElementById("chatInput");
+
+    const mediaInput =
+        document.getElementById("mediaInput");
+
+    if (input) {
+
+        input.value = "";
+
+    }
+
+    if (mediaInput) {
+
+        mediaInput.value = "";
+
+    }
+
+    selectedMediaFile = null;
+
+    hideMediaPreview();
+
+}
+
+
+/* ============================================================
+   17. BUILD CONVERSATION
+   ============================================================ */
+
+function buildConversation(messages) {
+
+    return messages
+        .map(renderMessage)
+        .join("");
+
+}
+
+
+/* ============================================================
+   18. RENDER MESSAGE
+   ============================================================ */
+
+function renderMessage(msg) {
+
+    const mine =
+        String(msg.from_user) ===
+            String(currentUser.username) &&
+
+        String(msg.from_type) ===
+            String(currentUser.role);
+
+    let body = "";
+
+    // DELETED
+    if (msg.deleted) {
+
+        body = `
+            <div class="deleted-message">
+                🚫 This message was deleted
+            </div>
+        `;
+
+    } else {
+
+        // TEXT
+        if (msg.text) {
+
+            body += `
+                <div class="message-text">
+                    ${escapeHTML(msg.text)}
+                </div>
+            `;
+
+        }
+
+        // IMAGE
+        if (
+            msg.media &&
+            msg.mediatype?.startsWith("image/")
+        ) {
+
+            body += `
+                <img
+                    src="${escapeAttribute(msg.media)}"
+                    class="chat-image"
+                    alt="${escapeAttribute(msg.filename || "Image")}"
+                >
+            `;
+
+        }
+
+        // VIDEO
+        else if (
+            msg.media &&
+            msg.mediatype?.startsWith("video/")
+        ) {
+
+            body += `
+                <video
+                    controls
+                    class="chat-video"
+                >
+                    <source
+                        src="${escapeAttribute(msg.media)}"
+                        type="${escapeAttribute(msg.mediatype)}"
+                    >
+                </video>
+            `;
+
+        }
+
+        // OTHER FILE
+        else if (msg.media) {
+
+            body += `
+                <a
+                    href="${escapeAttribute(msg.media)}"
+                    download="${escapeAttribute(msg.filename || "file")}"
+                    class="chat-file"
+                >
+                    📄 ${escapeHTML(msg.filename || "File")}
+                </a>
+            `;
+
+        }
+
+    }
+
+    const id =
+        msg.id ?? "";
+
+    return `
+        <div
+            class="message ${mine ? "mine" : "theirs"}"
+            ondblclick="selectMessage('${escapeJS(id)}')"
+            oncontextmenu="
+                showContextMenu(event,'${escapeJS(id)}');
+                return false;
+            "
+        >
+
+            <div class="bubble">
+
+                ${body}
+
+                <div class="message-time">
+
+                    ${formatTime(msg.time)}
+
+                    ${mine ? getTicks(msg) : ""}
+
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+}
+
+
+/* ============================================================
+   19. MESSAGE STATUS / TICKS
+   ============================================================ */
+
+function getTicks(msg) {
+
+    if (msg.seen) {
+
+        return `
+            <span style="color:#53bdeb">
+                ✓✓
+            </span>
+        `;
+
+    }
+
+    if (msg.delivered) {
+
+        return `
+            <span style="color:#8696a0">
+                ✓✓
+            </span>
+        `;
+
+    }
+
+    return `
+        <span style="color:#8696a0">
+            ✓
+        </span>
+    `;
+
+}
+
+
+/* ============================================================
+   20. MARK CONVERSATION SEEN
+   ============================================================ */
+
+async function markConversationSeen() {
+
+    if (!selectedUser || !currentUser) return;
+
+    try {
+
+        await Promise.all([
+
+            supabaseClient
+                .from("chats")
+                .update({
+                    delivered: true
+                })
+                .eq("schoolid", currentUser.schoolid)
+                .eq("to_user", currentUser.username)
+                .eq("from_user", selectedUser)
+                .eq("to_type", currentUser.role)
+                .eq("from_type", selectedUserType)
+                .eq("delivered", false),
+
+            supabaseClient
+                .from("chats")
+                .update({
+                    seen: true
+                })
+                .eq("schoolid", currentUser.schoolid)
+                .eq("to_user", currentUser.username)
+                .eq("from_user", selectedUser)
+                .eq("to_type", currentUser.role)
+                .eq("from_type", selectedUserType)
+                .eq("seen", false)
+
+        ]);
+
+        // Keep local cache status synchronized
+        chatCache = chatCache.map(msg => {
+
+            const isIncoming =
+                String(msg.from_user) ===
+                    String(selectedUser) &&
+
+                String(msg.from_type) ===
+                    String(selectedUserType) &&
+
+                String(msg.to_user) ===
+                    String(currentUser.username) &&
+
+                String(msg.to_type) ===
+                    String(currentUser.role);
+
+            if (!isIncoming) return msg;
+
+            return {
+                ...msg,
+                delivered: true,
+                seen: true
+            };
+
+        });
+
+        refreshCurrentChat(false);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to update message status:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   MEDIA PREVIEW
+   ============================================================ */
+/* ============================================================
+   MEDIA PREVIEW
+   ============================================================ */
+
+function previewMedia(event) {
+
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    console.log("Selected file:", file);
+
+
+    // Store file for sendMessage()
+    selectedMediaFile = file;
+
+
+    // Existing HTML IDs
+    const container =
+        document.getElementById("previewContainer");
+
+    const preview =
+        document.getElementById("previewContent");
+
+
+    if (!container || !preview) {
+
+        console.error(
+            "Media preview elements not found."
+        );
+
+        return;
+    }
+
+
+    // Remove previous preview URL
+    if (window.currentMediaPreviewUrl) {
+
+        URL.revokeObjectURL(
+            window.currentMediaPreviewUrl
+        );
+
+    }
+
+
+    // Create temporary browser URL
+    const previewUrl =
+        URL.createObjectURL(file);
+
+    window.currentMediaPreviewUrl =
+        previewUrl;
+
+
+    let html = "";
+
+
+    // ========================================================
+    // IMAGE
+    // ========================================================
+
+    if (file.type.startsWith("image/")) {
+
+        html = `
+            <div class="media-preview-item">
+
+                <img
+                    src="${escapeAttribute(previewUrl)}"
+                    alt="Selected image"
+                    class="media-preview-image">
+
+                <div class="media-preview-name">
+                    ${escapeHTML(file.name)}
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    // ========================================================
+    // VIDEO
+    // ========================================================
+
+    else if (file.type.startsWith("video/")) {
+
+        html = `
+            <div class="media-preview-item">
+
+                <video
+                    controls
+                    class="media-preview-video">
+
+                    <source
+                        src="${escapeAttribute(previewUrl)}"
+                        type="${escapeAttribute(file.type)}">
+
+                </video>
+
+                <div class="media-preview-name">
+                    ${escapeHTML(file.name)}
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    // ========================================================
+    // PDF
+    // ========================================================
+
+    else if (
+        file.type === "application/pdf"
+    ) {
+
+        html = `
+            <div class="media-preview-file">
+
+                <i class="fas fa-file-pdf"></i>
+
+                <span>
+                    ${escapeHTML(file.name)}
+                </span>
+
+            </div>
+        `;
+    }
+
+
+    // ========================================================
+    // OTHER DOCUMENTS
+    // ========================================================
+
+    else {
+
+        html = `
+            <div class="media-preview-file">
+
+                <i class="fas fa-file"></i>
+
+                <span>
+                    ${escapeHTML(file.name)}
+                </span>
+
+            </div>
+        `;
+    }
+
+
+    // Put preview into existing container
+    preview.innerHTML = html;
+
+    container.style.display = "flex";
+
+
+    console.log(
+        "Media preview displayed successfully."
+    );
+}
+
+
+function removePreview() {
+
+    selectedMediaFile = null;
+
+
+    const mediaInput =
+        document.getElementById("mediaInput");
+
+    if (mediaInput) {
+
+        mediaInput.value = "";
+
+    }
+
+
+    if (window.currentMediaPreviewUrl) {
+
+        URL.revokeObjectURL(
+            window.currentMediaPreviewUrl
+        );
+
+        window.currentMediaPreviewUrl = null;
+
+    }
+
+
+    const container =
+        document.getElementById("previewContainer");
+
+    const preview =
+        document.getElementById("previewContent");
+
+
+    if (preview) {
+
+        preview.innerHTML = "";
+
+    }
+
+
+    if (container) {
+
+        container.style.display = "none";
+
+    }
+
+}
+
+/* ============================================================
+   HIDE MEDIA PREVIEW
+   ============================================================ */
+
+function hideMediaPreview() {
+
+    const container =
+        document.getElementById("mediaPreview");
+
+    const preview =
+        document.getElementById("previewContent");
+
+
+    if (preview) {
+
+        preview.innerHTML = "";
+
+    }
+
+
+    if (container) {
+
+        container.style.display = "none";
+
+        container.classList.remove("active");
+
+    }
+}
+
+
+/* ============================================================
+   22. MESSAGE SELECTION / CONTEXT MENU
+   ============================================================ */
+
+function selectMessage(messageId) {
+
+    selectedMessageId = messageId;
+
+    const menu =
+        document.getElementById("messageActions");
+
+    if (menu) {
+
+        menu.style.display = "block";
+
+    }
+
+}
+
+
+function showContextMenu(event, messageId) {
+
+    event.preventDefault();
+
+    selectedMessageId = messageId;
+
+    const menu =
+        document.getElementById("contextMenu");
+
+    if (!menu) return;
+
+    menu.style.left =
+        `${event.pageX}px`;
+
+    menu.style.top =
+        `${event.pageY}px`;
+
+    menu.style.display = "block";
+
+}
+
+
+function clearSelection() {
+
+    selectedMessageId = null;
+
+    const actions =
+        document.getElementById("messageActions");
+
+    const context =
+        document.getElementById("contextMenu");
+
+    if (actions) {
+
+        actions.style.display = "none";
+
+    }
+
+    if (context) {
+
+        context.style.display = "none";
+
+    }
+
+}
+
+
+function closeChatMenus() {
+
+    clearSelection();
+
+}
+
+
+/* ============================================================
+   23. DELETE MESSAGE
+   ============================================================ */
+
+async function deleteSelectedMessage() {
+
+    if (!selectedMessageId) return;
+
+    if (!confirm("Delete this message?")) {
+
+        return;
+
+    }
+
+    try {
+
+        const {
+            data: message,
+            error: fetchError
+        } = await supabaseClient
+            .from("chats")
+            .select("*")
+            .eq("id", selectedMessageId)
+            .single();
+
+        if (fetchError) {
+
+            throw fetchError;
+
+        }
+
+        // SECOND DELETE = PERMANENT
+        if (message.deleted) {
+
+            const { error } =
+                await supabaseClient
+                    .from("chats")
+                    .delete()
+                    .eq("id", selectedMessageId);
+
+            if (error) throw error;
+
+            chatCache =
+                chatCache.filter(msg =>
+                    String(msg.id) !==
+                    String(selectedMessageId)
+                );
+
+        }
+
+        // FIRST DELETE = SOFT DELETE
+        else {
+
+            const deletedData = {
+
+                text: "This message was deleted.",
+
+                media: null,
+
+                filename: null,
+
+                mediatype: null,
+
+                deleted: true
+
+            };
+
+            const { error } =
+                await supabaseClient
+                    .from("chats")
+                    .update(deletedData)
+                    .eq("id", selectedMessageId);
+
+            if (error) throw error;
+
+            chatCache =
+                chatCache.map(msg => {
+
+                    if (
+                        String(msg.id) !==
+                        String(selectedMessageId)
+                    ) {
+
+                        return msg;
+
+                    }
+
+                    return {
+                        ...msg,
+                        ...deletedData
+                    };
+
+                });
+
+        }
+
+        clearSelection();
+
+        refreshCurrentChat();
+
+    } catch (error) {
+
+        console.error(
+            "Delete failed:",
+            error
+        );
+
+        alert(
+            "Unable to delete the message."
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   24. ONLINE STATUS
+   ============================================================ */
+
+async function updateOnlineStatus() {
+
+    if (!currentUser) return;
+
+    const { error } =
+        await supabaseClient
+            .from("users")
+            .update({
+                lastSeen: Date.now()
+            })
+            .eq(
+                "username",
+                currentUser.username
+            );
+
+    if (error) {
+
+        console.error(
+            "Error updating online status:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   25. TYPING STATUS
+   ============================================================ */
+
+let typingTimeout = null;
+
+async function setTypingStatus(isTyping) {
+
+    if (!currentUser) return;
+
+    const { error } =
+        await supabaseClient
+            .from("typing_status")
+            .upsert({
+                username: currentUser.username,
+                is_typing: isTyping,
+                updated_at: new Date()
+            });
+
+    if (error) {
+
+        console.error(
+            "Typing status error:",
+            error
+        );
+
+    }
+
+}
+
+
+function handleTyping() {
+
+    clearTimeout(typingTimeout);
+
+    setTypingStatus(true);
+
+    typingTimeout =
+        setTimeout(() => {
+
+            setTypingStatus(false);
+
+        }, 1500);
+
+}
+
+
+/* ============================================================
+   26. REALTIME CHAT UPDATE
+   ============================================================ */
+
+function handleRealtimeChat(payload) {
+
+    const message = payload.new || payload.old;
+
+    if (!message) return;
+
+    console.log("REALTIME CHAT:", message);
+
+    // ==========================================
+    // SCHOOL CHECK
+    // ==========================================
+
+    if (
+        currentUser &&
+        message.schoolid &&
+        String(message.schoolid) !==
+        String(currentUser.schoolid)
+    ) {
+        return;
+    }
+
+
+    // ==========================================
+    // INSERT
+    // ==========================================
+
+    if (payload.eventType === "INSERT") {
+
+        // Prevent duplicate
+        const exists = chatCache.some(msg =>
+            String(msg.id) === String(message.id)
+        );
+
+        if (!exists) {
+            chatCache.push(message);
+        }
+
+
+        // ======================================
+        // IS THIS THE CURRENT CONVERSATION?
+        // ======================================
+
+        const isCurrentChat =
+            isMessageInCurrentConversation(message);
+
+        console.log("Current chat?", isCurrentChat);
+
+        console.log("Current user:", {
+            id: currentUser.username,
+            type: currentUser.role
+        });
+
+        console.log("Selected user:", {
+            id: selectedUser,
+            type: selectedUserType
+        });
+
+        console.log("Message:", {
+            from_user: message.from_user,
+            from_type: message.from_type,
+            to_user: message.to_user,
+            to_type: message.to_type
+        });
+
+
+        if (isCurrentChat) {
+
+            refreshCurrentChat();
+
+        }
+
+
+        // ======================================
+        // UPDATE SIDEBAR
+        // ======================================
+
+        displayUsers();
+
+        updateUnreadCounts();
+
+        return;
+    }
+
+
+    // ==========================================
+    // UPDATE
+    // ==========================================
+
+    if (payload.eventType === "UPDATE") {
+
+        chatCache = chatCache.map(msg =>
+            String(msg.id) === String(message.id)
+                ? message
+                : msg
+        );
+
+        if (
+            isMessageInCurrentConversation(message)
+        ) {
+
+            refreshCurrentChat(false);
+
+        }
+
+        return;
+    }
+
+
+    // ==========================================
+    // DELETE
+    // ==========================================
+
+    if (payload.eventType === "DELETE") {
+
+        chatCache = chatCache.filter(msg =>
+            String(msg.id) !== String(message.id)
+        );
+
+        refreshCurrentChat(false);
+
+        displayUsers();
+
+        return;
+    }
+
+}
+
+
+function isMessageInCurrentConversation(message) {
+
+    if (
+        !message ||
+        !currentUser ||
+        !selectedUser
+    ) {
+        return false;
+    }
+
+    const myId =
+        String(currentUser.username);
+
+    const otherId =
+        String(selectedUser);
+
+    const from =
+        String(message.from_user);
+
+    const to =
+        String(message.to_user);
+
+    const sent =
+        from === myId &&
+        to === otherId;
+
+    const received =
+        from === otherId &&
+        to === myId;
+
+    console.log("CHAT MATCH:", {
+        sent,
+        received,
+        from,
+        to,
+        myId,
+        otherId
+    });
+
+    return sent || received;
+
+}
+
+
+/* ============================================================
+   27. TYPING REALTIME
+   ============================================================ */
+
+function handleRealtimeTyping(payload) {
+
+    if (!currentUser || !selectedUser) return;
+
+    const typingUser =
+        payload.new?.username;
+
+    // Only respond when the selected person
+    // is the one who is typing.
+    if (
+        String(typingUser) !==
+        String(selectedUser)
+    ) {
+        return;
+    }
+
+    const indicator =
+        document.getElementById("typingIndicator");
+
+    if (!indicator) return;
+
+
+    // ==========================================
+    // FIND THE PERSON
+    // ==========================================
+
+    let person =
+        getChatContact(
+            selectedUser,
+            selectedUserType
+        );
+
+
+    // If getChatContact() does not find the
+    // person because of type differences,
+    // search the users array directly.
+    if (!person && typeof users !== "undefined") {
+
+        person = users.find(user =>
+            String(user.username) ===
+            String(selectedUser)
+        );
+
+    }
+
+
+    // ==========================================
+    // GET NAME
+    // ==========================================
+
+    let name = "User";
+
+    if (person) {
+
+        name =
+            `${person.firstname || ""} ${person.surname || ""}`
+                .trim();
+
+    }
+
+
+    // ==========================================
+    // SHOW / HIDE TYPING
+    // ==========================================
+
+    if (payload.new?.is_typing) {
+
+        indicator.innerText =
+            `${name} is typing...`;
+
+        indicator.style.display = "block";
+
+    } else {
+
+        indicator.innerText = "";
+
+        indicator.style.display = "none";
+
+    }
+
+}
+
+
+/* ============================================================
+   28. MOBILE CHAT
+   ============================================================ */
+
+function updateMobileChatView(openConversation) {
+
+    const usersPanel =
+        document.getElementById("usersPanel");
+
+    const conversationPanel =
+        document.getElementById("conversationPanel");
+
+    if (!usersPanel || !conversationPanel) return;
+
+    if (window.innerWidth <= 768) {
+
+        if (openConversation) {
+
+            usersPanel.style.display = "none";
+            conversationPanel.style.display = "flex";
+
+        } else {
+
+            usersPanel.style.display = "block";
+            conversationPanel.style.display = "none";
+
+        }
+
+    } else {
+
+        usersPanel.style.display = "flex";
+        conversationPanel.style.display = "flex";
+
+    }
+
+}
+
+
+function setupMobileChat() {
+
+    updateMobileChatView(false);
+
+}
+
+
+function backToUsers() {
+
+    updateMobileChatView(false);
+
+}
+
+
+/* ============================================================
+   29. CHAT UI HELPERS
+   ============================================================ */
+
+function scrollChatToBottom() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    requestAnimationFrame(() => {
+
+        chatBox.scrollTop =
+            chatBox.scrollHeight;
+
+    });
+
+}
+
+
+function showChatLoading() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    chatBox.innerHTML = `
+        <div class="chat-loading">
+            Loading conversation...
+        </div>
+    `;
+
+}
+
+
+function showEmptyConversation() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    chatBox.innerHTML = `
+        <div class="empty-chat">
+            No messages yet
+        </div>
+    `;
+
+}
+
+
+function showChatError() {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    chatBox.innerHTML = `
+        <div class="empty-chat">
+            Failed to load conversation.
+        </div>
+    `;
+
+}
+
+
+/* ============================================================
+   30. GENERAL UTILITIES
+   ============================================================ */
+
+function escapeHTML(value) {
+
+    if (value === null || value === undefined) {
+
+        return "";
+
+    }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+function escapeAttribute(value) {
+
+    return escapeHTML(value);
+
+}
+
+
+function escapeJS(value) {
+
+    return String(value ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\r/g, "\\r")
+        .replace(/\n/g, "\\n");
+
+}
+
+
+function formatTime(time) {
+
+    return new Date(time)
+        .toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+
+}
+
+
+/* ============================================================
+   31. UNREAD COUNTS
+   ============================================================ */
+
+function updateUnreadCounts() {
+
+    if (!currentUser) return;
+
+    const unread = {};
+
+    (chatCache || []).forEach(message => {
+
+        const isIncoming =
+            String(message.to_user) ===
+                String(currentUser.username) &&
+
+            String(message.to_type) ===
+                String(currentUser.role) &&
+
+            !message.seen;
+
+        if (!isIncoming) return;
+
+        const key =
+            `${message.from_type}_${message.from_user}`;
+
+        unread[key] =
+            (unread[key] || 0) + 1;
+
+    });
+
+    document
+        .querySelectorAll("[id^='unread_']")
+        .forEach(badge => {
+
+            const id =
+                badge.id.replace("unread_", "");
+
+            const count =
+                unread[`user_${id}`] ||
+                unread[`student_${id}`] ||
+                0;
+
+            badge.innerText = count;
+
+            badge.style.display =
+                count > 0
+                    ? "flex"
+                    : "none";
+
+        });
+
+}
+
+
+/* ============================================================
+   32. REPLY / FORWARD
+   ============================================================ */
+
+function replyMessage() {
+
+    alert(
+        "Reply feature coming soon"
+    );
+
+}
+
+
+function forwardMessage() {
+
+    alert(
+        "Forward feature coming soon"
+    );
+
+}
+
+
+/* ============================================================
+   33. EVENT LISTENERS
+   ============================================================ */
+
+const mediaInput =
+    document.getElementById("mediaInput");
+
+if (mediaInput) {
+
+    mediaInput.addEventListener(
+        "change",
+        previewMedia
+    );
+
+}
+
+
+const chatInput =
+    document.getElementById("chatInput");
+
+if (chatInput) {
+
+    chatInput.addEventListener(
+        "input",
+        handleTyping
+    );
+
+}
+
+
+/* ============================================================
+   34. REALTIME CHANNELS
+   ============================================================ */
+
+/*
+   CHAT REALTIME
+   ------------------------------------------------------------
+   IMPORTANT:
+   We no longer call displayChat() every time Supabase
+   sends an event.
+
+   The realtime event updates chatCache instead.
+*/
+
+if (supabaseClient) {
+
+    supabaseClient
+        .channel("chat-room")
+
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "chats"
+            },
+            handleRealtimeChat
+        )
+
+        .subscribe();
+
+
+    /*
+       TYPING REALTIME
+    */
+
+    supabaseClient
+        .channel("typing-status")
+
+        .on(
+            "postgres_changes",
+            {
+                event: "*",
+                schema: "public",
+                table: "typing_status"
+            },
+            handleRealtimeTyping
+        )
+
+        .subscribe();
+
+}
+
+
+/* ============================================================
+   35. INITIAL CHAT SETUP
+   ============================================================ */
+
+async function initializeChat() {
+
+    try {
+
+        await preloadChats();
+
+        loadChatContacts();
+
+        displayUsers();
+
+        updateUnreadCounts();
+
+        setupMobileChat();
+
+    } catch (error) {
+
+        console.error(
+            "Chat initialization failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   END CHAT SYSTEM
+   ============================================================ */
+
+
+function openChatPage(){
+
+   
+
+    showPage("chat");
+
+    if(window.innerWidth <= 768){
+
+        document.getElementById("usersPanel").style.display = "block";
+        document.getElementById("conversationPanel").style.display = "none";
+    }
+}
+
+function toggleAcademicsMenu(){
+
+    let menu =
+        document.getElementById("academicsMenu");
+
+    if(menu.style.display === "block"){
+        menu.style.display = "none";
+    }else{
+        menu.style.display = "block";
+    }
+}
+
+function openAcademicPage(pageId){
+
+    document.getElementById(
+        "academicsMenu"
+    ).style.display = "none";
+
+    showPage(pageId);
+}
+
+
+document.addEventListener("click", function(e){
+
+    let menu =
+        document.getElementById("academicsMenu");
+
+    if(
+        !e.target.closest(".academics-menu") &&
+        !e.target.closest(".nav-item")
+    ){
+        menu.style.display = "none";
+    }
+
+});
+
+
+function toggleProfileMenu(){
+
+    let menu =
+        document.getElementById("profileMobileMenu");
+
+    if(menu.style.display === "block"){
+
+        menu.style.display = "none";
+
+    }else{
+
+        menu.style.display = "block";
+    }
+}
+
+
+function toggleSchoolMenu(){
+
+    let menu =
+        document.getElementById("SchoolMenu");
+
+    if(menu.style.display === "block"){
+
+        menu.style.display = "none";
+
+    }else{
+
+        menu.style.display = "block";
+    }
+}
+
+async function toggleTheme() {
+    const isLight = document.body.classList.contains("light-mode");
+    const newTheme = isLight ? "dark" : "light";
+    applyAppTheme(newTheme);
+
+    // Save theme online (best-effort)
+    try {
+        if (typeof supabaseClient !== "undefined" && currentUser?.username) {
+            const { error } = await supabaseClient
+                .from("users")
+                .update({ theme: newTheme })
+                .eq("username", currentUser.username);
+            if (error) console.log(error);
+        }
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+
+
+function buildDeveloperFeedbackMessage() {
+    const first = currentUser?.firstname || "";
+    const last =
+        currentUser?.surname ||
+        currentUser?.lastname ||
+        "";
+    const fullName =
+        `${first} ${last}`.trim() ||
+        currentUser?.username ||
+        "User";
+
+    const role = (currentUser?.role || "user")
+        .toString()
+        .toLowerCase();
+
+    const schoolFromUI =
+        document.getElementById("schoolNameText")
+            ?.innerText
+            ?.trim() || "";
+    const schoolFromUser =
+        currentUser?.schoolname ||
+        currentUser?.school_name ||
+        "";
+    const schoolId = currentUser?.schoolid || "";
+
+    let school = schoolFromUser || schoolFromUI || "my school";
+    school = school
+        .replace(/\s*\(Code:\s*[^)]+\)\s*$/i, "")
+        .trim() || "my school";
+
+    const schoolLine = schoolId
+        ? `${school} (School ID: ${schoolId})`
+        : school;
+
+    return (
+        `Hello, I am ${fullName} (${role}) from ${schoolLine}. ` +
+        `I am using the Nabeng-SBA system and would like to give some feedback about the software.`
+    );
+}
+
+function openWhatsApp() {
+    const message = buildDeveloperFeedbackMessage();
+    const whatsappURL =
+        "https://wa.me/233599581301?text=" +
+        encodeURIComponent(message);
+
+    window.open(whatsappURL, "_blank");
+}
+
+
+
+/* ============================================================
+   DEVELOPER FEEDBACK
+============================================================ */
+
+function showDeveloperFeedback() {
+
+    const modal =
+        document.getElementById(
+            "developerFeedbackModal"
+        );
+
+    if (!modal) {
+        console.error(
+            "Developer feedback modal not found."
+        );
+        return;
+    }
+
+    modal.style.display = "flex";
+}
+
+
+function closeDeveloperFeedback() {
+
+    const modal =
+        document.getElementById(
+            "developerFeedbackModal"
+        );
+
+    if (!modal) return;
+
+    modal.style.display = "none";
+}
+
+
+function sendDeveloperFeedback() {
+    const message = buildDeveloperFeedbackMessage();
+    const whatsappURL =
+        "https://wa.me/233599581301?text=" +
+        encodeURIComponent(message);
+
+    window.open(whatsappURL, "_blank");
+    closeDeveloperFeedback();
+}
+
+
+
+function setupSchoolPages(){
+
+    const role = currentUser?.role;
+
+    const teacherHomework =
+        document.getElementById("teacherHomeworkArea");
+
+    const studentHomework =
+        document.getElementById("studentHomeworkArea");
+
+    const adminFees =
+        document.getElementById("adminFeesArea");
+
+    const studentFees =
+        document.getElementById("studentFeesArea");
+
+    const teacherNotice =
+        document.getElementById("teacherNoticeArea");
+
+    const studentNotice =
+        document.getElementById("studentNoticeArea");
+
+
+    // Hide everything first
+    [
+        teacherHomework,
+        studentHomework,
+        adminFees,
+        studentFees,
+        teacherNotice,
+        studentNotice
+    ].forEach(el => {
+
+        if(el){
+            el.style.display = "none";
+        }
+
+    });
+
+
+    // ==============================
+    // ADMIN / TEACHER
+    // ==============================
+
+    if(
+        role === "admin" ||
+        role === "teacher"
+    ){
+
+        if(teacherHomework)
+            teacherHomework.style.display = "block";
+
+        if(adminFees)
+            adminFees.style.display = "block";
+
+        if(teacherNotice)
+            teacherNotice.style.display = "block";
+
+    }
+
+}
+
+
+
+
+/* Show selected attachment name */
+    const homeworkAttachmentInput =
+        document.getElementById("homeworkAttachment");
+
+    if (homeworkAttachmentInput) {
+
+        homeworkAttachmentInput.addEventListener("change", function () {
+
+            const file = this.files[0];
+
+            const fileName =
+                document.getElementById("homeworkFileName");
+
+            if (!file) {
+
+                fileName.style.display = "none";
+
+                fileName.innerHTML = "";
+
+                return;
+            }
+
+            fileName.style.display = "block";
+
+            fileName.innerHTML = `
+                <i class="fas fa-paperclip"></i>
+                ${file.name}
+            `;
+
+        });
+
+    }
+
+
+    /* Clear homework form */
+    function clearHomeworkForm() {
+
+        const fields = [
+            "homeworkClass",
+            "homeworkSubject",
+            "homeworkTitle",
+            "homeworkDescription",
+            "homeworkDate",
+            "homeworkDeadline",
+            "homeworkAttachment"
+        ];
+
+        fields.forEach(function(id) {
+
+            const element =
+                document.getElementById(id);
+
+            if (!element) return;
+
+            if (element.type === "file") {
+
+                element.value = "";
+
+            } else {
+
+                element.value = "";
+
+            }
+
+        });
+
+
+        const fileName =
+            document.getElementById("homeworkFileName");
+
+        if (fileName) {
+
+            fileName.style.display = "none";
+
+            fileName.innerHTML = "";
+
+        }
+
+    }
+	
+	
+	
+	
+	
+	/* =========================================================
+   FEES MANAGEMENT
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   CALCULATE TOTAL FEE
+--------------------------------------------------------- */
+
+function calculateFeeTotal() {
+
+    const tuition =
+        parseFloat(
+            document.getElementById("feeTuition")?.value
+        ) || 0;
+
+    const books =
+        parseFloat(
+            document.getElementById("feeBooks")?.value
+        ) || 0;
+
+    const ict =
+        parseFloat(
+            document.getElementById("feeICT")?.value
+        ) || 0;
+
+    const other =
+        parseFloat(
+            document.getElementById("feeOther")?.value
+        ) || 0;
+
+
+    const total =
+        tuition +
+        books +
+        ict +
+        other;
+
+
+    const preview =
+        document.getElementById("feeTotalPreview");
+
+
+    if (preview) {
+
+        preview.textContent =
+            "GHS " +
+            total.toLocaleString(
+                "en-GH",
+                {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }
+            );
+
+    }
+
+
+    return total;
+}
+
+
+/* ---------------------------------------------------------
+   FEE INPUT LISTENERS
+--------------------------------------------------------- */
+
+function initFeeCalculations() {
+
+    const fields = [
+        "feeTuition",
+        "feeBooks",
+        "feeICT",
+        "feeOther"
+    ];
+
+
+    fields.forEach(function(id) {
+
+        const input =
+            document.getElementById(id);
+
+        if (!input) return;
+
+
+        input.addEventListener(
+            "input",
+            calculateFeeTotal
+        );
+
+    });
+
+}
+
+
+/* ---------------------------------------------------------
+   CLEAR FEE FORM
+--------------------------------------------------------- */
+
+function clearFeeForm() {
+
+    const fields = [
+        "feeStudent",
+        "feeTerm",
+        "feeDueDate",
+        "feeTuition",
+        "feeBooks",
+        "feeICT",
+        "feeOther",
+        "feeNotes"
+    ];
+
+
+    fields.forEach(function(id) {
+
+        const element =
+            document.getElementById(id);
+
+        if (!element) return;
+
+
+        if (id === "feeTerm") {
+
+            element.value = "term1";
+
+        } else {
+
+            element.value = "";
+
+        }
+
+    });
+
+
+    calculateFeeTotal();
+
+}
+
+
+/* ---------------------------------------------------------
+   FORMAT GHANA CURRENCY
+--------------------------------------------------------- */
+
+function formatGHS(amount) {
+
+    amount =
+        parseFloat(amount) || 0;
+
+
+    return (
+        "GHS " +
+        amount.toLocaleString(
+            "en-GH",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        )
+    );
+
+}
+
+
+/* ---------------------------------------------------------
+   INITIALIZE FEES PAGE
+--------------------------------------------------------- */
+
+function initializeFeesPage() {
+
+    initFeeCalculations();
+
+    calculateFeeTotal();
+
+}
+
+
+/* ---------------------------------------------------------
+   FEE PAGE INITIALIZATION
+--------------------------------------------------------- */
+
+(function () {
+    function run() { initializeFeesPage(); }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", run);
+    } else {
+        run();
+    }
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   NOTICES MANAGEMENT
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   CHARACTER COUNTER
+--------------------------------------------------------- */
+
+function initNoticeCharacterCounter() {
+
+    const message =
+        document.getElementById("noticeMessage");
+
+    const counter =
+        document.getElementById("noticeCharacterCount");
+
+    if (!message || !counter) return;
+
+
+    function updateCounter() {
+
+        counter.textContent =
+            message.value.length;
+
+    }
+
+
+    message.addEventListener(
+        "input",
+        updateCounter
+    );
+
+
+    updateCounter();
+
+}
+
+
+/* ---------------------------------------------------------
+   PRIORITY PREVIEW
+--------------------------------------------------------- */
+
+function initNoticePriorityPreview() {
+
+    const priority =
+        document.getElementById("noticePriority");
+
+    const preview =
+        document.getElementById("noticePriorityPreview");
+
+    if (!priority || !preview) return;
+
+
+    function updatePreview() {
+
+        const value =
+            priority.value || "normal";
+
+
+        preview.className =
+            "notice-priority-preview " + value;
+
+
+        const icon =
+            preview.querySelector(
+                ".notice-preview-icon i"
+            );
+
+        const title =
+            preview.querySelector(
+                "strong"
+            );
+
+        const message =
+            preview.querySelector(
+                "p"
+            );
+
+
+        if (value === "urgent") {
+
+            if (icon)
+                icon.className =
+                    "fas fa-triangle-exclamation";
+
+            if (title)
+                title.textContent =
+                    "Urgent Notice";
+
+            if (message)
+                message.textContent =
+                    "This announcement will be highlighted as an urgent school notice.";
+
+        }
+
+        else if (value === "important") {
+
+            if (icon)
+                icon.className =
+                    "fas fa-exclamation";
+
+            if (title)
+                title.textContent =
+                    "Important Notice";
+
+            if (message)
+                message.textContent =
+                    "This announcement will be highlighted as an important school notice.";
+
+        }
+
+        else {
+
+            if (icon)
+                icon.className =
+                    "fas fa-info";
+
+            if (title)
+                title.textContent =
+                    "Normal Notice";
+
+            if (message)
+                message.textContent =
+                    "This announcement will be displayed as a regular school notice.";
+
+        }
+
+    }
+
+
+    priority.addEventListener(
+        "change",
+        updatePreview
+    );
+
+
+    updatePreview();
+
+}
+
+
+/* ---------------------------------------------------------
+   CLEAR NOTICE FORM
+--------------------------------------------------------- */
+
+function clearNoticeForm() {
+
+    const title =
+        document.getElementById("noticeTitle");
+
+    const message =
+        document.getElementById("noticeMessage");
+
+    const date =
+        document.getElementById("noticeDate");
+
+    const priority =
+        document.getElementById("noticePriority");
+
+
+    if (title)
+        title.value = "";
+
+
+    if (message)
+        message.value = "";
+
+
+    if (date)
+        date.value = "";
+
+
+    if (priority)
+        priority.value = "normal";
+
+
+    const counter =
+        document.getElementById(
+            "noticeCharacterCount"
+        );
+
+
+    if (counter)
+        counter.textContent = "0";
+
+
+    const event =
+        new Event(
+            "change",
+            {
+                bubbles: true
+            }
+        );
+
+
+    if (priority)
+        priority.dispatchEvent(event);
+
+}
+
+
+/* ---------------------------------------------------------
+   FILTER PUBLISHED NOTICES
+--------------------------------------------------------- */
+
+function filterNotices() {
+
+    const filter =
+        document.getElementById(
+            "noticeFilter"
+        );
+
+
+    if (!filter) return;
+
+
+    const selected =
+        filter.value;
+
+
+    const cards =
+        document.querySelectorAll(
+            "#adminNoticeList .notice-card"
+        );
+
+
+    cards.forEach(function(card) {
+
+        if (selected === "all") {
+
+            card.style.display = "";
+
+            return;
+
+        }
+
+
+        if (
+            card.classList.contains(
+                selected
+            )
+        ) {
+
+            card.style.display = "";
+
+        } else {
+
+            card.style.display = "none";
+
+        }
+
+    });
+
+}
+
+
+/* ---------------------------------------------------------
+   NOTICE STATISTICS
+--------------------------------------------------------- */
+
+function updateNoticeStatistics() {
+
+    const cards =
+        document.querySelectorAll(
+            "#adminNoticeList .notice-card"
+        );
+
+
+    let normal = 0;
+    let important = 0;
+    let urgent = 0;
+
+
+    cards.forEach(function(card) {
+
+        if (
+            card.classList.contains(
+                "normal"
+            )
+        ) {
+
+            normal++;
+
+        }
+
+
+        if (
+            card.classList.contains(
+                "important"
+            )
+        ) {
+
+            important++;
+
+        }
+
+
+        if (
+            card.classList.contains(
+                "urgent"
+            )
+        ) {
+
+            urgent++;
+
+        }
+
+    });
+
+
+    const total =
+        normal +
+        important +
+        urgent;
+
+
+    const totalElement =
+        document.getElementById(
+            "noticeTotalCount"
+        );
+
+
+    const normalElement =
+        document.getElementById(
+            "noticeNormalCount"
+        );
+
+
+    const importantElement =
+        document.getElementById(
+            "noticeImportantCount"
+        );
+
+
+    const urgentElement =
+        document.getElementById(
+            "noticeUrgentCount"
+        );
+
+
+    if (totalElement)
+        totalElement.textContent = total;
+
+
+    if (normalElement)
+        normalElement.textContent = normal;
+
+
+    if (importantElement)
+        importantElement.textContent = important;
+
+
+    if (urgentElement)
+        urgentElement.textContent = urgent;
+
+}
+
+
+
+/* =========================================================
+   PUBLISH NOTICE
+========================================================= */
+
+async function publishNotice() {
+
+    const title =
+        document.getElementById("noticeTitle")?.value.trim();
+
+    const message =
+        document.getElementById("noticeMessage")?.value.trim();
+
+    const date =
+        document.getElementById("noticeDate")?.value;
+
+    const priority =
+        document.getElementById("noticePriority")?.value ||
+        "normal";
+
+
+    /* ---------------------------------------------------------
+       USER
+    --------------------------------------------------------- */
+
+    if (!currentUser) {
+
+        alert(
+            "Your session could not be found. Please log in again."
+        );
+
+        return;
+    }
+
+
+    const role =
+        String(currentUser.role || "").toLowerCase();
+
+
+    const schoolId =
+        currentUser.schoolid ||
+        currentUser.schoolId ||
+        currentUser.schoolID;
+
+
+    const teacherClass =
+        currentUser.mainClass ||
+        currentUser.mainclass ||
+        "";
+
+
+    /* ---------------------------------------------------------
+       ADMIN RECIPIENT SELECTION
+    --------------------------------------------------------- */
+
+    let recipientType = "school";
+    let recipientClass = null;
+
+
+    if (role === "admin") {
+
+        recipientType =
+            document.getElementById(
+                "noticeRecipientType"
+            )?.value || "school";
+
+
+        if (recipientType === "class") {
+
+            recipientClass =
+                document.getElementById(
+                    "noticeRecipientClass"
+                )?.value.trim();
+
+
+            if (!recipientClass) {
+
+                alert(
+                    "Please select the class that should receive this notice."
+                );
+
+                return;
+            }
+
+        }
+
+    }
+
+
+    /* ---------------------------------------------------------
+       TEACHER
+    --------------------------------------------------------- */
+
+    if (role === "teacher") {
+
+        if (!teacherClass) {
+
+            alert(
+                "Your assigned class has not been set.\n\n" +
+                "Please contact the administrator."
+            );
+
+            return;
+        }
+
+
+        recipientType =
+            "teacher_class";
+
+
+        recipientClass =
+            teacherClass;
+
+    }
+
+
+    /* ---------------------------------------------------------
+       VALIDATION
+    --------------------------------------------------------- */
+
+    if (!title) {
+
+        alert(
+            "Please enter the notice title."
+        );
+
+        return;
+    }
+
+
+    if (!message) {
+
+        alert(
+            "Please enter the notice message."
+        );
+
+        return;
+    }
+
+
+    if (!date) {
+
+        alert(
+            "Please select the notice date."
+        );
+
+        return;
+    }
+
+
+    if (!schoolId) {
+
+        alert(
+            "Your school ID could not be found."
+        );
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       CREATOR NAME
+    --------------------------------------------------------- */
+
+    const creatorName =
+
+        [
+            currentUser.firstname,
+            currentUser.surname
+        ]
+        .filter(Boolean)
+        .join(" ") ||
+
+        currentUser.username ||
+
+        "Unknown";
+
+
+    /* ---------------------------------------------------------
+       NOTICE DATA
+    --------------------------------------------------------- */
+
+    const noticeData = {
+
+        schoolid: schoolId,
+
+        title: title,
+
+        message: message,
+
+        date: date,
+
+        priority: priority,
+
+        createdby:
+            currentUser.id ||
+            currentUser.username ||
+            "",
+
+        createdbyname:
+            creatorName,
+
+        senderrole:
+            role,
+
+        recipienttype:
+            recipientType,
+
+        recipientclass:
+            recipientClass
+
+    };
+
+
+    console.log(
+        "Publishing notice:",
+        noticeData
+    );
+
+
+    /* ---------------------------------------------------------
+       BUTTON
+    --------------------------------------------------------- */
+
+    const button =
+        document.querySelector(
+            ".notice-publish-btn"
+        );
+
+
+    const originalHTML =
+        button?.innerHTML || "";
+
+
+    if (button) {
+
+        button.disabled = true;
+
+        button.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+
+            .from("notices")
+
+            .insert([
+                noticeData
+            ])
+
+            .select();
+
+
+        if (error) {
+
+            console.error(
+                "Notice publish error:",
+                error
+            );
+
+
+            alert(
+                "Notice could not be published.\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "Notice published:",
+            data
+        );
+
+
+        /* -----------------------------------------------------
+           CLEAR FORM
+        ----------------------------------------------------- */
+
+        document.getElementById(
+            "noticeTitle"
+        ).value = "";
+
+
+        document.getElementById(
+            "noticeMessage"
+        ).value = "";
+
+
+        document.getElementById(
+            "noticeDate"
+        ).value = "";
+
+
+        document.getElementById(
+            "noticePriority"
+        ).value = "normal";
+
+
+        /* -----------------------------------------------------
+           RELOAD
+        ----------------------------------------------------- */
+
+        await loadNotices();
+
+
+        alert(
+            "Notice published successfully! ✅"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Publish notice error:",
+            error
+        );
+
+
+        alert(
+            "Something went wrong.\n\n" +
+            error.message
+        );
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled = false;
+
+            button.innerHTML =
+                originalHTML ||
+                '<i class="fas fa-bullhorn"></i> Publish Notice';
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   CLEAR NOTICE FORM
+========================================================= */
+
+/* =========================================================
+   LOAD NOTICES
+========================================================= */
+
+/* =========================================================
+   LOAD ALL NOTICES FROM SUPABASE
+========================================================= */
+
+/* =========================================================
+   LOAD ALL NOTICES
+========================================================= */
+
+async function loadNotices() {
+
+    const list =
+        document.getElementById("adminNoticeList");
+
+    if (!list) return;
+
+
+    /* ---------------------------------------------------------
+       CHECK SUPABASE CLIENT
+    --------------------------------------------------------- */
+
+    if (
+        typeof supabaseClient === "undefined" ||
+        !supabaseClient
+    ) {
+
+        console.error(
+            "supabaseClient is not available."
+        );
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+
+                <h3>Database Connection Error</h3>
+
+                <p>
+                    Supabase client is not available.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       CHECK CURRENT USER
+    --------------------------------------------------------- */
+
+    if (!currentUser) {
+
+        console.error(
+            "currentUser is not available."
+        );
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-user-lock"></i>
+                </div>
+
+                <h3>Session Not Found</h3>
+
+                <p>
+                    Please log in again to view notices.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       USER INFORMATION
+    --------------------------------------------------------- */
+
+    const role =
+        String(
+            currentUser.role || ""
+        ).toLowerCase();
+
+
+    const schoolid =
+        currentUser.schoolid ||
+        currentUser.schoolid ||
+        currentUser.schoolID;
+
+
+    /*
+     * Teacher assigned class
+     */
+    const teacherClass =
+        currentUser.mainClass ||
+        currentUser.mainclass ||
+        currentUser.class ||
+        "";
+
+
+    /*
+     * Student assigned class
+     *
+     * We support the common class fields already used
+     * by your application.
+     */
+    const studentClass =
+        currentUser.studentclass ||
+        currentUser.studentClass ||
+        currentUser.class ||
+        currentUser.mainClass ||
+        "";
+
+
+    const userId =
+        currentUser.id ||
+        currentUser.userId ||
+        currentUser.userid ||
+        currentUser.uid ||
+        "";
+
+
+    console.log(
+        "NOTICE USER:",
+        {
+            role,
+            schoolid,
+            teacherClass,
+            studentClass,
+            userId
+        }
+    );
+
+
+    /* ---------------------------------------------------------
+       SCHOOL ID REQUIRED
+    --------------------------------------------------------- */
+
+    if (!schoolid) {
+
+        console.error(
+            "No school ID found for current user."
+        );
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-school"></i>
+                </div>
+
+                <h3>School Not Found</h3>
+
+                <p>
+                    Your school information could not be found.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    /* ---------------------------------------------------------
+       LOADING
+    --------------------------------------------------------- */
+
+    list.innerHTML = `
+        <div class="notices-empty-state">
+
+            <div class="notices-empty-icon">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+
+            <h3>Loading Notices...</h3>
+
+            <p>
+                Please wait while notices are loaded.
+            </p>
+
+        </div>
+    `;
+
+
+    try {
+
+        /* =====================================================
+           BUILD BASE QUERY
+        ===================================================== */
+
+        let query =
+            supabaseClient
+                .from("notices")
+                .select("*")
+                .eq("schoolid", schoolid);
+
+
+        /* =====================================================
+           ADMIN
+           
+           ADMIN CAN SEE EVERYTHING IN THE SCHOOL
+        ===================================================== */
+
+        if (role === "admin") {
+
+            console.log(
+                "Notice access: ADMIN - all school notices"
+            );
+
+        }
+
+
+        /* =====================================================
+           TEACHER
+           
+           Teacher sees:
+           
+           1. Notices sent to everyone
+           2. Notices sent to their assigned class
+           3. Their own notices
+        ===================================================== */
+
+        else if (role === "teacher") {
+
+            if (!teacherClass) {
+
+                console.warn(
+                    "Teacher has no assigned class."
+                );
+
+            }
+
+
+            /*
+             * We fetch the school's notices first and then
+             * apply the visibility rules below.
+             *
+             * This avoids complicated Supabase OR syntax
+             * and makes the rules easier to maintain.
+             */
+
+            console.log(
+                "Notice access: TEACHER",
+                {
+                    teacherClass,
+                    userId
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           STUDENT
+           
+           Student sees:
+           
+           1. School-wide notices
+           2. Notices for their class
+           3. Teacher notices for their class
+        ===================================================== */
+
+        else {
+
+            console.log(
+                "Notice access: STUDENT",
+                {
+                    studentClass
+                }
+            );
+
+        }
+
+
+        /* -----------------------------------------------------
+           LOAD NOTICES
+        ----------------------------------------------------- */
+
+        const {
+            data,
+            error
+        } = await query
+            .order("date", {
+                ascending: false
+            });
+
+
+        /* -----------------------------------------------------
+           ERROR
+        ----------------------------------------------------- */
+
+        if (error) {
+
+            console.error(
+                "Load notices error:",
+                error
+            );
+
+            list.innerHTML = `
+                <div class="notices-empty-state">
+
+                    <div class="notices-empty-icon">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+
+                    <h3>Unable to Load Notices</h3>
+
+                    <p>
+                        ${escapeNoticeHTML(
+                            error.message
+                        )}
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        /* =====================================================
+           APPLY VISIBILITY RULES
+        ===================================================== */
+
+        let visibleNotices = [];
+
+
+        /* -----------------------------------------------------
+           ADMIN
+           
+           ADMIN SEES EVERYTHING
+        ----------------------------------------------------- */
+
+        if (role === "admin") {
+
+            visibleNotices =
+                data || [];
+
+        }
+
+
+        /* -----------------------------------------------------
+           TEACHER
+        ----------------------------------------------------- */
+
+        else if (role === "teacher") {
+
+            visibleNotices =
+                (data || []).filter(
+                    notice => {
+
+                        const recipientType =
+                            String(
+                                notice.recipienttype ||
+                                notice.recipientType ||
+                                "school"
+                            ).toLowerCase();
+
+
+                        const recipientClass =
+                            String(
+                                notice.recipientclass ||
+                                notice.recipientClass ||
+                                ""
+                            ).trim();
+
+
+                        const createdBy =
+                            String(
+                                notice.createdby ||
+                                notice.createdBy ||
+                                ""
+                            );
+
+
+                        /* -----------------------------
+                           SCHOOL-WIDE
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                            "school"
+                        ) {
+
+                            return true;
+
+                        }
+
+
+                        /* -----------------------------
+                           TEACHER'S CLASS
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                                "class" ||
+
+                            recipientType ===
+                                "teacher_class"
+                        ) {
+
+                            return (
+                                recipientClass &&
+                                teacherClass &&
+                                recipientClass
+                                    .toLowerCase() ===
+                                teacherClass
+                                    .toLowerCase()
+                            );
+
+                        }
+
+
+                        /* -----------------------------
+                           TEACHER'S OWN NOTICE
+                        ----------------------------- */
+
+                        if (
+                            userId &&
+                            createdBy === userId
+                        ) {
+
+                            return true;
+
+                        }
+
+
+                        return false;
+
+                    }
+                );
+
+        }
+
+
+        /* -----------------------------------------------------
+           STUDENT
+        ----------------------------------------------------- */
+
+        else {
+
+            visibleNotices =
+                (data || []).filter(
+                    notice => {
+
+                        const recipientType =
+                            String(
+                                notice.recipienttype ||
+                                notice.recipientType ||
+                                "school"
+                            ).toLowerCase();
+
+
+                        const recipientClass =
+                            String(
+                                notice.recipientclass ||
+                                notice.recipientClass ||
+                                ""
+                            ).trim();
+
+
+                        /* -----------------------------
+                           SCHOOL-WIDE NOTICE
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                            "school"
+                        ) {
+
+                            return true;
+
+                        }
+
+
+                        /* -----------------------------
+                           CLASS NOTICE
+                        ----------------------------- */
+
+                        if (
+                            recipientType ===
+                                "class" ||
+
+                            recipientType ===
+                                "teacher_class"
+                        ) {
+
+                            return (
+                                recipientClass &&
+                                studentClass &&
+                                recipientClass
+                                    .toLowerCase() ===
+                                studentClass
+                                    .toLowerCase()
+                            );
+
+                        }
+
+
+                        return false;
+
+                    }
+                );
+
+        }
+
+
+        /* -----------------------------------------------------
+           NO DATA AFTER FILTER
+        ----------------------------------------------------- */
+
+        if (
+            !visibleNotices ||
+            visibleNotices.length === 0
+        ) {
+
+            list.innerHTML = `
+                <div class="notices-empty-state">
+
+                    <div class="notices-empty-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+
+                    <h3>No Notices Available</h3>
+
+                    <p>
+                        There are currently no notices
+                        available for you.
+                    </p>
+
+                </div>
+            `;
+
+
+            if (
+                typeof updateNoticeStatistics ===
+                "function"
+            ) {
+
+                updateNoticeStatistics();
+
+            }
+
+            return;
+        }
+
+
+        /* -----------------------------------------------------
+           DISPLAY NOTICES
+        ----------------------------------------------------- */
+
+        console.log(
+            "All notices:",
+            data?.length || 0
+        );
+
+
+        console.log(
+            "Visible notices:",
+            visibleNotices.length
+        );
+
+
+        list.innerHTML =
+            visibleNotices
+                .map(
+                    notice =>
+                        createNoticeCard(notice)
+                )
+                .join("");
+
+
+        /* -----------------------------------------------------
+           STATISTICS
+        ----------------------------------------------------- */
+
+        if (
+            typeof updateNoticeStatistics ===
+            "function"
+        ) {
+
+            updateNoticeStatistics();
+
+        }
+
+
+        /* -----------------------------------------------------
+           FILTER
+        ----------------------------------------------------- */
+
+        if (
+            typeof filterNotices ===
+            "function"
+        ) {
+
+            filterNotices();
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Notice loading error:",
+            error
+        );
+
+
+        list.innerHTML = `
+            <div class="notices-empty-state">
+
+                <div class="notices-empty-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+
+                <h3>Something Went Wrong</h3>
+
+                <p>
+                    ${escapeNoticeHTML(
+                        error.message ||
+                        "Unable to load notices."
+                    )}
+                </p>
+
+            </div>
+        `;
+
+    }
+
+}
+
+
+
+function setupNoticeRecipientForUser() {
+
+    const section =
+        document.getElementById(
+            "noticeRecipientSection"
+        );
+
+    const type =
+        document.getElementById(
+            "noticeRecipientType"
+        );
+
+    const classWrapper =
+        document.getElementById(
+            "noticeClassWrapper"
+        );
+
+    const classSelect =
+        document.getElementById(
+            "noticeRecipientClass"
+        );
+
+    const preview =
+        document.getElementById(
+            "noticeRecipientPreview"
+        );
+
+
+    if (!section || !currentUser) return;
+
+
+    const role =
+        String(
+            currentUser.role || ""
+        ).toLowerCase();
+
+
+    /* =====================================================
+       ADMIN
+    ===================================================== */
+
+    if (role === "admin") {
+
+        section.style.display = "block";
+
+        if (type) {
+
+            type.disabled = false;
+
+            type.value = "school";
+
+        }
+
+        if (classWrapper) {
+
+            classWrapper.style.display =
+                "none";
+
+        }
+
+        if (preview) {
+
+            preview.innerHTML = `
+
+                <i class="fas fa-users"></i>
+
+                <span>
+                    This notice will be sent to
+                    <strong>everyone</strong>
+                    in the school.
+                </span>
+
+            `;
+
+        }
+
+        return;
+    }
+
+
+    /* =====================================================
+       TEACHER
+    ===================================================== */
+
+    if (role === "teacher") {
+
+        section.style.display = "block";
+
+
+        if (type) {
+
+            type.value = "class";
+
+            type.disabled = true;
+
+        }
+
+
+        if (classWrapper) {
+
+            classWrapper.style.display =
+                "block";
+
+        }
+
+
+        const teacherClass =
+            currentUser.mainClass ||
+            currentUser.mainclass ||
+            "";
+
+
+        if (classSelect) {
+
+            classSelect.innerHTML = `
+
+                <option value="${escapeNoticeHTML(teacherClass)}">
+
+                    ${escapeNoticeHTML(
+                        teacherClass ||
+                        "No Class Assigned"
+                    )}
+
+                </option>
+
+            `;
+
+            classSelect.value =
+                teacherClass;
+
+            classSelect.disabled = true;
+
+        }
+
+
+        if (preview) {
+
+            preview.innerHTML = `
+
+                <i class="fas fa-lock"></i>
+
+                <span>
+                    This notice will be sent only to
+                    <strong>
+                        ${escapeNoticeHTML(
+                            teacherClass ||
+                            "your assigned class"
+                        )}
+                    </strong>
+                    students.
+                </span>
+
+            `;
+
+        }
+
+        return;
+    }
+
+
+    /* =====================================================
+       OTHER USERS
+    ===================================================== */
+
+    section.style.display = "none";
+
+}
+
+/* =========================================================
+   CREATE NOTICE CARD
+========================================================= */
+
+function createNoticeCard(notice) {
+
+    const priority =
+        String(notice.priority || "normal").toLowerCase();
+
+
+    /* ---------------------------------------------------------
+       PRIORITY SETTINGS
+    --------------------------------------------------------- */
+
+    const priorityConfig = {
+
+        normal: {
+            label: "Normal",
+            icon: "fas fa-info-circle"
+        },
+
+        important: {
+            label: "Important",
+            icon: "fas fa-exclamation-circle"
+        },
+
+        urgent: {
+            label: "Urgent",
+            icon: "fas fa-triangle-exclamation"
+        }
+
+    };
+
+
+    const config =
+        priorityConfig[priority] ||
+        priorityConfig.normal;
+
+
+    /* ---------------------------------------------------------
+       DATE
+    --------------------------------------------------------- */
+
+    const formattedDate =
+        formatNoticeDate(
+            notice.date
+        );
+
+
+    /* ---------------------------------------------------------
+       CREATED DATE
+    --------------------------------------------------------- */
+
+    let createdDate = "";
+
+
+    if (notice.createdAt) {
+
+        createdDate =
+            formatNoticeDateTime(
+                notice.createdAt
+            );
+
+    }
+
+
+    /* ---------------------------------------------------------
+       NOTICE ID
+    --------------------------------------------------------- */
+
+    const noticeId =
+        notice.id || "";
+
+
+    /* ---------------------------------------------------------
+       TITLE
+    --------------------------------------------------------- */
+
+    const title =
+        notice.title ||
+        "Untitled Notice";
+
+
+    /* ---------------------------------------------------------
+       MESSAGE
+    --------------------------------------------------------- */
+
+    const message =
+        notice.message ||
+        "No message provided.";
+
+
+    /* ---------------------------------------------------------
+       CHECK ADMIN
+    --------------------------------------------------------- */
+
+    const isAdmin =
+        currentUser &&
+        String(currentUser.role).toLowerCase() === "admin";
+
+
+    /* ---------------------------------------------------------
+       RETURN CARD
+    --------------------------------------------------------- */
+
+    return `
+
+        <article
+            class="notice-card ${priority}"
+            data-notice-id="${escapeNoticeHTML(noticeId)}"
+            data-priority="${escapeNoticeHTML(priority)}"
+        >
+
+            <!-- ==============================================
+                 CARD HEADER
+            =============================================== -->
+
+            <div class="notice-card-top">
+
+                <div class="notice-card-title">
+
+                    <div
+                        class="notice-card-icon ${priority}"
+                        title="${config.label}"
+                    >
+
+                        <i class="${config.icon}"></i>
+
+                    </div>
+
+
+                    <div class="notice-card-heading">
+
+                        <h3>
+                            ${escapeNoticeHTML(title)}
+                        </h3>
+
+
+                        <div class="notice-card-meta">
+
+                            <span>
+
+                                <i class="fas fa-calendar-days"></i>
+
+                                ${escapeNoticeHTML(
+                                    formattedDate
+                                )}
+
+                            </span>
+
+
+                            ${
+                                createdDate
+                                    ? `
+                                        <span>
+                                            <i class="fas fa-clock"></i>
+                                            ${escapeNoticeHTML(
+                                                createdDate
+                                            )}
+                                        </span>
+                                      `
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PRIORITY -->
+
+                <span
+                    class="
+                        notice-priority-badge
+                        ${priority}
+                    "
+                >
+
+                    <i class="${config.icon}"></i>
+
+                    ${config.label}
+
+                </span>
+
+            </div>
+
+
+            <!-- ==============================================
+                 MESSAGE
+            =============================================== -->
+
+            <div class="notice-card-message">
+
+                ${escapeNoticeHTML(message)}
+
+            </div>
+
+
+            <!-- ==============================================
+                 FOOTER
+            =============================================== -->
+
+            <div class="notice-card-footer">
+
+                <div class="notice-published-info">
+
+                    <i class="fas fa-bullhorn"></i>
+
+                    <span>
+                        School Announcement
+                    </span>
+
+                </div>
+
+
+                <div class="notice-footer-actions">
+
+                    ${
+                        notice.createdBy
+                            ? `
+                                <div class="notice-created-by">
+
+                                    <i class="fas fa-user"></i>
+
+                                    ${escapeNoticeHTML(
+                                        notice.createdBy
+                                    )}
+
+                                </div>
+                              `
+                            : ""
+                    }
+
+
+                    ${
+                        isAdmin
+                            ? `
+                                <button
+                                    type="button"
+                                    class="notice-delete-btn"
+                                    onclick="deleteNotice('${noticeId}')"
+                                    title="Delete Notice"
+                                >
+
+                                    <i class="fas fa-trash"></i>
+
+                                    Delete
+
+                                </button>
+                              `
+                            : ""
+                    }
+
+                </div>
+
+            </div>
+
+        </article>
+
+    `;
+
+}
+
+
+/* =========================================================
+   DELETE NOTICE
+========================================================= */
+
+
+async function deleteNotice(noticeId) {
+
+    if (!noticeId) {
+
+        alert("Unable to identify this notice.");
+
+        return;
+
+    }
+
+
+    /* CHECK ADMIN */
+
+    if (
+        !currentUser ||
+        String(currentUser.role).toLowerCase() !== "admin"
+    ) {
+
+        alert(
+            "Only the administrator can delete notices."
+        );
+
+        return;
+
+    }
+
+
+    /* CONFIRM DELETE */
+
+    const confirmed = confirm(
+
+        "Are you sure you want to delete this notice?\n\n" +
+        "This action cannot be undone."
+
+    );
+
+
+    if (!confirmed) return;
+
+
+    try {
+
+        const {
+
+            error
+
+        } = await supabaseClient
+
+            .from("notices")
+
+            .delete()
+
+            .eq("id", noticeId);
+
+
+        if (error) {
+
+            console.error(
+                "Delete notice error:",
+                error
+            );
+
+
+            alert(
+
+                "Failed to delete notice.\n\n" +
+                error.message
+
+            );
+
+            return;
+
+        }
+
+
+        /* RELOAD NOTICES */
+
+        await loadNotices();
+
+
+        alert(
+            "Notice deleted successfully! ✅"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Delete notice JavaScript error:",
+            error
+        );
+
+
+        alert(
+
+            "Something went wrong while deleting the notice.\n\n" +
+            error.message
+
+        );
+
+    }
+
+}
+
+/* =========================================================
+   DATE FORMAT
+========================================================= */
+
+function formatNoticeDate(dateString) {
+
+    if (!dateString) {
+        return "No date";
+    }
+
+
+    const date =
+        new Date(
+            dateString + "T00:00:00"
+        );
+
+
+    if (isNaN(date.getTime())) {
+        return dateString;
+    }
+
+
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+
+/* =========================================================
+   FORMAT NOTICE DATE & TIME
+========================================================= */
+
+function formatNoticeDateTime(dateString) {
+
+    if (!dateString) {
+        return "";
+    }
+
+
+    const date =
+        new Date(dateString);
+
+
+    if (isNaN(date.getTime())) {
+        return "";
+    }
+
+
+    return date.toLocaleString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+
+            hour: "2-digit",
+            minute: "2-digit",
+
+            hour12: true
+        }
+    );
+
+}
+
+
+/* =========================================================
+   HTML ESCAPE
+========================================================= */
+
+function escapeNoticeHTML(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+/* ---------------------------------------------------------
+   INITIALIZE NOTICES PAGE
+--------------------------------------------------------- */
+
+function initializeNoticesPage() {
+
+    initNoticeCharacterCounter();
+
+    initNoticePriorityPreview();
+
+    initializeNoticeRecipient();
+
+
+
+    const filter =
+        document.getElementById(
+            "noticeFilter"
+        );
+
+
+    if (filter) {
+
+        filter.addEventListener(
+            "change",
+            filterNotices
+        );
+
+    }
+
+
+    updateNoticeStatistics();
+
+}
+
+
+/* ---------------------------------------------------------
+   PAGE LOAD
+--------------------------------------------------------- */
+
+(function () {
+    function run() { initializeNoticesPage(); }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", run);
+    } else {
+        run();
+    }
+})();
+
+
+
+/* =========================================================
+   NOTICE RECIPIENT SYSTEM
+========================================================= */
+
+function initializeNoticeRecipient() {
+
+    const recipientType =
+        document.getElementById(
+            "noticeRecipientType"
+        );
+
+    const classWrapper =
+        document.getElementById(
+            "noticeClassWrapper"
+        );
+
+    const classSelect =
+        document.getElementById(
+            "noticeRecipientClass"
+        );
+
+    const recipientPreview =
+        document.getElementById(
+            "noticeRecipientPreview"
+        );
+
+
+    if (!recipientType) return;
+
+
+    recipientType.addEventListener(
+        "change",
+        async function () {
+
+            if (
+                this.value ===
+                "class"
+            ) {
+
+                classWrapper.style.display =
+                    "block";
+
+                await loadNoticeClasses();
+
+            } else {
+
+                classWrapper.style.display =
+                    "none";
+
+                if (classSelect) {
+
+                    classSelect.value = "";
+
+                }
+
+            }
+
+
+            updateNoticeRecipientPreview();
+
+        }
+    );
+
+
+    if (classSelect) {
+
+        classSelect.addEventListener(
+            "change",
+            updateNoticeRecipientPreview
+        );
+
+    }
+
+
+    updateNoticeRecipientPreview();
+
+}
+
+
+/* =========================================================
+   LOAD SCHOOL CLASSES
+========================================================= */
+
+async function loadNoticeClasses() {
+
+    const select =
+        document.getElementById(
+            "noticeRecipientClass"
+        );
+
+
+    if (!select) return;
+
+
+    const schoolId =
+        currentUser?.schoolid ||
+        currentUser?.schoolId;
+
+
+    if (!schoolId) {
+
+        select.innerHTML = `
+            <option value="">
+                School not found
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    select.innerHTML = `
+        <option value="">
+            Loading classes...
+        </option>
+    `;
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+
+            .from("classes")
+
+            .select("*")
+
+            .eq(
+                "schoolid",
+                schoolId
+            );
+
+
+        if (error) {
+
+            console.error(
+                "Unable to load notice classes:",
+                error
+            );
+
+            select.innerHTML = `
+                <option value="">
+                    Unable to load classes
+                </option>
+            `;
+
+            return;
+
+        }
+
+
+        select.innerHTML = `
+            <option value="">
+                Select Class
+            </option>
+        `;
+
+
+        /*
+         * Support different class-name fields
+         * used in your existing database.
+         */
+
+        const classes =
+            data || [];
+
+
+        classes.forEach(cls => {
+
+            const className =
+                cls.classname ||
+                cls.className ||
+                cls.name ||
+                cls.class;
+
+
+            if (!className) return;
+
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                className;
+
+            option.textContent =
+                className;
+
+
+            select.appendChild(
+                option
+            );
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Notice class error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   RECIPIENT PREVIEW
+========================================================= */
+
+function updateNoticeRecipientPreview() {
+
+    const type =
+        document.getElementById(
+            "noticeRecipientType"
+        )?.value;
+
+
+    const className =
+        document.getElementById(
+            "noticeRecipientClass"
+        )?.value;
+
+
+    const preview =
+        document.getElementById(
+            "noticeRecipientPreview"
+        );
+
+
+    if (!preview) return;
+
+
+    if (
+        type === "class" &&
+        className
+    ) {
+
+        preview.innerHTML = `
+
+            <i class="fas fa-graduation-cap"></i>
+
+            <span>
+                This notice will be sent to
+                <strong>
+                    ${escapeNoticeText(className)}
+                </strong>
+                students only.
+            </span>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (type === "class") {
+
+        preview.innerHTML = `
+
+            <i class="fas fa-graduation-cap"></i>
+
+            <span>
+                Select a class to target this notice.
+            </span>
+
+        `;
+
+        return;
+
+    }
+
+
+    preview.innerHTML = `
+
+        <i class="fas fa-users"></i>
+
+        <span>
+            This notice will be sent to all students.
+        </span>
+
+    `;
+
+}
+
+
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function escapeNoticeText(value) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        value ?? "";
+
+    return div.innerHTML;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   HOMEWORK FUNCTIONS
+========================================================= */
+
+/* ---------------------------------------------------------
+   NORMALIZE TEACHER ASSIGNMENTS
+--------------------------------------------------------- */
+
+function normalizeHomeworkArray(value) {
+
+    if (Array.isArray(value)) {
+        return value
+            .map(v => String(v).trim())
+            .filter(Boolean);
+    }
+
+    if (typeof value === "string") {
+
+        try {
+            const parsed = JSON.parse(value);
+
+            if (Array.isArray(parsed)) {
+                return parsed
+                    .map(v => String(v).trim())
+                    .filter(Boolean);
+            }
+
+        } catch (e) {}
+
+        return value
+            .replace(/^\{|\}$/g, "")
+            .split(",")
+            .map(v => v.trim().replace(/^"|"$/g, ""))
+            .filter(Boolean);
+    }
+
+    return [];
+}
+
+
+/* ---------------------------------------------------------
+   LOAD TEACHER'S ASSIGNED CLASSES AND SUBJECTS
+--------------------------------------------------------- */
+
+async function loadHomeworkAssignments() {
+
+    const classSelect =
+        document.getElementById("homeworkClass");
+
+    const subjectSelect =
+        document.getElementById("homeworkSubject");
+
+    if (!classSelect || !subjectSelect || !currentUser) {
+        return;
+    }
+
+    classSelect.innerHTML =
+        `<option value="">Loading classes...</option>`;
+
+    subjectSelect.innerHTML =
+        `<option value="">Loading subjects...</option>`;
+
+
+    let teacher = currentUser;
+
+
+    /*
+       Get fresh information from Supabase.
+       This prevents old localStorage data from
+       causing the dropdowns to be empty.
+    */
+
+    if (currentUser.id) {
+
+        const { data, error } =
+            await supabaseClient
+                .from("users")
+                .select("classes, subjects, role")
+                .eq("id", currentUser.id)
+                .single();
+
+        if (!error && data) {
+            teacher = {
+                ...currentUser,
+                ...data
+            };
+
+            currentUser.classes =
+                normalizeHomeworkArray(data.classes);
+
+            currentUser.subjects =
+                normalizeHomeworkArray(data.subjects);
+
+            localStorage.setItem(
+                "loggedInUser",
+                JSON.stringify(currentUser)
+            );
+        }
+    }
+
+
+    let assignedClasses =
+        normalizeHomeworkArray(teacher.classes);
+
+    let assignedSubjects =
+        normalizeHomeworkArray(teacher.subjects);
+
+
+    /*
+       ADMIN
+       Admin can see all subjects.
+    */
+
+    if (
+        String(teacher.role).toLowerCase() === "admin"
+    ) {
+
+        if (typeof subjects !== "undefined") {
+
+            assignedSubjects =
+                normalizeHomeworkArray(subjects);
+        }
+    }
+
+
+    /* -----------------------------------------------------
+       LOAD CLASSES
+    ----------------------------------------------------- */
+
+    classSelect.innerHTML =
+        `<option value="">Select Class</option>`;
+
+    if (assignedClasses.length === 0) {
+
+        classSelect.innerHTML += `
+            <option value="" disabled>
+                No class assigned
+            </option>
+        `;
+
+    } else {
+
+        assignedClasses.forEach(className => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = className;
+            option.textContent = className;
+
+            classSelect.appendChild(option);
+
+        });
+
+        /*
+           Automatically select if teacher
+           has only one class.
+        */
+
+        if (assignedClasses.length === 1) {
+            classSelect.value =
+                assignedClasses[0];
+        }
+    }
+
+
+    /* -----------------------------------------------------
+       LOAD SUBJECTS
+    ----------------------------------------------------- */
+
+    subjectSelect.innerHTML =
+        `<option value="">Select Subject</option>`;
+
+    if (assignedSubjects.length === 0) {
+
+        subjectSelect.innerHTML += `
+            <option value="" disabled>
+                No subject assigned
+            </option>
+        `;
+
+    } else {
+
+        assignedSubjects.forEach(subjectName => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = subjectName;
+            option.textContent = subjectName;
+
+            subjectSelect.appendChild(option);
+
+        });
+
+        /*
+           Automatically select if teacher
+           has only one subject.
+        */
+
+        if (assignedSubjects.length === 1) {
+            subjectSelect.value =
+                assignedSubjects[0];
+        }
+    }
+
+
+    console.log(
+        "Homework Classes:",
+        assignedClasses
+    );
+
+    console.log(
+        "Homework Subjects:",
+        assignedSubjects
+    );
+}
+
+
+/* ---------------------------------------------------------
+   HOMEWORK ATTACHMENT PREVIEW
+--------------------------------------------------------- */
+
+function setupHomeworkAttachment() {
+
+    const input =
+        document.getElementById(
+            "homeworkAttachment"
+        );
+
+    const fileName =
+        document.getElementById(
+            "homeworkFileName"
+        );
+
+    if (!input || !fileName) {
+        return;
+    }
+
+
+    /*
+       Prevent the event from being attached
+       multiple times.
+    */
+
+    if (
+        input.dataset.homeworkReady === "true"
+    ) {
+        return;
+    }
+
+    input.dataset.homeworkReady = "true";
+
+
+    input.addEventListener(
+        "change",
+        function () {
+
+            const file =
+                this.files?.[0];
+
+            if (!file) {
+
+                fileName.style.display =
+                    "none";
+
+                fileName.innerHTML =
+                    "";
+
+                return;
+            }
+
+
+            const sizeMB =
+                file.size /
+                (1024 * 1024);
+
+
+            fileName.style.display =
+                "block";
+
+
+            fileName.innerHTML = `
+
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    gap:10px;
+                    padding:10px;
+                    margin-top:8px;
+                    border-radius:8px;
+                    border:1px solid rgba(100,100,100,.3);
+                ">
+
+                    <i class="fas fa-paperclip"></i>
+
+                    <strong>
+                        ${escapeHomeworkText(file.name)}
+                    </strong>
+
+                    <span>
+                        (${sizeMB.toFixed(2)} MB)
+                    </span>
+
+                    <button
+                        type="button"
+                        onclick="removeHomeworkAttachment()"
+                    >
+                        <i class="fas fa-times"></i>
+                        Remove
+                    </button>
+
+                </div>
+
+            `;
+        }
+    );
+}
+
+
+/* ---------------------------------------------------------
+   ESCAPE ATTACHMENT TEXT
+--------------------------------------------------------- */
+
+function escapeHomeworkText(text) {
+
+    return String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+/* ---------------------------------------------------------
+   REMOVE ATTACHMENT
+--------------------------------------------------------- */
+
+function removeHomeworkAttachment() {
+
+    const input =
+        document.getElementById(
+            "homeworkAttachment"
+        );
+
+    const fileName =
+        document.getElementById(
+            "homeworkFileName"
+        );
+
+
+    if (input) {
+        input.value = "";
+    }
+
+
+    if (fileName) {
+
+        fileName.style.display =
+            "none";
+
+        fileName.innerHTML =
+            "";
+    }
+}
+
+
+/* ---------------------------------------------------------
+   UPLOAD HOMEWORK ATTACHMENT
+--------------------------------------------------------- */
+
+async function uploadHomeworkAttachment(file) {
+
+    if (!file) {
+        return null;
+    }
+
+
+    const allowedExtensions = [
+        "pdf",
+        "doc",
+        "docx",
+        "jpg",
+        "jpeg",
+        "png"
+    ];
+
+
+    const extension =
+        file.name
+            .split(".")
+            .pop()
+            .toLowerCase();
+
+
+    if (
+        !allowedExtensions.includes(
+            extension
+        )
+    ) {
+
+        throw new Error(
+            "Only PDF, Word, JPG and PNG files are allowed."
+        );
+    }
+
+
+    /*
+       Maximum file size:
+       10 MB
+    */
+
+    if (
+        file.size >
+        10 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Attachment must be 10 MB or smaller."
+        );
+    }
+
+
+    const safeName =
+        file.name.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_"
+        );
+
+
+    const filePath =
+        `${currentUser.schoolid}/homework/${Date.now()}-${safeName}`;
+
+
+    /*
+       IMPORTANT:
+       Create this bucket in Supabase Storage:
+
+       homework-attachments
+    */
+
+    const {
+        error: uploadError
+    } =
+        await supabaseClient
+            .storage
+            .from("homework-attachments")
+            .upload(
+                filePath,
+                file,
+                {
+                    cacheControl: "3600",
+                    upsert: false,
+                    contentType:
+                        file.type ||
+                        "application/octet-stream"
+                }
+            );
+
+
+    if (uploadError) {
+
+        console.error(
+            "Homework upload error:",
+            uploadError
+        );
+
+        throw new Error(
+            "Attachment upload failed: " +
+            uploadError.message
+        );
+    }
+
+
+    /*
+       GET PUBLIC URL
+    */
+
+    const {
+        data: urlData
+    } =
+        supabaseClient
+            .storage
+            .from("homework-attachments")
+            .getPublicUrl(
+                filePath
+            );
+
+
+    const publicUrl =
+        urlData?.publicUrl;
+
+
+    if (!publicUrl) {
+
+        throw new Error(
+            "Attachment uploaded but URL could not be generated."
+        );
+    }
+
+
+    return {
+
+        url: publicUrl,
+
+        path: filePath,
+
+        name: file.name,
+
+        type:
+            file.type ||
+            "application/octet-stream",
+
+        size: file.size
+    };
+}
+
+
+/* ---------------------------------------------------------
+   CREATE / PUBLISH HOMEWORK
+--------------------------------------------------------- */
+
+async function createHomework() {
+
+    if (!currentUser) {
+
+        alert(
+            "Please log in first."
+        );
+
+        return;
+    }
+
+
+    const classValue =
+        document.getElementById(
+            "homeworkClass"
+        )?.value.trim();
+
+
+    const subjectValue =
+        document.getElementById(
+            "homeworkSubject"
+        )?.value.trim();
+
+
+    const title =
+        document.getElementById(
+            "homeworkTitle"
+        )?.value.trim();
+
+
+    const description =
+        document.getElementById(
+            "homeworkDescription"
+        )?.value.trim();
+
+
+    const dateGiven =
+        document.getElementById(
+            "homeworkDate"
+        )?.value;
+
+
+    const deadline =
+        document.getElementById(
+            "homeworkDeadline"
+        )?.value;
+
+
+    const attachmentInput =
+        document.getElementById(
+            "homeworkAttachment"
+        );
+
+
+    if (!classValue) {
+
+        alert(
+            "Please select a class."
+        );
+
+        return;
+    }
+
+
+    if (!subjectValue) {
+
+        alert(
+            "Please select a subject."
+        );
+
+        return;
+    }
+
+
+    if (!title) {
+
+        alert(
+            "Please enter the homework title."
+        );
+
+        return;
+    }
+
+
+    if (!description) {
+
+        alert(
+            "Please enter the homework description."
+        );
+
+        return;
+    }
+
+
+    if (!dateGiven) {
+
+        alert(
+            "Please select the date given."
+        );
+
+        return;
+    }
+
+
+    if (!deadline) {
+
+        alert(
+            "Please select the submission deadline."
+        );
+
+        return;
+    }
+
+
+    if (deadline < dateGiven) {
+
+        alert(
+            "Deadline cannot be before the date given."
+        );
+
+        return;
+    }
+
+
+    /*
+       Verify teacher assignment
+    */
+
+    const assignedClasses =
+        normalizeHomeworkArray(
+            currentUser.classes
+        );
+
+
+    const assignedSubjects =
+        normalizeHomeworkArray(
+            currentUser.subjects
+        );
+
+
+    const isAdmin =
+        String(currentUser.role)
+            .toLowerCase() === "admin";
+
+
+    if (
+        !isAdmin &&
+        assignedClasses.length &&
+        !assignedClasses.includes(
+            classValue
+        )
+    ) {
+
+        alert(
+            "You can only create homework for your assigned class."
+        );
+
+        return;
+    }
+
+
+    if (
+        !isAdmin &&
+        assignedSubjects.length &&
+        !assignedSubjects.includes(
+            subjectValue
+        )
+    ) {
+
+        alert(
+            "You can only create homework for your assigned subject."
+        );
+
+        return;
+    }
+
+
+    const button =
+        document.querySelector(
+            ".hw-publish-btn"
+        );
+
+
+    const originalHTML =
+        button?.innerHTML;
+
+
+    try {
+
+        if (button) {
+
+            button.disabled =
+                true;
+
+            button.innerHTML =
+                `<i class="fas fa-spinner fa-spin"></i>
+                 Publishing...`;
+        }
+
+
+        let attachment = null;
+
+
+        /*
+           Upload attachment if selected
+        */
+
+        if (
+            attachmentInput?.files?.[0]
+        ) {
+
+            attachment =
+                await uploadHomeworkAttachment(
+                    attachmentInput.files[0]
+                );
+        }
+
+
+        /*
+           DATA TO SAVE
+        */
+
+        const homeworkData = {
+
+            schoolid:
+                currentUser.schoolid,
+
+            class:
+                classValue,
+
+            subject:
+                subjectValue,
+
+            title:
+                title,
+
+            description:
+                description,
+
+            date_given:
+                dateGiven,
+
+            deadline:
+                deadline,
+
+            attachment_url:
+                attachment?.url || null,
+
+            attachment_path:
+                attachment?.path || null,
+
+            attachment_name:
+                attachment?.name || null,
+
+            attachment_type:
+                attachment?.type || null,
+
+            created_by:
+                currentUser.id,
+
+            created_by_name:
+                `${currentUser.firstname || ""} ${currentUser.surname || ""}`.trim()
+                ||
+                currentUser.username
+                ||
+                "Teacher",
+
+            created_at:
+                new Date().toISOString()
+        };
+
+
+        console.log(
+            "Saving Homework:",
+            homeworkData
+        );
+
+
+        /*
+           SAVE TO SUPABASE
+        */
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("homework")
+                .insert([
+                    homeworkData
+                ])
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "Homework database error:",
+                error
+            );
+
+
+            /*
+               Delete uploaded attachment
+               if database save failed.
+            */
+
+            if (
+                attachment?.path
+            ) {
+
+                await supabaseClient
+                    .storage
+                    .from(
+                        "homework-attachments"
+                    )
+                    .remove([
+                        attachment.path
+                    ]);
+            }
+
+
+            throw new Error(
+                error.message
+            );
+        }
+
+
+        console.log(
+            "Homework saved:",
+            data
+        );
+
+
+        /*
+           CLEAR FORM
+        */
+
+        clearHomeworkForm();
+
+
+        /*
+           Reload homework list if
+           your app has this function.
+        */
+
+        if (
+            typeof loadPublishedHomework ===
+            "function"
+        ) {
+
+            await loadPublishedHomework();
+        }
+
+
+        alert(
+            "Homework published successfully! ✅"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Create Homework Error:",
+            error
+        );
+
+
+        alert(
+            "Failed to publish homework:\n\n" +
+            error.message
+        );
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.innerHTML =
+                originalHTML ||
+                `<i class="fas fa-paper-plane"></i>
+                 Publish Homework`;
+        }
+    }
+}
+
+
+/* ---------------------------------------------------------
+   CLEAR HOMEWORK FORM
+--------------------------------------------------------- */
+
+/* =========================================================
+HOMEWORK FUNCTIONS
+TEACHER SUBMISSIONS + MARKING
+========================================================= */
+
+/* =========================================================
+HOMEWORK STATE
+========================================================= */
+
+
+
+/* =========================================================
+LOAD PUBLISHED HOMEWORK + SUBMISSIONS
+========================================================= */
+
+async function loadPublishedHomework() {
+
+
+const list =
+    document.getElementById("teacherHomeworkList");
+
+if (!list) {
+    console.error("teacherHomeworkList not found");
+    return;
+}
+
+if (!currentUser) {
+    console.error("currentUser not available");
+    return;
+}
+
+
+list.innerHTML = `
+    <div class="hw-empty-state">
+        <div class="hw-empty-icon">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+
+        <h3>Loading Homework...</h3>
+
+        <p>
+            Please wait while homework and submissions are loaded.
+        </p>
+    </div>
+`;
+
+
+try {
+
+    /* =================================================
+       LOAD HOMEWORK
+    ================================================= */
+
+    const {
+        data: homeworkData,
+        error: homeworkError
+    } =
+        await supabaseClient
+            .from("homework")
+            .select("*")
+            .eq(
+                "schoolid",
+                currentUser.schoolid
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+
+
+    if (homeworkError) {
+
+        console.error(
+            "Load homework error:",
+            homeworkError
+        );
+
+        throw homeworkError;
+    }
+
+
+    teacherHomeworkData =
+        Array.isArray(homeworkData)
+            ? homeworkData
+            : [];
+
+
+    /* =================================================
+       LOAD ALL STUDENT SUBMISSIONS
+    ================================================= */
+
+    await loadHomeworkSubmissions();
+
+
+    /* =================================================
+       NO HOMEWORK
+    ================================================= */
+
+    if (!teacherHomeworkData.length) {
+
+        list.innerHTML = `
+            <div class="hw-empty-state">
+
+                <div class="hw-empty-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+
+                <h3>
+                    No Homework Published
+                </h3>
+
+                <p>
+                    Homework you publish will appear here.
+                </p>
+
+            </div>
+        `;
+
+        updateHomeworkStatistics();
+
+        return;
+    }
+
+
+    /* =================================================
+       DISPLAY HOMEWORK
+    ================================================= */
+
+    renderTeacherHomework();
+
+
+    /* =================================================
+       UPDATE STATISTICS
+    ================================================= */
+
+    updateHomeworkStatistics();
+
+
+} catch (error) {
+
+    console.error(
+        "Unexpected homework loading error:",
+        error
+    );
+
+
+    list.innerHTML = `
+        <div class="hw-empty-state">
+
+            <div class="hw-empty-icon">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+
+            <h3>
+                Error Loading Homework
+            </h3>
+
+            <p>
+                ${escapeHomeworkText(
+                    error.message ||
+                    "Unable to load homework."
+                )}
+            </p>
+
+        </div>
+    `;
+
+}
+
+
+}
+
+
+
+
+/* =========================================================
+   LOAD STUDENT HOMEWORK SUBMISSIONS
+========================================================= */
+
+async function loadHomeworkSubmissions() {
+
+    const submissionsList =
+        document.getElementById(
+            "teacherHomeworkSubmissionsList"
+        );
+
+    try {
+
+        if (!currentUser) {
+            console.warn(
+                "loadHomeworkSubmissions: currentUser not available."
+            );
+
+            teacherHomeworkSubmissions = [];
+
+            updateSubmissionStatistics();
+
+            return [];
+        }
+
+
+        /*
+        =====================================================
+        LOAD SUBMISSIONS FOR CURRENT SCHOOL
+        =====================================================
+        */
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("homework_submissions")
+                .select("*")
+                .eq(
+                    "schoolid",
+                    String(currentUser.schoolid)
+                )
+                .order(
+                    "submitted_at",
+                    {
+                        ascending: false
+                    }
+                );
+
+
+        /*
+        =====================================================
+        HANDLE DATABASE ERROR
+        =====================================================
+        */
+
+        if (error) {
+
+            console.error(
+                "Load homework submissions error:",
+                error
+            );
+
+            teacherHomeworkSubmissions = [];
+
+
+            if (submissionsList) {
+
+                submissionsList.innerHTML = `
+                    <div class="hw-empty-state">
+
+                        <div class="hw-empty-icon">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+
+                        <h3>
+                            Unable to Load Submissions
+                        </h3>
+
+                        <p>
+                            ${escapeHomeworkText(
+                                error.message ||
+                                "Unable to load student submissions."
+                            )}
+                        </p>
+
+                    </div>
+                `;
+
+            }
+
+
+            updateSubmissionStatistics();
+
+            return [];
+
+        }
+
+
+        /*
+        =====================================================
+        STORE SUBMISSIONS
+        =====================================================
+        */
+
+        teacherHomeworkSubmissions =
+            Array.isArray(data)
+                ? data
+                : [];
+
+
+        console.log(
+            "Student homework submissions loaded:",
+            teacherHomeworkSubmissions
+        );
+
+
+        /*
+        =====================================================
+        IMPORTANT
+        =====================================================
+
+        DO NOT CALL:
+
+            renderTeacherHomeworkSubmissions();
+
+        That function does not exist.
+
+        Individual submissions are rendered when the
+        teacher clicks "View Submissions", through:
+
+            viewHomeworkSubmissions()
+                ->
+            buildHomeworkSubmissionCard()
+
+        =====================================================
+        */
+
+
+        /*
+        =====================================================
+        UPDATE SUBMISSION COUNTERS
+        =====================================================
+        */
+
+        updateSubmissionStatistics();
+
+
+        return teacherHomeworkSubmissions;
+
+
+    } catch (error) {
+
+        console.error(
+            "Unexpected submission loading error:",
+            error
+        );
+
+
+        teacherHomeworkSubmissions = [];
+
+
+        /*
+        =====================================================
+        SHOW ERROR WITHOUT BREAKING HOMEWORK PAGE
+        =====================================================
+        */
+
+        if (submissionsList) {
+
+            submissionsList.innerHTML = `
+                <div class="hw-empty-state">
+
+                    <div class="hw-empty-icon">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+
+                    <h3>
+                        Unexpected Submission Error
+                    </h3>
+
+                    <p>
+                        ${escapeHomeworkText(
+                            error?.message ||
+                            "Unable to load student submissions."
+                        )}
+                    </p>
+
+                </div>
+            `;
+
+        }
+
+
+        updateSubmissionStatistics();
+
+        return [];
+
+    }
+
+}
+
+
+
+/* =========================================================
+RENDER PUBLISHED HOMEWORK
+========================================================= */
+
+function renderTeacherHomework() {
+
+
+const list =
+    document.getElementById(
+        "teacherHomeworkList"
+    );
+
+if (!list) return;
+
+
+if (!teacherHomeworkData.length) {
+
+    list.innerHTML = `
+        <div class="hw-empty-state">
+
+            <div class="hw-empty-icon">
+                <i class="fas fa-book-open"></i>
+            </div>
+
+            <h3>
+                No Homework Published
+            </h3>
+
+            <p>
+                Homework you publish will appear here.
+            </p>
+
+        </div>
+    `;
+
+    return;
+}
+
+
+list.innerHTML =
+    teacherHomeworkData.map(
+        homework => {
+
+            /*
+               Find submissions for
+               this homework.
+            */
+
+            const submissions =
+                teacherHomeworkSubmissions.filter(
+                    submission =>
+                        String(
+                            submission.homework_id
+                        ) ===
+                        String(homework.id)
+                );
+
+
+            const submittedCount =
+                submissions.length;
+
+
+            const unmarkedCount =
+                submissions.filter(
+                    submission =>
+                        submission.mark === null ||
+                        submission.mark === undefined ||
+                        submission.mark === ""
+                ).length;
+
+
+            const markedCount =
+                submittedCount -
+                unmarkedCount;
+
+
+            let attachmentHTML = "";
+
+
+            /* =========================================
+               ATTACHMENT
+            ========================================= */
+
+            if (homework.attachment_url) {
+
+                attachmentHTML = `
+
+                    <div
+                        class="hw-attachment"
+                        style="
+                            margin-top:15px;
+                            padding:12px;
+                            border-radius:10px;
+                            border:1px solid rgba(100,100,100,.25);
+                        "
+                    >
+
+                        <i class="fas fa-paperclip"></i>
+
+                        <strong>
+                            Attachment:
+                        </strong>
+
+                        <a
+                            href="${escapeHomeworkText(
+                                homework.attachment_url
+                            )}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style="margin-left:8px;"
+                        >
+                            ${escapeHomeworkText(
+                                homework.attachment_name ||
+                                "Open Attachment"
+                            )}
+                        </a>
+
+                    </div>
+
+                `;
+
+            }
+
+
+            /* =========================================
+               RETURN HOMEWORK CARD
+            ========================================= */
+
+            return `
+
+                <div
+                    class="hw-card"
+                    style="margin-bottom:15px;"
+                >
+
+                    <div
+                        class="hw-card-header"
+                        style="
+                            display:flex;
+                            justify-content:space-between;
+                            align-items:flex-start;
+                            gap:15px;
+                            flex-wrap:wrap;
+                        "
+                    >
+
+                        <div>
+
+                            <h3>
+                                ${escapeHomeworkText(
+                                    homework.title ||
+                                    "Untitled Homework"
+                                )}
+                            </h3>
+
+
+                            <div
+                                style="
+                                    display:flex;
+                                    gap:12px;
+                                    flex-wrap:wrap;
+                                    margin-top:6px;
+                                    font-size:13px;
+                                "
+                            >
+
+                                <span>
+
+                                    <i class="fas fa-book"></i>
+
+                                    ${escapeHomeworkText(
+                                        homework.subject ||
+                                        ""
+                                    )}
+
+                                </span>
+
+
+                                <span>
+
+                                    <i class="fas fa-users"></i>
+
+                                    ${escapeHomeworkText(
+                                        homework.class ||
+                                        ""
+                                    )}
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- SUBMISSION STATUS -->
+
+                        <div
+                            style="
+                                display:flex;
+                                gap:8px;
+                                flex-wrap:wrap;
+                            "
+                        >
+
+                            <span
+                                style="
+                                    padding:7px 10px;
+                                    border-radius:20px;
+                                    background:rgba(59,130,246,.10);
+                                    font-size:12px;
+                                    font-weight:600;
+                                "
+                            >
+
+                                <i class="fas fa-paper-plane"></i>
+
+                                ${submittedCount}
+                                Submitted
+
+                            </span>
+
+
+                            <span
+                                style="
+                                    padding:7px 10px;
+                                    border-radius:20px;
+                                    background:rgba(245,158,11,.10);
+                                    font-size:12px;
+                                    font-weight:600;
+                                "
+                            >
+
+                                <i class="fas fa-pen"></i>
+
+                                ${unmarkedCount}
+                                Needs Marking
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="hw-card-body">
+
+                        <p>
+                            ${escapeHomeworkText(
+                                homework.description ||
+                                ""
+                            )}
+                        </p>
+
+
+                        <div
+                            style="
+                                display:flex;
+                                gap:20px;
+                                flex-wrap:wrap;
+                                margin-top:12px;
+                                font-size:13px;
+                            "
+                        >
+
+                            <span>
+
+                                <i class="fas fa-calendar"></i>
+
+                                Given:
+
+                                ${escapeHomeworkText(
+                                    (typeof formatHomeworkDisplayDate === "function"
+                                        ? formatHomeworkDisplayDate(homework.date_given)
+                                        : (homework.date_given || "—"))
+                                )}
+
+                            </span>
+
+
+                            <span>
+
+                                <i class="fas fa-calendar-check"></i>
+
+                                Deadline:
+
+                                ${escapeHomeworkText(
+                                    (typeof formatHomeworkDisplayDate === "function"
+                                        ? formatHomeworkDisplayDate(homework.deadline)
+                                        : (homework.deadline || "—"))
+                                )}
+
+                            </span>
+
+
+                            <span>
+
+                                <i class="fas fa-check-circle"></i>
+
+                                Marked:
+
+                                ${markedCount}
+
+                            </span>
+
+                        </div>
+
+
+                        ${attachmentHTML}
+
+
+                        <!-- =================================
+                             VIEW SUBMISSIONS BUTTON
+                        ================================== -->
+
+                        <div
+                            style="
+                                margin-top:18px;
+                                display:flex;
+                                gap:10px;
+                                flex-wrap:wrap;
+                            "
+                        >
+
+                            <button
+                                type="button"
+                                onclick="viewHomeworkSubmissions('${escapeHomeworkText(
+                                    homework.id
+                                )}')"
+                                style="
+                                    border:none;
+                                    padding:10px 16px;
+                                    border-radius:9px;
+                                    cursor:pointer;
+                                    font-weight:600;
+                                "
+                            >
+
+                                <i class="fas fa-users"></i>
+
+                                View Submissions
+
+                                ${
+                                    submittedCount > 0
+                                    ? `(${submittedCount})`
+                                    : ""
+                                }
+
+                            </button>
+
+                            <button
+                                type="button"
+                                onclick="deleteHomework('${escapeHomeworkText(
+                                    homework.id
+                                )}')"
+                                style="
+                                    border:none;
+                                    padding:10px 16px;
+                                    border-radius:9px;
+                                    cursor:pointer;
+                                    font-weight:600;
+                                    background:#fee2e2;
+                                    color:#b91c1c;
+                                "
+                                title="Delete this homework"
+                            >
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+
+
+                            ${
+                                submittedCount > 0
+                                ? `
+                                <button
+                                    type="button"
+                                    onclick="viewHomeworkSubmissions('${escapeHomeworkText(
+                                        homework.id
+                                    )}')"
+                                    style="
+                                        border:none;
+                                        padding:10px 16px;
+                                        border-radius:9px;
+                                        cursor:pointer;
+                                        font-weight:600;
+                                    "
+                                >
+
+                                    <i class="fas fa-marker"></i>
+
+                                    Mark Students
+
+                                </button>
+                                `
+                                : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    ).join("");
+
+
+}
+
+/* =========================================================
+VIEW SUBMISSIONS FOR ONE HOMEWORK
+========================================================= */
+
+function viewHomeworkSubmissions(homeworkId) {
+
+
+const submissionsCard =
+    document.getElementById(
+        "homeworkSubmissionsCard"
+    );
+
+const submissionsList =
+    document.getElementById(
+        "teacherHomeworkSubmissionsList"
+    );
+
+
+if (!submissionsCard || !submissionsList) {
+
+    console.error(
+        "Homework submissions UI not found."
+    );
+
+    return;
+}
+
+
+const homework =
+    teacherHomeworkData.find(
+        item =>
+            String(item.id) ===
+            String(homeworkId)
+    );
+
+
+if (!homework) {
+
+    alert(
+        "Homework assignment not found."
+    );
+
+    return;
+}
+
+
+const submissions =
+    teacherHomeworkSubmissions.filter(
+        submission =>
+            String(
+                submission.homework_id
+            ) ===
+            String(homeworkId)
+    );
+
+
+submissionsCard.style.display = "block";
+
+
+/*
+   Show homework title above submissions.
+*/
+
+submissionsList.innerHTML = `
+
+    <div
+        style="
+            padding:15px;
+            margin-bottom:15px;
+            border-radius:12px;
+            background:rgba(59,130,246,.08);
+            border:1px solid rgba(59,130,246,.15);
+        "
+    >
+
+        <strong>
+            ${escapeHomeworkText(
+                homework.title
+            )}
+        </strong>
+
+        <div
+            style="
+                margin-top:5px;
+                font-size:13px;
+                opacity:.75;
+            "
+        >
+
+            ${escapeHomeworkText(
+                homework.subject || ""
+            )}
+            •
+            ${escapeHomeworkText(
+                homework.class || ""
+            )}
+
+        </div>
+
+    </div>
+
+`;
+
+
+if (!submissions.length) {
+
+    submissionsList.innerHTML += `
+
+        <div class="hw-empty-state">
+
+            <div class="hw-empty-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+
+            <h3>
+                No Students Have Submitted
+            </h3>
+
+            <p>
+                Students who submit this homework will appear here.
+            </p>
+
+        </div>
+
+    `;
+
+    submissionsCard.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+
+    return;
+}
+
+
+submissions.forEach(
+    submission => {
+
+        submissionsList.innerHTML +=
+            buildHomeworkSubmissionCard(
+                submission,
+                homework
+            );
+
+    }
+);
+
+
+submissionsCard.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+});
+
+
+}
+
+/* =========================================================
+BUILD ONE STUDENT SUBMISSION CARD
+========================================================= */
+
+function buildHomeworkSubmissionCard(
+submission,
+homework
+) {
+
+
+const studentName =
+    submission.student_name ||
+    submission.studentid ||
+    "Student";
+
+
+const studentClass =
+    submission.student_class ||
+    homework.class ||
+    "";
+
+
+const answer =
+    submission.answer ||
+    "No answer submitted.";
+
+
+const hasMark =
+    submission.mark !== null &&
+    submission.mark !== undefined &&
+    submission.mark !== "";
+
+
+const maxMark =
+    Number(
+        submission.max_mark ||
+        100
+    );
+
+
+const submittedDate =
+    submission.submitted_at
+        ? new Date(
+            submission.submitted_at
+        ).toLocaleString()
+        : "Unknown";
+
+
+const statusHTML =
+    hasMark
+
+    ? `
+        <span
+            style="
+                padding:6px 10px;
+                border-radius:20px;
+                background:rgba(34,197,94,.10);
+                font-size:12px;
+                font-weight:600;
+            "
+        >
+
+            <i class="fas fa-check-circle"></i>
+
+            Marked
+
+        </span>
+    `
+
+    : `
+        <span
+            style="
+                padding:6px 10px;
+                border-radius:20px;
+                background:rgba(245,158,11,.10);
+                font-size:12px;
+                font-weight:600;
+            "
+        >
+
+            <i class="fas fa-clock"></i>
+
+            Needs Marking
+
+        </span>
+    `;
+
+
+return `
+
+    <div
+        class="hw-card homework-submission-card"
+        data-submission-id="${escapeHomeworkText(
+            submission.id
+        )}"
+        style="
+            margin-bottom:18px;
+            padding:0;
+            overflow:hidden;
+        "
+    >
+
+
+        <!-- =========================================
+             STUDENT HEADER
+        ========================================== -->
+
+        <div
+            style="
+                padding:15px;
+                border-bottom:1px solid rgba(100,100,100,.15);
+                display:flex;
+                justify-content:space-between;
+                align-items:flex-start;
+                gap:15px;
+                flex-wrap:wrap;
+            "
+        >
+
+            <div>
+
+                <h3
+                    style="
+                        margin:0 0 5px;
+                    "
+                >
+
+                    <i class="fas fa-user-graduate"></i>
+
+                    ${escapeHomeworkText(
+                        studentName
+                    )}
+
+                </h3>
+
+
+                <div
+                    style="
+                        font-size:13px;
+                        opacity:.75;
+                    "
+                >
+
+                    Class:
+                    ${escapeHomeworkText(
+                        studentClass
+                    )}
+
+                    ${
+                        submission.studentid
+                        ? `
+                        • Student ID:
+                        ${escapeHomeworkText(
+                            submission.studentid
+                        )}
+                        `
+                        : ""
+                    }
+
+                </div>
+
+
+                <div
+                    style="
+                        font-size:12px;
+                        opacity:.65;
+                        margin-top:4px;
+                    "
+                >
+
+                    Submitted:
+                    ${escapeHomeworkText(
+                        submittedDate
+                    )}
+
+                </div>
+
+            </div>
+
+
+            ${statusHTML}
+
+        </div>
+
+
+
+        <!-- =========================================
+             STUDENT ANSWER
+        ========================================== -->
+
+        <div
+            style="
+                padding:18px;
+            "
+        >
+
+            <label
+                style="
+                    display:block;
+                    font-weight:700;
+                    margin-bottom:8px;
+                "
+            >
+
+                <i class="fas fa-file-alt"></i>
+
+                Student Answer
+
+            </label>
+
+
+            <div
+                style="
+                    padding:15px;
+                    border-radius:10px;
+                    background:rgba(100,100,100,.06);
+                    border:1px solid rgba(100,100,100,.15);
+                    white-space:pre-wrap;
+                    line-height:1.6;
+                    min-height:70px;
+                "
+            >
+
+                ${escapeHomeworkText(
+                    answer
+                )}
+
+            </div>
+
+
+
+            <!-- =====================================
+                 MARKING AREA
+            ====================================== -->
+
+            <div
+                style="
+                    margin-top:18px;
+                    display:grid;
+                    grid-template-columns:minmax(120px,200px) 1fr;
+                    gap:15px;
+                "
+            >
+
+
+                <!-- MARK -->
+
+                <div>
+
+                    <label
+                        style="
+                            display:block;
+                            font-weight:700;
+                            margin-bottom:7px;
+                        "
+                    >
+
+                        <i class="fas fa-star"></i>
+
+                        Mark
+
+                    </label>
+
+
+                    <div
+                        style="
+                            display:flex;
+                            align-items:center;
+                            gap:6px;
+                        "
+                    >
+
+                        <input
+                            type="number"
+                            min="0"
+                            max="${maxMark}"
+                            step="0.5"
+                            id="homeworkMark_${escapeHomeworkText(
+                                submission.id
+                            )}"
+                            value="${
+                                hasMark
+                                ? escapeHomeworkText(
+                                    submission.mark
+                                )
+                                : ""
+                            }"
+                            placeholder="0"
+                            style="
+                                width:100%;
+                                padding:11px;
+                                border-radius:8px;
+                                border:1px solid rgba(100,100,100,.3);
+                            "
+                        >
+
+
+                        <span>
+                            /
+                            ${maxMark}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- FEEDBACK -->
+
+                <div>
+
+                    <label
+                        style="
+                            display:block;
+                            font-weight:700;
+                            margin-bottom:7px;
+                        "
+                    >
+
+                        <i class="fas fa-comment"></i>
+
+                        Teacher Feedback
+
+                    </label>
+
+
+                    <textarea
+                        id="homeworkFeedback_${escapeHomeworkText(
+                            submission.id
+                        )}"
+                        rows="3"
+                        placeholder="Write feedback for the student..."
+                        style="
+                            width:100%;
+                            box-sizing:border-box;
+                            padding:11px;
+                            border-radius:8px;
+                            border:1px solid rgba(100,100,100,.3);
+                            resize:vertical;
+                        "
+                    >${escapeHomeworkText(
+                        submission.teacher_feedback ||
+                        ""
+                    )}</textarea>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- SAVE -->
+
+            <div
+                style="
+                    margin-top:15px;
+                    display:flex;
+                    justify-content:flex-end;
+                "
+            >
+
+                <button
+                    type="button"
+                    onclick="saveHomeworkMark('${escapeHomeworkText(
+                        submission.id
+                    )}')"
+                    style="
+                        border:none;
+                        padding:11px 20px;
+                        border-radius:9px;
+                        cursor:pointer;
+                        font-weight:700;
+                    "
+                >
+
+                    <i class="fas fa-save"></i>
+
+                    Save Mark & Feedback
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+`;
+
+
+}
+
+/* =========================================================
+SAVE HOMEWORK MARK + FEEDBACK
+========================================================= */
+
+async function saveHomeworkMark(submissionId) {
+
+
+if (!currentUser) {
+
+    alert(
+        "Please log in first."
+    );
+
+    return;
+}
+
+
+const markInput =
+    document.getElementById(
+        `homeworkMark_${submissionId}`
+    );
+
+
+const feedbackInput =
+    document.getElementById(
+        `homeworkFeedback_${submissionId}`
+    );
+
+
+if (!markInput) {
+
+    alert(
+        "Mark field not found."
+    );
+
+    return;
+}
+
+
+const rawMark =
+    markInput.value.trim();
+
+
+const feedback =
+    feedbackInput
+        ? feedbackInput.value.trim()
+        : "";
+
+
+if (rawMark === "") {
+
+    alert(
+        "Please enter a mark."
+    );
+
+    return;
+}
+
+
+const mark =
+    Number(rawMark);
+
+
+if (!Number.isFinite(mark)) {
+
+    alert(
+        "Please enter a valid mark."
+    );
+
+    return;
+}
+
+
+if (mark < 0 || mark > 100) {
+
+    alert(
+        "Mark must be between 0 and 100."
+    );
+
+    return;
+}
+
+
+try {
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("homework_submissions")
+            .update({
+
+                mark: mark,
+
+                max_mark: 100,
+
+                teacher_feedback:
+                    feedback,
+
+                marked_by:
+                    currentUser.id ||
+                    currentUser.username ||
+                    "",
+
+                marked_at:
+                    new Date().toISOString(),
+
+                status:
+                    "marked",
+
+                updated_at:
+                    new Date().toISOString()
+
+            })
+            .eq(
+                "id",
+                submissionId
+            )
+            .eq(
+                "schoolid",
+                String(currentUser.schoolid)
+            )
+            .select()
+            .single();
+
+
+    if (error) {
+
+        console.error(
+            "Save homework mark error:",
+            error
+        );
+
+        alert(
+            "Failed to save mark:\n\n" +
+            error.message
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "Homework marked:",
+        data
+    );
+
+
+    /*
+       Update local submission
+    */
+
+    const index =
+        teacherHomeworkSubmissions.findIndex(
+            submission =>
+                String(submission.id) ===
+                String(submissionId)
+        );
+
+
+    if (index !== -1) {
+
+        teacherHomeworkSubmissions[index] =
+            {
+                ...teacherHomeworkSubmissions[index],
+                ...data
+            };
+
+    }
+
+
+    /*
+       Refresh the submission view
+    */
+
+    const submission =
+        teacherHomeworkSubmissions[index];
+
+
+    if (submission) {
+
+        const homework =
+            teacherHomeworkData.find(
+                h =>
+                    String(h.id) ===
+                    String(
+                        submission.homework_id
+                    )
+            );
+
+
+        if (homework) {
+
+            const card =
+                document.querySelector(
+                    `[data-submission-id="${submissionId}"]`
+                );
+
+
+            if (card) {
+
+                card.outerHTML =
+                    buildHomeworkSubmissionCard(
+                        submission,
+                        homework
+                    );
+
+            }
+
+        }
+
+    }
+
+
+    /*
+       Update counters
+    */
+
+    updateSubmissionStatistics();
+
+    renderTeacherHomework();
+
+
+    alert(
+        "Mark and feedback saved successfully! ✅"
+    );
+
+
+} catch (error) {
+
+    console.error(
+        "Unexpected marking error:",
+        error
+    );
+
+    alert(
+        "Failed to save mark:\n\n" +
+        error.message
+    );
+
+}
+
+
+}
+
+/* =========================================================
+UPDATE SUBMISSION STATISTICS
+========================================================= */
+
+function updateSubmissionStatistics() {
+
+// Only submissions that belong to homework in the selected week
+const weekSubs = (typeof getSubmissionsForSelectedWeek === "function")
+    ? getSubmissionsForSelectedWeek()
+    : (teacherHomeworkSubmissions || []);
+
+const total = weekSubs.length;
+
+const marked = weekSubs.filter(
+    submission =>
+        submission.mark !== null &&
+        submission.mark !== undefined &&
+        submission.mark !== ""
+).length;
+
+const unmarked = total - marked;
+
+const totalElement = document.getElementById("totalHomeworkSubmissions");
+const markedElement = document.getElementById("markedHomeworkSubmissions");
+const unmarkedElement = document.getElementById("unmarkedHomeworkSubmissions");
+const submittedCount = document.getElementById("homeworkSubmittedCount");
+
+if (totalElement) totalElement.textContent = total;
+if (markedElement) markedElement.textContent = marked;
+if (unmarkedElement) unmarkedElement.textContent = unmarked;
+if (submittedCount) submittedCount.textContent = total;
+
+}
+
+/* =========================================================
+UPDATE HOMEWORK STATISTICS
+========================================================= */
+
+function updateHomeworkStatistics() {
+
+// Stats follow the selected week (not all history)
+const weekItems = (typeof getHomeworkForSelectedWeek === "function")
+    ? getHomeworkForSelectedWeek()
+    : (teacherHomeworkData || []);
+
+const total = weekItems.length;
+
+const now = new Date();
+
+const pending = weekItems.filter(homework => {
+    if (!homework.deadline) return false;
+    return new Date(homework.deadline) >= now;
+}).length;
+
+const overdue = weekItems.filter(homework => {
+    if (!homework.deadline) return false;
+    return new Date(homework.deadline) < now;
+}).length;
+
+
+const totalElement =
+    document.getElementById(
+        "homeworkTotalCount"
+    );
+
+
+const pendingElement =
+    document.getElementById(
+        "homeworkPendingCount"
+    );
+
+
+const overdueElement =
+    document.getElementById(
+        "homeworkOverdueCount"
+    );
+
+
+if (totalElement) {
+    totalElement.textContent = total;
+}
+
+if (pendingElement) {
+    pendingElement.textContent = pending;
+}
+
+if (overdueElement) {
+    overdueElement.textContent = overdue;
+}
+
+// Term total (independent of week switcher)
+const termSel = document.getElementById("homeworkTermFilter");
+if (termSel && termSel.value) {
+    homeworkTermSelected = termSel.value;
+}
+const termItems = (typeof getHomeworkForTerm === "function")
+    ? getHomeworkForTerm(homeworkTermSelected)
+    : (teacherHomeworkData || []);
+const termTotalEl = document.getElementById("homeworkTermTotalCount");
+const termLabelEl = document.getElementById("homeworkTermTotalLabel");
+if (termTotalEl) termTotalEl.textContent = termItems.length;
+if (termLabelEl) {
+    const label = (homeworkTermSelected || "term1").replace("term", "Term ");
+    termLabelEl.textContent = label + " Total";
+}
+
+updateSubmissionStatistics();
+
+}
+
+/* =========================================================
+FILTER TEACHER HOMEWORK
+========================================================= */
+
+
+/* =========================================================
+   HOMEWORK WEEK HELPERS
+========================================================= */
+
+function getHomeworkWeekRange(offset = 0) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const day = now.getDay(); // 0 Sun .. 6 Sat
+    const toMonday = day === 0 ? -6 : 1 - day;
+    const start = new Date(now);
+    start.setDate(now.getDate() + toMonday + (offset * 7));
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+}
+
+function formatHomeworkWeekLabel(offset = 0) {
+    const { start, end } = getHomeworkWeekRange(offset);
+    const opts = { day: "numeric", month: "short" };
+    const a = start.toLocaleDateString(undefined, opts);
+    const b = end.toLocaleDateString(undefined, opts);
+    if (offset === 0) return `This week (${a} – ${b})`;
+    if (offset === -1) return `Last week (${a} – ${b})`;
+    if (offset === 1) return `Next week (${a} – ${b})`;
+    return `${a} – ${b}`;
+}
+
+function updateHomeworkWeekLabel() {
+    const el = document.getElementById("homeworkWeekLabel");
+    if (el) el.textContent = formatHomeworkWeekLabel(homeworkWeekOffset);
+}
+
+function parseHomeworkDate(raw) {
+    if (!raw) return null;
+    // date-only strings (YYYY-MM-DD) — parse as local noon to avoid timezone day-shift
+    if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) {
+        const d = new Date(raw.trim() + "T12:00:00");
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatHomeworkDisplayDate(raw) {
+    const d = parseHomeworkDate(raw);
+    if (!d) return raw || "—";
+    try {
+        return d.toLocaleDateString(undefined, {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+    } catch (e) {
+        return String(raw);
+    }
+}
+
+function isHomeworkInSelectedWeek(homework) {
+    const { start, end } = getHomeworkWeekRange(homeworkWeekOffset);
+    // Prefer date_given; fall back to created_at
+    const d = parseHomeworkDate(homework.date_given || homework.created_at);
+    if (!d) return false;
+    return d >= start && d <= end;
+}
+
+function getHomeworkForSelectedWeek() {
+    return (teacherHomeworkData || []).filter(isHomeworkInSelectedWeek);
+}
+
+function getHomeworkForTerm(term) {
+    const t = term || homeworkTermSelected || "term1";
+    let bounds = { start: null, end: null };
+    try {
+        if (typeof getTermDateBounds === "function") {
+            bounds = getTermDateBounds(t) || bounds;
+        }
+    } catch (e) {}
+
+    if (!bounds.start || !bounds.end) {
+        // No term dates configured — show all school homework as term total
+        return (teacherHomeworkData || []).slice();
+    }
+
+    const start = parseHomeworkDate(bounds.start) || new Date(bounds.start + "T00:00:00");
+    const end = parseHomeworkDate(bounds.end) || new Date(bounds.end + "T23:59:59");
+    if (end) end.setHours(23, 59, 59, 999);
+    if (Number.isNaN(start?.getTime?.()) || Number.isNaN(end?.getTime?.())) {
+        return (teacherHomeworkData || []).slice();
+    }
+
+    return (teacherHomeworkData || []).filter(homework => {
+        const d = parseHomeworkDate(homework.date_given || homework.created_at);
+        if (!d) return false;
+        return d >= start && d <= end;
+    });
+}
+
+function onHomeworkTermChange() {
+    const sel = document.getElementById("homeworkTermFilter");
+    homeworkTermSelected = sel?.value || "term1";
+    updateHomeworkStatistics();
+    updateSubmissionStatistics();
+}
+
+function getSubmissionsForSelectedWeek() {
+    const weekIds = new Set(
+        getHomeworkForSelectedWeek().map(h => String(h.id))
+    );
+    return (teacherHomeworkSubmissions || []).filter(
+        s => weekIds.has(String(s.homework_id))
+    );
+}
+
+function shiftHomeworkWeek(delta) {
+    homeworkWeekOffset += delta;
+    updateHomeworkWeekLabel();
+    filterTeacherHomework();
+    updateHomeworkStatistics();
+}
+
+function resetHomeworkWeek() {
+    homeworkWeekOffset = 0;
+    updateHomeworkWeekLabel();
+    filterTeacherHomework();
+    updateHomeworkStatistics();
+}
+
+async function deleteHomework(homeworkId) {
+    if (!homeworkId) return;
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+
+    const ok = confirm(
+        "Delete this homework?\n\nStudents will no longer see it, and any submissions for it will also be removed. This cannot be undone."
+    );
+    if (!ok) return;
+
+    try {
+        // Remove submissions first (if table exists / RLS allows)
+        const { error: subErr } = await supabaseClient
+            .from("homework_submissions")
+            .delete()
+            .eq("homework_id", homeworkId);
+        if (subErr) {
+            console.warn("Submission delete warning:", subErr.message);
+        }
+
+        // Remove homework row
+        const { error } = await supabaseClient
+            .from("homework")
+            .delete()
+            .eq("id", homeworkId)
+            .eq("schoolid", currentUser.schoolid);
+
+        if (error) throw error;
+
+        // Refresh local data
+        teacherHomeworkData = (teacherHomeworkData || []).filter(
+            h => String(h.id) !== String(homeworkId)
+        );
+        teacherHomeworkSubmissions = (teacherHomeworkSubmissions || []).filter(
+            s => String(s.homework_id) !== String(homeworkId)
+        );
+
+        filterTeacherHomework();
+        updateHomeworkStatistics();
+        if (typeof updateSubmissionStatistics === "function") {
+            updateSubmissionStatistics();
+        }
+
+        alert("Homework deleted.");
+    } catch (error) {
+        console.error("Delete homework error:", error);
+        alert(error.message || "Unable to delete homework.");
+    }
+}
+
+
+function filterTeacherHomework() {
+
+const filter =
+    document.getElementById(
+        "homeworkFilter"
+    )?.value ||
+    "all";
+
+updateHomeworkWeekLabel();
+
+const now = new Date();
+
+// Always scope to the selected week first
+let filtered = getHomeworkForSelectedWeek();
+
+if (filter === "active") {
+    filtered = filtered.filter(
+        homework =>
+            homework.deadline &&
+            new Date(homework.deadline) >= now
+    );
+}
+
+if (filter === "overdue") {
+    filtered = filtered.filter(
+        homework =>
+            homework.deadline &&
+            new Date(homework.deadline) < now
+    );
+}
+
+if (filter === "submitted") {
+    filtered = filtered.filter(
+        homework =>
+            teacherHomeworkSubmissions.some(
+                submission =>
+                    String(submission.homework_id) === String(homework.id)
+            )
+    );
+}
+
+if (filter === "unmarked") {
+    filtered = filtered.filter(
+        homework =>
+            teacherHomeworkSubmissions.some(
+                submission =>
+                    String(submission.homework_id) === String(homework.id) &&
+                    (
+                        submission.mark === null ||
+                        submission.mark === undefined ||
+                        submission.mark === ""
+                    )
+            )
+    );
+}
+
+const original = teacherHomeworkData;
+teacherHomeworkData = filtered;
+renderTeacherHomework();
+teacherHomeworkData = original;
+
+}
+
+/* =========================================================
+INITIALIZE HOMEWORK PAGE
+========================================================= */
+
+async function initHomeworkPage() {
+
+
+console.log(
+    "Initializing Homework Page..."
+);
+
+
+/*
+   Load teacher's assigned
+   classes and subjects.
+*/
+
+await loadHomeworkAssignments();
+
+
+/*
+   Setup attachment preview.
+*/
+
+setupHomeworkAttachment();
+
+
+/*
+   Load homework + submissions.
+*/
+
+updateHomeworkWeekLabel();
+
+// Default Date Given to today (if empty)
+try {
+    const dateEl = document.getElementById("homeworkDate");
+    if (dateEl && !dateEl.value) {
+        const t = new Date();
+        const yyyy = t.getFullYear();
+        const mm = String(t.getMonth() + 1).padStart(2, "0");
+        const dd = String(t.getDate()).padStart(2, "0");
+        dateEl.value = `${yyyy}-${mm}-${dd}`;
+    }
+} catch (e) {}
+
+// Sync term filter with active term when available
+try {
+    const term = (typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1";
+    homeworkTermSelected = term;
+    const termSel = document.getElementById("homeworkTermFilter");
+    if (termSel) termSel.value = term;
+} catch (e) {}
+
+await loadPublishedHomework();
+
+/*
+   Apply current week filter on first load
+*/
+filterTeacherHomework();
+updateHomeworkStatistics();
+
+/*
+   Make sure submission statistics
+   are displayed.
+*/
+
+updateSubmissionStatistics();
+
+
+}
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   ADMIN ADMISSION
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   ADMISSION PHOTO PREVIEW
+--------------------------------------------------------- */
+
+function previewAdmissionPhoto(event) {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById("admissionPhotoPreview");
+    if (!preview) return;
+
+    if (!file) {
+        preview.src = "default-student.png";
+        return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+        alert("Please choose a JPG, PNG, or WebP image.");
+        event.target.value = "";
+        preview.src = "default-student.png";
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert("Student photo must be 5 MB or smaller.");
+        event.target.value = "";
+        preview.src = "default-student.png";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => { preview.src = reader.result; };
+    reader.onerror = () => alert("Could not preview this image. Please try another file.");
+    reader.readAsDataURL(file);
+}
+
+function clearAdmissionPhoto() {
+    const input = document.getElementById("admissionStudentPhoto");
+    const preview = document.getElementById("admissionPhotoPreview");
+    if (input) input.value = "";
+    if (preview) preview.src = "default-student.png";
+}
+
+
+/* ---------------------------------------------------------
+   OPEN ADMISSION MODAL
+--------------------------------------------------------- */
+
+function openAdmissionModal() {
+
+    // SECURITY CHECK
+
+    if (!currentUser ||
+        currentUser.role !== "admin") {
+
+        alert("Only admin can admit students.");
+
+        return;
+    }
+
+
+    const modal =
+        document.getElementById(
+            "admissionModal"
+        );
+
+    if (!modal) return;
+
+
+    // RESET FORM
+
+    const form =
+        document.getElementById(
+            "admissionForm"
+        );
+
+    if (form) {
+        form.reset();
+    }
+
+    const photoPreview = document.getElementById("admissionPhotoPreview");
+    if (photoPreview) photoPreview.src = "default-student.png";
+
+    modal.style.display = "flex";
+
+}
+
+
+/* ---------------------------------------------------------
+   CLOSE ADMISSION MODAL
+--------------------------------------------------------- */
+
+function closeAdmissionModal() {
+
+    const modal =
+        document.getElementById(
+            "admissionModal"
+        );
+
+    if (!modal) return;
+
+    modal.style.display = "none";
+
+}
+
+
+/* ---------------------------------------------------------
+   SUBMIT ADMISSION
+--------------------------------------------------------- */
+
+async function submitAdmission(event) {
+
+    event.preventDefault();
+
+
+    // ADMIN ONLY
+
+    if (!currentUser ||
+        currentUser.role !== "admin") {
+
+        alert(
+            "Only admin can admit students."
+        );
+
+        return;
+    }
+
+
+    // GET VALUES
+
+    const name =
+        document
+            .getElementById(
+                "admissionStudentName"
+            )
+            .value
+            .trim();
+
+
+    const studentclass =
+        document
+            .getElementById(
+                "admissionStudentClass"
+            )
+            .value
+            .trim();
+
+
+    const gender =
+        document
+            .getElementById(
+                "admissionGender"
+            )
+            .value;
+
+
+    const parentName =
+        document
+            .getElementById(
+                "admissionParentName"
+            )
+            .value
+            .trim();
+
+
+    const parentNumber =
+        document
+            .getElementById(
+                "admissionParentNumber"
+            )
+            .value
+            .trim();
+
+
+    const parentOccupation =
+        document
+            .getElementById(
+                "admissionParentOccupation"
+            )
+            .value
+            .trim();
+
+
+    const parentAddress =
+        document
+            .getElementById(
+                "admissionParentAddress"
+            )
+            .value
+            .trim();
+
+    const photoInput = document.getElementById("admissionStudentPhoto");
+    const photoFile = photoInput?.files?.[0] || null;
+
+    if (photoFile) {
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(photoFile.type)) {
+            alert("Please choose a JPG, PNG, or WebP student photo.");
+            return;
+        }
+        if (photoFile.size > 5 * 1024 * 1024) {
+            alert("Student photo must be 5 MB or smaller.");
+            return;
+        }
+    }
+
+
+    // VALIDATION
+
+    if (
+        !name ||
+        !studentclass ||
+        !gender ||
+        !parentName ||
+        !parentNumber
+    ) {
+
+        alert(
+            "Please complete all required fields."
+        );
+
+        return;
+    }
+
+
+    // DISABLE BUTTON
+
+    const submitButton =
+        event.target.querySelector(
+            ".admission-submit"
+        );
+
+    if (submitButton) {
+
+        submitButton.disabled = true;
+
+        submitButton.innerHTML =
+            `<i class="fas fa-spinner fa-spin"></i>
+             Admitting...`;
+
+    }
+
+
+    try {
+
+        // Upload the optional admission photo to the same Supabase Storage
+        // bucket used by the existing Student Details photo feature.
+        let studentPhotoUrl = null;
+
+        if (photoFile) {
+            const extension = photoFile.name.split(".").pop().toLowerCase();
+            const safeSchoolId = String(currentUser.schoolid || "school").replace(/[^a-zA-Z0-9_-]/g, "_");
+            const fileName = `${safeSchoolId}/admission-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+
+            const { error: photoUploadError } = await supabaseClient.storage
+                .from("student-photos")
+                .upload(fileName, photoFile, {
+                    upsert: false,
+                    contentType: photoFile.type
+                });
+
+            if (photoUploadError) {
+                throw new Error("Photo upload failed: " + photoUploadError.message);
+            }
+
+            const { data: photoUrlData } = supabaseClient.storage
+                .from("student-photos")
+                .getPublicUrl(fileName);
+
+            studentPhotoUrl = photoUrlData?.publicUrl || null;
+
+            if (!studentPhotoUrl) {
+                throw new Error("The photo uploaded, but its public URL could not be created.");
+            }
+        }
+
+        // INSERT STUDENT
+
+        const { data, error } =
+            await supabaseClient
+                .from("students")
+                .insert([{
+
+                    name: name,
+
+                    studentclass:
+                        studentclass,
+
+                    gender: gender,
+
+                    "student-photos": studentPhotoUrl,
+
+                    parent_name:
+                        parentName,
+
+                    parent_number:
+                        parentNumber,
+
+                    parent_occupation:
+                        parentOccupation,
+
+                    parent_address:
+                        parentAddress,
+
+                    schoolid:
+                        currentUser.schoolid,
+
+                    teacher: null,
+
+                    subjects: {},
+
+                    currentTerm: "term1",
+
+                    average: 0
+
+                }])
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                "Admission error:",
+                error
+            );
+
+            alert(
+                "Failed to admit student: " +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "Student admitted successfully:",
+            data
+        );
+
+
+        // REFRESH STUDENTS
+
+        await loadStudents();
+
+        loadStudentsTable();
+
+        populateStudentList();
+
+        updateDashboard();
+
+        updateStudentSuggestions();
+
+
+        // CLOSE MODAL
+
+        closeAdmissionModal();
+
+
+        alert(
+            "Student admitted successfully ✅"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Admission error:",
+            error
+        );
+
+        alert(
+            "An error occurred while admitting the student."
+        );
+
+    }
+
+    finally {
+
+        if (submitButton) {
+
+            submitButton.disabled = false;
+
+            submitButton.innerHTML =
+                `<i class="fas fa-check"></i>
+                 Admit Student`;
+
+        }
+
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
