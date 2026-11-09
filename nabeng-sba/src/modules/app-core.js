@@ -3309,6 +3309,206 @@ function searchStudent(){
     loadStudentsTable();
 }
 
+/* ============================================================
+   CSV EXPORT HELPERS
+   ============================================================ */
+
+function downloadCSV(filename, rows) {
+    if (!rows || !rows.length) {
+        alert("No data to export");
+        return;
+    }
+
+    const escapeCell = (value) => {
+        const str = value == null ? "" : String(value);
+        if (/[",\n\r]/.test(str)) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    };
+
+    const csvContent = rows
+        .map(row => row.map(escapeCell).join(","))
+        .join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * Export students currently visible on the Students page (respects search filter).
+ */
+function exportStudentsCSV() {
+    const keyword =
+        (document.getElementById("searchStudent")?.value || "")
+            .toLowerCase()
+            .trim();
+
+    const list = (students || []).filter(s => {
+        if (!keyword) return true;
+        const name = (s.name || "").toLowerCase();
+        const cls = (s.studentclass || "").toLowerCase();
+        return name.includes(keyword) || cls.includes(keyword);
+    });
+
+    if (!list.length) {
+        alert("No students to export");
+        return;
+    }
+
+    const header = [
+        "Name",
+        "Class",
+        "Gender",
+        "Teacher",
+        "Student ID"
+    ];
+
+    const rows = [header];
+
+    list.forEach(s => {
+        // Use portal login ID (e.g. SBA26xxxx), not the Supabase UUID
+        const portalId =
+            s.studentid ||
+            s.portalId ||
+            s.portal_id ||
+            "";
+
+        rows.push([
+            s.name || "",
+            s.studentclass || "",
+            s.gender || "",
+            s.teacher || "",
+            portalId || "Not Generated"
+        ]);
+    });
+
+    const school = (currentUser?.schoolname || currentUser?.schoolid || "school")
+        .toString()
+        .replace(/[^\w\-]+/g, "_");
+    const date = new Date().toISOString().slice(0, 10);
+
+    downloadCSV(`students_${school}_${date}.csv`, rows);
+}
+
+/**
+ * Export students of the selected class on the Subjects page,
+ * including marks for the currently selected subject (if any).
+ */
+function exportClassStudentsCSV() {
+    const classFilter = document.getElementById("classFilter");
+    const selectedClass = (classFilter?.value || "").trim();
+
+    if (!selectedClass) {
+        alert("Please select a class first");
+        return;
+    }
+
+    const list = (students || []).filter(
+        s => String(s.studentclass || "") === selectedClass
+    );
+
+    if (!list.length) {
+        alert("No students found for this class");
+        return;
+    }
+
+    const term =
+        (typeof currentTerm !== "undefined" && currentTerm) ||
+        document.getElementById("termSelect")?.value ||
+        "term1";
+
+    const subject = selectedSubject || null;
+
+    const header = [
+        "Name",
+        "Class",
+        "Gender"
+    ];
+
+    if (subject) {
+        header.push(
+            "Subject",
+            "Test 1",
+            "Test 2",
+            "Project",
+            "Group Work",
+            "Exam",
+            "Class Score (50%)",
+            "Exam Score (50%)",
+            "Total",
+            "Grade",
+            "Remark"
+        );
+    } else {
+        header.push("Subjects Summary");
+    }
+
+    const rows = [header];
+
+    list.forEach(s => {
+        const base = [
+            s.name || "",
+            s.studentclass || "",
+            s.gender || ""
+        ];
+
+        if (subject) {
+            const mark = s.subjects?.[subject]?.[term] || {};
+            rows.push([
+                ...base,
+                subject,
+                mark.test1 ?? "",
+                mark.test2 ?? "",
+                mark.project ?? "",
+                mark.group ?? "",
+                mark.exam ?? "",
+                mark.classScore ?? "",
+                mark.examScore ?? "",
+                mark.totalScore ?? "",
+                mark.grade || "",
+                mark.remark || ""
+            ]);
+        } else {
+            const subs = s.subjects || {};
+            const summary = Object.keys(subs)
+                .map(subName => {
+                    const m = subs[subName]?.[term] || {};
+                    const total = m.totalScore ?? "";
+                    const grade = m.grade || "";
+                    return total !== "" || grade
+                        ? `${subName}: ${total}${grade ? " (" + grade + ")" : ""}`
+                        : subName;
+                })
+                .filter(Boolean)
+                .join("; ");
+
+            rows.push([...base, summary]);
+        }
+    });
+
+    const safeClass = selectedClass.replace(/[^\w\-]+/g, "_");
+    const safeSubject = subject
+        ? "_" + subject.replace(/[^\w\-]+/g, "_")
+        : "";
+    const date = new Date().toISOString().slice(0, 10);
+
+    downloadCSV(
+        `class_${safeClass}${safeSubject}_${date}.csv`,
+        rows
+    );
+}
+
 
 
 
@@ -14012,6 +14212,9 @@ function updateChatHeader(person, type) {
     const avatarEl =
         document.getElementById("chatUserAvatar");
 
+    const placeholderEl =
+        document.getElementById("headerAvatarPlaceholder");
+
     if (!nameEl || !statusEl || !avatarEl) return;
 
     const isStudent = type === "student";
@@ -14039,23 +14242,36 @@ function updateChatHeader(person, type) {
     nameEl.textContent = name;
     statusEl.textContent = status;
 
+    // Reset avatar
     avatarEl.removeAttribute("src");
     avatarEl.style.display = "none";
     avatarEl.style.background = "#d9d9d9";
+    avatarEl.onerror = null;
+
+    // Show placeholder by default (no profile picture)
+    if (placeholderEl) {
+        placeholderEl.style.display = "flex";
+    }
 
     if (image) {
-
         avatarEl.src = image;
         avatarEl.style.display = "block";
         avatarEl.style.background = "transparent";
 
+        // Hide the default avatar icon when a profile picture is present
+        if (placeholderEl) {
+            placeholderEl.style.display = "none";
+        }
+
         avatarEl.onerror = function () {
-
             this.removeAttribute("src");
+            this.style.display = "none";
             this.style.background = "#d9d9d9";
-
+            // Fall back to placeholder if image fails to load
+            if (placeholderEl) {
+                placeholderEl.style.display = "flex";
+            }
         };
-
     }
 
 }
@@ -16257,8 +16473,53 @@ async function toggleTheme() {
 
 
 
+function buildDeveloperFeedbackMessage() {
+    const first = currentUser?.firstname || "";
+    const last =
+        currentUser?.surname ||
+        currentUser?.lastname ||
+        "";
+    const fullName =
+        `${first} ${last}`.trim() ||
+        currentUser?.username ||
+        "User";
+
+    const role = (currentUser?.role || "user")
+        .toString()
+        .toLowerCase();
+
+    const schoolFromUI =
+        document.getElementById("schoolNameText")
+            ?.innerText
+            ?.trim() || "";
+    const schoolFromUser =
+        currentUser?.schoolname ||
+        currentUser?.school_name ||
+        "";
+    const schoolId = currentUser?.schoolid || "";
+
+    let school = schoolFromUser || schoolFromUI || "my school";
+    school = school
+        .replace(/\s*\(Code:\s*[^)]+\)\s*$/i, "")
+        .trim() || "my school";
+
+    const schoolLine = schoolId
+        ? `${school} (School ID: ${schoolId})`
+        : school;
+
+    return (
+        `Hello, I am ${fullName} (${role}) from ${schoolLine}. ` +
+        `I am using the Nabeng-SBA system and would like to give some feedback about the software.`
+    );
+}
+
 function openWhatsApp() {
-    window.open("https://wa.me/233599581301", "_blank");
+    const message = buildDeveloperFeedbackMessage();
+    const whatsappURL =
+        "https://wa.me/233599581301?text=" +
+        encodeURIComponent(message);
+
+    window.open(whatsappURL, "_blank");
 }
 
 
@@ -16299,28 +16560,12 @@ function closeDeveloperFeedback() {
 
 
 function sendDeveloperFeedback() {
-
-    const name =
-        currentUser?.firstname ||
-        currentUser?.username ||
-        "User";
-
-    const role =
-        currentUser?.role ||
-        "User";
-
-    const message =
-        `Hello, I am ${name} (${role}) using the Nabeng-SBA system. I would like to give some feedback about the software.`;
-
+    const message = buildDeveloperFeedbackMessage();
     const whatsappURL =
         "https://wa.me/233599581301?text=" +
         encodeURIComponent(message);
 
-    window.open(
-        whatsappURL,
-        "_blank"
-    );
-
+    window.open(whatsappURL, "_blank");
     closeDeveloperFeedback();
 }
 
