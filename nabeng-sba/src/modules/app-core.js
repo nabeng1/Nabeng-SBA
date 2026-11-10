@@ -308,12 +308,28 @@ async function signup() {
     // CREATE AUTH ACCOUNT
     // =========================
 
+    const redirectTo =
+        window.location.origin +
+        (window.location.pathname.includes("system")
+            ? window.location.pathname
+            : "/system.html");
+
     const {
         data: authData,
         error: authError
     } = await supabaseClient.auth.signUp({
         email: email,
-        password: password
+        password: password,
+        options: {
+            emailRedirectTo: redirectTo,
+            data: {
+                firstname: firstname,
+                surname: surname,
+                username: username,
+                role: role,
+                schoolid: schoolCode
+            }
+        }
     });
 
     if (authError) {
@@ -322,6 +338,9 @@ async function signup() {
     }
 
     const authUser = authData.user;
+    if (!authUser) {
+        return alert("Account could not be created. Please try again.");
+    }
 
     // =========================
     // CREATE SCHOOL (ADMIN)
@@ -375,7 +394,46 @@ async function signup() {
         return alert(userError.message);
     }
 
-    alert("Account created successfully!");
+    // Supabase only sends a confirmation email when "Confirm email" is ON
+    // in Authentication → Providers → Email. If a session is returned here,
+    // confirmation is disabled and the account is already active.
+    const confirmedAt =
+        authUser.email_confirmed_at ||
+        authUser.confirmed_at ||
+        null;
+    const needsEmailConfirm = !authData.session || !confirmedAt;
+
+    if (authData.session && confirmedAt) {
+        // Email confirmations disabled in Supabase — account is live immediately
+        try {
+            await supabaseClient.auth.signOut();
+        } catch (e) {}
+        alert(
+            "Account created successfully. You can sign in now.\n\n" +
+            "Note: Email confirmation is currently OFF in Supabase, so no confirmation link was sent.\n" +
+            "To require a confirmation email: Supabase → Authentication → Providers → Email → enable Confirm email."
+        );
+    } else if (!authData.session) {
+        // Confirmation required — email should have been sent by Supabase
+        try {
+            await supabaseClient.auth.signOut();
+        } catch (e) {}
+        alert(
+            "Account created. Check your email for a confirmation link, then sign in.\n\n" +
+            "If you do not see the email within a minute, check Spam/Junk.\n" +
+            "Also confirm in Supabase that Auth → URL Configuration includes this site, " +
+            "and that Auth → Providers → Email → Confirm email is enabled."
+        );
+    } else {
+        // Session exists but email not marked confirmed (edge cases)
+        try {
+            await supabaseClient.auth.signOut();
+        } catch (e) {}
+        alert(
+            "Account created. Please check your email to confirm before signing in.\n\n" +
+            "If no email arrives, enable Confirm email in Supabase Authentication settings."
+        );
+    }
 
     backToLogin();
 }
@@ -395,7 +453,8 @@ function showSignup(){
 function backToLogin(){
     document.getElementById("loginSection").style.display = "block";
     document.getElementById("signupSection").style.display = "none";
-    document.getElementById("forgotSection").style.display = "none";
+    const forgot = document.getElementById("forgotSection");
+    if (forgot) forgot.style.display = "none";
 }
 
 
@@ -665,16 +724,32 @@ async function editSchoolName() {
     }
 }
 async function loadTheme() {
+    // No logged-in user (login screen / recovery / email confirm) — use safe default
+    if (!currentUser || !currentUser.username) {
+        let theme = "light";
+        try {
+            theme = localStorage.getItem("sbaTheme") || "light";
+        } catch (e) {}
+        applyAppTheme(theme === "light" ? "light" : "dark");
+        return;
+    }
 
     // Fetch theme from Supabase
-    const { data, error } = await supabaseClient
-        .from("users")
-        .select("theme")
-        .eq("username", currentUser.username)
-        .single();
+    try {
+        const { data, error } = await supabaseClient
+            .from("users")
+            .select("theme")
+            .eq("username", currentUser.username)
+            .maybeSingle();
 
-    let theme = data?.theme || "light";
-    applyAppTheme(theme === "light" ? "light" : "dark");
+        if (error) console.warn("loadTheme:", error.message || error);
+
+        let theme = data?.theme || "light";
+        applyAppTheme(theme === "light" ? "light" : "dark");
+    } catch (e) {
+        console.warn("loadTheme failed:", e);
+        applyAppTheme("light");
+    }
 }
 
 function applyAppTheme(theme) {
@@ -701,40 +776,48 @@ function applyAppTheme(theme) {
     }
 }
 function showForgot(){
+    // Open clean email → reset-link screen (Nabeng Invoice style)
+    const login = document.getElementById("loginSection");
+    const signup = document.getElementById("signupSection");
+    const forgot = document.getElementById("forgotSection");
+    if (login) login.style.display = "none";
+    if (signup) signup.style.display = "none";
+    if (forgot) forgot.style.display = "flex"; // overlay uses flex centering
 
-    document.getElementById("loginSection")
-        .style.display = "none";
-
-    document.getElementById("signupSection")
-        .style.display = "none";
-
-    document.getElementById("forgotSection")
-        .style.display = "block";
     showForgotStep(1);
+    updateForgotProgress(1);
 
-    document.getElementById("fpUsername").value = "";
-    document.getElementById("fpContact").value = "";
-    document.getElementById("fpOTP").value = "";
-    document.getElementById("fpNewPassword").value = "";
-    document.getElementById("fpConfirmPassword").value = "";
+    const emailEl = document.getElementById("fpEmail");
+    if (emailEl) {
+        emailEl.value = "";
+        setTimeout(() => emailEl.focus(), 50);
+    }
+    const np = document.getElementById("fpNewPassword");
+    if (np) np.value = "";
+    const cp = document.getElementById("fpConfirmPassword");
+    if (cp) cp.value = "";
+    const msg = document.getElementById("fpResetMsg");
+    if (msg) { msg.textContent = ""; msg.className = "sba-sub-msg"; }
+    const umsg = document.getElementById("fpUpdateMsg");
+    if (umsg) { umsg.textContent = ""; umsg.className = "sba-sub-msg"; }
 
-    resetUsername = "";
-    resetContact = "";
-    resetUserId = "";
+    // Hide multi-step progress on the simple email form (Invoice-like)
+    const progress = document.querySelector("#forgotSection .forgot-progress");
+    if (progress) progress.style.display = "none";
+    const stepLabel = document.getElementById("forgotStepLabel");
+    if (stepLabel) stepLabel.style.display = "none";
+
     resetEmail = "";
-    resetVerified = false;
+    recoverySessionActive = false;
 }
 
 
 // ==========================================
-// PASSWORD RESET STATE
+// PASSWORD RESET STATE (email link — Nabeng Invoice style)
 // ==========================================
 
-let resetUsername = "";
-let resetContact = "";
-let resetUserId = "";
 let resetEmail = "";
-let resetVerified = false;
+let recoverySessionActive = false;
 
 
 function showForgotStep(step) {
@@ -767,545 +850,441 @@ function showForgotStep(step) {
     }
 }
 
-async function resetPassword() {
 
-    // ==============================
-    // GET USER INPUT
-    // ==============================
 
-    const u =
-        document.getElementById("fpUsername").value.trim();
-
-    const contact =
-        document.getElementById("fpContact").value.trim();
-
-    if (!u || !contact) {
-        alert("Fill all fields");
-        return;
+function updateForgotProgress(step) {
+    for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById("progress" + i);
+        if (!el) continue;
+        el.classList.toggle("active", i <= step);
     }
-
-
-    // ==============================
-    // FIND USER
-    // ==============================
-
-    const {
-        data: user,
-        error
-    } = await supabaseClient
-        .from("users")
-        .select("id, username, email, phone")
-        .eq("username", u)
-        .or(`email.eq.${contact},phone.eq.${contact}`)
-        .single();
-
-
-    if (error || !user) {
-
-        console.error(error);
-
-        alert(
-            "User not found or incorrect details."
-        );
-
-        return;
+    for (let i = 1; i <= 3; i++) {
+        const line = document.getElementById("line" + i);
+        if (!line) continue;
+        line.classList.toggle("active", i < step);
     }
-
-
-    // ==============================
-    // GENERATE OTP
-    // ==============================
-
-    generatedOTP =
-        Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
-
-
-    // ==============================
-    // CURRENT OTP METHOD
-    // ==============================
-
-    alert(
-        "Your OTP is: " +
-        generatedOTP
-    );
-
-
-    // ==============================
-    // VERIFY OTP
-    // ==============================
-
-    const enteredOTP =
-        prompt("Enter the OTP sent to you");
-
-
-    if (!enteredOTP) {
-        alert("OTP verification cancelled.");
-        return;
-    }
-
-
-    if (enteredOTP.trim() !== generatedOTP) {
-
-        alert("Incorrect OTP.");
-
-        return;
-    }
-
-
-    // ==============================
-    // OTP VERIFIED
-    // ==============================
-
-    alert("OTP verified successfully.");
-
-
-    // ==============================
-    // NEW PASSWORD
-    // ==============================
-
-    const newPass =
-        prompt("Enter your new password");
-
-
-    if (!newPass) {
-
-        alert(
-            "Password cannot be empty."
-        );
-
-        return;
-    }
-
-
-    // ==============================
-    // PASSWORD LENGTH
-    // ==============================
-
-    if (newPass.length < 6) {
-
-        alert(
-            "Password must be at least 6 characters."
-        );
-
-        return;
-    }
-
-
-    // ==============================
-    // CONFIRM PASSWORD
-    // ==============================
-
-    const confirmPass =
-        prompt("Confirm your new password");
-
-
-    if (!confirmPass) {
-
-        alert(
-            "Please confirm your password."
-        );
-
-        return;
-    }
-
-
-    if (newPass !== confirmPass) {
-
-        alert(
-            "Passwords do not match."
-        );
-
-        return;
-    }
-
-
-    // ==============================
-    // CALL EDGE FUNCTION
-    // ==============================
-
-    try {
-
-        const {
-            data: result,
-            error: functionError
-        } = await supabaseClient.functions.invoke(
-            "reset-user-password",
-            {
-                body: {
-                    userId: user.id,
-                    newPassword: newPass
-                }
-            }
-        );
-
-
-        // ==============================
-        // EDGE FUNCTION ERROR
-        // ==============================
-
-        if (functionError) {
-
-            console.error(
-                "Password reset error:",
-                functionError
-            );
-
-            alert(
-                "Password reset failed. Please try again."
-            );
-
-            return;
-        }
-
-
-        // ==============================
-        // SERVER ERROR
-        // ==============================
-
-        if (!result || !result.success) {
-
-            console.error(
-                "Server response:",
-                result
-            );
-
-            alert(
-                result?.message ||
-                "Password reset failed."
-            );
-
-            return;
-        }
-
-
-        // ==============================
-        // SUCCESS
-        // ==============================
-
-        alert(
-            "Password changed successfully!\n\n" +
-            "You can now log in with your new password."
-        );
-
-
-        // ==============================
-        // RETURN TO LOGIN
-        // ==============================
-
-        backToLogin();
-
-
-    } catch (err) {
-
-        console.error(
-            "Reset password error:",
-            err
-        );
-
-        alert(
-            "Something went wrong while changing your password."
-        );
+    const title = document.getElementById("forgotTitle");
+    const desc = document.getElementById("forgotDescription");
+    if (step === 1) {
+        if (title) title.textContent = "Reset Your Password";
+        if (desc) desc.textContent = "Enter the email address linked to your account. We will send you a secure reset link.";
+    } else if (step === 2) {
+        if (title) title.textContent = "Check Your Email";
+        if (desc) desc.textContent = "Open the link we sent to continue resetting your password.";
+    } else if (step === 3) {
+        if (title) title.textContent = "Set a New Password";
+        if (desc) desc.textContent = "Enter and confirm your new password below.";
+    } else if (step === 4) {
+        if (title) title.textContent = "All Done";
+        if (desc) desc.textContent = "Your password has been updated successfully.";
     }
 }
 
+function sbaAuthRedirectTo() {
+    const path = window.location.pathname || "/system.html";
+    const base = path.includes("system") ? path : "/system.html";
+    return window.location.origin + base;
+}
 
-async function sendResetOTP() {
+/**
+ * Send Supabase password recovery email with link back to this app
+ * (same approach as Nabeng Invoice).
+ */
+async function sendPasswordResetEmail() {
+    const emailEl = document.getElementById("fpEmail");
+    const email = (emailEl && emailEl.value ? emailEl.value : resetEmail || "").trim();
+    const msg = document.getElementById("fpResetMsg");
+    const btn = document.getElementById("fpSendLinkBtn");
 
-    const username =
-        document.getElementById("fpUsername").value.trim();
-
-    const contact =
-        document.getElementById("fpContact").value.trim();
-
-    if (!username || !contact) {
-        alert("Please enter your username and email/phone.");
+    if (!email) {
+        if (msg) {
+            msg.textContent = "Please enter your email address.";
+            msg.className = "sba-sub-msg error";
+        } else {
+            alert("Please enter your email address.");
+        }
         return;
     }
 
-    const button =
-        document.querySelector("#forgotStep1 button");
+    if (!supabaseClient) {
+        alert("System is not ready. Please refresh the page.");
+        return;
+    }
 
-    if (button) {
-        button.disabled = true;
-        button.innerText = "Sending...";
+    if (btn) {
+        btn.disabled = true;
+        const span = btn.querySelector("span");
+        if (span) span.textContent = "Sending…";
+    }
+    if (msg) {
+        msg.textContent = "";
+        msg.className = "sba-sub-msg";
     }
 
     try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: sbaAuthRedirectTo()
+        });
+        if (error) throw error;
 
-        const response = await fetch(
-            "https://ftslcifbzohhgljqcgus.supabase.co/functions/v1/send-reset-otp",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    username: username,
-                    contact: contact
-                })
-            }
-        );
-
-        const result = await response.json();
-
-        console.log("OTP response:", result);
-
-        if (!response.ok || !result.success) {
-            throw new Error(
-                result.message || "Unable to send OTP."
-            );
-        }
-
-        // Save reset information
-        resetUsername = username;
-        resetContact = contact;
-        resetUserId = result.userId;
-        resetEmail = result.email;
-
-        // TEMPORARY TEST
-        // The OTP will later be emailed.
-        alert("TEST OTP: " + result.otp);
+        resetEmail = email;
+        const sent = document.getElementById("fpSentEmail");
+        if (sent) sent.textContent = email;
 
         showForgotStep(2);
+        updateForgotProgress(2);
 
-        document.getElementById("fpOTP").focus();
-
-    } catch (error) {
-
-        console.error("OTP ERROR:", error);
-
-        alert(
-            error.message ||
-            "Unable to send OTP. Please try again."
-        );
-
+        if (msg) {
+            msg.textContent = "Check your email for the password reset link.";
+            msg.className = "sba-sub-msg success";
+        }
+    } catch (err) {
+        console.error("resetPasswordForEmail:", err);
+        const m = (err && err.message) || "Could not send reset email.";
+        if (msg) {
+            msg.textContent = m;
+            msg.className = "sba-sub-msg error";
+        } else {
+            alert(m);
+        }
     } finally {
-
-        if (button) {
-            button.disabled = false;
-            button.innerText = "Send OTP";
+        if (btn) {
+            btn.disabled = false;
+            const span = btn.querySelector("span");
+            if (span) span.textContent = "Send Reset Link";
         }
     }
 }
 
-async function verifyResetOTP() {
-
-    const otp =
-        document.getElementById("fpOTP").value.trim();
-
-    if (!otp) {
-        alert("Please enter the OTP.");
-        return;
-    }
-
-    const button =
-        document.querySelector("#forgotStep2 button");
-
-    if (button) {
-        button.disabled = true;
-        button.innerText = "Verifying...";
-    }
-
+/**
+ * Parse Supabase auth callback type from hash or query.
+ * Common values: recovery | signup | invite | email | magiclink
+ */
+function sbaGetAuthCallbackType() {
+    const hash = window.location.hash || "";
+    const search = window.location.search || "";
     try {
-
-        const response = await fetch(
-            "https://ftslcifbzohhgljqcgus.supabase.co/functions/v1/verify-reset-otp",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    userId: resetUserId,
-                    otp: otp
-                })
-            }
-        );
-
-        const result = await response.json();
-
-        console.log("OTP verification:", result);
-
-        if (!response.ok || !result.success) {
-            throw new Error(
-                result.message || "OTP verification failed."
-            );
+        if (hash.includes("type=")) {
+            const params = new URLSearchParams(hash.replace(/^#/, ""));
+            const t = (params.get("type") || "").toLowerCase();
+            if (t) return t;
         }
-
-        resetVerified = true;
-
-        alert("OTP verified successfully.");
-
-        showForgotStep(3);
-
-        document
-            .getElementById("fpNewPassword")
-            .focus();
-
-    } catch (error) {
-
-        console.error("VERIFY OTP ERROR:", error);
-
-        alert(
-            error.message ||
-            "Unable to verify OTP."
-        );
-
-    } finally {
-
-        if (button) {
-            button.disabled = false;
-            button.innerText = "Verify OTP";
+    } catch (e) {}
+    try {
+        if (search.includes("type=")) {
+            const params = new URLSearchParams(search.replace(/^\?/, ""));
+            const t = (params.get("type") || "").toLowerCase();
+            if (t) return t;
         }
+    } catch (e) {}
+    // Fallback string checks
+    const blob = (hash + " " + search).toLowerCase();
+    if (blob.includes("type=recovery")) return "recovery";
+    if (blob.includes("type=invite")) return "invite";
+    if (blob.includes("type=signup")) return "signup";
+    if (blob.includes("type=email")) return "email";
+    if (blob.includes("type=magiclink")) return "magiclink";
+    return "";
+}
+
+/**
+ * True when the current URL looks like a Supabase recovery / invite callback.
+ */
+function sbaUrlLooksLikeRecovery() {
+    const t = sbaGetAuthCallbackType();
+    return t === "recovery" || t === "invite";
+}
+
+/**
+ * True when URL is an email confirmation (signup) callback.
+ */
+function sbaUrlLooksLikeEmailConfirm() {
+    const t = sbaGetAuthCallbackType();
+    return t === "signup" || t === "email" || t === "magiclink";
+}
+
+/**
+ * Show a clear success state on the login screen after email is confirmed.
+ */
+function sbaShowEmailConfirmedScreen() {
+    try {
+        localStorage.removeItem("loggedInUser");
+    } catch (e) {}
+
+    const app = document.getElementById("app");
+    if (app) app.style.display = "none";
+
+    const loginBox = document.getElementById("loginBox");
+    if (loginBox) loginBox.style.display = "block";
+
+    const login = document.getElementById("loginSection");
+    const signup = document.getElementById("signupSection");
+    const forgot = document.getElementById("forgotSection");
+    if (login) login.style.display = "block";
+    if (signup) signup.style.display = "none";
+    if (forgot) forgot.style.display = "none";
+
+    const msg = document.getElementById("loginMsg");
+    if (msg) {
+        msg.style.color = "#15803d";
+        msg.textContent =
+            "Email confirmed successfully. You can now sign in with your email and password.";
+    } else {
+        alert("Email confirmed successfully. You can now sign in with your email and password.");
     }
 }
 
-async function changeResetPassword() {
+/**
+ * Handle signup / email confirmation links from Supabase.
+ * Confirms the account, cleans the URL, shows success — does not open the app.
+ */
+async function sbaHandleEmailConfirmationLink() {
+    try {
+        if (!supabaseClient) return false;
+        if (!sbaUrlLooksLikeEmailConfirm()) return false;
 
-    // =========================
-    // CHECK OTP VERIFICATION
-    // =========================
+        // Let Supabase parse tokens from the URL into a session
+        await new Promise((r) => setTimeout(r, 400));
 
-    if (!resetVerified) {
-        alert("Please verify the OTP first.");
-        return;
+        try {
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (error) console.warn("Email confirm session:", error);
+            // Session may exist briefly after confirm; we still send user to login
+            if (data && data.session) {
+                // Sign out so they log in intentionally (profile already created at signup)
+                try {
+                    await supabaseClient.auth.signOut();
+                } catch (e) {}
+            }
+        } catch (e) {
+            console.warn("email confirm getSession:", e);
+        }
+
+        try {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {}
+
+        sbaShowEmailConfirmedScreen();
+        return true;
+    } catch (e) {
+        console.error("sbaHandleEmailConfirmationLink:", e);
+        return false;
     }
+}
 
-    // =========================
-    // GET PASSWORDS
-    // =========================
+/**
+ * Show the set-new-password screen and block the main app (Invoice-style).
+ */
+function sbaOpenRecoveryPasswordScreen() {
+    recoverySessionActive = true;
 
-    const newPassword =
-        document.getElementById("fpNewPassword").value.trim();
+    // Do not auto-open the dashboard from a stale local session
+    try {
+        localStorage.removeItem("loggedInUser");
+    } catch (e) {}
 
-    const confirmPassword =
-        document.getElementById("fpConfirmPassword").value.trim();
+    const app = document.getElementById("app");
+    if (app) app.style.display = "none";
 
-    // =========================
-    // VALIDATION
-    // =========================
+    const loginBox = document.getElementById("loginBox");
+    if (loginBox) loginBox.style.display = "block";
+
+    const login = document.getElementById("loginSection");
+    const signup = document.getElementById("signupSection");
+    const forgot = document.getElementById("forgotSection");
+    if (login) login.style.display = "none";
+    if (signup) signup.style.display = "none";
+    if (forgot) forgot.style.display = "flex";
+
+    const progress = document.querySelector("#forgotSection .forgot-progress");
+    if (progress) progress.style.display = "none";
+    const stepLabel = document.getElementById("forgotStepLabel");
+    if (stepLabel) stepLabel.style.display = "none";
+
+    showForgotStep(3);
+    updateForgotProgress(3);
+
+    const title = document.getElementById("forgotTitle");
+    const desc = document.getElementById("forgotDescription");
+    if (title) title.textContent = "Set a new password";
+    if (desc) desc.textContent = "Enter your new password below to finish resetting your account.";
+
+    const np = document.getElementById("fpNewPassword");
+    if (np) setTimeout(() => np.focus(), 80);
+}
+
+/**
+ * When user opens the email recovery link, Supabase puts a recovery session
+ * in the URL. Detect it and show the new-password form — do NOT open the app.
+ */
+async function sbaHandlePasswordRecoveryLink() {
+    try {
+        if (!supabaseClient) {
+            console.warn("Recovery: supabaseClient not ready");
+            return false;
+        }
+
+        // Only treat this load as recovery when the URL says so (never a normal persisted session)
+        if (!sbaUrlLooksLikeRecovery()) {
+            return false;
+        }
+
+        // Give Supabase time to parse hash/query tokens into a session
+        await new Promise((r) => setTimeout(r, 400));
+
+        try {
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (error) console.error("Recovery session error:", error);
+            if (!(data && data.session)) {
+                // Session may still arrive via PASSWORD_RECOVERY event; still open UI
+                console.warn("Recovery URL detected but session not ready yet");
+            }
+        } catch (e) {
+            console.warn("getSession during recovery:", e);
+        }
+
+        recoverySessionActive = true;
+        sbaOpenRecoveryPasswordScreen();
+
+        // Clean URL like Nabeng Invoice (keep path only)
+        try {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {}
+
+        return true;
+    } catch (e) {
+        console.error("sbaHandlePasswordRecoveryLink:", e);
+        return false;
+    }
+}
+
+/**
+ * Listen for Supabase PASSWORD_RECOVERY (covers PKCE / delayed session).
+ */
+function sbaInstallRecoveryAuthListener() {
+    if (!supabaseClient || window.__sbaRecoveryListenerInstalled) return;
+    window.__sbaRecoveryListenerInstalled = true;
+    try {
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (event === "PASSWORD_RECOVERY") {
+                console.log("[SBA] PASSWORD_RECOVERY event");
+                recoverySessionActive = true;
+                sbaOpenRecoveryPasswordScreen();
+                return;
+            }
+            // If recovery UI is open, never auto-route into the app from session events
+            if (recoverySessionActive) return;
+
+            // Email confirmation can surface as SIGNED_IN with type=signup still in URL
+            if (
+                (event === "SIGNED_IN" || event === "USER_UPDATED") &&
+                typeof sbaUrlLooksLikeEmailConfirm === "function" &&
+                sbaUrlLooksLikeEmailConfirm()
+            ) {
+                console.log("[SBA] email confirmation via", event);
+                try {
+                    await supabaseClient.auth.signOut();
+                } catch (e) {}
+                try {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (e) {}
+                sbaShowEmailConfirmedScreen();
+            }
+        });
+    } catch (e) {
+        console.warn("recovery listener:", e);
+    }
+}
+
+/**
+ * Update password using recovery session from email link.
+ */
+async function updatePasswordFromRecovery() {
+    const newPassword = (document.getElementById("fpNewPassword")?.value || "").trim();
+    const confirmPassword = (document.getElementById("fpConfirmPassword")?.value || "").trim();
+    const msg = document.getElementById("fpUpdateMsg");
+    const btn = document.getElementById("fpUpdateBtn");
 
     if (!newPassword || !confirmPassword) {
-        alert("Please enter and confirm your new password.");
+        if (msg) {
+            msg.textContent = "Please enter and confirm your new password.";
+            msg.className = "sba-sub-msg error";
+        }
         return;
     }
-
     if (newPassword.length < 6) {
-        alert("Password must be at least 6 characters.");
+        if (msg) {
+            msg.textContent = "Password must be at least 6 characters.";
+            msg.className = "sba-sub-msg error";
+        }
         return;
     }
-
     if (newPassword !== confirmPassword) {
-        alert("Passwords do not match.");
+        if (msg) {
+            msg.textContent = "Passwords do not match.";
+            msg.className = "sba-sub-msg error";
+        }
         return;
     }
 
-    if (!resetUserId) {
-        alert("Reset session is missing. Please start again.");
-        return;
+    if (btn) {
+        btn.disabled = true;
+        const span = btn.querySelector("span");
+        if (span) span.textContent = "Updating…";
     }
-
-    // =========================
-    // BUTTON
-    // =========================
-
-    const button =
-        document.querySelector("#forgotStep3 button");
-
-    if (button) {
-        button.disabled = true;
-        button.innerText = "Changing Password...";
+    if (msg) {
+        msg.textContent = "";
+        msg.className = "sba-sub-msg";
     }
 
     try {
+        const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+        if (error) throw error;
 
-        // =========================
-        // CALL SUPABASE FUNCTION
-        // =========================
-
-        const response = await fetch(
-            "https://ftslcifbzohhgljqcgus.supabase.co/functions/v1/rapid-responder",
-            {
-                method: "POST",
-
-                headers: {
-                    "Authorization":
-                        "Bearer sb_publishable_xF3b2JXH72rrwvJ2MCfOuA_Lm_C-a2D",
-
-                    "apikey":
-                        "sb_publishable_xF3b2JXH72rrwvJ2MCfOuA_Lm_C-a2D",
-
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    userId: resetUserId,
-                    newPassword: newPassword
-                })
-            }
-        );
-
-        // =========================
-        // READ RESPONSE
-        // =========================
-
-        const result = await response.json();
-
-        console.log(
-            "PASSWORD RESET RESPONSE:",
-            result
-        );
-
-        if (!response.ok || !result.success) {
-            throw new Error(
-                result.message ||
-                "Unable to change password."
-            );
-        }
-
-        // =========================
-        // SUCCESS
-        // =========================
-
-        resetVerified = false;
-
-        resetUsername = "";
-        resetContact = "";
-        resetUserId = "";
-        resetEmail = "";
-
-        document.getElementById("fpNewPassword").value = "";
-        document.getElementById("fpConfirmPassword").value = "";
-
+        recoverySessionActive = false;
         showForgotStep(4);
-
-    } catch (error) {
-
-        console.error(
-            "PASSWORD RESET ERROR:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to change password. Please try again."
-        );
-
+        updateForgotProgress(4);
+        if (msg) {
+            msg.textContent = "Password updated successfully.";
+            msg.className = "sba-sub-msg success";
+        }
+        // Sign out recovery session so they log in cleanly
+        try {
+            await supabaseClient.auth.signOut();
+        } catch (e) {}
+    } catch (err) {
+        console.error("updateUser password:", err);
+        const m = (err && err.message) || "Could not update password.";
+        if (msg) {
+            msg.textContent = m;
+            msg.className = "sba-sub-msg error";
+        } else {
+            alert(m);
+        }
     } finally {
-
-        if (button) {
-            button.disabled = false;
-            button.innerText = "Change Password";
+        if (btn) {
+            btn.disabled = false;
+            const span = btn.querySelector("span");
+            if (span) span.textContent = "Update Password";
         }
     }
 }
+
+// Backwards-compatible aliases (old OTP button names)
+async function sendResetOTP() {
+    return sendPasswordResetEmail();
+}
+async function verifyResetOTP() {
+    alert("Please use the reset link sent to your email instead of an OTP code.");
+}
+async function changeResetPassword() {
+    return updatePasswordFromRecovery();
+}
+async function resendResetOTP() {
+    return sendPasswordResetEmail();
+}
+
+
 
 
 function triggerLogoUpload(){
@@ -1513,50 +1492,108 @@ function generatePassword(length = 6) {
 
 
 
+/**
+ * Build a 3-letter school prefix from the school name.
+ * Example: "SKYLIMIT ACADEMY" → "SKY"
+ * Falls back to "SBA" if the name is missing.
+ */
+function getSchoolStudentIdPrefix() {
+    let name = "";
+    try {
+        name =
+            (currentUser &&
+                (currentUser.schoolname ||
+                    currentUser.schoolName ||
+                    (currentUser._schoolSubscription &&
+                        currentUser._schoolSubscription.schoolname))) ||
+            "";
+    } catch (e) {
+        name = "";
+    }
+
+    // Letters only, uppercase
+    const letters = String(name)
+        .toUpperCase()
+        .replace(/[^A-Z]/g, "");
+
+    if (letters.length >= 3) {
+        return letters.slice(0, 3);
+    }
+    if (letters.length > 0) {
+        // Pad short names (e.g. "AB" → "ABX" style not needed; use SBA)
+        return (letters + "SBA").slice(0, 3);
+    }
+    return "SBA";
+}
+
+/**
+ * Student portal ID:
+ *   [3 letters of school name] + [2-digit year] + [4 random digits]
+ * Example for Skylimit Academy in 2026: SKY269160
+ * instead of the old global SBA269160.
+ */
 async function generateStudentId(){
 
     let newID;
     let found = false;
 
+    const prefix = getSchoolStudentIdPrefix();
+    const year2 = String(new Date().getFullYear()).slice(-2);
 
-    while(!found){
-
-        let randomNumber =
-        Math.floor(1000 + Math.random() * 9000);
-
-
-        newID =
-        "SBA26" + randomNumber;
-
-
-
-        const {data,error} =
-        await supabaseClient
-        .from("students")
-        .select("studentid")
-        .eq("studentid", newID);
-
-
-
-        if(error){
-
-            console.log(error);
-            return null;
-
+    // Prefer school name from DB if local user object lacks it
+    let resolvedPrefix = prefix;
+    if (
+        resolvedPrefix === "SBA" &&
+        currentUser &&
+        currentUser.schoolid &&
+        typeof supabaseClient !== "undefined"
+    ) {
+        try {
+            const { data: schoolRow } = await supabaseClient
+                .from("schools")
+                .select("schoolname")
+                .eq("schoolid", currentUser.schoolid)
+                .maybeSingle();
+            if (schoolRow && schoolRow.schoolname) {
+                const letters = String(schoolRow.schoolname)
+                    .toUpperCase()
+                    .replace(/[^A-Z]/g, "");
+                if (letters.length >= 3) {
+                    resolvedPrefix = letters.slice(0, 3);
+                }
+            }
+        } catch (e) {
+            console.warn("school prefix lookup:", e);
         }
-
-
-        if(!data || data.length === 0){
-
-            found = true;
-
-        }
-
     }
 
+    let attempts = 0;
+    while (!found) {
+        attempts += 1;
+        if (attempts > 40) {
+            console.error("Could not generate a unique student ID");
+            return null;
+        }
+
+        const randomNumber = Math.floor(1000 + Math.random() * 9000);
+        newID = resolvedPrefix + year2 + randomNumber;
+
+        const { data, error } = await supabaseClient
+            .from("students")
+            .select("studentid")
+            .eq("studentid", newID);
+
+        if (error) {
+            console.log(error);
+            return null;
+        }
+
+        if (!data || data.length === 0) {
+            found = true;
+        }
+    }
 
     return newID;
-
 }
 
 function copyStudentID() {
@@ -7988,15 +8025,107 @@ async function generateReportWithTerm(
     // =========================================================
 
     if (showPreview) {
-
-        document.getElementById("reportOutput").innerHTML = html;
-
+        const out = document.getElementById("reportOutput");
+        if (out) {
+            out.innerHTML =
+                '<div class="report-preview-scaler">' + html + "</div>";
+            // Scale A4 sheet to fit narrow screens without breaking table layout
+            if (typeof fitReportPreviewToScreen === "function") {
+                requestAnimationFrame(() => fitReportPreviewToScreen());
+                setTimeout(fitReportPreviewToScreen, 80);
+                setTimeout(fitReportPreviewToScreen, 300);
+            }
+        }
     }
 
 
     return html;
 
 }
+
+/**
+ * Scale #printArea (fixed A4 design width 794px) so the full report
+ * is visible on small screens without crushing columns.
+ */
+function fitReportPreviewToScreen() {
+    try {
+        const area = document.getElementById("printArea");
+        if (!area) return;
+
+        const scaler =
+            area.closest(".report-preview-scaler") ||
+            document.getElementById("reportOutput");
+        if (!scaler) return;
+
+        // Design width of the report sheet
+        const designWidth = 794;
+        const available = Math.max(
+            200,
+            (scaler.clientWidth || scaler.getBoundingClientRect().width || window.innerWidth) - 8
+        );
+
+        const scale = Math.min(1, available / designWidth);
+
+        area.style.width = designWidth + "px";
+        area.style.minWidth = designWidth + "px";
+        area.style.maxWidth = "none";
+        area.style.boxSizing = "border-box";
+        area.style.transformOrigin = "top left";
+        area.style.transform = scale < 0.999 ? "scale(" + scale + ")" : "none";
+
+        // Reserve vertical space so the scaled sheet does not overlap following UI
+        const naturalHeight = area.scrollHeight || area.offsetHeight || 1123;
+        if (scaler.classList.contains("report-preview-scaler")) {
+            scaler.style.height = Math.ceil(naturalHeight * scale) + "px";
+        }
+    } catch (e) {
+        console.warn("fitReportPreviewToScreen:", e);
+    }
+}
+
+// Keep report preview fitted when rotating / resizing the phone
+(function sbaBindReportPreviewResize() {
+    if (window.__sbaReportPreviewResizeBound) return;
+    window.__sbaReportPreviewResizeBound = true;
+    let t = null;
+    window.addEventListener("resize", function () {
+        clearTimeout(t);
+        t = setTimeout(function () {
+            if (document.getElementById("printArea")) {
+                fitReportPreviewToScreen();
+            }
+        }, 120);
+    });
+})();
+
+window.fitReportPreviewToScreen = fitReportPreviewToScreen;
+
+/** Temporarily remove preview scale so PDF capture is full size. */
+async function withUnscaledPrintArea(fn) {
+    const area = document.getElementById("printArea");
+    if (!area) return await fn(null);
+    const prevTransform = area.style.transform;
+    const prevOrigin = area.style.transformOrigin;
+    const scaler = area.closest(".report-preview-scaler");
+    const prevScalerHeight = scaler ? scaler.style.height : "";
+    area.style.transform = "none";
+    if (scaler) scaler.style.height = "auto";
+    try {
+        // let layout settle
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        return await fn(area);
+    } finally {
+        area.style.transform = prevTransform;
+        area.style.transformOrigin = prevOrigin;
+        if (scaler) scaler.style.height = prevScalerHeight;
+        if (typeof fitReportPreviewToScreen === "function") {
+            fitReportPreviewToScreen();
+        }
+    }
+}
+window.withUnscaledPrintArea = withUnscaledPrintArea;
+
+
 
 
 
@@ -9113,9 +9242,11 @@ async function downloadPDF(){
 
     let fileName = `${studentname}_${term}.pdf`;
 
-    const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true
+    const canvas = await withUnscaledPrintArea(async (el) => {
+        return await html2canvas(el || element, {
+            scale: 3,
+            useCORS: true
+        });
     });
 
     const imgData = canvas.toDataURL("image/png", 1.0);
@@ -9243,16 +9374,18 @@ async function downloadStudentReport(){
 
 
 
-    // Convert report to image
+    // Convert report to image (full size, ignore on-screen scale)
 
     const canvas =
-        await html2canvas(
-            element,
-            {
-                scale:3,
-                useCORS:true
-            }
-        );
+        await withUnscaledPrintArea(async (el) => {
+            return await html2canvas(
+                el || element,
+                {
+                    scale:3,
+                    useCORS:true
+                }
+            );
+        });
 
 
     const imgData =
@@ -9373,10 +9506,47 @@ if(downloadArea){
 // AUTO LOGIN AFTER REFRESH
 async function __nabengWindowOnLoad () {
 
+    // Auth email links must not open the dashboard automatically
+    try {
+        if (typeof sbaInstallRecoveryAuthListener === "function") {
+            sbaInstallRecoveryAuthListener();
+        }
 
-    let savedUser = JSON.parse(
-        localStorage.getItem("loggedInUser")
-    );
+        // 1) Signup / email confirmation link
+        if (typeof sbaHandleEmailConfirmationLink === "function") {
+            const confirmed = await sbaHandleEmailConfirmationLink();
+            if (confirmed) {
+                console.log("[SBA] email confirmation handled — skipping auto-login");
+                return;
+            }
+        }
+
+        // 2) Password recovery link
+        if (typeof sbaHandlePasswordRecoveryLink === "function") {
+            const handled = await sbaHandlePasswordRecoveryLink();
+            if (handled || recoverySessionActive) {
+                console.log("[SBA] recovery link handled — skipping auto-login");
+                return;
+            }
+        }
+        if (typeof sbaUrlLooksLikeRecovery === "function" && sbaUrlLooksLikeRecovery()) {
+            if (typeof sbaOpenRecoveryPasswordScreen === "function") {
+                sbaOpenRecoveryPasswordScreen();
+            }
+            return;
+        }
+    } catch (e) {
+        console.warn("auth email gate:", e);
+    }
+
+    let savedUser = null;
+    try {
+        savedUser = JSON.parse(
+            localStorage.getItem("loggedInUser")
+        );
+    } catch (e) {
+        savedUser = null;
+    }
 
 
     if (savedUser) {
@@ -22633,6 +22803,10 @@ async function submitAdmission(event) {
     }
 
 }
+
+
+
+
 
 
 

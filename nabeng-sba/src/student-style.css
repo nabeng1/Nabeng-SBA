@@ -6106,3 +6106,122 @@ body.dark-mode ::-webkit-scrollbar-thumb {
     background: #334155;
 }
 
+
+/* =========================================================
+   Student subscription / trial lock screen
+========================================================= */
+.student-sub-lock {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at top, #1e3a8a 0%, transparent 55%),
+    linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  box-sizing: border-box;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.student-sub-card {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  color: #0f172a;
+  text-align: left;
+}
+
+.student-sub-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.student-sub-brand img {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.student-sub-brand strong {
+  display: block;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.student-sub-brand span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.student-sub-card h2 {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.student-sub-status {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.student-sub-teacher-msg {
+  margin: 0 0 24px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.student-sub-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #3f51b5;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.student-sub-signout:hover {
+  background: #303f9f;
+}
+
+body.dark-mode .student-sub-card {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+body.dark-mode .student-sub-brand strong,
+body.dark-mode .student-sub-card h2 {
+  color: #f1f5f9;
+}
+
+body.dark-mode .student-sub-status {
+  color: #cbd5e1;
+}
+
+body.dark-mode .student-sub-teacher-msg {
+  background: #422006;
+  border-color: #a16207;
+  color: #fde68a;
+}

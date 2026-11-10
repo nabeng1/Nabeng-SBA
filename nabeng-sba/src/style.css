@@ -135,11 +135,44 @@ th, td { padding:10px; border-bottom:1px solid #374151; text-align:center; }
         grid-template-columns:repeat(2,1fr);
     }
 
-    /* TABLE SCROLL */
+    /* TABLE SCROLL (do not break report sheet tables) */
     table {
         display:block;
         overflow-x:auto;
         white-space:nowrap;
+    }
+
+    #printArea table,
+    #printArea table thead,
+    #printArea table tbody,
+    #printArea table tr,
+    #printArea table th,
+    #printArea table td {
+        display: table !important;
+        white-space: normal !important;
+    }
+
+    #printArea table {
+        display: table !important;
+        width: 100% !important;
+        overflow: visible !important;
+    }
+
+    #printArea table thead {
+        display: table-header-group !important;
+    }
+
+    #printArea table tbody {
+        display: table-row-group !important;
+    }
+
+    #printArea table tr {
+        display: table-row !important;
+    }
+
+    #printArea table th,
+    #printArea table td {
+        display: table-cell !important;
     }
 
     /* SUBJECT INPUTS STACK */
@@ -148,10 +181,13 @@ th, td { padding:10px; border-bottom:1px solid #374151; text-align:center; }
         display:block;
     }
 
-    /* REPORT CARD SCALE */
+    /* Keep report at design size; JS scales the preview to fit */
     #printArea {
-        width:100% !important;
-        padding:10px !important;
+        width: 794px !important;
+        min-width: 794px !important;
+        max-width: none !important;
+        padding: 38px !important;
+        transform-origin: top left;
     }
 
     /* WELCOME TEXT */
@@ -12495,10 +12531,33 @@ body.dark-mode #noticesPage .notices-empty-state {
 }
 
 .report-output-content {
-
     min-height: 70px;
-
     color: #10111a;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Wrapper used to scale A4 report preview on small screens */
+.report-preview-scaler {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.report-preview-scaler #printArea {
+    transform-origin: top left;
+}
+
+@media (max-width: 900px) {
+    .report-output-card {
+        padding: 12px !important;
+    }
+
+    .report-output-content {
+        margin: 0 -4px;
+    }
 }
 
 .single-report-download-area {
@@ -13985,6 +14044,110 @@ body.dark-mode #noticesPage .notices-empty-state {
 
 .input-box input::placeholder {
     color: #a3abb8;
+}
+
+/* ---------- Forgot form inputs (clean light fields — beat global dark !important) ---------- */
+#forgotSection .input-group label {
+    color: #374151 !important;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+#forgotSection .input-box {
+    height: 48px;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+#forgotSection .input-box:focus-within {
+    background: #ffffff !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+#forgotSection .input-icon {
+    color: #9ca3af !important;
+}
+
+#forgotSection .input-box:focus-within .input-icon {
+    color: #3b82f6 !important;
+}
+
+#forgotSection .input-box input,
+#forgotSection input[type="email"],
+#forgotSection input[type="password"],
+#forgotSection input[type="text"] {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a;
+    font-size: 14px !important;
+    box-shadow: none !important;
+}
+
+#forgotSection .input-box input::placeholder,
+#forgotSection input::placeholder {
+    color: #9ca3af !important;
+    -webkit-text-fill-color: #9ca3af !important;
+    opacity: 1;
+}
+
+/* Browser autofill (often paints black/yellow on password fields) */
+#forgotSection input:-webkit-autofill,
+#forgotSection input:-webkit-autofill:hover,
+#forgotSection input:-webkit-autofill:focus,
+#forgotSection input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 40px #ffffff inset !important;
+    box-shadow: 0 0 0 40px #ffffff inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a;
+    transition: background-color 99999s ease-out 0s;
+}
+
+#forgotSection .password-info,
+#forgotSection .otp-info {
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 18px;
+    text-align: center;
+}
+
+#forgotSection .password-info strong,
+#forgotSection .otp-info strong {
+    color: #0f172a;
+}
+
+#forgotSection .password-info p,
+#forgotSection .otp-info p {
+    color: #64748b;
+}
+
+#forgotSection .forgot-password-card {
+    background: #ffffff !important;
+    color: #0f172a;
+}
+
+#forgotSection .forgot-header h2,
+#forgotSection .forgot-header p,
+#forgotSection .forgot-footer,
+#forgotSection .forgot-footer span {
+    color: #0f172a;
+}
+
+#forgotSection .forgot-footer span {
+    color: #64748b;
+}
+
+#forgotSection .back-login-btn {
+    color: #2563eb !important;
+    background: transparent !important;
 }
 
 /* ---------- Forgot buttons ---------- */

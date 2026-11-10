@@ -172,11 +172,7 @@
 
 
 <!-- =========================================================
-     FORGOT PASSWORD
-
-     It remains in the same DOM area so existing JS can find
-     it, but CSS makes it a full-screen overlay. This prevents
-     the "card inside card" problem.
+     FORGOT PASSWORD — email reset link (same pattern as Nabeng Invoice)
      ========================================================= -->
 
 <div
@@ -187,353 +183,161 @@
 
     <div class="forgot-password-card">
 
-
         <!-- HEADER -->
-
         <div class="forgot-header">
-
             <div class="forgot-icon">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-
-            <div
-                class="forgot-step-label"
-                id="forgotStepLabel"
-            >
+            <div class="forgot-step-label" id="forgotStepLabel">
                 PASSWORD RECOVERY
             </div>
-
             <h2 id="forgotTitle">
-                Reset Your Password
+                Reset your password
             </h2>
-
             <p id="forgotDescription">
-                Enter your username and registered
-                email or phone number to recover your account.
+                Enter the email linked to your Nabeng-SBA account and we&rsquo;ll
+                send you a reset link.
             </p>
-
         </div>
 
-
         <!-- PROGRESS -->
-
         <div class="forgot-progress">
-
-            <div
-                class="progress-step active"
-                id="progress1"
-            >
+            <div class="progress-step active" id="progress1">
                 <span>1</span>
-                <small>Account</small>
+                <small>Email</small>
             </div>
-
-            <div
-                class="progress-line"
-                id="line1"
-            ></div>
-
-            <div
-                class="progress-step"
-                id="progress2"
-            >
+            <div class="progress-line" id="line1"></div>
+            <div class="progress-step" id="progress2">
                 <span>2</span>
-                <small>Verify</small>
+                <small>Link</small>
             </div>
-
-            <div
-                class="progress-line"
-                id="line2"
-            ></div>
-
-            <div
-                class="progress-step"
-                id="progress3"
-            >
+            <div class="progress-line" id="line2"></div>
+            <div class="progress-step" id="progress3">
                 <span>3</span>
                 <small>Password</small>
             </div>
-
-            <div
-                class="progress-line"
-                id="line3"
-            ></div>
-
-            <div
-                class="progress-step"
-                id="progress4"
-            >
-                <span>
-                    <i class="fa-solid fa-check"></i>
-                </span>
+            <div class="progress-line" id="line3"></div>
+            <div class="progress-step" id="progress4">
+                <span><i class="fa-solid fa-check"></i></span>
                 <small>Done</small>
             </div>
-
         </div>
 
-
-        <!-- =================================================
-             STEP 1
-             ================================================= -->
-
-        <div
-            id="forgotStep1"
-            class="forgot-step"
-        >
-
+        <!-- STEP 1: email -->
+        <div id="forgotStep1" class="forgot-step">
             <div class="input-group">
-
-                <label for="fpUsername">
-                    Username
-                </label>
-
+                <label for="fpEmail">Email address</label>
                 <div class="input-box">
-
-                    <span class="input-icon">
-                        <i class="fa-solid fa-user"></i>
-                    </span>
-
-                    <input
-                        id="fpUsername"
-                        type="text"
-                        placeholder="Enter your username"
-                        autocomplete="username"
-                    >
-
-                </div>
-
-            </div>
-
-
-            <div class="input-group">
-
-                <label for="fpContact">
-                    Email or Phone Number
-                </label>
-
-                <div class="input-box">
-
                     <span class="input-icon">
                         <i class="fa-solid fa-envelope"></i>
                     </span>
-
                     <input
-                        id="fpContact"
-                        type="text"
-                        placeholder="Enter registered email or phone"
+                        id="fpEmail"
+                        type="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
                     >
-
                 </div>
-
             </div>
-
-
+            <p id="fpResetMsg" class="sba-sub-msg" style="min-height:1.2em;"></p>
             <button
                 type="button"
                 class="forgot-primary-btn"
-                onclick="sendResetOTP()"
+                id="fpSendLinkBtn"
+                onclick="sendPasswordResetEmail()"
             >
-                <span>Send OTP</span>
+                <span>Send Reset Link</span>
                 <i class="fa-solid fa-arrow-right btn-arrow"></i>
             </button>
-
         </div>
 
-
-        <!-- =================================================
-             STEP 2
-             ================================================= -->
-
-        <div
-            id="forgotStep2"
-            class="forgot-step"
-            style="display:none;"
-        >
-
+        <!-- STEP 2: check email -->
+        <div id="forgotStep2" class="forgot-step" style="display:none;">
             <div class="otp-info">
-
                 <div class="otp-icon">
                     <i class="fa-solid fa-envelope-circle-check"></i>
                 </div>
-
-                <strong>
-                    Check Your Email
-                </strong>
-
+                <strong>Check Your Email</strong>
                 <p>
-                    Enter the 6-digit verification code
-                    sent to your registered email.
+                    A password reset link has been sent to
+                    <strong id="fpSentEmail"></strong>.
+                    Open the link on this device to set a new password.
+                    It may take a minute to arrive.
                 </p>
-
             </div>
-
-
-            <div class="input-group">
-
-                <label for="fpOTP">
-                    Verification Code
-                </label>
-
-                <div class="input-box otp-box">
-
-                    <span class="input-icon">
-                        <i class="fa-solid fa-key"></i>
-                    </span>
-
-                    <input
-                        id="fpOTP"
-                        type="text"
-                        inputmode="numeric"
-                        maxlength="6"
-                        placeholder="000000"
-                        autocomplete="one-time-code"
-                    >
-
-                </div>
-
-            </div>
-
-
-            <button
-                type="button"
-                class="forgot-primary-btn"
-                onclick="verifyResetOTP()"
-            >
-                <span>Verify OTP</span>
-                <i class="fa-solid fa-arrow-right btn-arrow"></i>
-            </button>
-
-
             <div class="resend-wrapper">
-
-                <span>
-                    Didn't receive the code?
-                </span>
-
+                <span>Didn't get the email?</span>
                 <button
                     type="button"
                     class="resend-btn"
-                    onclick="resendResetOTP()"
+                    onclick="sendPasswordResetEmail()"
                 >
                     <i class="fa-solid fa-rotate-right"></i>
-                    Resend OTP
+                    Resend link
                 </button>
-
             </div>
-
         </div>
 
-
-        <!-- =================================================
-             STEP 3
-             ================================================= -->
-
-        <div
-            id="forgotStep3"
-            class="forgot-step"
-            style="display:none;"
-        >
-
+        <!-- STEP 3: set new password (opened from email link) -->
+        <div id="forgotStep3" class="forgot-step" style="display:none;">
             <div class="password-info">
-
                 <div class="password-icon">
                     <i class="fa-solid fa-lock"></i>
                 </div>
-
-                <strong>
-                    Create a New Password
-                </strong>
-
+                <strong>Set a New Password</strong>
                 <p>
-                    Choose a strong password that you
-                    haven't used before.
+                    Choose a strong password for your Nabeng-SBA account.
                 </p>
-
             </div>
-
-
             <div class="input-group">
-
-                <label for="fpNewPassword">
-                    New Password
-                </label>
-
+                <label for="fpNewPassword">New Password</label>
                 <div class="input-box">
-
                     <span class="input-icon">
                         <i class="fa-solid fa-lock"></i>
                     </span>
-
                     <input
                         id="fpNewPassword"
                         type="password"
                         placeholder="Enter new password"
                         autocomplete="new-password"
                     >
-
                 </div>
-
             </div>
-
-
             <div class="input-group">
-
-                <label for="fpConfirmPassword">
-                    Confirm Password
-                </label>
-
+                <label for="fpConfirmPassword">Confirm Password</label>
                 <div class="input-box">
-
                     <span class="input-icon">
                         <i class="fa-solid fa-shield"></i>
                     </span>
-
                     <input
                         id="fpConfirmPassword"
                         type="password"
                         placeholder="Confirm your new password"
                         autocomplete="new-password"
                     >
-
                 </div>
-
             </div>
-
-
+            <p id="fpUpdateMsg" class="sba-sub-msg" style="min-height:1.2em;"></p>
             <button
                 type="button"
                 class="forgot-primary-btn"
-                onclick="changeResetPassword()"
+                id="fpUpdateBtn"
+                onclick="updatePasswordFromRecovery()"
             >
-                <span>Change Password</span>
+                <span>Update Password</span>
                 <i class="fa-solid fa-arrow-right btn-arrow"></i>
             </button>
-
         </div>
 
-
-        <!-- =================================================
-             STEP 4
-             ================================================= -->
-
-        <div
-            id="forgotStep4"
-            class="forgot-step success-step"
-            style="display:none;"
-        >
-
+        <!-- STEP 4: success -->
+        <div id="forgotStep4" class="forgot-step success-step" style="display:none;">
             <div class="success-icon">
                 <i class="fa-solid fa-check"></i>
             </div>
-
-            <h3>
-                Password Changed Successfully
-            </h3>
-
+            <h3>Password Changed Successfully</h3>
             <p>
-                Your password has been changed successfully.
-                You can now log in using your new password.
+                Your password has been updated. You can now sign in with the new password.
             </p>
-
             <button
                 type="button"
                 class="forgot-primary-btn"
@@ -542,18 +346,11 @@
                 <span>Back to Login</span>
                 <i class="fa-solid fa-arrow-right btn-arrow"></i>
             </button>
-
         </div>
 
-
         <!-- FOOTER -->
-
         <div class="forgot-footer">
-
-            <span>
-                Remember your password?
-            </span>
-
+            <span>Remember your password?</span>
             <button
                 type="button"
                 onclick="backToLogin()"
@@ -562,10 +359,13 @@
                 <i class="fa-solid fa-arrow-left"></i>
                 Back to Login
             </button>
-
         </div>
 
     </div>
+
+</div>
+
+
 
 </div>
 

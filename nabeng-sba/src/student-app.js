@@ -26,6 +26,156 @@ window.supabase.createClient(
 // Logged-in student used by all student portal pages
 let currentStudent = null;
 
+/* =========================================================
+   SCHOOL SUBSCRIPTION / TRIAL GATE (same rules as teacher portal)
+========================================================= */
+
+function sbaStudentSubscriptionAllowed(profile) {
+    const p = profile || {};
+    const now = new Date();
+    // No subscription fields yet (legacy / not bootstrapped) — do not lock students
+    if (!p.subscription_status && !p.trial_ends_at && !p.subscription_ends_at) {
+        return { allowed: true, status: "unscoped" };
+    }
+    if (p.subscription_status === "trial" && p.trial_ends_at && new Date(p.trial_ends_at) > now) {
+        return { allowed: true, status: "trial", endsAt: p.trial_ends_at, plan: "trial" };
+    }
+    if (p.subscription_status === "active" && p.subscription_ends_at && new Date(p.subscription_ends_at) > now) {
+        return {
+            allowed: true,
+            status: "active",
+            plan: p.subscription_plan || "termly",
+            endsAt: p.subscription_ends_at
+        };
+    }
+    // Trial/active marked but end date missing or past, or pending/locked
+    if (p.subscription_status === "pending") {
+        return { allowed: false, status: "pending" };
+    }
+    return { allowed: false, status: "locked" };
+}
+
+async function sbaLoadSchoolSubscriptionForStudent(schoolid) {
+    if (!schoolid || typeof supabaseClient === "undefined") return null;
+    try {
+        let { data, error } = await supabaseClient
+            .from("schools")
+            .select("schoolid,schoolname,subscription_status,subscription_plan,subscription_ends_at,trial_ends_at,last_payment_ref")
+            .eq("schoolid", schoolid)
+            .maybeSingle();
+        if (error) {
+            console.warn("Student portal school subscription load:", error.message || error);
+            const fallback = await supabaseClient
+                .from("schools")
+                .select("schoolid,schoolname")
+                .eq("schoolid", schoolid)
+                .maybeSingle();
+            return fallback.error ? null : fallback.data;
+        }
+        return data;
+    } catch (e) {
+        console.warn("sbaLoadSchoolSubscriptionForStudent:", e);
+        return null;
+    }
+}
+
+function ensureStudentSubscriptionLockScreen() {
+    if (document.getElementById("studentSubscriptionLockedScreen")) return;
+    const lock = document.createElement("div");
+    lock.id = "studentSubscriptionLockedScreen";
+    lock.className = "student-sub-lock";
+    lock.style.display = "none";
+    lock.innerHTML = `
+  <div class="student-sub-card">
+    <div class="student-sub-brand">
+      <img src="/nabeng-sba-logo.png" alt="Nabeng-SBA" onerror="this.style.display='none'">
+      <div>
+        <strong>Nabeng-SBA</strong>
+        <span>Student portal access</span>
+      </div>
+    </div>
+    <h2>Portal temporarily unavailable</h2>
+    <p id="studentSubLockStatus" class="student-sub-status">
+      Your school subscription has ended. Please ask the school administrator to renew the plan.
+    </p>
+    <p class="student-sub-teacher-msg">
+      Students cannot renew the subscription. Contact your <strong>school administrator</strong> or teacher for help.
+    </p>
+    <button type="button" class="student-sub-signout" onclick="studentLogoutFromLock()">Back to login</button>
+  </div>`;
+    document.body.appendChild(lock);
+}
+
+function showStudentSubscriptionLock(info) {
+    ensureStudentSubscriptionLockScreen();
+    const lock = document.getElementById("studentSubscriptionLockedScreen");
+    const login = document.getElementById("loginPage");
+    const portal = document.getElementById("studentPortal");
+    if (login) login.style.display = "none";
+    if (portal) portal.style.display = "none";
+    document.body.classList.remove("app-logged-in", "sidebar-open");
+    if (lock) lock.style.display = "flex";
+
+    const statusEl = document.getElementById("studentSubLockStatus");
+    if (statusEl) {
+        if (info && info.status === "pending") {
+            statusEl.textContent = "Your school payment is being confirmed. Please try again shortly, or ask the school administrator.";
+        } else {
+            statusEl.textContent = "Your school subscription or free trial has ended. The student portal is locked until the school renews.";
+        }
+    }
+}
+
+function hideStudentSubscriptionLock() {
+    const lock = document.getElementById("studentSubscriptionLockedScreen");
+    if (lock) lock.style.display = "none";
+}
+
+function studentLogoutFromLock() {
+    try {
+        localStorage.removeItem("loggedStudent");
+    } catch (e) {}
+    currentStudent = null;
+    hideStudentSubscriptionLock();
+    document.body.classList.remove("app-logged-in", "sidebar-open");
+    const portal = document.getElementById("studentPortal");
+    if (portal) portal.style.display = "none";
+    if (typeof hideAllStudentFeaturePages === "function") {
+        hideAllStudentFeaturePages();
+    }
+    const login = document.getElementById("loginPage");
+    if (login) login.style.display = "flex";
+}
+
+/**
+ * Returns true if student may open the portal for this school.
+ * On failure/lock, shows lock screen and clears session.
+ */
+async function sbaGateStudentAfterLogin(student) {
+    const schoolid =
+        student &&
+        (student.schoolid || student.schoolID || student.schoolId);
+    if (!schoolid) {
+        // No school linked — allow (or optionally block). Match teacher: unscoped allowed.
+        return true;
+    }
+    const school = await sbaLoadSchoolSubscriptionForStudent(schoolid);
+    const access = sbaStudentSubscriptionAllowed(school || {});
+    if (access.allowed) {
+        hideStudentSubscriptionLock();
+        return true;
+    }
+    // Locked / pending — clear session so refresh cannot reopen portal
+    try {
+        localStorage.removeItem("loggedStudent");
+    } catch (e) {}
+    currentStudent = null;
+    showStudentSubscriptionLock(access);
+    return false;
+}
+
+
+
 
 
 const passwordInput =
@@ -126,7 +276,7 @@ document.getElementById("loginForm")
     }
 
 
-    // Save logged-in student
+    // Save logged-in student (may be cleared if subscription locked)
     localStorage.setItem(
         "loggedStudent",
         JSON.stringify(student)
@@ -134,6 +284,11 @@ document.getElementById("loginForm")
 
     currentStudent = student;
 
+    // Subscription / trial gate — same school rules as teacher portal
+    const subOk = await sbaGateStudentAfterLogin(student);
+    if (!subOk) {
+        return; // lock screen is visible; session cleared
+    }
 
     // Load student name
     document.getElementById("studentName")
@@ -8558,6 +8713,9 @@ function studentLogout() {
     } catch (e) {}
     currentStudent = null;
     document.body.classList.remove("app-logged-in", "sidebar-open");
+    if (typeof hideStudentSubscriptionLock === "function") {
+        hideStudentSubscriptionLock();
+    }
     const portal = document.getElementById("studentPortal");
     if (portal) portal.style.display = "none";
     if (typeof hideAllStudentFeaturePages === "function") {

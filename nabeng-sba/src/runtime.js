@@ -43,7 +43,15 @@ function ensureSupabase() {
   if (window.supabase && typeof window.supabase.createClient === "function") {
     window.supabaseClient = window.supabase.createClient(
       SBA.config.supabaseUrl,
-      SBA.config.supabaseAnonKey
+      SBA.config.supabaseAnonKey,
+      {
+        auth: {
+          detectSessionInUrl: true,
+          persistSession: true,
+          autoRefreshToken: true,
+          flowType: "implicit"
+        }
+      }
     );
     return window.supabaseClient;
   }
