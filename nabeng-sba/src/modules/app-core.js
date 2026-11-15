@@ -2027,14 +2027,31 @@ if(id === "reportsPage"){
     if(reportTerm){
         reportTerm.value = activeTerm;
     }
+
+    // Preload school users so class teacher resolves without visiting Chat first
+    try {
+        if ((!Array.isArray(users) || users.length === 0) && typeof loadUsers === "function") {
+            await loadUsers();
+        }
+    } catch (e) {
+        console.warn("reportsPage: loadUsers failed", e);
+    }
 }
 
 if(id === "profilePlanPage"){
-    document.getElementById("planTerm").value = activeTerm;
+    const pt = document.getElementById("planTerm");
+    if (pt) pt.value = activeTerm;
+    if (typeof refreshPlanLibrary === "function") {
+        try { await refreshPlanLibrary(); } catch (e) { console.warn(e); }
+    }
 }
 
 if(id === "profileNotePage"){
-    document.getElementById("noteTerm").value = activeTerm;
+    const nt = document.getElementById("noteTerm");
+    if (nt) nt.value = activeTerm;
+    if (typeof refreshPlanLibrary === "function") {
+        try { await refreshPlanLibrary(true); } catch (e) { console.warn(e); }
+    }
 }
 
     // WELCOME TEXT
@@ -2579,8 +2596,14 @@ function displayStudents(){
 </td>
         <td>${s.studentclass}</td>
         <td>
-            <button class="action-btn edit-btn" onclick="editStudent(${i})">✏️ Edit</button>
-			<button class="action-btn delete-btn" onclick="deleteStudent(${i})">🗑 Delete</button>
+            <div class="student-row-actions">
+                <button type="button" class="sba-icon-btn sba-icon-btn-edit" onclick="editStudent(${i})" title="Edit student">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button type="button" class="sba-icon-btn sba-icon-btn-delete" onclick="deleteStudent(${i})" title="Delete student">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
         </td>
         </tr>`;
     });
@@ -3298,19 +3321,14 @@ function loadStudentsTable(){
             <!-- ACTIONS -->
             <td>
 
-                <button
-                    class="action-btn edit-btn"
-                    onclick="editStudent(${realIndex})"
-                >
-                    ✏️ Edit
-                </button>
-
-                <button
-    class="action-btn delete-btn"
-    onclick="deleteStudent('${s.id}')"
->
-    🗑 Delete
-</button>
+                <div class="student-row-actions">
+                    <button type="button" class="sba-icon-btn sba-icon-btn-edit" onclick="editStudent(${realIndex})" title="Edit student">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button type="button" class="sba-icon-btn sba-icon-btn-delete" onclick="deleteStudent('${s.id}')" title="Delete student">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
 
             </td>
 
@@ -6013,30 +6031,49 @@ function selectFilteredStudent(index){
 function showTeacherSubjects() {
 
     const container = document.getElementById("subjectList");
+    if (!container) return;
 
     container.innerHTML = "";
 
-    let allowedSubjects =
-        currentUser.role === "teacher"
-        ? currentUser.subjects || []
-        : subjects;
+    // Do not show subjects until a class is selected
+    const classFilter = document.getElementById("classFilter");
+    const selectedClass = (classFilter?.value || "").trim();
+    if (!selectedClass) {
+        selectedSubject = null;
+        container.innerHTML = `
+            <div class="hw-empty-state" style="padding:20px;text-align:center;opacity:.85;grid-column:1/-1;">
+                <div style="font-size:24px;margin-bottom:8px;"><i class="fas fa-book"></i></div>
+                <h3 style="margin:0 0 6px;font-size:15px;">Select a class first</h3>
+                <p style="margin:0;font-size:13px;opacity:.75;">Subjects will appear here after you choose a class.</p>
+            </div>`;
+        return;
+    }
+
+    let allowedSubjects;
+    if (String(currentUser?.role || "").toLowerCase() === "teacher") {
+        allowedSubjects = getSubjectsForClass(currentUser, selectedClass);
+    } else {
+        allowedSubjects = Array.isArray(subjects) ? subjects : [];
+    }
+
+    if (!allowedSubjects.length) {
+        selectedSubject = null;
+        container.innerHTML = `
+            <div class="hw-empty-state" style="padding:20px;text-align:center;opacity:.85;grid-column:1/-1;">
+                <div style="font-size:24px;margin-bottom:8px;"><i class="fas fa-info-circle"></i></div>
+                <h3 style="margin:0 0 6px;font-size:15px;">No subjects for this class</h3>
+                <p style="margin:0;font-size:13px;opacity:.75;">Ask the admin to assign subjects for <strong>${escapeLessonHTML(selectedClass)}</strong>.</p>
+            </div>`;
+        return;
+    }
 
     allowedSubjects.forEach(subject => {
-
         const card = document.createElement("div");
-
         card.className = "card";
-
-        card.innerHTML = `
-            <h4>${subject}</h4>
-        `;
-
+        card.innerHTML = `<h4>${escapeLessonHTML(subject)}</h4>`;
         card.onclick = () => selectSubject(subject, card);
-
         container.appendChild(card);
-
     });
-
 }
 
 function selectSubject(subject, card){
@@ -7522,7 +7559,7 @@ async function generateReportWithTerm(
 
 
     let teacherName =
-        getClassTeacherName(s.studentclass);
+        await getClassTeacherName(s.studentclass);
 
 
     // =========================================================
@@ -9788,29 +9825,35 @@ function loadProfileData(){
         return;
     }
 
-    document.getElementById("pFirstName").value =
-        currentUser.firstname || "";
+    const first = String(currentUser.firstname || "").trim();
+    const last = String(currentUser.surname || "").trim();
+    const fullName = [first, last].filter(Boolean).join(" ") || currentUser.username || "My Profile";
 
-    document.getElementById("pSurname").value =
-        currentUser.surname || "";
+    const pFirst = document.getElementById("pFirstName");
+    const pSur = document.getElementById("pSurname");
+    const pUser = document.getElementById("pUsername");
+    const pEmail = document.getElementById("pEmail");
+    const pPhone = document.getElementById("pPhone");
+    const pRole = document.getElementById("pRole");
+    const displayName = document.getElementById("profileDisplayName");
 
-    document.getElementById("pUsername").value =
-        currentUser.username || "";
-
-    document.getElementById("pEmail").value =
-        currentUser.email || "";
-
-    document.getElementById("pPhone").value =
-        currentUser.phone || "";
-
-    document.getElementById("pRole").value =
-        currentUser.role || "";
+    if (pFirst) pFirst.value = first;
+    if (pSur) pSur.value = last;
+    if (pUser) pUser.value = currentUser.username || "";
+    if (pEmail) pEmail.value = currentUser.email || "";
+    if (pPhone) pPhone.value = currentUser.phone || "";
+    if (pRole) pRole.value = currentUser.role || "";
+    if (displayName) displayName.textContent = fullName;
 
     const img = document.getElementById("profilePic");
 
     if(img){
-        img.src = currentUser.profilePic ||
-                  "assets/default-profile.png";
+        const pic = currentUser.profilePic || currentUser.profile_pic || currentUser.photo || currentUser.avatar || "";
+        img.src = pic || "assets/default-profile.png";
+        img.onerror = function () {
+            this.onerror = null;
+            this.src = "assets/default-profile.png";
+        };
     }
 
     if (typeof applySidebarAvatar === "function") {
@@ -9873,6 +9916,15 @@ async function saveProfile() {
         "loggedInUser",
         JSON.stringify(currentUser)
     );
+
+    // Update profile header name
+    const displayName = document.getElementById("profileDisplayName");
+    if (displayName) {
+        displayName.textContent =
+            [firstname, surname].filter(Boolean).join(" ") ||
+            currentUser.username ||
+            "My Profile";
+    }
 
     // Update welcome text instantly
     (function(){
@@ -10484,6 +10536,308 @@ function escapeAssignmentHTML(value) {
    SAVE TEACHER ASSIGNMENT
 ========================================================= */
 
+
+/* =========================================================
+   PER-CLASS SUBJECT ASSIGNMENTS
+   class_subjects / classSubjects shape:
+   { "Basic 1A": ["Mathematics", "English Language"], "2B": ["Science"] }
+========================================================= */
+
+window.__teacherClassSubjectsDraft = window.__teacherClassSubjectsDraft || {};
+
+const CLASS_SUBJECTS_MARKER = "@@CLASS_SUBJECTS@@";
+
+/** Pack per-class map into subjects array (works without a new DB column). */
+function encodeClassSubjectsIntoSubjectsList(subjectList, classMap) {
+    const clean = (subjectList || [])
+        .map((s) => String(s || "").trim())
+        .filter((s) => s && !String(s).startsWith(CLASS_SUBJECTS_MARKER));
+    try {
+        const packed = CLASS_SUBJECTS_MARKER + JSON.stringify(classMap || {});
+        return [...clean, packed];
+    } catch (_) {
+        return clean;
+    }
+}
+
+/** Extract per-class map + clean subject names from subjects array. */
+function decodeClassSubjectsFromSubjectsList(rawSubjects) {
+    const list = Array.isArray(rawSubjects) ? rawSubjects : [];
+    let map = {};
+    const clean = [];
+    list.forEach((item) => {
+        const s = typeof item === "string" ? item : (item?.name || "");
+        if (String(s).startsWith(CLASS_SUBJECTS_MARKER)) {
+            try {
+                map = JSON.parse(String(s).slice(CLASS_SUBJECTS_MARKER.length)) || {};
+            } catch (_) {}
+        } else if (s) {
+            clean.push(String(s).trim());
+        }
+    });
+    return { subjects: clean, classSubjects: normalizeClassSubjectsMap(map) };
+}
+
+function normalizeClassSubjectsMap(raw) {
+    const map = {};
+    if (!raw) return map;
+    let obj = raw;
+    if (typeof raw === "string") {
+        try { obj = JSON.parse(raw); } catch (_) { return map; }
+    }
+    if (typeof obj !== "object" || Array.isArray(obj)) return map;
+    Object.keys(obj).forEach((cls) => {
+        const key = String(cls || "").trim();
+        if (!key) return;
+        const subs = Array.isArray(obj[cls]) ? obj[cls] : [];
+        map[key] = [...new Set(subs.map((s) => String(s || "").trim()).filter(Boolean))];
+    });
+    return map;
+}
+
+function getTeacherClassSubjectsMap(user) {
+    const u = user || currentUser || {};
+    let map = {
+        ...normalizeClassSubjectsMap(u.class_subjects),
+        ...normalizeClassSubjectsMap(u.classSubjects)
+    };
+
+    // Map packed into subjects array (no extra DB column needed)
+    if (!Object.keys(map).length && Array.isArray(u.subjects)) {
+        const decoded = decodeClassSubjectsFromSubjectsList(u.subjects);
+        map = { ...decoded.classSubjects };
+    }
+
+    // Legacy: no per-class map → same subjects on every class (runtime only)
+    if (!Object.keys(map).length) {
+        const classes = Array.isArray(u.classes) ? u.classes : [];
+        const subjectsList = Array.isArray(u.subjects)
+            ? u.subjects
+                .map((s) => (typeof s === "string" ? s : s?.name))
+                .filter((s) => s && !String(s).startsWith(CLASS_SUBJECTS_MARKER))
+            : [];
+        classes.forEach((c) => {
+            const key = String(c || "").trim();
+            if (key) map[key] = [...subjectsList];
+        });
+    }
+    return map;
+}
+
+function findClassKeyInMap(map, className) {
+    const target = String(className || "").trim().toLowerCase();
+    if (!target) return null;
+    const keys = Object.keys(map || {});
+    let hit = keys.find((k) => k.toLowerCase() === target);
+    if (hit) return hit;
+    // soft match: "1A" vs "Basic 1A"
+    hit = keys.find((k) => {
+        const kl = k.toLowerCase();
+        return kl.includes(target) || target.includes(kl);
+    });
+    return hit || null;
+}
+
+function getSubjectsForClass(user, className) {
+    const map = getTeacherClassSubjectsMap(user);
+    const key = findClassKeyInMap(map, className);
+    if (key && Array.isArray(map[key])) {
+        return map[key].slice();
+    }
+    // fallback: global subjects list (legacy teachers)
+    const subjectsList = Array.isArray(user?.subjects)
+        ? user.subjects.map((s) => (typeof s === "string" ? s : s?.name)).filter(Boolean)
+        : [];
+    return subjectsList.slice();
+}
+
+function parseClassesFromAssignmentInput() {
+    const classInput = document.getElementById("teacherClass");
+    const classText = classInput?.value?.trim() || "";
+    return classText
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+}
+
+function renderAssignmentClassPicker(classes, selected) {
+    const picker = document.getElementById("assignmentClassPicker");
+    if (!picker) return;
+    const list = classes || [];
+    picker.innerHTML =
+        `<option value="">-- Select a class from Step 2 --</option>` +
+        list
+            .map(
+                (c) =>
+                    `<option value="${escapeAssignmentHTML(c)}" ${
+                        selected && c === selected ? "selected" : ""
+                    }>${escapeAssignmentHTML(c)}</option>`
+            )
+            .join("");
+}
+
+function renderAssignmentClassSubjectsSummary() {
+    const el = document.getElementById("assignmentClassSubjectsSummary");
+    if (!el) return;
+    const draft = window.__teacherClassSubjectsDraft || {};
+    const keys = Object.keys(draft);
+    if (!keys.length) {
+        el.innerHTML = "No class-subject links yet. Pick a class and tick subjects.";
+        return;
+    }
+    el.innerHTML =
+        "<strong>Current mapping:</strong><br>" +
+        keys
+            .map((k) => {
+                const subs = draft[k] || [];
+                return (
+                    "• <strong>" +
+                    escapeAssignmentHTML(k) +
+                    "</strong>: " +
+                    (subs.length ? escapeAssignmentHTML(subs.join(", ")) : "<em>none</em>")
+                );
+            })
+            .join("<br>");
+}
+
+function buildSubjectCheckboxesForAssignment(availableSubjects, checkedList) {
+    const subjectContainer = document.getElementById("subjectCheckboxes");
+    if (!subjectContainer) return;
+
+    const checked = (checkedList || []).map((s) => String(s).trim().toLowerCase());
+
+    if (!availableSubjects.length) {
+        subjectContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-book"></i>
+                <p>No subjects are available.</p>
+            </div>`;
+        return;
+    }
+
+    subjectContainer.innerHTML = availableSubjects
+        .map((subject) => {
+            const isChecked = checked.includes(String(subject).trim().toLowerCase());
+            return `
+                <label class="subject-checkbox-item">
+                    <input
+                        type="checkbox"
+                        value="${escapeAssignmentHTML(subject)}"
+                        ${isChecked ? "checked" : ""}
+                        onchange="onAssignmentSubjectCheckboxChanged()"
+                    >
+                    <span class="subject-checkbox-content">
+                        <span class="subject-checkbox-icon">
+                            <i class="fas fa-book"></i>
+                        </span>
+                        <span>${escapeAssignmentHTML(subject)}</span>
+                    </span>
+                </label>`;
+        })
+        .join("");
+}
+
+function readCheckedSubjectsFromAssignmentUI() {
+    const selected = [];
+    document
+        .querySelectorAll("#subjectCheckboxes input[type='checkbox']:checked")
+        .forEach((checkbox) => {
+            if (checkbox.value) selected.push(checkbox.value.trim());
+        });
+    return [...new Set(selected)];
+}
+
+function persistCurrentAssignmentClassSubjects() {
+    const last = window.__lastAssignmentClass || "";
+    const picker = document.getElementById("assignmentClassPicker");
+    const current = (picker?.value || "").trim();
+    const cls = last || current;
+    if (!cls) return;
+    if (!window.__teacherClassSubjectsDraft) window.__teacherClassSubjectsDraft = {};
+    // Only write if checkboxes exist (avoid wiping when UI not ready)
+    const boxes = document.querySelectorAll("#subjectCheckboxes input[type='checkbox']");
+    if (!boxes.length) return;
+    window.__teacherClassSubjectsDraft[cls] = readCheckedSubjectsFromAssignmentUI();
+}
+
+function onTeacherClassesInputChanged() {
+    // Keep subjects for the class currently being edited
+    persistCurrentAssignmentClassSubjects();
+
+    const classes = parseClassesFromAssignmentInput();
+    const draft = window.__teacherClassSubjectsDraft || {};
+    const next = {};
+    classes.forEach((c) => {
+        // New classes start EMPTY so admin assigns deliberately
+        next[c] = Array.isArray(draft[c]) ? draft[c].slice() : [];
+    });
+    window.__teacherClassSubjectsDraft = next;
+
+    const picker = document.getElementById("assignmentClassPicker");
+    const prev = picker?.value || "";
+    const keep = classes.includes(prev) ? prev : (classes[0] || "");
+    renderAssignmentClassPicker(classes, keep);
+    window.__lastAssignmentClass = keep;
+    renderAssignmentClassSubjectsSummary();
+    onAssignmentClassPickerChanged(true);
+}
+
+function onAssignmentClassPickerChanged(skipPersist) {
+    const picker = document.getElementById("assignmentClassPicker");
+    const cls = (picker?.value || "").trim();
+
+    // Save the PREVIOUS class mapping before switching
+    if (!skipPersist) {
+        const previous = window.__lastAssignmentClass || "";
+        if (previous && previous !== cls) {
+            const boxes = document.querySelectorAll("#subjectCheckboxes input[type='checkbox']");
+            if (boxes.length) {
+                if (!window.__teacherClassSubjectsDraft) window.__teacherClassSubjectsDraft = {};
+                window.__teacherClassSubjectsDraft[previous] = readCheckedSubjectsFromAssignmentUI();
+            }
+        }
+    }
+
+    window.__lastAssignmentClass = cls;
+    const draft = window.__teacherClassSubjectsDraft || {};
+
+    const availableSubjects =
+        typeof getAvailableSubjectsForAdmin === "function"
+            ? getAvailableSubjectsForAdmin(
+                  Object.values(draft).flat()
+              )
+            : Array.isArray(subjects)
+              ? subjects
+              : [];
+
+    if (!cls) {
+        buildSubjectCheckboxesForAssignment(availableSubjects, []);
+        renderAssignmentClassSubjectsSummary();
+        return;
+    }
+
+    // Load ONLY this class's subjects (never copy from another class)
+    const forClass = Array.isArray(draft[cls]) ? draft[cls] : [];
+    buildSubjectCheckboxesForAssignment(availableSubjects, forClass);
+    renderAssignmentClassSubjectsSummary();
+}
+
+function onAssignmentSubjectCheckboxChanged() {
+    const picker = document.getElementById("assignmentClassPicker");
+    const cls = (picker?.value || "").trim();
+    if (!cls) return;
+    if (!window.__teacherClassSubjectsDraft) window.__teacherClassSubjectsDraft = {};
+    window.__teacherClassSubjectsDraft[cls] = readCheckedSubjectsFromAssignmentUI();
+    window.__lastAssignmentClass = cls;
+    renderAssignmentClassSubjectsSummary();
+}
+
+window.onTeacherClassesInputChanged = onTeacherClassesInputChanged;
+window.onAssignmentClassPickerChanged = onAssignmentClassPickerChanged;
+window.onAssignmentSubjectCheckboxChanged = onAssignmentSubjectCheckboxChanged;
+window.getSubjectsForClass = getSubjectsForClass;
+window.getTeacherClassSubjectsMap = getTeacherClassSubjectsMap;
+
 async function saveTeacherSubjects() {
 
     try {
@@ -10585,48 +10939,50 @@ async function saveTeacherSubjects() {
 
 
         /* =================================================
-           GET SUBJECTS
+           GET PER-CLASS SUBJECTS
         ================================================== */
 
-        const selectedSubjects = [];
+        // Persist current checkbox state into draft
+        try { onAssignmentSubjectCheckboxChanged(); } catch (_) {}
 
+        const uniqueClasses = [...new Set(classList)];
+        const draft = window.__teacherClassSubjectsDraft || {};
 
-        document
-            .querySelectorAll(
-                "#subjectCheckboxes input[type='checkbox']:checked"
+        // Ensure every listed class exists in draft
+        uniqueClasses.forEach((c) => {
+            if (!Array.isArray(draft[c])) draft[c] = [];
+        });
+
+        // Build class_subjects map only for classes in the list
+        const classSubjectsMap = {};
+        uniqueClasses.forEach((c) => {
+            classSubjectsMap[c] = [...new Set((draft[c] || []).map((s) => String(s).trim()).filter(Boolean))];
+        });
+
+        const uniqueSubjects = [
+            ...new Set(
+                Object.values(classSubjectsMap).flat()
             )
-            .forEach(checkbox => {
+        ];
 
-                if (checkbox.value) {
-
-                    selectedSubjects.push(
-                        checkbox.value.trim()
-                    );
-
-                }
-
-            });
-
-
-        if (!selectedSubjects.length) {
-
+        if (!uniqueSubjects.length) {
             alert(
-                "Please select at least one subject."
+                "Please select at least one subject for at least one class.\n\n" +
+                "Choose a class in Step 3, tick subjects, then save."
             );
-
             return;
         }
 
-
-        /* =================================================
-           REMOVE DUPLICATES
-        ================================================== */
-
-        const uniqueClasses =
-            [...new Set(classList)];
-
-        const uniqueSubjects =
-            [...new Set(selectedSubjects)];
+        // Warn if some classes have no subjects
+        const emptyClasses = uniqueClasses.filter((c) => !(classSubjectsMap[c] || []).length);
+        if (emptyClasses.length) {
+            const ok = confirm(
+                "These classes have no subjects yet:\n- " +
+                emptyClasses.join("\n- ") +
+                "\n\nSave anyway? Teachers will see no subjects when they select those classes."
+            );
+            if (!ok) return;
+        }
 
 
         /* =================================================
@@ -10703,42 +11059,45 @@ async function saveTeacherSubjects() {
            UPDATE TEACHER
         ================================================== */
 
-        const {
-            error: updateError
-        } =
-            await supabaseClient
+        // Always embed per-class map inside subjects so it works with or without class_subjects column
+        const subjectsWithMap = encodeClassSubjectsIntoSubjectsList(uniqueSubjects, classSubjectsMap);
+
+        // Prefer dedicated column when available; subjects encoding is the reliable fallback
+        let updateError = null;
+        {
+            const attempt = await supabaseClient
                 .from("users")
                 .update({
-
-                    mainClass:
-                        uniqueClasses[0],
-
-                    classes:
-                        uniqueClasses,
-
-                    subjects:
-                        uniqueSubjects
-
+                    mainClass: uniqueClasses[0],
+                    classes: uniqueClasses,
+                    subjects: subjectsWithMap,
+                    class_subjects: classSubjectsMap
                 })
-                .eq(
-                    "id",
-                    teacherId
-                );
+                .eq("id", teacherId);
+            updateError = attempt.error;
+        }
 
+        if (updateError && /class_subjects|schema cache|column/i.test(updateError.message || "")) {
+            console.warn("class_subjects column missing — saving map inside subjects[]:", updateError.message);
+            const retry = await supabaseClient
+                .from("users")
+                .update({
+                    mainClass: uniqueClasses[0],
+                    classes: uniqueClasses,
+                    subjects: subjectsWithMap
+                })
+                .eq("id", teacherId);
+            updateError = retry.error;
+        }
 
         if (updateError) {
-
-            console.error(
-                "Teacher assignment update error:",
-                updateError
-            );
-
-            alert(
-                "Failed to save teacher assignment."
-            );
-
+            console.error("Teacher assignment update error:", updateError);
+            alert("Failed to save teacher assignment.\n" + (updateError.message || ""));
             return;
         }
+
+        // Keep draft in sync
+        window.__teacherClassSubjectsDraft = classSubjectsMap;
 
 
         /* =================================================
@@ -10780,8 +11139,12 @@ async function saveTeacherSubjects() {
            SUCCESS
         ================================================== */
 
+        const mapLines = Object.keys(classSubjectsMap || {})
+            .map((c) => c + ": " + ((classSubjectsMap[c] || []).join(", ") || "(none)"))
+            .join("\n");
         alert(
-            "✅ Teacher assignment saved successfully."
+            "✅ Teacher assignment saved successfully.\n\n" +
+            (mapLines ? ("Per-class subjects:\n" + mapLines) : "")
         );
 
 
@@ -11146,9 +11509,23 @@ async function loadSelectedTeacherSubjects() {
             return;
         }
 
+        // Optional per-class map (column may not exist until SQL migration is run)
+        try {
+            const extra = await supabaseClient
+                .from("users")
+                .select("class_subjects")
+                .eq("id", teacherId)
+                .maybeSingle();
+            if (!extra.error && extra.data && extra.data.class_subjects) {
+                teacher.class_subjects = extra.data.class_subjects;
+            }
+        } catch (e) {
+            console.warn("class_subjects not available yet:", e);
+        }
+
 
         /* =================================================
-           NORMALIZE CLASSES
+           NORMALIZE CLASSES + PER-CLASS SUBJECTS
         ================================================== */
 
         const teacherClasses =
@@ -11158,127 +11535,60 @@ async function loadSelectedTeacherSubjects() {
                     .filter(Boolean)
                 : [];
 
-
-        /* =================================================
-           NORMALIZE SUBJECTS
-        ================================================== */
-
         const teacherSubjects =
             normalizeSubjectArray(
                 teacher.subjects || []
             );
 
+        // Load per-class map from column OR from packed subjects entry
+        const decodedFromSubjects = decodeClassSubjectsFromSubjectsList(teacher.subjects || []);
+        const fromColumn = normalizeClassSubjectsMap(teacher.class_subjects || teacher.classSubjects);
+        const classSubjectsMap = {
+            ...decodedFromSubjects.classSubjects,
+            ...fromColumn
+        };
+        const hasStoredMap = Object.keys(classSubjectsMap).length > 0;
 
-        /* =================================================
-           DISPLAY CLASSES
-        ================================================== */
+        // Clean subject names for display/legacy note (strip marker)
+        const cleanTeacherSubjects = decodedFromSubjects.subjects.length
+            ? decodedFromSubjects.subjects
+            : teacherSubjects.filter((s) => !String(s).startsWith(CLASS_SUBJECTS_MARKER));
+
+        window.__teacherClassSubjectsDraft = {};
+        teacherClasses.forEach((c) => {
+            const key = findClassKeyInMap(classSubjectsMap, c);
+            window.__teacherClassSubjectsDraft[c] = key
+                ? (classSubjectsMap[key] || []).slice()
+                : [];
+        });
+
+        const summaryEl = document.getElementById("assignmentClassSubjectsSummary");
+        if (!hasStoredMap && cleanTeacherSubjects.length && summaryEl) {
+            summaryEl.dataset.legacyNote =
+                "This teacher previously had one shared subject list: " +
+                cleanTeacherSubjects.join(", ") +
+                ". Assign subjects for each class below (they start empty on purpose).";
+        }
 
         if (classInput) {
-
-            classInput.value =
-                teacherClasses.join(", ");
-
+            classInput.value = teacherClasses.join(", ");
         }
 
-
-        /* =================================================
-           BUILD SUBJECT CHECKBOXES
-           Use school subject catalog (with defaults) so
-           newly registered teachers can be assigned subjects
-           even when the global subjects list is still empty.
-        ================================================== */
-
-        if (subjectContainer) {
-
-            const availableSubjects =
-                typeof getAvailableSubjectsForAdmin === "function"
-                    ? getAvailableSubjectsForAdmin(teacherSubjects)
-                    : (Array.isArray(subjects) && subjects.length
-                        ? subjects
-                        : []);
-
-            if (
-                !Array.isArray(availableSubjects) ||
-                availableSubjects.length === 0
-            ) {
-
-                subjectContainer.innerHTML = `
-                    <div class="empty-state">
-
-                        <i class="fas fa-book"></i>
-
-                        <p>
-                            No subjects are available.
-                        </p>
-
-                    </div>
-                `;
-
-            } else {
-
-                subjectContainer.innerHTML =
-                    availableSubjects
-                        .map(subject => {
-
-                            const checked =
-                                teacherSubjects
-                                    .some(
-                                        assigned =>
-                                            String(assigned)
-                                                .trim()
-                                                .toLowerCase() ===
-                                            String(subject)
-                                                .trim()
-                                                .toLowerCase()
-                                    );
-
-
-                            return `
-
-                                <label class="subject-checkbox-item">
-
-                                    <input
-                                        type="checkbox"
-                                        value="${escapeAssignmentHTML(subject)}"
-                                        ${checked ? "checked" : ""}
-                                    >
-
-                                    <span class="subject-checkbox-content">
-
-                                        <span class="subject-checkbox-icon">
-                                            <i class="fas fa-book"></i>
-                                        </span>
-
-                                        <span>
-                                            ${escapeAssignmentHTML(subject)}
-                                        </span>
-
-                                    </span>
-
-                                </label>
-
-                            `;
-
-                        })
-                        .join("");
-            }
+        const firstClass = teacherClasses[0] || "";
+        window.__lastAssignmentClass = firstClass;
+        renderAssignmentClassPicker(teacherClasses, firstClass);
+        renderAssignmentClassSubjectsSummary();
+        if (summaryEl && summaryEl.dataset.legacyNote) {
+            summaryEl.innerHTML =
+                "<em>" + escapeAssignmentHTML(summaryEl.dataset.legacyNote) + "</em><br><br>" +
+                summaryEl.innerHTML;
         }
+        onAssignmentClassPickerChanged(true);
 
-
-        console.log(
-            "Selected teacher:",
-            teacher
-        );
-
-        console.log(
-            "Assigned classes:",
-            teacherClasses
-        );
-
-        console.log(
-            "Assigned subjects:",
-            teacherSubjects
-        );
+        console.log("Selected teacher:", teacher);
+        console.log("Assigned classes:", teacherClasses);
+        console.log("Assigned subjects:", teacherSubjects);
+        console.log("class_subjects map:", window.__teacherClassSubjectsDraft);
 
 
     } catch (error) {
@@ -11362,7 +11672,24 @@ function renderMyTeachingAssignments(user) {
     }
 
     if (subjectList) {
-        if (!subjects.length) {
+        const map = typeof getTeacherClassSubjectsMap === "function"
+            ? getTeacherClassSubjectsMap(u)
+            : {};
+        const mapKeys = Object.keys(map || {});
+
+        if (mapKeys.length) {
+            subjectList.innerHTML = mapKeys.map((cls) => {
+                const subs = map[cls] || [];
+                return `
+                <div class="assigned-subject-item" style="align-items:flex-start;">
+                    <div class="assigned-item-icon"><i class="fas fa-book"></i></div>
+                    <div>
+                        <strong>${escape(cls)}</strong>
+                        <small>${subs.length ? escape(subs.join(", ")) : "No subjects for this class"}</small>
+                    </div>
+                </div>`;
+            }).join("");
+        } else if (!subjects.length) {
             subjectList.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-book-open"></i>
@@ -12197,18 +12524,34 @@ async function loadClassOptions(){
     }
 }
 
-function getClassTeacherName(studentclass){
+async function getClassTeacherName(studentclass){
 
-    let teacher = users.find(u =>
-        u.role === "teacher" &&
-        (u.classes || []).includes(studentclass)
-    );
+    // Ensure school users are loaded (previously only populated when opening Chat)
+    if (!Array.isArray(users) || users.length === 0) {
+        try {
+            if (typeof loadUsers === "function") {
+                await loadUsers();
+            }
+        } catch (e) {
+            console.warn("getClassTeacherName: failed to load users", e);
+        }
+    }
+
+    const cls = String(studentclass || "").trim().toLowerCase();
+    if (!cls) return "Not Assigned";
+
+    let teacher = (users || []).find(u => {
+        if (String(u.role || "").toLowerCase().trim() !== "teacher") return false;
+        const classes = Array.isArray(u.classes) ? u.classes : [];
+        return classes.some(c => String(c).trim().toLowerCase() === cls);
+    });
 
     if(!teacher){
         return "Not Assigned";
     }
 
-    return `${teacher.firstname} ${teacher.surname}`;
+    const name = `${teacher.firstname || ""} ${teacher.surname || ""}`.trim();
+    return name || teacher.username || "Not Assigned";
 }
 
 let deferredPrompt;
@@ -12566,7 +12909,7 @@ function normalizeSubjectArray(value) {
                 return "";
 
             })
-            .filter(Boolean);
+            .filter((s) => s && !String(s).startsWith("@@CLASS_SUBJECTS@@"));
 
     }
 
@@ -12801,6 +13144,14 @@ async function generateLessonPlan() {
             }
         );
 
+        // Keep raw plan text so we can prepare a note from it later
+        try {
+            window.__lastLessonPlanText = String(data.result || "").trim();
+            window.__lastLessonPlanMeta = {
+                subject, term, week, className, topic, subtopic, duration
+            };
+        } catch (_) {}
+
         status.innerHTML =
             "✅ Lesson plan generated successfully.";
 
@@ -12984,6 +13335,1951 @@ async function generateLessonNote() {
             "❌ Failed to generate lesson note.";
     }
 }
+
+
+/* =========================================================
+   PLAN LIBRARY: upload → split by subject/week → cloud
+   Notes: prepare only on user command from a selected unit
+========================================================= */
+
+window.__uploadedPlanText = window.__uploadedPlanText || "";
+window.__uploadedPlanFileName = window.__uploadedPlanFileName || "";
+window.__lastLessonPlanText = window.__lastLessonPlanText || "";
+window.__lastLessonPlanMeta = window.__lastLessonPlanMeta || null;
+window.__planLibrary = window.__planLibrary || []; // units from cloud
+window.__selectedPlanUnit = window.__selectedPlanUnit || null;
+
+function getLessonApiBase() {
+    return (
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+    )
+        ? "http://localhost:3000"
+        : "";
+}
+
+function normalizeWeekLabel(week) {
+    const s = String(week || "").trim();
+    if (!s) return "";
+    const m = s.match(/(\d{1,2})/);
+    if (m) return "Week " + String(parseInt(m[1], 10));
+    return s;
+}
+
+function normalizeSubjectLabel(subject) {
+    return String(subject || "").trim().replace(/\s+/g, " ");
+}
+
+async function extractTextFromPlanFile(file) {
+    if (!file) return "";
+
+    const name = (file.name || "").toLowerCase();
+    const type = (file.type || "").toLowerCase();
+
+    if (
+        type.startsWith("text/") ||
+        name.endsWith(".txt") ||
+        name.endsWith(".md") ||
+        name.endsWith(".html") ||
+        name.endsWith(".htm")
+    ) {
+        return await file.text();
+    }
+
+    if (name.endsWith(".pdf") || type === "application/pdf") {
+        const pdfjs = window.pdfjsLib || null;
+        if (!pdfjs) {
+            throw new Error(
+                "PDF support is not loaded. Refresh the page, or upload .txt / .docx."
+            );
+        }
+        try {
+            if (pdfjs.GlobalWorkerOptions && !pdfjs.GlobalWorkerOptions.workerSrc) {
+                pdfjs.GlobalWorkerOptions.workerSrc =
+                    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+            }
+        } catch (_) {}
+
+        const buf = await file.arrayBuffer();
+        const pdf = await pdfjs.getDocument({ data: buf }).promise;
+        const parts = [];
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const content = await page.getTextContent();
+            // Rebuild lines using Y positions so subject headers stay on their own lines
+            const items = (content.items || []).filter((it) => it && String(it.str || "").trim());
+            let pageLines = [];
+            let currentLine = "";
+            let lastY = null;
+            items.forEach((it) => {
+                const str = String(it.str || "");
+                const y = Array.isArray(it.transform) ? it.transform[5] : null;
+                if (lastY != null && y != null && Math.abs(y - lastY) > 4) {
+                    if (currentLine.trim()) pageLines.push(currentLine.trim());
+                    currentLine = str;
+                } else {
+                    // same line — join with space unless already spaced
+                    if (!currentLine) currentLine = str;
+                    else if (/\s$/.test(currentLine) || /^\s/.test(str)) currentLine += str;
+                    else currentLine += " " + str;
+                }
+                if (y != null) lastY = y;
+            });
+            if (currentLine.trim()) pageLines.push(currentLine.trim());
+
+            // Fallback if geometry missing
+            if (!pageLines.length) {
+                const flat = items.map((it) => it.str).join(" ").replace(/\s+/g, " ").trim();
+                if (flat) pageLines = [flat];
+            }
+
+            const pageText = pageLines.join("\n").trim();
+            if (pageText) {
+                parts.push("--- PAGE " + pageNum + " ---\n" + pageText);
+            }
+        }
+        const text = parts.join("\n\n").trim();
+        if (!text) {
+            throw new Error(
+                "No readable text in this PDF (it may be scanned). Use a text PDF or .txt/.docx."
+            );
+        }
+        return text;
+    }
+
+    if (name.endsWith(".docx") || type.includes("wordprocessingml")) {
+        if (typeof JSZip === "undefined") {
+            throw new Error("DOCX support needs JSZip. Upload .txt, .md, .html, or .pdf instead.");
+        }
+        const buf = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(buf);
+        const docXml = await zip.file("word/document.xml")?.async("string");
+        if (!docXml) throw new Error("Could not read DOCX content.");
+        return docXml
+            .replace(/<w:p[^>]*>/g, "\n")
+            .replace(/<[^>]+>/g, "")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+    }
+
+    throw new Error("Unsupported file type. Please upload .pdf, .txt, .md, .html, or .docx");
+}
+
+/**
+ * Local heuristic splitter when AI is offline.
+ * Looks for Week N headers and nearby subject/topic lines.
+ */
+function getGesSubjectCatalog() {
+    // Canonical Ghana primary subjects + aliases used in Fayol plans AND admin assignment lists
+    return [
+        { name: "English Language", aliases: ["english language", "english lang", "eng language", "english"] },
+        { name: "Mathematics", aliases: ["mathematics", "maths", "math"] },
+        { name: "Science", aliases: ["integrated science", "science"] },
+        { name: "Our World Our People", aliases: ["our world our people", "our world & our people", "owop", "o.w.o.p"] },
+        { name: "Religious and Moral Education", aliases: ["religious and moral education", "religious & moral education", "religious moral education", "rme"] },
+        { name: "History", aliases: ["history"] },
+        { name: "Creative Arts", aliases: ["creative arts", "creative art"] },
+        { name: "Physical Education", aliases: ["physical education", "physical educ", "p.e.", "pe"] },
+        { name: "Computing", aliases: ["information and communication technology", "computing", "ict"] },
+        { name: "Ghanaian Language", aliases: ["ghanaian language", "ghanaian languages", "fante", "twi", "ga", "ewe", "dagbani", "nzema"] },
+        { name: "French", aliases: ["french"] }
+    ];
+}
+
+function matchGesSubject(line) {
+    const low = String(line || "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (!low) return null;
+    const catalog = getGesSubjectCatalog();
+
+    // Prefer longer / more specific matches (alias length)
+    let best = null;
+    let bestLen = 0;
+    for (const item of catalog) {
+        for (const alias of item.aliases) {
+            // whole-string match or contains as phrase
+            if (low === alias) {
+                if (alias.length >= bestLen) {
+                    best = item.name;
+                    bestLen = alias.length + 10; // exact wins
+                }
+                continue;
+            }
+            // word-boundary style contains for short aliases (rme, ict, pe)
+            if (alias.length <= 4) {
+                const re = new RegExp("(?:^|[^a-z])" + alias.replace(/\./g, "\\.") + "(?:[^a-z]|$)", "i");
+                if (re.test(low) && alias.length > bestLen) {
+                    best = item.name;
+                    bestLen = alias.length;
+                }
+            } else if (low.includes(alias) && alias.length > bestLen) {
+                best = item.name;
+                bestLen = alias.length;
+            }
+        }
+    }
+    return best;
+}
+
+/** Map any label (teacher assignment OR plan header) onto catalog name when possible */
+function canonicalSubjectName(label) {
+    return matchGesSubject(label) || normalizeSubjectLabel(label || "");
+}
+
+/** Does unitSubject belong to the teacher's assigned subject list? */
+function subjectMatchesAssignment(unitSubject, assignedList) {
+    const unitCanon = canonicalSubjectName(unitSubject).toLowerCase();
+    if (!unitCanon || unitCanon === "general") return false;
+
+    return (assignedList || []).some((a) => {
+        const aCanon = canonicalSubjectName(a).toLowerCase();
+        const aRaw = String(a || "").toLowerCase().trim();
+        if (!aCanon && !aRaw) return false;
+        if (unitCanon === aCanon) return true;
+        if (unitCanon === aRaw || aRaw === unitCanon) return true;
+        // "RME" vs "Religious and Moral Education"
+        if (matchGesSubject(a) && matchGesSubject(unitSubject) &&
+            matchGesSubject(a) === matchGesSubject(unitSubject)) return true;
+        if (unitCanon.includes(aRaw) || aRaw.includes(unitCanon)) return true;
+        return false;
+    });
+}
+
+function isGesSubjectHeaderLine(line) {
+    const raw = String(line || "").trim();
+    if (!raw || raw.length > 120) return false;
+    const low = raw.toLowerCase();
+
+    // "FIRST TERM SCHEME OF LEARNING – MATHEMATICS"
+    if (/scheme of learning/.test(low) && matchGesSubject(raw)) return true;
+
+    // Bare subject title line: "ENGLISH LANGUAGE"
+    if (matchGesSubject(raw) && !/week\s*\d/i.test(raw) && !/strand|indicator|content standard/i.test(low)) {
+        // Mostly uppercase / title-like short lines
+        if (raw.length < 60) return true;
+    }
+
+    // "Subject: English Language" / "Subject: OWOP"
+    if (/^subject\s*[:\-]/i.test(raw) && matchGesSubject(raw)) return true;
+
+    return false;
+}
+
+function extractSubjectFromHeader(line) {
+    const raw = String(line || "").trim();
+    const fromSubjectField = raw.match(/^subject\s*[:\-]\s*(.+)$/i);
+    if (fromSubjectField) return matchGesSubject(fromSubjectField[1]) || normalizeSubjectLabel(fromSubjectField[1]);
+    return matchGesSubject(raw) || normalizeSubjectLabel(raw);
+}
+
+function extractWeekNumber(line) {
+    const s = String(line || "");
+    // "SCHEME OF LEARNING- WEEK 1" / "Week Ending" nearby is not a week number alone
+    let m = s.match(/scheme of learning\s*[-–—:]?\s*week\s*(\d{1,2})/i);
+    if (m) return parseInt(m[1], 10);
+    m = s.match(/\bweek\s*[-:]?\s*(\d{1,2})\b/i);
+    if (m) return parseInt(m[1], 10);
+    // Standalone week cell at start of overview row: "1" or "12" only when in table context handled separately
+    return null;
+}
+
+function extractTopicFromUnitText(body) {
+    const lines = String(body || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    for (const line of lines.slice(0, 25)) {
+        let m = line.match(/sub\s*-?\s*strand\s*[:\-]\s*(.+)/i);
+        if (m) return m[1].trim();
+        m = line.match(/^sub\s*strands?\s*[:\-]\s*(.+)/i);
+        if (m) return m[1].trim();
+        m = line.match(/topic\s*[:\-]\s*(.+)/i);
+        if (m) return m[1].trim();
+    }
+    // Fallback: first non-meta content line that looks like a sub-strand label
+    for (const line of lines.slice(0, 15)) {
+        if (/^(week|subject|strand|class|duration|indicator|content standard|resources|days|phase)/i.test(line)) continue;
+        if (line.length > 3 && line.length < 80) return line;
+    }
+    return "";
+}
+
+/**
+ * Ghana GES / Fayol-style term plan splitter.
+ * Strategy:
+ *  1) Split document into subject sections via scheme headers / Subject: lines
+ *  2) Inside each subject, group by Week 1..12 (overview tables + detailed weekly pages)
+ *  3) Emit one unit per (subject, week) with combined content
+ */
+function splitPlanLocally(rawText, meta = {}) {
+    const text = String(rawText || "").replace(/\r\n/g, "\n").replace(/\u00a0/g, " ").trim();
+    if (!text) return [];
+
+    const term = meta.term || "term1";
+    const className = meta.className || "Basic 1";
+
+    // Normalize odd PDF spacing but keep newlines
+    const normalized = text
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n");
+
+    const catalog = getGesSubjectCatalog();
+    // Longest aliases first for regex alternation
+    const allAliases = [];
+    catalog.forEach((item) => {
+        item.aliases.forEach((a) => allAliases.push({ alias: a, name: item.name }));
+        allAliases.push({ alias: item.name.toLowerCase(), name: item.name });
+    });
+    allAliases.sort((a, b) => b.alias.length - a.alias.length);
+
+    // Build subject finder regex from aliases (min length 3 to avoid noise)
+    const aliasPattern = allAliases
+        .map((a) => a.alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .filter((a, i, arr) => a.length >= 3 && arr.indexOf(a) === i)
+        .join("|");
+
+    const subjectHeaderRe = new RegExp(
+        "(?:(?:first\\s+term\\s+)?scheme\\s+of\\s+learning\\s*[-–—:]\\s*)?" +
+        "(?:subject\\s*[:\\-]\\s*)?" +
+        "(" + aliasPattern + ")",
+        "gi"
+    );
+
+    // ---- Collect subject marks by character index in full text ----
+    const subjectMarks = [];
+    let hm;
+    const seenAt = new Set();
+    while ((hm = subjectHeaderRe.exec(normalized)) !== null) {
+        const matched = hm[1];
+        const subject = matchGesSubject(matched) || matchGesSubject(hm[0]);
+        if (!subject) continue;
+        // Avoid matching inside long paragraphs of body text too aggressively:
+        // require nearby "scheme of learning" OR "subject:" OR line-ish isolation
+        const startCtx = Math.max(0, hm.index - 40);
+        const ctx = normalized.slice(startCtx, hm.index + matched.length + 10).toLowerCase();
+        const nearHeader =
+            /scheme of learning/.test(ctx) ||
+            /subject\s*[:\-]/.test(ctx) ||
+            /(^|\n)\s*$/.test(normalized.slice(Math.max(0, hm.index - 15), hm.index));
+
+        // Always accept scheme-of-learning / subject: forms
+        const explicit =
+            /scheme of learning/i.test(hm[0]) ||
+            /subject\s*[:\-]/i.test(normalized.slice(Math.max(0, hm.index - 12), hm.index + 1));
+
+        if (!explicit && !nearHeader) {
+            // still accept ALL-CAPS short subject titles
+            const rawSlice = normalized.slice(hm.index, hm.index + matched.length);
+            if (rawSlice !== rawSlice.toUpperCase() || matched.length > 40) continue;
+        }
+
+        const key = subject + "@" + Math.floor(hm.index / 50);
+        if (seenAt.has(key)) continue;
+        seenAt.add(key);
+        subjectMarks.push({ subject, index: hm.index, header: hm[0] });
+    }
+
+    // Also line-based pass (works well when PDF line reconstruction succeeds)
+    const lines = normalized.split("\n");
+    let charPos = 0;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (isGesSubjectHeaderLine(line)) {
+            const subject = extractSubjectFromHeader(line);
+            if (subject) {
+                subjectMarks.push({ subject, index: charPos, header: line });
+            }
+        }
+        // Subject: X
+        const sm = line.match(/subject\s*[:\-]\s*(.+)$/i);
+        if (sm) {
+            const subject = matchGesSubject(sm[1]) || null;
+            if (subject) subjectMarks.push({ subject, index: charPos, header: line });
+        }
+        charPos += line.length + 1;
+    }
+
+    // Sort + dedupe marks by position
+    subjectMarks.sort((a, b) => a.index - b.index);
+    const dedupedMarks = [];
+    for (const mark of subjectMarks) {
+        const last = dedupedMarks[dedupedMarks.length - 1];
+        if (last && last.subject === mark.subject && mark.index - last.index < 80) continue;
+        // if different subject very close, keep both
+        dedupedMarks.push(mark);
+    }
+
+    // Build sections
+    const sections = [];
+    if (!dedupedMarks.length) {
+        // Last resort: if text mentions known subjects at all, create one section per subject with full text
+        // (still better than a single "General")
+        const found = new Set();
+        catalog.forEach((item) => {
+            for (const alias of item.aliases) {
+                if (alias.length < 4) continue;
+                if (normalized.toLowerCase().includes(alias)) {
+                    found.add(item.name);
+                    break;
+                }
+            }
+        });
+        if (found.size) {
+            found.forEach((subject) => {
+                sections.push({ subject, body: normalized });
+            });
+        } else {
+            sections.push({ subject: "General", body: normalized });
+        }
+    } else {
+        for (let i = 0; i < dedupedMarks.length; i++) {
+            const start = dedupedMarks[i].index;
+            const end = i + 1 < dedupedMarks.length ? dedupedMarks[i + 1].index : normalized.length;
+            const body = normalized.slice(start, end).trim();
+            const prev = sections[sections.length - 1];
+            if (prev && prev.subject === dedupedMarks[i].subject) {
+                prev.body += "\n\n" + body;
+            } else {
+                sections.push({ subject: dedupedMarks[i].subject, body });
+            }
+        }
+    }
+
+    const unitMap = new Map();
+
+    function upsertUnit(subject, weekNum, piece, topicHint) {
+        if (!weekNum || weekNum < 1 || weekNum > 16) return;
+        const week = "Week " + weekNum;
+        const key = subject.toLowerCase() + "|" + week;
+        const pieceTrim = String(piece || "").trim();
+        if (!pieceTrim || pieceTrim.length < 15) return;
+
+        if (unitMap.has(key)) {
+            const existing = unitMap.get(key);
+            if (pieceTrim.length > existing.content.length * 1.1) {
+                existing.content = pieceTrim;
+            } else if (!existing.content.includes(pieceTrim.slice(0, 60))) {
+                existing.content = (existing.content + "\n\n" + pieceTrim).trim();
+            }
+            if (!existing.topic && topicHint) existing.topic = topicHint;
+        } else {
+            unitMap.set(key, {
+                subject,
+                week,
+                term,
+                className,
+                topic: topicHint || extractTopicFromUnitText(pieceTrim),
+                content: pieceTrim
+            });
+        }
+    }
+
+    sections.forEach((section) => {
+        const subject = section.subject;
+        const body = section.body;
+        const bodyLines = body.split("\n");
+
+        const weekMarks = [];
+        for (let i = 0; i < bodyLines.length; i++) {
+            const line = bodyLines[i].trim();
+            if (!line) continue;
+
+            let wn = extractWeekNumber(line);
+            if (wn) {
+                weekMarks.push({ weekNum: wn, lineIndex: i });
+                continue;
+            }
+
+            // "WEEK 1" inline in PDF-joined text
+            const inlineWeeks = [...line.matchAll(/\bweek\s*[-:]?\s*(\d{1,2})\b/gi)];
+            inlineWeeks.forEach((wm) => {
+                weekMarks.push({ weekNum: parseInt(wm[1], 10), lineIndex: i });
+            });
+
+            if (/^\d{1,2}$/.test(line)) {
+                const n = parseInt(line, 10);
+                if (n >= 1 && n <= 14) {
+                    const next = (bodyLines[i + 1] || "").trim();
+                    if (next && !/^\d{1,2}$/.test(next)) {
+                        weekMarks.push({ weekNum: n, lineIndex: i });
+                    }
+                }
+            }
+        }
+
+        // Also scan body as continuous text for week markers
+        if (weekMarks.length < 2) {
+            const re = /\bweek\s*[-:]?\s*(\d{1,2})\b/gi;
+            let wm;
+            while ((wm = re.exec(body)) !== null) {
+                // map char index roughly to a synthetic line
+                weekMarks.push({
+                    weekNum: parseInt(wm[1], 10),
+                    lineIndex: body.slice(0, wm.index).split("\n").length - 1
+                });
+            }
+        }
+
+        if (weekMarks.length === 0) {
+            // No weeks found — still keep subject as Week 1..12 impossible; use Week 1 with full section
+            upsertUnit(subject, 1, body, extractTopicFromUnitText(body));
+            return;
+        }
+
+        weekMarks.sort((a, b) => a.lineIndex - b.lineIndex || a.weekNum - b.weekNum);
+        const cleaned = [];
+        for (const mark of weekMarks) {
+            const last = cleaned[cleaned.length - 1];
+            if (last && last.weekNum === mark.weekNum && mark.lineIndex - last.lineIndex <= 2) continue;
+            cleaned.push(mark);
+        }
+
+        for (let i = 0; i < cleaned.length; i++) {
+            const start = cleaned[i].lineIndex;
+            const end = i + 1 < cleaned.length ? cleaned[i + 1].lineIndex : bodyLines.length;
+            const chunk = bodyLines.slice(start, Math.max(start + 1, end)).join("\n").trim();
+            upsertUnit(subject, cleaned[i].weekNum, chunk, extractTopicFromUnitText(chunk));
+        }
+    });
+
+    const units = Array.from(unitMap.values());
+    units.sort((a, b) => {
+        const s = a.subject.localeCompare(b.subject);
+        if (s) return s;
+        const wa = parseInt(String(a.week).replace(/\D/g, ""), 10) || 0;
+        const wb = parseInt(String(b.week).replace(/\D/g, ""), 10) || 0;
+        return wa - wb;
+    });
+
+    console.log(
+        "splitPlanLocally:",
+        units.length,
+        "units across",
+        new Set(units.map((u) => u.subject)).size,
+        "subjects",
+        [...new Set(units.map((u) => u.subject))]
+    );
+
+    return units;
+}
+
+async function splitPlanWithAI(rawText, meta = {}) {
+    const API_URL = getLessonApiBase();
+    try {
+        const response = await fetch(`${API_URL}/generate-plan`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                type: "split_term_plan",
+                sourcePlan: rawText,
+                term: meta.term || "term1",
+                className: meta.className || "",
+                schoolid: currentUser?.schoolid || null,
+                instructions: [
+                    "This is a Ghana GES / primary school term lesson plan (often Fayol-style).",
+                    "Split into units where EACH unit is one SUBJECT + one WEEK.",
+                    "Detect subjects such as: English Language, Mathematics, Science, Our World Our People (OWOP), Religious and Moral Education (RME), History, Creative Arts, Physical Education, Computing, Ghanaian Language, French.",
+                    "Subject headers look like: 'ENGLISH LANGUAGE', 'FIRST TERM SCHEME OF LEARNING – MATHEMATICS', or 'Subject: Science'.",
+                    "Weeks are numbered 1-12 in overview tables and as 'SCHEME OF LEARNING - WEEK N' in detailed pages.",
+                    "For each unit return: subject, week (e.g. 'Week 3'), topic (sub-strand if available), content (all strands/indicators/resources/lesson phases for that subject-week).",
+                    "Do NOT invent content. Prefer detailed weekly lesson pages over bare overview rows when both exist.",
+                    "Return JSON: { units: [ { subject, week, topic, content } ] }"
+                ].join(" ")
+            })
+        });
+        if (!response.ok) throw new Error("AI split failed: " + response.status);
+        const data = await response.json();
+        const units = data.units || data.result?.units || data.result;
+        if (Array.isArray(units) && units.length) {
+            const mapped = units.map((u) => ({
+                subject: matchGesSubject(u.subject || u.Subject || "") || normalizeSubjectLabel(u.subject || u.Subject || "General"),
+                week: normalizeWeekLabel(u.week || u.Week || ""),
+                term: u.term || meta.term || "term1",
+                className: u.className || u.class || meta.className || "",
+                topic: String(u.topic || u.Topic || u.subtopic || "").trim(),
+                subtopic: String(u.subtopic || "").trim(),
+                content: String(u.content || u.body || u.text || "").trim()
+            })).filter((u) => u.content && u.week);
+
+            if (mapped.length >= 3) return mapped;
+        }
+    } catch (e) {
+        console.warn("AI split unavailable, using local GES splitter:", e);
+    }
+    return splitPlanLocally(rawText, meta);
+}
+
+async function handleTermPlanFileSelected(event) {
+    const file = event?.target?.files?.[0];
+    const nameEl = document.getElementById("planUploadFileName");
+    if (!file) {
+        if (nameEl) nameEl.textContent = "No file selected";
+        window.__uploadedPlanText = "";
+        window.__uploadedPlanFileName = "";
+        return;
+    }
+    if (nameEl) nameEl.textContent = file.name;
+    window.__uploadedPlanFileName = file.name;
+    const status = document.getElementById("planStatus");
+    if (status) status.innerHTML = "Reading file…";
+    try {
+        const text = await extractTextFromPlanFile(file);
+        if (!text || text.trim().length < 30) {
+            throw new Error("File looks empty or unreadable.");
+        }
+        window.__uploadedPlanText = text.trim();
+
+        // Auto-detect class from document and pre-fill if empty / confirm match
+        let detectMsg = "";
+        try {
+            const detected = detectClassFromPlanDocument(text);
+            if (detected && detected.parsed) {
+                const planClassEl = lessonEl("planClass");
+                if (planClassEl && !String(planClassEl.value || "").trim()) {
+                    // Prefer teacher's matching assigned class label when possible
+                    const assigned = getTeacherAssignedClasses();
+                    const match = assigned.find((c) => classesAreEquivalent(detected.parsed, c));
+                    planClassEl.value = match || detected.parsed.display;
+                }
+                detectMsg =
+                    " Detected class: <strong>" +
+                    escapeLessonHTML(detected.parsed.display) +
+                    "</strong>.";
+            }
+        } catch (e) {
+            console.warn("class detect on file select:", e);
+        }
+
+        if (status) {
+            status.innerHTML =
+                "✅ File loaded (" + text.trim().length + " characters)." +
+                detectMsg +
+                " Click <strong>Upload &amp; Split to Cloud</strong>.";
+        }
+    } catch (err) {
+        console.error(err);
+        window.__uploadedPlanText = "";
+        if (nameEl) nameEl.textContent = "No file selected";
+        if (status) status.innerHTML = "❌ " + (err?.message || "Could not read file");
+        alert(err?.message || "Could not read the plan file.");
+    }
+}
+
+// Keep older handler name working
+async function handlePlanFileUpload(event, target = "plan") {
+    return handleTermPlanFileSelected(event);
+}
+
+async function savePlanUnitsToCloud(units, meta = {}) {
+    if (!currentUser?.schoolid) {
+        throw new Error("You must be logged in with a school to save plans.");
+    }
+    if (!units.length) throw new Error("No plan units to save.");
+
+    const rows = units.map((u) => ({
+        schoolid: currentUser.schoolid,
+        content: u.content,
+        subject: u.subject || "General",
+        term: u.term || meta.term || "term1",
+        week: u.week || "",
+        class_name: u.className || meta.className || "",
+        topic: u.topic || "",
+        source_filename: window.__uploadedPlanFileName || "",
+        created_by: currentUser.id || null,
+        created_at: new Date().toISOString()
+    }));
+
+    // Insert in batches of 25
+    const saved = [];
+    for (let i = 0; i < rows.length; i += 25) {
+        const batch = rows.slice(i, i + 25);
+        const { data, error } = await supabaseClient.from("plans").insert(batch).select("*");
+        if (error) throw error;
+        if (data) saved.push(...data);
+    }
+    return saved;
+}
+
+
+/* =========================================================
+   CLASS + SUBJECT GUARDS FOR PLAN UPLOAD
+========================================================= */
+
+const WORD_TO_LEVEL = {
+    one: 1, two: 2, three: 3, four: 4, five: 5,
+    six: 6, seven: 7, eight: 8, nine: 9,
+    "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
+    "6": 6, "7": 7, "8": 8, "9": 9
+};
+
+/**
+ * Parse class labels like:
+ *  Basic 1, Basic One, B1, 1B, Basic 1B, Class 1A, KG1, JHS 1
+ * into { level, stream, raw, display }
+ */
+function parseClassLabel(input) {
+    const raw = String(input || "").trim();
+    if (!raw) return null;
+
+    let s = raw
+        .replace(/[._]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const low = s.toLowerCase();
+
+    // KG / Nursery
+    let m = low.match(/\b(?:kg|kindergarten)\s*([1-3]|one|two|three)?\b/);
+    if (m) {
+        const lvl = WORD_TO_LEVEL[String(m[1] || "1")] || 1;
+        return { level: "KG" + lvl, stream: null, raw, display: "KG " + lvl, kind: "kg" };
+    }
+
+    // JHS
+    m = low.match(/\b(?:jhs|j\.?\s*h\.?\s*s\.?|junior\s*high)\s*([1-3]|one|two|three)?\b/);
+    if (m) {
+        const lvl = WORD_TO_LEVEL[String(m[1] || "1")] || 1;
+        const streamM = low.match(/\bjhs\s*[1-3]\s*([a-z])\b/) || low.match(/\b([a-z])\s*$/);
+        // stream from patterns like JHS 1A
+        let stream = null;
+        const jhsStream = low.match(/\b(?:jhs|junior high)\s*[1-3]\s*[-]?\s*([a-d])\b/);
+        if (jhsStream) stream = jhsStream[1].toUpperCase();
+        return {
+            level: "JHS" + lvl,
+            stream,
+            raw,
+            display: "JHS " + lvl + (stream || ""),
+            kind: "jhs"
+        };
+    }
+
+    // Basic / B / Primary / Class patterns
+    // 1B, 2A at start or as whole token
+    m = low.match(/\b([1-9])\s*([a-d])\b/);
+    const streamOnlyCombo = m ? { levelNum: parseInt(m[1], 10), stream: m[2].toUpperCase() } : null;
+
+    // basic 1b / b1b / basic one / b1 / class: b1
+    let levelNum = null;
+    let stream = null;
+
+    m = low.match(/\b(?:basic|primary|class|cls|grade)\s*(?:one|two|three|four|five|six|seven|eight|nine|[1-9])\s*[-]?([a-d])?\b/);
+    if (m) {
+        const numPart = low.match(/\b(?:basic|primary|class|cls|grade)\s*(one|two|three|four|five|six|seven|eight|nine|[1-9])\b/);
+        if (numPart) levelNum = WORD_TO_LEVEL[numPart[1]] || parseInt(numPart[1], 10);
+        if (m[1]) stream = m[1].toUpperCase();
+    }
+
+    if (levelNum == null) {
+        m = low.match(/\bb\s*([1-9])\s*([a-d])?\b/); // B1, B1A
+        if (m) {
+            levelNum = parseInt(m[1], 10);
+            if (m[2]) stream = m[2].toUpperCase();
+        }
+    }
+
+    if (levelNum == null && streamOnlyCombo) {
+        levelNum = streamOnlyCombo.levelNum;
+        stream = streamOnlyCombo.stream;
+    }
+
+    if (levelNum == null) {
+        // bare "1" only if clearly class context - handled by detector with context
+        m = low.match(/^(?:class\s*)?([1-9])$/);
+        if (m) levelNum = parseInt(m[1], 10);
+    }
+
+    if (levelNum == null) return null;
+
+    const display =
+        "Basic " + levelNum + (stream || "");
+
+    return {
+        level: "B" + levelNum, // canonical level key Basic 1 => B1
+        levelNum,
+        stream: stream || null,
+        raw,
+        display,
+        kind: "basic"
+    };
+}
+
+/**
+ * True when document class is equivalent to an assigned class.
+ * Rules:
+ *  - Same level required (Basic 1 ≈ B1 ≈ 1 ≈ Basic One)
+ *  - If BOTH have a stream letter (A/B/C), they must match (1B vs Basic 1B OK; 1B vs 1A fail)
+ *  - If only one has a stream, level match is enough (doc "Basic 1" allowed for teacher "Basic 1B")
+ */
+function classesAreEquivalent(docClass, assignedClass) {
+    const a = typeof docClass === "object" ? docClass : parseClassLabel(docClass);
+    const b = typeof assignedClass === "object" ? assignedClass : parseClassLabel(assignedClass);
+    if (!a || !b) {
+        // fallback loose string compare
+        const x = String(docClass || "").toLowerCase().replace(/\s+/g, "");
+        const y = String(assignedClass || "").toLowerCase().replace(/\s+/g, "");
+        return x && y && (x === y || x.includes(y) || y.includes(x));
+    }
+    if (a.kind !== b.kind) return false;
+    if (String(a.level) !== String(b.level)) return false;
+    if (a.stream && b.stream && a.stream !== b.stream) return false;
+    return true;
+}
+
+function getTeacherAssignedClasses() {
+    const raw = Array.isArray(currentUser?.classes) ? currentUser.classes : [];
+    return raw.map((c) => String(c || "").trim()).filter(Boolean);
+}
+
+function getTeacherAssignedSubjects() {
+    const raw = Array.isArray(currentUser?.subjects) ? currentUser.subjects : [];
+    return raw
+        .map((s) => (typeof s === "string" ? s : s?.name))
+        .map((s) => String(s || "").trim())
+        .filter((s) => s && !s.startsWith(CLASS_SUBJECTS_MARKER));
+}
+
+function isAdminUser() {
+    return String(currentUser?.role || "").toLowerCase().trim() === "admin";
+}
+
+/**
+ * Scan plan text for class mentions.
+ * Returns best parseClassLabel hit + evidence line.
+ */
+function detectClassFromPlanDocument(rawText) {
+    const text = String(rawText || "");
+    const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+
+    const candidates = [];
+
+    const patterns = [
+        /class\s*[:\-]\s*([^\n,|]+)/i,
+        /basic\s+(one|two|three|four|five|six|seven|eight|nine|[1-9])\s*([a-d])?/i,
+        /\bb\s*([1-9])\s*([a-d])?\b/i,
+        /\b([1-9])\s*([a-d])\b/i, // 1B
+        /for\s+basic\s+(one|two|three|four|five|six|[1-9])/i,
+        /lesson\s+plans?\s+for\s+primary[^\n]{0,40}/i,
+        /scheme of learning[^\n]{0,40}basic[^\n]{0,20}/i
+    ];
+
+    // Title-style: "FIRST TERM LESSON PLAN FOR BASIC ONE"
+    for (let i = 0; i < Math.min(lines.length, 40); i++) {
+        const line = lines[i];
+        const low = line.toLowerCase();
+
+        if (/basic\s+(one|two|three|four|five|six|seven|eight|nine|[1-9])\s*([a-d])?/i.test(line)) {
+            const parsed = parseClassLabel(line);
+            if (parsed) candidates.push({ parsed, line, score: 90 - i });
+        }
+        if (/class\s*[:\-]/i.test(line)) {
+            const m = line.match(/class\s*[:\-]\s*([^\n,|]+)/i);
+            if (m) {
+                const parsed = parseClassLabel(m[1]) || parseClassLabel("Basic " + m[1]);
+                if (parsed) candidates.push({ parsed, line, score: 95 - i });
+            }
+        }
+        // "Class: B1"
+        if (/\bb\s*[1-9][a-d]?\b/i.test(line) && /class|basic|b1|scheme|lesson/i.test(low)) {
+            const parsed = parseClassLabel(line);
+            if (parsed) candidates.push({ parsed, line, score: 80 - i });
+        }
+    }
+
+    // Deeper scan (detailed pages often have Class: B1)
+    for (let i = 40; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^class\s*[:\-]/i.test(line) || /\bclass\s*[:\-]\s*b?\s*[1-9]/i.test(line)) {
+            const m = line.match(/class\s*[:\-]\s*([^\n,|]+)/i);
+            const parsed = parseClassLabel(m ? m[1] : line);
+            if (parsed) candidates.push({ parsed, line, score: 50 });
+        }
+        if (i > 200) break; // enough signal from early detailed pages
+    }
+
+    if (!candidates.length) return null;
+
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates[0];
+}
+
+/**
+ * Filter units to subjects assigned to the teacher.
+ * Admins keep all subjects.
+ */
+function filterUnitsByAssignedSubjects(units) {
+    if (isAdminUser()) return { units, removedSubjects: [] };
+
+    const assigned = getTeacherAssignedSubjects();
+    if (!assigned.length) {
+        return {
+            units: [],
+            removedSubjects: [...new Set((units || []).map((u) => u.subject).filter(Boolean))],
+            error: "You have no subjects assigned. Ask the admin to assign your subjects before uploading plans."
+        };
+    }
+
+    const kept = [];
+    const removed = new Set();
+
+    (units || []).forEach((u) => {
+        const sub = canonicalSubjectName(u.subject || "");
+        if (subjectMatchesAssignment(sub, assigned) || subjectMatchesAssignment(u.subject, assigned)) {
+            kept.push({ ...u, subject: matchGesSubject(u.subject) || sub || u.subject });
+        } else if (u.subject) {
+            removed.add(u.subject);
+        }
+    });
+
+    return {
+        units: kept,
+        removedSubjects: [...removed]
+    };
+}
+
+/**
+ * Ensure document class is allowed for this teacher.
+ * Returns { ok, matchedClass, detected, message }
+ */
+function validatePlanClassForUser(rawText, formClassName) {
+    const detected = detectClassFromPlanDocument(rawText);
+    const formParsed = parseClassLabel(formClassName);
+
+    // Prefer form class if provided; still cross-check with document when detected
+    const effectiveForm = formParsed || (formClassName ? { display: formClassName, raw: formClassName, level: null } : null);
+
+    if (isAdminUser()) {
+        return {
+            ok: true,
+            matchedClass: (formParsed && formParsed.display) || formClassName || (detected && detected.parsed.display) || "",
+            detected,
+            message: detected
+                ? "Document class detected: " + detected.parsed.display + "."
+                : "No class auto-detected in document; using the class you entered."
+        };
+    }
+
+    const assigned = getTeacherAssignedClasses();
+    if (!assigned.length) {
+        return {
+            ok: false,
+            matchedClass: "",
+            detected,
+            message: "You have no class assigned. Ask the admin to assign your class before uploading plans."
+        };
+    }
+
+    // If document has a class, it must match at least one assigned class
+    if (detected && detected.parsed) {
+        const match = assigned.find((c) => classesAreEquivalent(detected.parsed, c));
+        if (!match) {
+            return {
+                ok: false,
+                matchedClass: "",
+                detected,
+                message:
+                    "This plan appears to be for **" +
+                    detected.parsed.display +
+                    "** (from: \"" + detected.line + "\"), but your assigned class(es) are: " +
+                    assigned.join(", ") +
+                    ". You can only upload plans for your assigned class."
+            };
+        }
+
+        // If user typed a class, it should also be compatible
+        if (formClassName && formParsed) {
+            const formOk = assigned.some((c) => classesAreEquivalent(formParsed, c));
+            if (!formOk) {
+                return {
+                    ok: false,
+                    matchedClass: match,
+                    detected,
+                    message:
+                        "The class you entered (" + formClassName + ") is not one of your assigned classes: " +
+                        assigned.join(", ") + "."
+                };
+            }
+        }
+
+        return {
+            ok: true,
+            matchedClass: match,
+            detected,
+            message:
+                "Document class **" + detected.parsed.display +
+                "** matches your assigned class **" + match + "**."
+        };
+    }
+
+    // No class in document → require form class to match assignment
+    if (formClassName) {
+        const match = assigned.find((c) => classesAreEquivalent(formClassName, c));
+        if (!match) {
+            return {
+                ok: false,
+                matchedClass: "",
+                detected: null,
+                message:
+                    "Class \"" + formClassName + "\" is not in your assigned classes: " +
+                    assigned.join(", ") + "."
+            };
+        }
+        return {
+            ok: true,
+            matchedClass: match,
+            detected: null,
+            message: "Using class **" + match + "** (no class found in document)."
+        };
+    }
+
+    // No form class and no document class → if teacher has exactly one class, use it
+    if (assigned.length === 1) {
+        return {
+            ok: true,
+            matchedClass: assigned[0],
+            detected: null,
+            message: "No class in document; using your only assigned class **" + assigned[0] + "**."
+        };
+    }
+
+    return {
+        ok: false,
+        matchedClass: "",
+        detected: null,
+        message:
+            "Could not detect class in the document. Enter your class, or ensure the plan states the class (e.g. Basic 1 / B1 / 1B)."
+    };
+}
+
+async function uploadAndSplitTermPlan() {
+
+    if (!currentUser) {
+        alert("Please log in first.");
+        return;
+    }
+    const text = String(window.__uploadedPlanText || "").trim();
+    if (!text) {
+        alert("Choose a plan file first.");
+        return;
+    }
+
+    const term = lessonEl("planTerm")?.value || "term1";
+    let className = lessonEl("planClass")?.value?.trim() || "";
+
+    const status = document.getElementById("planStatus");
+
+    // ---- Class detection + assignment check ----
+    const classCheck = validatePlanClassForUser(text, className);
+    if (!classCheck.ok) {
+        if (status) status.innerHTML = "❌ " + classCheck.message.replace(/\*\*/g, "");
+        alert("❌ " + classCheck.message.replace(/\*\*/g, ""));
+        return;
+    }
+
+    // Prefer matched assigned class label for storage
+    className = classCheck.matchedClass || className;
+    if (lessonEl("planClass") && className) {
+        lessonEl("planClass").value = className;
+    }
+
+    if (status) {
+        status.innerHTML =
+            "⏳ " + (classCheck.message.replace(/\*\*/g, "")) +
+            "<br>Splitting plan by subject and week…";
+    }
+
+    try {
+        const meta = { term, className };
+        let units = await splitPlanWithAI(text, meta);
+        if (!units.length) {
+            units = [{
+                subject: "General",
+                week: "Week 1",
+                term,
+                className,
+                topic: window.__uploadedPlanFileName || "Uploaded plan",
+                content: text
+            }];
+        }
+
+        // Stamp class on every unit
+        units = units.map((u) => ({ ...u, className, term: u.term || term }));
+
+        // ---- Keep only subjects assigned to this teacher ----
+        const subjectFilter = filterUnitsByAssignedSubjects(units);
+        if (subjectFilter.error) {
+            if (status) status.innerHTML = "❌ " + subjectFilter.error;
+            alert("❌ " + subjectFilter.error);
+            return;
+        }
+
+        const beforeCount = units.length;
+        units = subjectFilter.units;
+
+        if (!units.length) {
+            const msg =
+                "After filtering to your assigned subjects, no plan units remained.\n\n" +
+                "Your subjects: " + (getTeacherAssignedSubjects().join(", ") || "(none)") + "\n" +
+                "Removed from file: " + (subjectFilter.removedSubjects.join(", ") || "(none)");
+            if (status) status.innerHTML = "❌ " + msg.replace(/\n/g, " ");
+            alert("❌ " + msg);
+            return;
+        }
+
+        if (status) {
+            let msg =
+                "⏳ Saving " + units.length + " unit(s) for class <strong>" +
+                escapeLessonHTML(className) + "</strong>…";
+            if (subjectFilter.removedSubjects.length) {
+                msg +=
+                    "<br>Skipped subjects not assigned to you: " +
+                    escapeLessonHTML(subjectFilter.removedSubjects.join(", "));
+            }
+            status.innerHTML = msg;
+        }
+
+        const saved = await savePlanUnitsToCloud(units, meta);
+
+        if (status) {
+            let done =
+                "✅ Saved <strong>" +
+                saved.length +
+                "</strong> plan unit(s) for <strong>" +
+                escapeLessonHTML(className) +
+                "</strong>.";
+            if (subjectFilter.removedSubjects.length) {
+                done +=
+                    " Skipped: " +
+                    escapeLessonHTML(subjectFilter.removedSubjects.join(", ")) +
+                    ".";
+            }
+            if (classCheck.detected) {
+                done +=
+                    " Document class detected as " +
+                    escapeLessonHTML(classCheck.detected.parsed.display) +
+                    ".";
+            }
+            status.innerHTML = done;
+        }
+
+        window.__uploadedPlanText = "";
+        const nameEl = document.getElementById("planUploadFileName");
+        if (nameEl) nameEl.textContent = "No file selected";
+        const input = document.getElementById("planUploadFile");
+        if (input) input.value = "";
+
+        await refreshPlanLibrary();
+
+        let alertMsg =
+            "✅ Plan uploaded and saved.\n\n" +
+            saved.length + " unit(s) for class " + className + ".";
+        if (subjectFilter.removedSubjects.length) {
+            alertMsg +=
+                "\n\nSkipped subjects not assigned to you:\n- " +
+                subjectFilter.removedSubjects.join("\n- ");
+        }
+        if (beforeCount !== saved.length && !subjectFilter.removedSubjects.length) {
+            alertMsg += "\n\n(Some units were merged or filtered during split.)";
+        }
+        alert(alertMsg);
+    } catch (err) {
+        console.error(err);
+        if (status) status.innerHTML = "❌ " + (err?.message || "Upload failed");
+        alert("❌ " + (err?.message || "Could not upload and split the plan."));
+    }
+}
+
+async function fetchPlanLibraryFromCloud() {
+    if (!currentUser?.schoolid) return [];
+    let { data, error } = await supabaseClient
+        .from("plans")
+        .select("*")
+        .eq("schoolid", currentUser.schoolid)
+        .order("created_at", { ascending: false });
+
+    // Fallback if older DB used createdAt
+    if (error && /created_at/i.test(error.message || "")) {
+        const retry = await supabaseClient
+            .from("plans")
+            .select("*")
+            .eq("schoolid", currentUser.schoolid)
+            .order("createdAt", { ascending: false });
+        data = retry.data;
+        error = retry.error;
+    }
+
+    if (error) throw error;
+
+    let rows = (data || []).map((row) => ({
+        ...row,
+        className: row.className || row.class_name || "",
+        createdAt: row.createdAt || row.created_at || null
+    }));
+
+    // Teachers only see units for their assigned subjects (and classes when set)
+    if (!isAdminUser()) {
+        const assignedSubjects = getTeacherAssignedSubjects().map(
+            (s) => (matchGesSubject(s) || normalizeSubjectLabel(s)).toLowerCase()
+        );
+        const assignedClasses = getTeacherAssignedClasses();
+
+        if (getTeacherAssignedSubjects().length) {
+            const assigned = getTeacherAssignedSubjects();
+            rows = rows.filter((r) => subjectMatchesAssignment(r.subject, assigned));
+        }
+
+        if (assignedClasses.length) {
+            rows = rows.filter((r) => {
+                const cls = r.className || r.class_name || "";
+                if (!cls) return true; // keep units with unknown class
+                return assignedClasses.some((c) => classesAreEquivalent(cls, c));
+            });
+        }
+    }
+
+    return rows;
+}
+
+function uniqueSorted(values) {
+    return [...new Set(values.map((v) => String(v || "").trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
+function populatePlanLibraryFilters(units) {
+    const subSel = document.getElementById("planLibSubjectFilter");
+    const weekSel = document.getElementById("planLibWeekFilter");
+    if (subSel) {
+        const cur = subSel.value;
+        const subjects = uniqueSorted(units.map((u) => u.subject));
+        subSel.innerHTML =
+            '<option value="">All subjects</option>' +
+            subjects.map((s) => `<option value="${escapeLessonHTML(s)}">${escapeLessonHTML(s)}</option>`).join("");
+        if (subjects.includes(cur)) subSel.value = cur;
+    }
+    if (weekSel) {
+        const cur = weekSel.value;
+        const weeks = uniqueSorted(units.map((u) => normalizeWeekLabel(u.week)));
+        weekSel.innerHTML =
+            '<option value="">All weeks</option>' +
+            weeks.map((w) => `<option value="${escapeLessonHTML(w)}">${escapeLessonHTML(w)}</option>`).join("");
+        if (weeks.includes(cur)) weekSel.value = cur;
+    }
+}
+
+function renderPlanLibrary() {
+    const list = document.getElementById("planLibraryList");
+    if (!list) return;
+
+    const units = window.__planLibrary || [];
+    const sub = (document.getElementById("planLibSubjectFilter")?.value || "").trim();
+    const week = (document.getElementById("planLibWeekFilter")?.value || "").trim();
+    const term = (document.getElementById("planLibTermFilter")?.value || "").trim();
+
+    let filtered = units.slice();
+    if (sub) filtered = filtered.filter((u) => String(u.subject || "") === sub);
+    if (week) filtered = filtered.filter((u) => normalizeWeekLabel(u.week) === week);
+    if (term) filtered = filtered.filter((u) => String(u.term || "") === term);
+
+    if (!filtered.length) {
+        list.innerHTML = `
+            <div class="lesson-empty" style="grid-column:1/-1;">
+                <div class="lesson-empty-icon">📚</div>
+                <h3>No units match</h3>
+                <p>Upload a plan or change the filters.</p>
+            </div>`;
+        return;
+    }
+
+    list.innerHTML = filtered.map((u, idx) => {
+        const realIndex = units.indexOf(u);
+        const active = window.__selectedPlanUnit && window.__selectedPlanUnit.id && u.id === window.__selectedPlanUnit.id
+            ? " active"
+            : "";
+        return `
+            <div class="plan-unit-card${active}" onclick="selectPlanUnit(${realIndex})">
+                <h4>${escapeLessonHTML(u.subject || "General")}</h4>
+                <div class="plan-unit-meta">
+                    ${escapeLessonHTML(getTermLabel(u.term))}
+                    ${u.week ? " • " + escapeLessonHTML(normalizeWeekLabel(u.week)) : ""}
+                    ${u.className ? " • " + escapeLessonHTML(u.className) : ""}
+                </div>
+                <div class="plan-unit-topic">${escapeLessonHTML(u.topic || "No topic label")}</div>
+                <div class="plan-unit-actions">
+                    <button type="button" class="primary" onclick="event.stopPropagation(); selectPlanUnit(${realIndex})">Preview</button>
+                    <button type="button" onclick="event.stopPropagation(); prepareNoteFromLibraryIndex(${realIndex})">Prepare note</button>
+                </div>
+            </div>`;
+    }).join("");
+}
+
+function selectPlanUnit(index) {
+    const units = window.__planLibrary || [];
+    const unit = units[index];
+    if (!unit) return;
+    window.__selectedPlanUnit = unit;
+    window.__lastLessonPlanText = String(unit.content || "").trim();
+    window.__lastLessonPlanMeta = {
+        subject: unit.subject,
+        term: unit.term,
+        week: unit.week,
+        className: unit.className,
+        topic: unit.topic
+    };
+
+    // Preview on plan page
+    const out = document.getElementById("planOutput");
+    if (out) {
+        out.innerHTML = formatLessonContent(unit.content || "", "Plan unit", {
+            subject: unit.subject,
+            term: unit.term,
+            week: unit.week,
+            className: unit.className,
+            topic: unit.topic,
+            subtopic: "",
+            duration: ""
+        });
+    }
+
+    // Sync note selectors if present
+    const noteSubject = document.getElementById("noteSubject");
+    const noteWeek = document.getElementById("noteWeek");
+    const noteTerm = document.getElementById("noteTerm");
+    const noteClass = document.getElementById("noteClass");
+    const noteTopic = document.getElementById("noteTopic");
+    if (noteTerm && unit.term) noteTerm.value = unit.term;
+    if (noteClass && unit.className) noteClass.value = unit.className;
+    if (noteTopic) noteTopic.value = unit.topic || "";
+    syncNoteUnitSelectors();
+    if (noteSubject && unit.subject) noteSubject.value = unit.subject;
+    onNoteSubjectChanged();
+    if (noteWeek && unit.week) noteWeek.value = normalizeWeekLabel(unit.week);
+    onNoteWeekChanged();
+
+    renderPlanLibrary();
+}
+
+async function refreshPlanLibrary(forNotePage = false) {
+    try {
+        const units = await fetchPlanLibraryFromCloud();
+        window.__planLibrary = units;
+        window.savedLessonPlans = units;
+        populatePlanLibraryFilters(units);
+        renderPlanLibrary();
+        syncNoteUnitSelectors();
+        if (forNotePage) {
+            const st = document.getElementById("noteStatus");
+            if (st) st.innerHTML = "📚 " + units.length + " plan unit(s) available.";
+        }
+    } catch (err) {
+        console.error(err);
+        const list = document.getElementById("planLibraryList");
+        if (list) {
+            list.innerHTML = `
+                <div class="lesson-empty" style="grid-column:1/-1;">
+                    <div class="lesson-empty-icon">❌</div>
+                    <h3>Could not load plan library</h3>
+                    <p>${escapeLessonHTML(err.message || "Error")}</p>
+                </div>`;
+        }
+    }
+}
+
+function syncNoteUnitSelectors() {
+    const units = window.__planLibrary || [];
+    const term = document.getElementById("noteTerm")?.value || "";
+    const subjectSel = document.getElementById("noteSubject");
+    const weekSel = document.getElementById("noteWeek");
+    if (!subjectSel || !weekSel) return;
+
+    let pool = units;
+    if (term) pool = pool.filter((u) => String(u.term || "") === term);
+
+    const subjects = uniqueSorted(pool.map((u) => u.subject));
+    const prevSub = subjectSel.value;
+    subjectSel.innerHTML =
+        '<option value="">Select subject</option>' +
+        subjects.map((s) => `<option value="${escapeLessonHTML(s)}">${escapeLessonHTML(s)}</option>`).join("");
+    if (subjects.includes(prevSub)) subjectSel.value = prevSub;
+
+    onNoteSubjectChanged();
+}
+
+function onNoteSubjectChanged() {
+    const units = window.__planLibrary || [];
+    const term = document.getElementById("noteTerm")?.value || "";
+    const subject = document.getElementById("noteSubject")?.value || "";
+    const weekSel = document.getElementById("noteWeek");
+    if (!weekSel) return;
+
+    let pool = units;
+    if (term) pool = pool.filter((u) => String(u.term || "") === term);
+    if (subject) pool = pool.filter((u) => String(u.subject || "") === subject);
+
+    const weeks = uniqueSorted(pool.map((u) => normalizeWeekLabel(u.week)));
+    const prev = weekSel.value;
+    weekSel.innerHTML =
+        '<option value="">Select week</option>' +
+        weeks.map((w) => `<option value="${escapeLessonHTML(w)}">${escapeLessonHTML(w)}</option>`).join("");
+    if (weeks.includes(prev)) weekSel.value = prev;
+    else weekSel.value = "";
+    onNoteWeekChanged();
+}
+
+function onNoteWeekChanged() {
+    const units = window.__planLibrary || [];
+    const term = document.getElementById("noteTerm")?.value || "";
+    const subject = document.getElementById("noteSubject")?.value || "";
+    const week = normalizeWeekLabel(document.getElementById("noteWeek")?.value || "");
+    const preview = document.getElementById("noteSelectedUnitPreview");
+    const noteTopic = document.getElementById("noteTopic");
+    const noteClass = document.getElementById("noteClass");
+
+    if (!subject || !week) {
+        window.__selectedPlanUnit = null;
+        if (preview) {
+            preview.innerHTML = `
+                <div class="lesson-empty" style="padding:8px;">
+                    <h3 style="margin:0 0 6px;font-size:15px;">No plan unit selected</h3>
+                    <p style="margin:0;font-size:13px;opacity:.8;">Choose subject and week.</p>
+                </div>`;
+        }
+        return;
+    }
+
+    const unit = units.find((u) =>
+        String(u.subject || "") === subject &&
+        normalizeWeekLabel(u.week) === week &&
+        (!term || String(u.term || "") === term)
+    );
+
+    window.__selectedPlanUnit = unit || null;
+    if (!unit) {
+        if (preview) preview.textContent = "No matching plan unit in the library.";
+        return;
+    }
+
+    if (noteTopic) noteTopic.value = unit.topic || "";
+    if (noteClass && unit.className && !noteClass.value) noteClass.value = unit.className;
+    if (preview) {
+        const snippet = String(unit.content || "").slice(0, 1200);
+        preview.textContent = snippet + (unit.content && unit.content.length > 1200 ? "…" : "");
+    }
+}
+
+async function prepareNoteFromSelectedUnit() {
+    const unit = window.__selectedPlanUnit;
+    if (!unit || !unit.content) {
+        alert("Select a subject and week from your uploaded plans first.");
+        return;
+    }
+    await generateNoteFromPlanText(unit.content, {
+        subject: unit.subject,
+        term: unit.term,
+        week: unit.week,
+        className: unit.className || document.getElementById("noteClass")?.value || "",
+        topic: unit.topic || document.getElementById("noteTopic")?.value || "",
+        subtopic: document.getElementById("noteSubtopic")?.value || "",
+        duration: document.getElementById("noteDuration")?.value || ""
+    });
+}
+
+async function prepareNoteFromLibraryIndex(index) {
+    selectPlanUnit(index);
+    // Stay on plan page or jump to note — jump so user sees output
+    if (typeof showPage === "function") {
+        try { showPage("profileNotePage"); } catch (_) {}
+    }
+    await prepareNoteFromSelectedUnit();
+}
+
+async function prepareNoteFromCurrentPlan() {
+    await prepareNoteFromSelectedUnit();
+}
+
+async function prepareNoteFromUploadedPlan() {
+    alert("Upload plans on the Plan page with “Upload & Split to Cloud”, then select a subject and week here.");
+}
+
+/**
+ * Pull common GES fields out of a plan-unit text blob.
+ */
+function parsePlanUnitFields(planText) {
+    const text = String(planText || "");
+    const pick = (re) => {
+        const m = text.match(re);
+        return m ? String(m[1] || "").replace(/\s+/g, " ").trim() : "";
+    };
+
+    const strand = pick(/strand\s*[:\-]\s*([^\n]+)/i);
+    const subStrand =
+        pick(/sub\s*-?\s*strand\s*[:\-]\s*([^\n]+)/i) ||
+        pick(/sub\s*strands?\s*[:\-]\s*([^\n]+)/i);
+    const contentStandard =
+        pick(/content\s*standard\s*[:\-]\s*([^\n]+)/i) ||
+        pick(/\b(B\d+\.\d+(?:\.\d+)*)\b/);
+    const indicator =
+        pick(/indicators?\s*[:\-]\s*([^\n]+)/i) ||
+        pick(/\b(B\d+\.\d+(?:\.\d+)*\.\d+)\b/);
+    const resources =
+        pick(/resources?\s*[:\-]\s*([^\n]+)/i) ||
+        pick(/teaching\s*\/?\s*learning\s*resources?\s*[:\-]\s*([^\n]+)/i);
+
+    // Collect indicator-looking codes
+    const codes = [...text.matchAll(/\b(B\d+\.\d+(?:\.\d+){1,3})\b/g)].map((m) => m[1]);
+    const uniqueCodes = [...new Set(codes)];
+
+    return {
+        strand,
+        subStrand,
+        contentStandard: contentStandard || uniqueCodes[0] || "",
+        indicator: indicator || uniqueCodes[1] || uniqueCodes[0] || "",
+        resources:
+            resources ||
+            "Word cards, charts, pictures, real objects, chalkboard/whiteboard, learner's books",
+        codes: uniqueCodes
+    };
+}
+
+/**
+ * Build a standard Ghana-style lesson note from a plan unit — no AI required.
+ */
+function buildLocalLessonNote(planText, meta = {}) {
+    const text = String(planText || "").trim();
+    const subject = meta.subject || "Subject";
+    const term = getTermLabel(meta.term || "term1");
+    const week = meta.week || "Week 1";
+    const className = meta.className || "";
+    const duration = meta.duration || "60 minutes";
+    const topic = meta.topic || meta.subtopic || "";
+    const fields = parsePlanUnitFields(text);
+
+    const subStrand = fields.subStrand || topic || "As indicated in the weekly plan";
+    const strand = fields.strand || "As indicated in the weekly plan";
+    const contentStandard = fields.contentStandard || "See weekly scheme of learning";
+    const indicator = fields.indicator || "See weekly scheme of learning";
+    const resources = fields.resources;
+
+    // If the plan already has phase content, surface it
+    const hasPhases = /phase\s*1|starter|phase\s*2|main|phase\s*3|reflection/i.test(text);
+
+    let starter = "";
+    let main = "";
+    let reflection = "";
+
+    if (hasPhases) {
+        const starterM = text.match(/(?:phase\s*1\s*[:\-]?\s*starter|starter)\s*[:\-]?([\s\S]{20,800}?)(?=phase\s*2|main\s*activity|phase\s*3|reflection|$)/i);
+        const mainM = text.match(/(?:phase\s*2\s*[:\-]?\s*main|main\s*activity|phase\s*2)\s*[:\-]?([\s\S]{20,1200}?)(?=phase\s*3|reflection|$)/i);
+        const refM = text.match(/(?:phase\s*3\s*[:\-]?\s*reflection|reflection)\s*[:\-]?([\s\S]{20,800}?)(?=$)/i);
+        starter = starterM ? starterM[1].trim() : "";
+        main = mainM ? mainM[1].trim() : "";
+        reflection = refM ? refM[1].trim() : "";
+    }
+
+    if (!starter) {
+        starter = [
+            "• Greet learners and settle the class.",
+            "• Review the previous lesson with 2–3 quick oral questions.",
+            "• Introduce today's focus: " + subStrand + ".",
+            "• Share the lesson outcome in simple language learners can understand."
+        ].join("\n");
+    }
+
+    if (!main) {
+        main = [
+            "• Present the content standard / indicator: " + indicator + ".",
+            "• Explain key ideas related to: " + subStrand + ".",
+            "• Use available resources (" + resources + ") to demonstrate the concept.",
+            "• Guide learners through guided practice (whole class → pairs/groups → individual).",
+            "• Support struggling learners and stretch faster learners with extra examples.",
+            "• Related plan detail:",
+            text.slice(0, 900) + (text.length > 900 ? "…" : "")
+        ].join("\n");
+    }
+
+    if (!reflection) {
+        reflection = [
+            "• Ask learners what they have learnt today.",
+            "• Let a few learners summarize the main points in their own words.",
+            "• Give a short oral/practical assessment linked to the indicator.",
+            "• Assign a simple home task / practice activity.",
+            "• Close the lesson and prepare materials for the next period."
+        ].join("\n");
+    }
+
+    const body = [
+        "LESSON NOTE (Standard format — prepared from weekly plan)",
+        "",
+        "Subject: " + subject,
+        "Class: " + (className || "—"),
+        "Term: " + term,
+        "Week: " + week,
+        "Duration: " + duration,
+        "",
+        "Strand: " + strand,
+        "Sub-strand / Topic: " + subStrand,
+        "Content Standard: " + contentStandard,
+        "Indicator(s): " + indicator,
+        "Teaching / Learning Resources: " + resources,
+        "",
+        "Core Competencies: Communication and collaboration; Critical thinking and problem solving; Personal development and leadership; Digital literacy (as applicable).",
+        "",
+        "PHASE 1 — STARTER (About 10 minutes)",
+        starter,
+        "",
+        "PHASE 2 — MAIN ACTIVITY (About 40 minutes)",
+        main,
+        "",
+        "PHASE 3 — REFLECTION / ASSESSMENT (About 10 minutes)",
+        reflection,
+        "",
+        "Remarks / Evaluation:",
+        "• Were the indicators largely achieved? Yes / Partially / No",
+        "• Learners needing extra support: ________________",
+        "• Next steps: ________________"
+    ].join("\n");
+
+    return body;
+}
+
+function renderPreparedNoteHtml(noteText, meta, sourceLabel) {
+    return formatLessonContent(noteText, "Lesson Note", {
+        subject: meta.subject || "",
+        term: meta.term || "term1",
+        week: meta.week || "",
+        className: meta.className || "",
+        topic: meta.topic || "",
+        subtopic: meta.subtopic || "",
+        duration: meta.duration || ""
+    }) + (sourceLabel
+        ? `<p style="margin-top:10px;font-size:12px;opacity:.7;">${escapeLessonHTML(sourceLabel)}</p>`
+        : "");
+}
+
+async function tryAiLessonNote(planText, meta) {
+    if (!navigator.onLine) return null;
+    const API_URL = getLessonApiBase();
+    // Short timeout so we don't hang when server is down
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 8000) : null;
+    try {
+        const response = await fetch(`${API_URL}/generate-plan`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: controller ? controller.signal : undefined,
+            body: JSON.stringify({
+                type: "lesson_note",
+                fromPlan: true,
+                sourcePlan: planText,
+                subject: meta.subject,
+                term: meta.term,
+                week: meta.week,
+                className: meta.className,
+                topic: meta.topic,
+                subtopic: meta.subtopic,
+                duration: meta.duration
+            })
+        });
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (!data || !data.result) return null;
+        return String(data.result);
+    } catch (_) {
+        return null;
+    } finally {
+        if (timer) clearTimeout(timer);
+    }
+}
+
+async function generateNoteFromPlanText(planText, meta = {}, options = {}) {
+    const text = String(planText || "").trim();
+    if (!text || text.length < 20) {
+        alert("No plan content found for this unit.");
+        return;
+    }
+
+    const subject =
+        lessonEl("noteSubject")?.value?.trim() ||
+        meta.subject ||
+        "";
+    const term =
+        lessonEl("noteTerm")?.value ||
+        meta.term ||
+        "term1";
+    const week =
+        lessonEl("noteWeek")?.value?.trim() ||
+        meta.week ||
+        "";
+    const className =
+        lessonEl("noteClass")?.value?.trim() ||
+        meta.className ||
+        "";
+    const topic =
+        lessonEl("noteTopic")?.value?.trim() ||
+        meta.topic ||
+        "";
+    const subtopic =
+        lessonEl("noteSubtopic")?.value?.trim() ||
+        meta.subtopic ||
+        "";
+    const duration =
+        lessonEl("noteDuration")?.value?.trim() ||
+        meta.duration ||
+        "60 minutes";
+
+    const noteMeta = { subject, term, week, className, topic, subtopic, duration };
+
+    const output = lessonEl("noteOutput");
+    const status = lessonEl("noteStatus");
+
+    if (output) {
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">📝</div>
+                <h3>Preparing lesson note…</h3>
+                <p>Building a standard note from your plan unit. AI is optional.</p>
+            </div>`;
+    }
+    if (status) status.innerHTML = "⏳ Preparing standard lesson note from the selected unit…";
+
+    // 1) Always build a local standard note (works offline)
+    const localNote = buildLocalLessonNote(text, noteMeta);
+
+    // 2) Try AI briefly; if it works, prefer AI result
+    if (status) status.innerHTML = "⏳ Standard note ready. Checking AI enhancement (optional)…";
+    const aiNote = await tryAiLessonNote(text, noteMeta);
+
+    if (aiNote) {
+        if (output) {
+            output.innerHTML = renderPreparedNoteHtml(aiNote, noteMeta, "Source: AI-enhanced from your weekly plan unit.");
+        }
+        if (status) status.innerHTML = "✅ Lesson note prepared with AI. You can save, export, or print it.";
+        return;
+    }
+
+    // 3) Offline / AI unavailable — use local standard form
+    if (output) {
+        output.innerHTML = renderPreparedNoteHtml(
+            localNote,
+            noteMeta,
+            "Source: Standard note built locally from your weekly plan (AI server not required)."
+        );
+    }
+    if (status) {
+        status.innerHTML =
+            "✅ Lesson note prepared offline from your plan unit. You can edit after saving, or export / print.";
+    }
+}
+
+window.handleTermPlanFileSelected = handleTermPlanFileSelected;
+window.handlePlanFileUpload = handlePlanFileUpload;
+window.uploadAndSplitTermPlan = uploadAndSplitTermPlan;
+window.refreshPlanLibrary = refreshPlanLibrary;
+window.renderPlanLibrary = renderPlanLibrary;
+window.selectPlanUnit = selectPlanUnit;
+window.syncNoteUnitSelectors = syncNoteUnitSelectors;
+window.onNoteSubjectChanged = onNoteSubjectChanged;
+window.onNoteWeekChanged = onNoteWeekChanged;
+window.prepareNoteFromSelectedUnit = prepareNoteFromSelectedUnit;
+window.prepareNoteFromLibraryIndex = prepareNoteFromLibraryIndex;
+window.prepareNoteFromCurrentPlan = prepareNoteFromCurrentPlan;
+window.prepareNoteFromUploadedPlan = prepareNoteFromUploadedPlan;
+window.generateNoteFromPlanText = generateNoteFromPlanText;
+
+
+/**
+ * Brief or standard lesson note from a free-typed topic (no plan unit required).
+ */
+function buildNoteFromFreeTopic(topic, meta = {}, style = "standard") {
+    const t = String(topic || "").trim();
+    const subject = meta.subject || "General";
+    const className = meta.className || "";
+    const duration = meta.duration || "60 minutes";
+    const term = getTermLabel(meta.term || "term1");
+    const week = meta.week || "";
+    const title = t.charAt(0).toUpperCase() + t.slice(1);
+
+    if (style === "brief") {
+        return [
+            "BRIEF LESSON NOTE",
+            "",
+            "Subject: " + subject,
+            "Class: " + (className || "—"),
+            "Topic: " + title,
+            duration ? ("Duration: " + duration) : "",
+            term ? ("Term: " + term) : "",
+            week ? ("Week: " + week) : "",
+            "",
+            "Objective:",
+            "• Learners will understand the basic idea of " + title + " and use it in simple examples.",
+            "",
+            "Key points to teach:",
+            "• Meaning / definition of " + title + " in simple language.",
+            "• 3–5 clear examples related to learners' everyday life.",
+            "• Common mistakes to correct.",
+            "• Short practice (oral or written).",
+            "",
+            "Starter (5–10 min):",
+            "• Ask what learners already know about " + title + ".",
+            "• Use a short question, picture, or real object to spark interest.",
+            "",
+            "Main (30–40 min):",
+            "• Explain " + title + " step by step.",
+            "• Work examples with the class, then in pairs, then individually.",
+            "• Use board work / word cards / simple activity as available.",
+            "",
+            "Plenary / Assessment (5–10 min):",
+            "• Quick questions or 2–3 written items on " + title + ".",
+            "• Learners say one thing they learnt.",
+            "",
+            "Resources: chalkboard/whiteboard, exercise books, charts or real objects (as available).",
+            "Home task: 3–5 practice items on " + title + "."
+        ].filter(Boolean).join("\n");
+    }
+
+    // Standard full form
+    return [
+        "LESSON NOTE (Standard format — from free topic)",
+        "",
+        "Subject: " + subject,
+        "Class: " + (className || "—"),
+        "Term: " + term,
+        week ? ("Week: " + week) : null,
+        "Duration: " + duration,
+        "Topic / Sub-strand: " + title,
+        "",
+        "Content focus:",
+        "• Introduce and develop understanding of " + title + ".",
+        "• Help learners identify and use examples of " + title + " correctly.",
+        "",
+        "Indicator (teacher-framed):",
+        "• Learners can explain " + title + " in their own words and give at least two examples.",
+        "",
+        "Teaching / Learning Resources:",
+        "• Chalkboard/whiteboard, word/picture cards, learner's books, real objects from the environment (as available).",
+        "",
+        "Core Competencies: Communication and collaboration; Critical thinking and problem solving; Personal development and leadership.",
+        "",
+        "PHASE 1 — STARTER (About 10 minutes)",
+        "• Greet and settle learners.",
+        "• Review related previous knowledge with short oral questions.",
+        "• Present a simple situation, picture, or word linked to " + title + ".",
+        "• Tell learners: \"Today we are learning about " + title + ".\"",
+        "",
+        "PHASE 2 — MAIN ACTIVITY (About 40 minutes)",
+        "• Explain the meaning of " + title + " in clear, age-appropriate language.",
+        "• Give several examples (and non-examples where useful).",
+        "• Demonstrate on the board; learners repeat / respond.",
+        "• Guided practice: class → groups/pairs → individuals.",
+        "• Monitor and support learners who need help; extend stronger learners.",
+        "• Sample activities: matching, sorting, short sentences, oral drill, simple problem solving — depending on the subject.",
+        "",
+        "PHASE 3 — REFLECTION / ASSESSMENT (About 10 minutes)",
+        "• Ask: What is " + title + "? Can you give an example?",
+        "• Quick oral or written check (2–5 items).",
+        "• Learners summarize the lesson in one sentence.",
+        "• Home task: short practice on " + title + ".",
+        "",
+        "Remarks / Evaluation:",
+        "• Indicators achieved? Yes / Partially / No",
+        "• Learners needing support: ________________",
+        "• Next steps: ________________"
+    ].filter((line) => line !== null).join("\n");
+}
+
+async function prepareNoteFromFreeTopic() {
+    const topic = String(document.getElementById("freeNoteTopic")?.value || "").trim();
+    if (!topic) {
+        alert("Enter a topic first (e.g. Nouns).");
+        document.getElementById("freeNoteTopic")?.focus();
+        return;
+    }
+
+    const subject =
+        String(document.getElementById("freeNoteSubject")?.value || "").trim() ||
+        lessonEl("noteSubject")?.value?.trim() ||
+        "General";
+    const className =
+        String(document.getElementById("freeNoteClass")?.value || "").trim() ||
+        lessonEl("noteClass")?.value?.trim() ||
+        "";
+    const duration =
+        String(document.getElementById("freeNoteDuration")?.value || "").trim() ||
+        "60 minutes";
+    const style =
+        String(document.getElementById("freeNoteStyle")?.value || "standard").trim() ||
+        "standard";
+    const term = lessonEl("noteTerm")?.value || "term1";
+    const week = lessonEl("noteWeek")?.value || "";
+
+    // Mirror into main note fields so Save Note works
+    if (lessonEl("noteTopic")) lessonEl("noteTopic").value = topic;
+    if (lessonEl("noteSubject") && subject && !lessonEl("noteSubject").value) {
+        // leave select if already set; free subject is free text
+    }
+    if (lessonEl("noteClass") && className) lessonEl("noteClass").value = className;
+    if (lessonEl("noteDuration")) lessonEl("noteDuration").value = duration;
+
+    const noteMeta = {
+        subject,
+        className,
+        duration,
+        term,
+        week,
+        topic,
+        subtopic: ""
+    };
+
+    const output = lessonEl("noteOutput");
+    const status = lessonEl("noteStatus");
+    if (status) status.innerHTML = "⏳ Preparing " + style + " note for topic: " + topic + "…";
+    if (output) {
+        output.innerHTML = `
+            <div class="lesson-empty">
+                <div class="lesson-empty-icon">✨</div>
+                <h3>Preparing note for “${escapeLessonHTML(topic)}”…</h3>
+            </div>`;
+    }
+
+    // Local note always
+    const localNote = buildNoteFromFreeTopic(topic, noteMeta, style);
+
+    // Optional AI enhancement (short try)
+    const aiSeed =
+        "Create a " + style + " primary-school lesson note on the topic: " + topic +
+        ". Subject: " + subject + ". Class: " + (className || "primary") +
+        ". Duration: " + duration + ".";
+    const aiNote = await tryAiLessonNote(aiSeed, noteMeta);
+
+    if (aiNote) {
+        if (output) {
+            output.innerHTML = renderPreparedNoteHtml(
+                aiNote,
+                noteMeta,
+                "Source: AI-enhanced free topic (“" + topic + "”)."
+            );
+        }
+        if (status) status.innerHTML = "✅ Note prepared with AI for topic: " + topic;
+        return;
+    }
+
+    if (output) {
+        output.innerHTML = renderPreparedNoteHtml(
+            localNote,
+            noteMeta,
+            "Source: " + (style === "brief" ? "Brief" : "Standard") +
+                " note built offline from free topic (“" + topic + "”)."
+        );
+    }
+    if (status) {
+        status.innerHTML =
+            "✅ " + (style === "brief" ? "Brief" : "Standard") +
+            " note ready for topic: " + topic + " (works without AI).";
+    }
+}
+
+window.prepareNoteFromFreeTopic = prepareNoteFromFreeTopic;
+window.buildNoteFromFreeTopic = buildNoteFromFreeTopic;
+
 
 
 /* =========================================================
@@ -13204,11 +15500,13 @@ async function savePlan() {
 
                     week: week,
 
-                    className: className,
+                    class_name: className,
 
                     topic: topic,
 
-                    createdAt:
+                    created_by: currentUser.id || null,
+
+                    created_at:
                         new Date().toISOString()
                 }
             ]);
@@ -13277,13 +15575,15 @@ async function saveNote() {
                     week:
                         lessonEl("noteWeek")?.value || "",
 
-                    className:
+                    class_name:
                         lessonEl("noteClass")?.value || "",
 
                     topic:
                         lessonEl("noteTopic")?.value || "",
 
-                    createdAt:
+                    created_by: currentUser.id || null,
+
+                    created_at:
                         new Date().toISOString()
                 }
             ]);
@@ -13349,7 +15649,7 @@ async function loadPlans() {
                 currentUser.schoolid
             )
             .order(
-                "createdAt",
+                "created_at",
                 {
                     ascending: false
                 }
@@ -13480,7 +15780,7 @@ function viewSavedPlan(index) {
 
     if (lessonEl("planClass")) {
         lessonEl("planClass").value =
-            plan.className || "";
+            plan.className || plan.class_name || "";
     }
 
     if (lessonEl("planTopic")) {
@@ -13523,7 +15823,7 @@ async function loadNotes() {
                 currentUser.schoolid
             )
             .order(
-                "createdAt",
+                "created_at",
                 {
                     ascending: false
                 }

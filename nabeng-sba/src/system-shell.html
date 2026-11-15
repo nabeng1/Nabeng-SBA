@@ -905,13 +905,10 @@
 
                 <i class="fas fa-cloud-upload-alt"></i>
 
-                <strong>
-                    Choose CSV File
-                </strong>
-
-                <small>
-                    Click here to select your student CSV file
-                </small>
+                <span class="csv-upload-text">
+                    <strong>Choose CSV File</strong>
+                    <small>Select a student CSV to import</small>
+                </span>
 
                 <input
                     type="file"
@@ -3302,7 +3299,7 @@
 
                     <div class="input-wrapper">
 
-                        <i class="fa-solid fa-user input-icon"></i>
+                        <i class="fa-solid fa-id-card input-icon"></i>
 
                         <input
                             id="pSurname"
@@ -3618,8 +3615,8 @@
                     </h3>
 
                     <p>
-                        Enter the class or classes this teacher
-                        is responsible for.
+                        Enter every class this teacher teaches
+                        (main class and extra classes).
                     </p>
                 </div>
 
@@ -3633,18 +3630,20 @@
             <input
                 id="teacherClass"
                 type="text"
-                placeholder="Example: 1A, 2B, 3A"
+                placeholder="Example: Basic 1A, Basic 2B, 3A"
+                onchange="onTeacherClassesInputChanged()"
+                onblur="onTeacherClassesInputChanged()"
             >
 
             <small class="assignment-help">
-                Separate multiple classes with commas.
+                Separate multiple classes with commas. Include extra classes the teacher also teaches.
             </small>
 
         </div>
 
 
         <!-- =================================================
-             ASSIGN SUBJECTS
+             ASSIGN SUBJECTS PER CLASS
         ================================================== -->
 
         <div class="assignment-card">
@@ -3657,24 +3656,37 @@
                     </span>
 
                     <h3>
-                        <i class="fas fa-book"></i>
-                        Assign Subjects
+                        <i class="fas fa-book-open"></i>
+                        Subjects per class
                     </h3>
 
                     <p>
-                        Select all subjects this teacher is
-                        allowed to teach.
+                        Select a class, then tick only the subjects
+                        this teacher teaches <strong>in that class</strong>.
                     </p>
                 </div>
 
             </div>
 
+            <label for="assignmentClassPicker">
+                Class to configure
+            </label>
+            <select
+                id="assignmentClassPicker"
+                onchange="onAssignmentClassPickerChanged()"
+            >
+                <option value="">-- Select a class from Step 2 --</option>
+            </select>
+            <small class="assignment-help" style="display:block;margin-bottom:12px;">
+                Configure each class separately. Example: Mathematics + English in Basic 1A, Science only in Basic 2B.
+            </small>
+
+            <div id="assignmentClassSubjectsSummary" class="assignment-help" style="margin-bottom:12px;"></div>
 
             <!-- ADD CUSTOM SUBJECT -->
-
-            <div class="add-subject-row">
+            <div class="add-subject-block" style="margin-bottom:12px;">
                 <label for="customSubjectInput">
-                    Add subject (if not in the list)
+                    Add a custom subject (optional)
                 </label>
                 <div class="add-subject-controls">
                     <input
@@ -3699,7 +3711,7 @@
             </div>
 
 
-            <!-- SUBJECT CHECKBOXES -->
+            <!-- SUBJECT CHECKBOXES (for the selected class) -->
 
             <div
                 id="subjectCheckboxes"
@@ -3725,6 +3737,7 @@
         </div>
 
 
+
         <!-- =================================================
              ASSIGNMENT INFORMATION
         ================================================== -->
@@ -3742,10 +3755,9 @@
                 </h4>
 
                 <p>
-                    Teachers will only be able to access the
-                    classes and subjects assigned to them.
-                    You can return here at any time to update
-                    their assignments.
+                    Teachers only see subjects for the class they select.
+                    Assign different subjects for each class when a teacher
+                    teaches more than one class. You can update this any time.
                 </p>
 
             </div>
@@ -4226,20 +4238,19 @@
 
 
 <!-- =========================================================
-     LESSON PLAN PAGE
+     LESSON PLAN PAGE  (upload → split → cloud library)
 ========================================================= -->
 <div id="profilePlanPage" class="page">
 
     <div class="lesson-header">
         <div>
             <span class="lesson-badge">ACADEMIC WORK</span>
-            <h2>📗 Lesson Plan Generator</h2>
-            <p>Create a structured Ghana GES-style lesson plan.</p>
+            <h2>📗 Lesson Plans</h2>
+            <p>Upload a term or weekly plan. The system saves it to the cloud and splits it by subject and week.</p>
         </div>
     </div>
 
     <div class="lesson-form-grid">
-
         <div class="lesson-field">
             <label for="planTerm">Term</label>
             <select id="planTerm">
@@ -4250,105 +4261,96 @@
         </div>
 
         <div class="lesson-field">
-            <label for="planSubject">Subject</label>
-            <select id="planSubject"></select>
-        </div>
-
-        <div class="lesson-field">
             <label for="planClass">Class</label>
-            <input
-                type="text"
-                id="planClass"
-                placeholder="e.g. Basic 5"
-            >
+            <input type="text" id="planClass" placeholder="e.g. Basic 5">
         </div>
 
-        <div class="lesson-field">
-            <label for="planWeek">Week</label>
-            <input
-                type="text"
-                id="planWeek"
-                placeholder="e.g. Week 1"
-            >
-        </div>
+        <!-- kept for compatibility with older scripts / note prep meta -->
+        <select id="planSubject" style="display:none;"></select>
+        <input type="hidden" id="planWeek" value="">
+        <input type="hidden" id="planTopic" value="">
+        <input type="hidden" id="planSubtopic" value="">
+        <input type="hidden" id="planDuration" value="">
+    </div>
 
-        <div class="lesson-field">
-            <label for="planTopic">Topic</label>
-            <input
-                type="text"
-                id="planTopic"
-                placeholder="Enter topic"
-            >
+    <div class="lesson-plan-upload-card lesson-plan-upload-card-lg">
+        <h4><i class="fas fa-cloud-upload-alt"></i> Upload full term or weekly plan</h4>
+        <p>
+            Supported: <strong>.pdf, .docx, .txt, .md, .html</strong>.
+            After upload, the system (or AI) splits the plan into subjects and weeks, then saves each unit to the cloud.
+        </p>
+        <div class="lesson-plan-upload-row">
+            <label class="lesson-plan-file-label" for="planUploadFile">
+                <i class="fas fa-file-alt"></i>
+                Choose plan file
+                <input
+                    type="file"
+                    id="planUploadFile"
+                    accept=".pdf,.txt,.md,.html,.htm,.docx,application/pdf,text/plain,text/html,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onchange="handleTermPlanFileSelected(event)"
+                >
+            </label>
+            <span id="planUploadFileName" class="lesson-plan-file-name">No file selected</span>
+            <button type="button" class="lesson-btn primary" onclick="uploadAndSplitTermPlan()">
+                <i class="fas fa-magic"></i> Upload &amp; Split to Cloud
+            </button>
         </div>
-
-        <div class="lesson-field">
-            <label for="planSubtopic">Sub-topic</label>
-            <input
-                type="text"
-                id="planSubtopic"
-                placeholder="Enter sub-topic"
-            >
-        </div>
-
-        <div class="lesson-field">
-            <label for="planDuration">Duration</label>
-            <input
-                type="text"
-                id="planDuration"
-                placeholder="e.g. 60 minutes"
-            >
-        </div>
-
     </div>
 
     <div class="lesson-actions">
-
-        <button
-            type="button"
-            class="lesson-btn primary"
-            onclick="generateLessonPlan()">
-            ⚡ Generate Lesson Plan
+        <button type="button" class="lesson-btn secondary" onclick="refreshPlanLibrary()">
+            <i class="fas fa-sync-alt"></i> Refresh library
         </button>
-
-        <button
-            type="button"
-            class="lesson-btn success"
-            onclick="savePlan()">
-            💾 Save Plan
+        <button type="button" class="lesson-btn" onclick="exportLessonDocument('plan')">
+            📄 Export preview
         </button>
-
-        <button
-            type="button"
-            class="lesson-btn"
-            onclick="exportLessonDocument('plan')">
-            📄 Export Word
+        <button type="button" class="lesson-btn" onclick="printLessonDocument('plan')">
+            🖨️ Print preview
         </button>
-
-        <button
-            type="button"
-            class="lesson-btn"
-            onclick="printLessonDocument('plan')">
-            🖨️ Print
-        </button>
-
-        <button
-            type="button"
-            class="lesson-btn secondary"
-            onclick="loadPlans()">
-            📚 Saved Plans
-        </button>
-
     </div>
 
     <div id="planStatus" class="lesson-status"></div>
+
+    <!-- Library filters -->
+    <div class="plan-library-toolbar">
+        <div class="lesson-field">
+            <label for="planLibSubjectFilter">Subject</label>
+            <select id="planLibSubjectFilter" onchange="renderPlanLibrary()">
+                <option value="">All subjects</option>
+            </select>
+        </div>
+        <div class="lesson-field">
+            <label for="planLibWeekFilter">Week</label>
+            <select id="planLibWeekFilter" onchange="renderPlanLibrary()">
+                <option value="">All weeks</option>
+            </select>
+        </div>
+        <div class="lesson-field">
+            <label for="planLibTermFilter">Term</label>
+            <select id="planLibTermFilter" onchange="renderPlanLibrary()">
+                <option value="">All terms</option>
+                <option value="term1">Term 1</option>
+                <option value="term2">Term 2</option>
+                <option value="term3">Term 3</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="planLibraryList" class="plan-library-list">
+        <div class="lesson-empty">
+            <div class="lesson-empty-icon">📚</div>
+            <h3>Your plan library is empty</h3>
+            <p>Upload a term plan to split it by subject and week.</p>
+        </div>
+    </div>
 
     <div
         id="planOutput"
         class="lesson-output">
         <div class="lesson-empty">
             <div class="lesson-empty-icon">📗</div>
-            <h3>Your lesson plan will appear here</h3>
-            <p>Complete the lesson information and click Generate Lesson Plan.</p>
+            <h3>Unit preview</h3>
+            <p>Select a subject and week from the library to preview that part of the plan.</p>
         </div>
     </div>
 
@@ -4356,7 +4358,7 @@
 
 
 <!-- =========================================================
-     LESSON NOTE PAGE
+     LESSON NOTE PAGE  (select unit → prepare note on command)
 ========================================================= -->
 <div id="profileNotePage" class="page">
 
@@ -4364,15 +4366,14 @@
         <div>
             <span class="lesson-badge">ACADEMIC WORK</span>
             <h2>📝 Lesson Notes</h2>
-            <p>Create detailed classroom lesson notes.</p>
+            <p>Pick a subject and week from your saved plans, then prepare a lesson note when you are ready.</p>
         </div>
     </div>
 
     <div class="lesson-form-grid">
-
         <div class="lesson-field">
             <label for="noteTerm">Term</label>
-            <select id="noteTerm">
+            <select id="noteTerm" onchange="syncNoteUnitSelectors()">
                 <option value="term1">Term 1</option>
                 <option value="term2">Term 2</option>
                 <option value="term3">Term 3</option>
@@ -4380,84 +4381,107 @@
         </div>
 
         <div class="lesson-field">
-            <label for="noteWeek">Week</label>
-            <input
-                id="noteWeek"
-                placeholder="e.g. Week 1">
+            <label for="noteClass">Class</label>
+            <input id="noteClass" placeholder="e.g. Basic 5">
         </div>
 
         <div class="lesson-field">
             <label for="noteSubject">Subject</label>
-            <select id="noteSubject"></select>
+            <select id="noteSubject" onchange="onNoteSubjectChanged()"></select>
         </div>
 
         <div class="lesson-field">
-            <label for="noteClass">Class</label>
-            <input
-                id="noteClass"
-                placeholder="e.g. Basic 5">
+            <label for="noteWeek">Week</label>
+            <select id="noteWeek" onchange="onNoteWeekChanged()">
+                <option value="">Select week</option>
+            </select>
         </div>
 
         <div class="lesson-field">
             <label for="noteTopic">Topic</label>
-            <input
-                id="noteTopic"
-                placeholder="Enter topic">
+            <input id="noteTopic" placeholder="From plan unit or type your own">
         </div>
 
         <div class="lesson-field">
             <label for="noteSubtopic">Sub-topic</label>
-            <input
-                id="noteSubtopic"
-                placeholder="Enter sub-topic">
+            <input id="noteSubtopic" placeholder="Optional">
         </div>
 
         <div class="lesson-field">
             <label for="noteDuration">Duration</label>
-            <input
-                id="noteDuration"
-                placeholder="e.g. 60 minutes">
+            <input id="noteDuration" placeholder="e.g. 60 minutes">
         </div>
+    </div>
 
+    <div id="noteSelectedUnitPreview" class="note-unit-preview">
+        <div class="lesson-empty" style="padding:16px;">
+            <h3 style="margin:0 0 6px;font-size:15px;">No plan unit selected</h3>
+            <p style="margin:0;font-size:13px;opacity:.8;">Choose subject and week from your cloud library (upload plans on the Plan page first).</p>
+        </div>
     </div>
 
     <div class="lesson-actions">
-
-        <button
-            type="button"
-            class="lesson-btn primary"
-            onclick="generateLessonNote()">
-            🧠 Generate Lesson Note
+        <button type="button" class="lesson-btn primary" onclick="prepareNoteFromSelectedUnit()">
+            🧠 Prepare Lesson Note
         </button>
 
-        <button
-            type="button"
-            class="lesson-btn success"
-            onclick="saveNote()">
+        <button type="button" class="lesson-btn success" onclick="saveNote()">
             💾 Save Note
         </button>
 
-        <button
-            type="button"
-            class="lesson-btn"
-            onclick="exportLessonDocument('note')">
+        <button type="button" class="lesson-btn" onclick="exportLessonDocument('note')">
             📄 Export Word
         </button>
 
-        <button
-            type="button"
-            class="lesson-btn"
-            onclick="printLessonDocument('note')">
+        <button type="button" class="lesson-btn" onclick="printLessonDocument('note')">
             🖨️ Print
         </button>
 
-        <button
-            type="button"
-            class="lesson-btn secondary"
-            onclick="loadNotes()">
+        <button type="button" class="lesson-btn secondary" onclick="loadNotes()">
             📚 Saved Notes
         </button>
 
+        <button type="button" class="lesson-btn secondary" onclick="refreshPlanLibrary(true)">
+            <i class="fas fa-sync-alt"></i> Reload plan units
+        </button>
+    </div>
+
+    <!-- Free topic note (does not require a plan unit) -->
+    <div class="free-topic-card" style="margin:18px 0;padding:16px 18px;border:1px solid rgba(99,102,241,.25);border-radius:14px;background:linear-gradient(180deg,rgba(99,102,241,.06),rgba(255,255,255,.4));">
+        <h3 style="margin:0 0 6px;font-size:15px;">✨ Generate note from any topic</h3>
+        <p style="margin:0 0 12px;font-size:13px;opacity:.85;">
+            Type a topic that is <strong>not</strong> in your plan (e.g. <em>Nouns</em>, <em>Photosynthesis</em>, <em>Place value</em>) and get a brief or standard lesson note.
+        </p>
+        <div class="lesson-form-grid">
+            <div class="lesson-field">
+                <label for="freeNoteSubject">Subject (optional)</label>
+                <input id="freeNoteSubject" placeholder="e.g. English Language">
+            </div>
+            <div class="lesson-field">
+                <label for="freeNoteTopic">Topic *</label>
+                <input id="freeNoteTopic" placeholder="e.g. Nouns">
+            </div>
+            <div class="lesson-field">
+                <label for="freeNoteClass">Class (optional)</label>
+                <input id="freeNoteClass" placeholder="e.g. Basic 1">
+            </div>
+            <div class="lesson-field">
+                <label for="freeNoteDuration">Duration</label>
+                <input id="freeNoteDuration" placeholder="e.g. 60 minutes" value="60 minutes">
+            </div>
+            <div class="lesson-field">
+                <label for="freeNoteStyle">Note style</label>
+                <select id="freeNoteStyle">
+                    <option value="standard">Standard (full lesson note)</option>
+                    <option value="brief">Brief (short outline)</option>
+                </select>
+            </div>
+        </div>
+        <div class="lesson-actions" style="margin-top:8px;">
+            <button type="button" class="lesson-btn primary" onclick="prepareNoteFromFreeTopic()">
+                ✨ Prepare note from topic
+            </button>
+        </div>
     </div>
 
     <div id="noteStatus" class="lesson-status"></div>
@@ -4468,12 +4492,11 @@
         <div class="lesson-empty">
             <div class="lesson-empty-icon">📝</div>
             <h3>Your lesson note will appear here</h3>
-            <p>Complete the lesson information and click Generate Lesson Note.</p>
+            <p>Select a subject and week from your plan, <strong>or</strong> enter any topic below and prepare a note.</p>
         </div>
     </div>
 
 </div>
-
 
 
 
