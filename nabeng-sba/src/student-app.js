@@ -7431,6 +7431,113 @@ function addStudentAttendanceStyles() {
    Modern / Stylish Version
 ============================================================ */
 
+
+/* =========================================================
+   PER-CLASS SUBJECTS (student portal)
+   Matches teacher portal encoding:
+   - users.class_subjects jsonb map, or
+   - subjects[] entry starting with @@CLASS_SUBJECTS@@{...}
+========================================================= */
+
+const STUDENT_CLASS_SUBJECTS_MARKER = "@@CLASS_SUBJECTS@@";
+
+function studentNormalizeClassSubjectsMap(raw) {
+    const map = {};
+    if (!raw) return map;
+    let obj = raw;
+    if (typeof raw === "string") {
+        try { obj = JSON.parse(raw); } catch (_) { return map; }
+    }
+    if (typeof obj !== "object" || Array.isArray(obj)) return map;
+    Object.keys(obj).forEach((cls) => {
+        const key = String(cls || "").trim();
+        if (!key) return;
+        const subs = Array.isArray(obj[cls]) ? obj[cls] : [];
+        map[key] = [...new Set(subs.map((s) => String(s || "").trim()).filter(Boolean))];
+    });
+    return map;
+}
+
+function studentDecodeSubjectsField(rawSubjects) {
+    const list = Array.isArray(rawSubjects) ? rawSubjects : [];
+    let map = {};
+    const clean = [];
+    list.forEach((item) => {
+        const s = typeof item === "string" ? item : (item?.name || "");
+        if (String(s).startsWith(STUDENT_CLASS_SUBJECTS_MARKER)) {
+            try {
+                map = studentNormalizeClassSubjectsMap(
+                    JSON.parse(String(s).slice(STUDENT_CLASS_SUBJECTS_MARKER.length))
+                );
+            } catch (_) {}
+        } else if (s && String(s).trim()) {
+            clean.push(String(s).trim());
+        }
+    });
+    return { subjects: clean, classSubjects: map };
+}
+
+function studentClassesMatch(a, b) {
+    const x = String(a || "").trim().toLowerCase();
+    const y = String(b || "").trim().toLowerCase();
+    if (!x || !y) return false;
+    if (x === y) return true;
+    // soft: "1a" vs "basic 1a"
+    return x.includes(y) || y.includes(x);
+}
+
+function studentTeacherTeachesClass(teacher, className) {
+    const classes = Array.isArray(teacher?.classes) ? teacher.classes : [];
+    return classes.some((c) => studentClassesMatch(c, className));
+}
+
+function studentGetTeacherSubjectsForClass(teacher, className) {
+    if (!teacher) return [];
+
+    const fromColumn = studentNormalizeClassSubjectsMap(
+        teacher.class_subjects || teacher.classSubjects
+    );
+    const decoded = studentDecodeSubjectsField(teacher.subjects);
+    const map = { ...decoded.classSubjects, ...fromColumn };
+
+    // Find matching class key in map
+    const keys = Object.keys(map);
+    if (keys.length) {
+        let hit = keys.find((k) => studentClassesMatch(k, className));
+        if (hit) return (map[hit] || []).slice();
+        // teacher has a map but not this class → no subjects for this class
+        return [];
+    }
+
+    // Legacy: flat subjects list applies to all assigned classes
+    if (studentTeacherTeachesClass(teacher, className)) {
+        return decoded.subjects.slice();
+    }
+    return [];
+}
+
+function studentCollectClassSubjects(teachers, className) {
+    const set = new Set();
+    const byTeacher = [];
+
+    (teachers || []).forEach((teacher) => {
+        if (!studentTeacherTeachesClass(teacher, className)) return;
+        const subs = studentGetTeacherSubjectsForClass(teacher, className);
+        if (!subs.length) return;
+        subs.forEach((s) => set.add(s));
+        const name =
+            (`${teacher.firstname || ""} ${teacher.surname || ""}`).trim() ||
+            teacher.username ||
+            "Teacher";
+        byTeacher.push({ teacher, name, subjects: subs });
+    });
+
+    return {
+        subjects: [...set].sort((a, b) => a.localeCompare(b)),
+        byTeacher
+    };
+}
+
 async function openSubjects() {
 
     const studentPortal = document.getElementById("studentPortal");
@@ -7703,11 +7810,11 @@ async function openSubjects() {
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
 
-                    <h3>Unable to Load Class Teacher</h3>
+                    <h3>Unable to Load Teachers</h3>
 
                     <p>
-                        We couldn't retrieve your class teacher
-                        information. Please try again later.
+                        We couldn't retrieve teacher
+                        information for your class. Please try again later.
                     </p>
 
                     <button
@@ -7724,129 +7831,53 @@ async function openSubjects() {
             return;
         }
 
-
         /* =====================================================
-           FIND CLASS TEACHER
+           SUBJECTS FOR THIS STUDENT'S CLASS
+           Union of every teacher assigned to this class,
+           using per-class subject maps when available.
         ===================================================== */
 
-        const classTeacher = (teachers || []).find(
-            teacher => {
+        const classPack = studentCollectClassSubjects(teachers || [], studentClass);
+        let teacherSubjects = classPack.subjects.slice();
 
-                if (!Array.isArray(teacher.classes)) {
-                    return false;
-                }
+        // Prefer a teacher who has subjects for this class as "class teacher" label
+        const primary =
+            classPack.byTeacher.sort((a, b) => b.subjects.length - a.subjects.length)[0] ||
+            null;
 
-                return teacher.classes.some(
-                    teacherClass =>
-                        String(teacherClass)
-                            .trim()
-                            .toLowerCase() ===
-                        String(studentClass)
-                            .trim()
-                            .toLowerCase()
-                );
+        const classTeacher = primary?.teacher ||
+            (teachers || []).find((t) => studentTeacherTeachesClass(t, studentClass)) ||
+            null;
 
-            }
-        );
-
-
-        /* =====================================================
-           NO CLASS TEACHER
-        ===================================================== */
-
-        if (!classTeacher) {
-
-            console.warn(
-                "No class teacher found for class:",
-                studentClass
-            );
-
+        if (!classTeacher && !teacherSubjects.length) {
+            console.warn("No teachers/subjects for class:", studentClass);
             subjectsList.innerHTML = `
                 <div class="subjects-modern-message">
-
                     <div class="subjects-message-icon blue">
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
-
-                    <h3>Class Teacher Not Assigned</h3>
-
+                    <h3>No Teachers for Your Class</h3>
                     <p>
-                        No class teacher has been assigned to
-                        <strong>
-                            ${escapeStudentSubjectHTML(studentClass)}
-                        </strong>
-                        yet.
+                        No teacher has been assigned to
+                        <strong>${escapeStudentSubjectHTML(studentClass)}</strong>
+                        yet. Ask the admin to assign classes and subjects.
                     </p>
-
                 </div>
             `;
-
             return;
         }
 
-
-        /* =====================================================
-           TEACHER NAME
-        ===================================================== */
-
-        const teacherName =
-            (
-                `${classTeacher.firstname || ""} ` +
-                `${classTeacher.surname || ""}`
-            ).trim() ||
-            classTeacher.username ||
-            "Class Teacher";
-
-
-        /* =====================================================
-           GET TEACHER SUBJECTS
-        ===================================================== */
-
-        let teacherSubjects =
-            Array.isArray(classTeacher.subjects)
-                ? classTeacher.subjects
-                : [];
-
-
-        /* =====================================================
-           CLEAN SUBJECTS
-        ===================================================== */
-
-        teacherSubjects = [
-            ...new Set(
-                teacherSubjects
-                    .map(subject =>
-                        String(subject).trim()
-                    )
-                    .filter(Boolean)
+        const teacherName = classTeacher
+            ? (
+                (`${classTeacher.firstname || ""} ${classTeacher.surname || ""}`).trim() ||
+                classTeacher.username ||
+                "Class Teacher"
             )
-        ];
+            : "Your teachers";
 
-
-        /* =====================================================
-           SORT SUBJECTS
-        ===================================================== */
-
-        teacherSubjects.sort(
-            (a, b) =>
-                a.localeCompare(b)
-        );
-
-
-        console.log(
-            "Class Teacher:",
-            teacherName
-        );
-
-        console.log(
-            "Teacher Classes:",
-            classTeacher.classes
-        );
-
-        console.log(
-            "Teacher Subjects:",
-            teacherSubjects
-        );
+        console.log("Student class:", studentClass);
+        console.log("Subjects for class (per-class aware):", teacherSubjects);
+        console.log("Teachers contributing:", classPack.byTeacher.map((t) => t.name + ": " + t.subjects.join(", ")));
 
 
         /* =====================================================
@@ -7865,11 +7896,11 @@ async function openSubjects() {
                     <h3>No Subjects Assigned</h3>
 
                     <p>
-                        Your class teacher,
-                        <strong>
-                            ${escapeStudentSubjectHTML(teacherName)}
-                        </strong>,
-                        has not been assigned any subjects yet.
+                        No subjects are assigned to
+                        <strong>${escapeStudentSubjectHTML(studentClass)}</strong>
+                        yet.
+                        ${teacherName ? "Related teacher: <strong>" + escapeStudentSubjectHTML(teacherName) + "</strong>." : ""}
+                        Ask the admin to assign subjects per class.
                     </p>
 
                 </div>

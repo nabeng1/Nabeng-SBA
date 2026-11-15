@@ -1426,18 +1426,19 @@ async function loadStudents() {
 
     // Graduated students remain in Supabase and in year snapshots, but should
     // not appear in the active year's everyday class, marks, or attendance lists.
-    let allStudents = (data || []).filter(student => !student.graduated);
+    let allStudents = (data || []).filter((student) => isValidStudentRecord(student));
 
-    // Teacher only sees assigned classes
-    if(currentUser.role === "teacher"){
-
-        students = allStudents.filter(s =>
-            (currentUser.classes || [])
-            .includes(s.studentclass)
+    // Teacher:
+    //  - students              = MAIN CLASS only (dashboard, reports, attendance totals, Students page)
+    //  - teacherStudentsAllClasses = all assigned classes (Subjects page class filter)
+    if (String(currentUser?.role || "").toLowerCase() === "teacher") {
+        const assigned = allStudents.filter((s) =>
+            teacherIsAssignedToClass(s.studentclass || s.class, currentUser)
         );
-
+        window.teacherStudentsAllClasses = assigned;
+        students = filterStudentsToTeacherMainClass(assigned, currentUser);
     } else {
-
+        window.teacherStudentsAllClasses = allStudents;
         students = allStudents;
     }
 
@@ -2787,12 +2788,29 @@ function populateStudentList() {
         return;
     }
 
-    const list =
-        (filteredStudents && filteredStudents.length)
-            ? filteredStudents
-            : (selectedClass
-                ? (students || []).filter(s => String(s.studentclass || "") === selectedClass)
-                : []);
+    // Subjects page: students for the SELECTED class only
+    const pool =
+        (String(currentUser?.role || "").toLowerCase() === "teacher" &&
+            Array.isArray(window.teacherStudentsAllClasses))
+            ? window.teacherStudentsAllClasses
+            : (students || []);
+    let list;
+    if (filteredStudents && filteredStudents.length) {
+        list = selectedClass
+            ? filterStudentsToClass(filteredStudents, selectedClass)
+            : filteredStudents;
+    } else if (selectedClass) {
+        list = filterStudentsToClass(pool, selectedClass);
+    } else {
+        list = [];
+    }
+
+    // Extra safety: teachers cannot see students outside their assigned classes
+    if (String(currentUser?.role || "").toLowerCase() === "teacher" && selectedClass) {
+        if (!teacherIsAssignedToClass(selectedClass, currentUser)) {
+            list = [];
+        }
+    }
 
     // If a subject is selected, progress = how many of the 5 score fields are filled for THAT subject.
     // Otherwise show overall progress across the teacher's/admin's subjects.
@@ -3179,15 +3197,11 @@ if(currentUser.role === "admin"){
     }
 
     // TEACHER RESTRICTION
-   if(currentUser.role === "teacher"){
-
-    let allowedClasses =
-        currentUser.classes || [];
-
-    if(!allowedClasses.includes(cls)){
-
+   if(String(currentUser?.role || "").toLowerCase() === "teacher"){
+    if (!teacherIsAssignedToClass(cls, currentUser)) {
         return alert(
-            "❌ You can only add students to your assigned classes"
+            "❌ You can only add students to your assigned classes.\n\nYour classes: " +
+            (currentUser.classes || []).join(", ")
         );
     }
 }
@@ -3258,11 +3272,18 @@ function loadStudentsTable(){
         document.getElementById("searchStudent")?.value
         .toLowerCase() || "";
 
+    // students is already main-class for teachers after loadStudents
+    let source = (students || []).filter((s) => isValidStudentRecord(s));
+    if (String(currentUser?.role || "").toLowerCase() === "teacher") {
+        source = filterStudentsToTeacherMainClass(source, currentUser);
+    }
+
     // FILTER STUDENTS
-    let filtered = students.filter(s =>
-        s.name.toLowerCase().includes(keyword) ||
-        s.studentclass.toLowerCase().includes(keyword)
-    );
+    let filtered = source.filter(s => {
+        const name = String(s.name || "").toLowerCase();
+        const cls = String(s.studentclass || "").toLowerCase();
+        return !keyword || name.includes(keyword) || cls.includes(keyword);
+    });
 
     // START TABLE
     let html = `
@@ -3577,15 +3598,41 @@ function exportClassStudentsCSV() {
 // Attendance data stored in localStorage: { date: { studentname: "Present"/"Absent" } }
 window.attendanceData = window.attendanceData || {};
 
+function isUuidLike(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        String(value || "").trim()
+    );
+}
+
 function isValidClassName(value) {
     const cls = String(value || "").trim();
     if (!cls) return false;
     // Reject UUIDs and other non-class ids mistakenly stored as studentclass
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cls)) {
-        return false;
-    }
+    if (isUuidLike(cls)) return false;
     // Very long strings are unlikely to be class names
     if (cls.length > 40) return false;
+    return true;
+}
+
+/** Drop broken student rows (UUID used as name/class, empty name, etc.) */
+function isValidStudentRecord(student) {
+    if (!student || typeof student !== "object") return false;
+    if (student.graduated) return false;
+
+    const name = String(
+        student.name ||
+        `${student.firstname || ""} ${student.surname || ""}`.trim() ||
+        ""
+    ).trim();
+    const cls = String(student.studentclass || student.class || "").trim();
+
+    if (!name) return false;
+    if (isUuidLike(name)) return false;
+    // Name that is only a long hex blob
+    if (/^[0-9a-f]{20,}$/i.test(name.replace(/-/g, ""))) return false;
+
+    if (!cls || !isValidClassName(cls)) return false;
+
     return true;
 }
 
@@ -3727,12 +3774,9 @@ async function loadAttendanceTable() {
     // =========================
 let teacherStudents = students;
 
-if(currentUser.role === "teacher"){
-
-    teacherStudents = students.filter(s =>
-        (currentUser.classes || [])
-            .includes(s.studentclass)
-    );
+if(String(currentUser?.role || "").toLowerCase() === "teacher"){
+    // Attendance totals use MAIN CLASS only
+    teacherStudents = filterStudentsToTeacherMainClass(students || [], currentUser);
 }
     document.querySelector("button[onclick='markAllPresent()']").style.display = "block";
 
@@ -9149,15 +9193,10 @@ function updateStudentSuggestions() {
 
     suggestionBox.innerHTML = "";
 
+    // Teachers: reports use MAIN CLASS students only
     let filteredStudents = students;
-
-    // Teachers see only students in assigned classes
-    if (currentUser.role === "teacher") {
-
-        filteredStudents = students.filter(s =>
-            (currentUser.classes || [])
-            .includes(s.studentclass)
-        );
+    if (String(currentUser?.role || "").toLowerCase() === "teacher") {
+        filteredStudents = filterStudentsToTeacherMainClass(students, currentUser);
     }
 
     filteredStudents
@@ -9185,13 +9224,8 @@ function getReportStudent() {
         .toLowerCase();
 
     let availableStudents = students;
-
-    if (currentUser.role === "teacher") {
-
-        availableStudents = students.filter(s =>
-            (currentUser.classes || [])
-            .includes(s.studentclass)
-        );
+    if (String(currentUser?.role || "").toLowerCase() === "teacher") {
+        availableStudents = filterStudentsToTeacherMainClass(students, currentUser);
     }
 
     return availableStudents.find(s =>
@@ -10835,6 +10869,44 @@ function onAssignmentSubjectCheckboxChanged() {
 window.onTeacherClassesInputChanged = onTeacherClassesInputChanged;
 window.onAssignmentClassPickerChanged = onAssignmentClassPickerChanged;
 window.onAssignmentSubjectCheckboxChanged = onAssignmentSubjectCheckboxChanged;
+
+function getTeacherMainClass(user) {
+    const u = user || currentUser || {};
+    const main = String(u.mainClass || u.mainclass || "").trim();
+    if (main) return main;
+    const classes = Array.isArray(u.classes) ? u.classes : [];
+    return String(classes[0] || "").trim();
+}
+
+function classNamesMatch(a, b) {
+    const x = String(a || "").trim().toLowerCase();
+    const y = String(b || "").trim().toLowerCase();
+    if (!x || !y) return false;
+    if (x === y) return true;
+    return x.includes(y) || y.includes(x);
+}
+
+function teacherIsAssignedToClass(className, user) {
+    const u = user || currentUser || {};
+    const classes = Array.isArray(u.classes) ? u.classes : [];
+    return classes.some((c) => classNamesMatch(c, className));
+}
+
+function filterStudentsToTeacherMainClass(list, user) {
+    const main = getTeacherMainClass(user);
+    if (!main) return [];
+    return (list || []).filter((s) => classNamesMatch(s.studentclass || s.class, main));
+}
+
+function filterStudentsToClass(list, className) {
+    const cls = String(className || "").trim();
+    if (!cls) return [];
+    return (list || []).filter((s) => classNamesMatch(s.studentclass || s.class, cls));
+}
+
+window.getTeacherMainClass = getTeacherMainClass;
+window.teacherIsAssignedToClass = teacherIsAssignedToClass;
+
 window.getSubjectsForClass = getSubjectsForClass;
 window.getTeacherClassSubjectsMap = getTeacherClassSubjectsMap;
 
@@ -11644,8 +11716,37 @@ function renderMyTeachingAssignments(user) {
             }).filter(Boolean);
         }
     }
-    subjects = [...new Set(subjects.filter(Boolean))];
-    classes = [...new Set(classes.filter(Boolean))];
+    subjects = [...new Set(subjects.filter((s) => s && !String(s).startsWith("@@CLASS_SUBJECTS@@")))];
+    // Preserve order from assignment (first = main class); only dedupe
+    const seenCls = new Set();
+    classes = classes.filter((c) => {
+        const k = String(c).toLowerCase();
+        if (seenCls.has(k)) return false;
+        seenCls.add(k);
+        return true;
+    });
+
+    const mainClassRaw = String(u?.mainClass || u?.mainclass || classes[0] || "").trim();
+    const isMainClass = (name) => {
+        const a = String(name || "").trim().toLowerCase();
+        const b = mainClassRaw.toLowerCase();
+        if (!a || !b) return false;
+        return a === b || a.includes(b) || b.includes(a);
+    };
+
+    const mainBadge = `
+        <span class="main-class-badge" style="
+            display:inline-block;
+            margin-left:8px;
+            padding:2px 8px;
+            border-radius:999px;
+            font-size:11px;
+            font-weight:700;
+            letter-spacing:.02em;
+            vertical-align:middle;
+            background:linear-gradient(135deg,#4f46e5,#7c3aed);
+            color:#fff;
+        ">Main class</span>`;
 
     const escape = (typeof escapeAssignmentHTML === "function")
         ? escapeAssignmentHTML
@@ -11660,14 +11761,17 @@ function renderMyTeachingAssignments(user) {
                     <p>Ask the school administrator to assign classes to your account.</p>
                 </div>`;
         } else {
-            classList.innerHTML = classes.map(className => `
-                <div class="assigned-class-item">
+            classList.innerHTML = classes.map((className, index) => {
+                const main = isMainClass(className) || (index === 0 && !mainClassRaw);
+                return `
+                <div class="assigned-class-item" style="${main ? "border:1px solid rgba(79,70,229,.35);background:rgba(79,70,229,.06);" : ""}">
                     <div class="assigned-item-icon"><i class="fas fa-school"></i></div>
                     <div>
-                        <strong>${escape(className)}</strong>
-                        <small>Assigned Class</small>
+                        <strong>${escape(className)}${main ? mainBadge : ""}</strong>
+                        <small>${main ? "Main class (first assigned)" : "Extra class"}</small>
                     </div>
-                </div>`).join("");
+                </div>`;
+            }).join("");
         }
     }
 
@@ -11675,17 +11779,41 @@ function renderMyTeachingAssignments(user) {
         const map = typeof getTeacherClassSubjectsMap === "function"
             ? getTeacherClassSubjectsMap(u)
             : {};
-        const mapKeys = Object.keys(map || {});
+        // Prefer class order from classes list, then any extra keys in map
+        const mapKeys = [
+            ...classes.filter((c) => map[c] || findClassKeyInMap(map, c)),
+            ...Object.keys(map || {}).filter((k) => !classes.some((c) => String(c).toLowerCase() === String(k).toLowerCase()))
+        ];
+        // resolve keys that exist in map
+        const resolvedKeys = [];
+        const used = new Set();
+        classes.forEach((c) => {
+            const key = findClassKeyInMap(map, c) || (map[c] ? c : null);
+            if (key && !used.has(key.toLowerCase())) {
+                used.add(key.toLowerCase());
+                resolvedKeys.push({ display: c, key });
+            } else if (!key) {
+                resolvedKeys.push({ display: c, key: c });
+            }
+        });
+        Object.keys(map || {}).forEach((k) => {
+            if (!used.has(k.toLowerCase())) {
+                used.add(k.toLowerCase());
+                resolvedKeys.push({ display: k, key: k });
+            }
+        });
 
-        if (mapKeys.length) {
-            subjectList.innerHTML = mapKeys.map((cls) => {
-                const subs = map[cls] || [];
+        if (resolvedKeys.length) {
+            subjectList.innerHTML = resolvedKeys.map((row, index) => {
+                const cls = row.display;
+                const subs = map[row.key] || map[cls] || [];
+                const main = isMainClass(cls) || (index === 0 && !mainClassRaw);
                 return `
-                <div class="assigned-subject-item" style="align-items:flex-start;">
+                <div class="assigned-subject-item" style="align-items:flex-start;${main ? "border:1px solid rgba(79,70,229,.35);background:rgba(79,70,229,.06);" : ""}">
                     <div class="assigned-item-icon"><i class="fas fa-book"></i></div>
                     <div>
-                        <strong>${escape(cls)}</strong>
-                        <small>${subs.length ? escape(subs.join(", ")) : "No subjects for this class"}</small>
+                        <strong>${escape(cls)}${main ? mainBadge : ""}</strong>
+                        <small>${main ? "Main class · " : "Extra class · "}${subs.length ? escape(subs.join(", ")) : "No subjects for this class"}</small>
                     </div>
                 </div>`;
             }).join("");
@@ -12364,22 +12492,42 @@ async function filterStudentsByClass(){
         return;
     }
 
-    let { data: filtered, error } = await supabaseClient
-        .from("students")
-        .select("*")
-        .eq("schoolid", currentUser.schoolid)
-        .eq("studentclass", selectedClass);
+    // Prefer full assigned-class pool so Subjects can open extra classes
+    const pool =
+        (String(currentUser?.role || "").toLowerCase() === "teacher" &&
+            Array.isArray(window.teacherStudentsAllClasses) &&
+            window.teacherStudentsAllClasses.length)
+            ? window.teacherStudentsAllClasses
+            : (students || []);
+    let filtered = filterStudentsToClass(pool, selectedClass);
 
-    if (error) {
-        console.error(error);
-        return;
+    // If memory empty, query Supabase
+    if (!filtered.length) {
+        const { data, error } = await supabaseClient
+            .from("students")
+            .select("*")
+            .eq("schoolid", currentUser.schoolid);
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+        filtered = filterStudentsToClass(
+            (data || []).filter((s) => !s.graduated),
+            selectedClass
+        );
     }
 
-    // Teacher Safety
+    // Teacher safety: only classes assigned to them
     if (String(currentUser?.role || "").toLowerCase() === "teacher") {
-        filtered = (filtered || []).filter(s =>
-            (currentUser.classes || []).includes(s.studentclass)
-        );
+        if (!teacherIsAssignedToClass(selectedClass, currentUser)) {
+            filtered = [];
+            alert("You are not assigned to class: " + selectedClass);
+        } else {
+            filtered = (filtered || []).filter((s) =>
+                teacherIsAssignedToClass(s.studentclass || s.class, currentUser)
+            );
+        }
     }
 
     filteredStudents = filtered || [];
