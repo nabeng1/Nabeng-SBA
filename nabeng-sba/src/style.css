@@ -19819,47 +19819,57 @@ body:not(.light-mode) .assigned-subject-item strong {
   padding: 4px 2px 28px !important;
 }
 
-.dash-welcome-strip {
+/* Modern dashboard (reference layout) */
+.dash-page-modern {
+  background: transparent;
+}
+.dash-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 16px 18px;
   margin-bottom: 18px;
+  padding: 14px 16px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 55%, #1d4ed8 100%);
-  color: #fff;
-  box-shadow: 0 12px 30px rgba(30, 27, 75, .25);
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
-.dash-welcome-left {
+.dash-topbar-brand {
   display: flex;
   align-items: center;
   gap: 14px;
   min-width: 0;
 }
 .dash-school-logo {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 14px;
   object-fit: cover;
-  background: rgba(255,255,255,.15);
+  background: #eef2ff;
   cursor: pointer;
-  border: 2px solid rgba(255,255,255,.25);
+  border: 1px solid #e0e7ff;
 }
-.dash-welcome-left h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff !important;
-  text-align: left !important;
+.dash-brand-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: 0.01em;
 }
 .dash-school-line {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: rgba(226,232,240,.9);
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
 }
-.dash-welcome-filters {
+.dash-welcome-inline {
+  margin: 2px 0 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  text-align: left !important;
+}
+.dash-topbar-filters {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -19870,30 +19880,38 @@ body:not(.light-mode) .assigned-subject-item strong {
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
-  opacity: .8;
+  color: #64748b;
   margin-bottom: 4px;
 }
 .dash-filter select {
-  min-height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.2);
-  background: rgba(255,255,255,.12);
-  color: #fff;
+  min-height: 40px;
+  min-width: 120px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
   padding: 0 12px;
   font-size: 13px;
   font-weight: 600;
   outline: none;
 }
+.dash-filter select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
 .dash-filter select option { color: #111; }
 
+/* legacy class kept for any leftover references */
+.dash-welcome-strip { display: none; }
+
 .dash-section-head {
-  margin: 6px 0 14px;
+  margin: 4px 0 14px;
 }
 .dash-kicker {
   display: block;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: .12em;
+  letter-spacing: .14em;
   color: #6366f1;
   margin-bottom: 2px;
 }
@@ -19901,7 +19919,7 @@ body:not(.light-mode) .assigned-subject-item strong {
   margin: 0;
   font-size: 22px;
   font-weight: 800;
-  color: inherit;
+  color: #0f172a;
 }
 
 .dash-kpi-row {
@@ -19915,31 +19933,63 @@ body:not(.light-mode) .assigned-subject-item strong {
   align-items: center;
   gap: 12px;
   padding: 16px 14px;
-  border-radius: 16px;
-  color: #fff;
-  box-shadow: 0 10px 24px rgba(15,23,42,.12);
+  border-radius: 18px;
   min-width: 0;
 }
+/* Soft white KPI cards like the mockup */
+.dash-kpi-soft {
+  background: #fff !important;
+  color: #0f172a !important;
+  border: 1px solid #e8eaf0;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+.dash-kpi-soft .dash-kpi-label {
+  color: #64748b;
+  opacity: 1;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+.dash-kpi-soft strong {
+  color: #0f172a;
+}
+.dash-kpi-soft small {
+  color: #64748b;
+  opacity: 1;
+}
 .dash-kpi-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  background: rgba(255,255,255,.2);
-  font-size: 16px;
+  font-size: 17px;
   flex-shrink: 0;
+  color: #fff;
 }
+.dash-kpi-blue .dash-kpi-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.dash-kpi-indigo .dash-kpi-icon { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+.dash-kpi-teal .dash-kpi-icon { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+.dash-kpi-purple .dash-kpi-icon { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+.dash-kpi-orange .dash-kpi-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.dash-kpi-pink .dash-kpi-icon { background: linear-gradient(135deg, #f43f5e, #e11d48); }
+/* Fallback solid gradients if soft class missing */
+.dash-kpi-blue:not(.dash-kpi-soft) { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+.dash-kpi-indigo:not(.dash-kpi-soft) { background: linear-gradient(135deg, #4f46e5, #3730a3); color: #fff; }
+.dash-kpi-teal:not(.dash-kpi-soft) { background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; }
+.dash-kpi-purple:not(.dash-kpi-soft) { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; }
+.dash-kpi-orange:not(.dash-kpi-soft) { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+.dash-kpi-pink:not(.dash-kpi-soft) { background: linear-gradient(135deg, #ec4899, #db2777); color: #fff; }
 .dash-kpi-label {
   display: block;
   font-size: 11px;
   font-weight: 600;
-  opacity: .9;
   margin-bottom: 2px;
 }
 .dash-kpi strong {
   display: block;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1.15;
 }
@@ -19947,24 +19997,17 @@ body:not(.light-mode) .assigned-subject-item strong {
   display: block;
   margin-top: 3px;
   font-size: 11px;
-  opacity: .9;
 }
-.dash-kpi-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
-.dash-kpi-indigo { background: linear-gradient(135deg, #4f46e5, #3730a3); }
-.dash-kpi-teal { background: linear-gradient(135deg, #0d9488, #0f766e); }
-.dash-kpi-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
-.dash-kpi-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.dash-kpi-pink { background: linear-gradient(135deg, #ec4899, #db2777); }
 
 .dash-main-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1.1fr 0.9fr;
+  grid-template-columns: 1.15fr 1.15fr 0.95fr;
   gap: 14px;
   margin-bottom: 14px;
 }
 .dash-secondary-grid {
   display: grid;
-  grid-template-columns: 1.6fr 0.9fr;
+  grid-template-columns: 1.65fr 0.95fr;
   gap: 14px;
 }
 .dash-side-col {
@@ -19990,6 +20033,66 @@ body:not(.light-mode) .assigned-subject-item strong {
   height: 220px;
 }
 .dash-chart-sm { height: 180px; }
+.dash-chart-donut {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dash-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+.dash-donut-center strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+.dash-donut-center span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+.dash-donut-center-sm strong { font-size: 18px; }
+.dash-result-summary {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 8px;
+  align-items: center;
+}
+.dash-grade-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dash-grade-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #334155;
+}
+.dash-grade-legend .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dash-grade-legend .legend-count {
+  margin-left: auto;
+  font-weight: 700;
+  color: #0f172a;
+}
 .dash-chart-wrap canvas {
   width: 100% !important;
   height: 100% !important;
@@ -20079,9 +20182,12 @@ body:not(.light-mode) .assigned-subject-item strong {
 }
 
 .dash-quote-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   border-radius: 18px;
-  padding: 20px 18px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
+  padding: 18px 16px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 45%, #db2777 100%);
   color: #fff;
   box-shadow: 0 12px 28px rgba(79,70,229,.25);
 }
@@ -20092,17 +20198,18 @@ body:not(.light-mode) .assigned-subject-item strong {
   display: grid;
   place-items: center;
   background: rgba(255,255,255,.2);
-  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 .dash-quote-card p {
-  margin: 0 0 10px;
-  font-size: 14px;
+  margin: 0 0 6px;
+  font-size: 13px;
   line-height: 1.55;
   font-weight: 600;
 }
 .dash-quote-card small {
-  opacity: .85;
+  opacity: .9;
   font-size: 11px;
+  font-weight: 600;
 }
 
 body.dark-mode .dash-card,
@@ -20113,6 +20220,51 @@ body:not(.light-mode) .dash-card {
 body.dark-mode .dash-card h4,
 body:not(.light-mode) .dash-card h4 {
   color: #f1f5f9 !important;
+}
+body.dark-mode .dash-topbar,
+body:not(.light-mode) .dash-topbar,
+body.dark-mode .dash-kpi-soft,
+body:not(.light-mode) .dash-kpi-soft {
+  background: #151922 !important;
+  border-color: #2a3344 !important;
+  color: #f1f5f9 !important;
+}
+body.dark-mode .dash-brand-title,
+body.dark-mode .dash-kpi-soft strong,
+body.dark-mode .dash-section-head h3,
+body.dark-mode .dash-donut-center strong,
+body.dark-mode .dash-grade-legend .legend-count,
+body:not(.light-mode) .dash-brand-title,
+body:not(.light-mode) .dash-kpi-soft strong,
+body:not(.light-mode) .dash-section-head h3 {
+  color: #f8fafc !important;
+}
+body.dark-mode .dash-school-line,
+body.dark-mode .dash-welcome-inline,
+body.dark-mode .dash-kpi-soft .dash-kpi-label,
+body.dark-mode .dash-kpi-soft small,
+body.dark-mode .dash-grade-legend li,
+body:not(.light-mode) .dash-school-line,
+body:not(.light-mode) .dash-kpi-soft .dash-kpi-label,
+body:not(.light-mode) .dash-kpi-soft small {
+  color: #94a3b8 !important;
+}
+body.dark-mode .dash-filter select,
+body:not(.light-mode) .dash-filter select {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+body.dark-mode .dash-top-list li,
+body:not(.light-mode) .dash-top-list li {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+body.dark-mode .dash-class-table th,
+body:not(.light-mode) .dash-class-table th {
+  background: #0f172a !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #334155 !important;
 }
 body.dark-mode .dash-top-list li,
 body:not(.light-mode) .dash-top-list li {
@@ -20232,14 +20384,57 @@ body.light-mode .dash-top-empty {
   color: #94a3b8 !important;
 }
 
-/* Keep gradient KPI / quote / welcome text white */
-body.light-mode .dash-kpi,
-body.light-mode .dash-kpi strong,
-body.light-mode .dash-kpi small,
-body.light-mode .dash-kpi-label,
+/* Soft KPI cards: dark text on white (mockup style) */
+body.light-mode .dash-kpi-soft,
+body.light-mode .dash-kpi-soft .dash-kpi-body,
+body.light-mode .dash-kpi-soft strong {
+  color: #0f172a !important;
+}
+body.light-mode .dash-kpi-soft .dash-kpi-label {
+  color: #64748b !important;
+}
+body.light-mode .dash-kpi-soft small {
+  color: #64748b !important;
+}
+body.light-mode .dash-kpi-soft {
+  background: #ffffff !important;
+  border-color: #e8eaf0 !important;
+}
+body.light-mode .dash-topbar {
+  background: #ffffff !important;
+  border-color: #e8eaf0 !important;
+  color: #0f172a !important;
+}
+body.light-mode .dash-brand-title {
+  color: #0f172a !important;
+}
+body.light-mode .dash-school-line,
+body.light-mode .dash-welcome-inline {
+  color: #64748b !important;
+}
+body.light-mode .dash-donut-center strong {
+  color: #0f172a !important;
+}
+body.light-mode .dash-donut-center span {
+  color: #64748b !important;
+}
+body.light-mode .dash-grade-legend li {
+  color: #334155 !important;
+}
+body.light-mode .dash-grade-legend .legend-count {
+  color: #0f172a !important;
+}
+/* Quote card keeps white text on gradient */
 body.light-mode .dash-quote-card,
 body.light-mode .dash-quote-card p,
 body.light-mode .dash-quote-card small {
+  color: #ffffff !important;
+}
+/* Legacy solid gradient KPIs (if any) stay white text */
+body.light-mode .dash-kpi:not(.dash-kpi-soft),
+body.light-mode .dash-kpi:not(.dash-kpi-soft) strong,
+body.light-mode .dash-kpi:not(.dash-kpi-soft) small,
+body.light-mode .dash-kpi:not(.dash-kpi-soft) .dash-kpi-label {
   color: #ffffff !important;
 }
 

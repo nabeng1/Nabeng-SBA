@@ -2566,6 +2566,8 @@ function updateDashboard(){
     setText("highestScore", "Highest " + highest.toFixed(1) + "%");
     setText("dashFailRate", failRate.toFixed(1) + "%");
     setText("dashFailCount", failed + " student" + (failed === 1 ? "" : "s"));
+    setText("dashGradeCenterTotal", String(total));
+    setText("dashPassCenterRate", (passRate ? passRate.toFixed(1) : "0") + "%");
 
     // Top performing students list
     const topList = document.getElementById("dashTopStudents");
@@ -3069,25 +3071,26 @@ function drawCharts(){
     if (!gradeCanvas && !topCanvas && !subjectCanvas && !passCanvas) return;
     if (typeof Chart === "undefined") return;
 
-    let grades = {A:0,B:0,C:0,D:0,F:0};
-    let pass = 0, fail = 0;
+    const isTeacher = String(currentUser?.role || "").toLowerCase() === "teacher";
+    const allAssigned = (
+        isTeacher &&
+        Array.isArray(window.teacherStudentsAllClasses) &&
+        window.teacherStudentsAllClasses.length
+            ? window.teacherStudentsAllClasses
+            : (Array.isArray(students) ? students : [])
+    );
+    const mainList = isTeacher && typeof filterStudentsToTeacherMainClass === "function"
+        ? filterStudentsToTeacherMainClass(allAssigned, currentUser)
+        : allAssigned;
+    // Charts follow main-class / school pool (same as KPI performance numbers)
+    const list = isTeacher ? mainList : allAssigned;
 
-    const list = Array.isArray(students) ? students : [];
-
-    function studentDisplayName(s) {
-        return (
-            s?.name ||
-            [s?.firstname, s?.surname].filter(Boolean).join(" ").trim() ||
-            s?.studentid ||
-            "Student"
-        );
-    }
+    const term = document.getElementById("dashTermFilter")?.value
+        || ((typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1");
 
     function studentAverage(s) {
         const avg = Number(s?.average);
         if (!Number.isNaN(avg) && avg > 0) return avg;
-        // Fallback: compute from subject totals for active term
-        const term = (typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1";
         const subs = s?.subjects || {};
         const scores = [];
         Object.keys(subs).forEach(sub => {
@@ -3097,15 +3100,29 @@ function drawCharts(){
             if (!Number.isNaN(total) && total > 0) scores.push(total);
         });
         if (!scores.length) return 0;
-        return scores.reduce((a,b) => a + b, 0) / scores.length;
+        return scores.reduce((a, b) => a + b, 0) / scores.length;
     }
+
+    // Score bands matching the reference dashboard
+    const bands = [
+        { key: "distinction", label: "Distinction (80-100)", min: 80, color: "#22c55e" },
+        { key: "credit", label: "Credit (70-79)", min: 70, color: "#3b82f6" },
+        { key: "pass", label: "Pass (50-69)", min: 50, color: "#a855f7" },
+        { key: "average", label: "Average (40-49)", min: 40, color: "#f59e0b" },
+        { key: "fail", label: "Fail (0-39)", min: 0, color: "#f43f5e" }
+    ];
+    const bandCounts = { distinction: 0, credit: 0, pass: 0, average: 0, fail: 0 };
+    let pass = 0, fail = 0;
 
     list.forEach(s => {
         const avg = studentAverage(s);
-        const g = (typeof getGrade === "function") ? getGrade(avg) : "F";
-        if (grades[g] !== undefined) grades[g]++;
         if (avg >= 50) pass++;
         else fail++;
+        if (avg >= 80) bandCounts.distinction++;
+        else if (avg >= 70) bandCounts.credit++;
+        else if (avg >= 50) bandCounts.pass++;
+        else if (avg >= 40) bandCounts.average++;
+        else bandCounts.fail++;
     });
 
     // DESTROY OLD CHARTS
@@ -3114,57 +3131,51 @@ function drawCharts(){
     if (subjectChartInstance) { try { subjectChartInstance.destroy(); } catch(e) {} subjectChartInstance = null; }
     if (passChartInstance) { try { passChartInstance.destroy(); } catch(e) {} passChartInstance = null; }
 
-    // GRADE PIE
+    const totalStudents = list.length;
+    const gradeLabels = bands.map(b => b.label);
+    const gradeData = bands.map(b => bandCounts[b.key]);
+    const gradeColors = bands.map(b => b.color);
+
+    // Custom legend beside donut
+    const legendEl = document.getElementById("dashGradeLegend");
+    if (legendEl) {
+        legendEl.innerHTML = bands.map((b, i) => {
+            const n = gradeData[i];
+            const pct = totalStudents ? ((n / totalStudents) * 100).toFixed(1) : "0.0";
+            return `<li>
+                <span class="swatch" style="background:${b.color}"></span>
+                <span>${b.label}</span>
+                <span class="legend-count">${n} (${pct}%)</span>
+            </li>`;
+        }).join("");
+    }
+
+    // GRADE DONUT
     if (gradeCanvas) {
         gradeChartInstance = new Chart(gradeCanvas, {
-            type: "pie",
+            type: "doughnut",
             data: {
-                labels: Object.keys(grades),
+                labels: gradeLabels,
                 datasets: [{
-                    label: "Students",
-                    data: Object.values(grades),
-                    backgroundColor: ["#f472b6","#fb7185","#facc15","#4ade80","#f87171"]
+                    data: gradeData.some(n => n > 0) ? gradeData : [1],
+                    backgroundColor: gradeData.some(n => n > 0) ? gradeColors : ["#e2e8f0"],
+                    borderWidth: 0,
+                    hoverOffset: 4
                 }]
             },
             options: {
+                cutout: "68%",
                 plugins: {
-                    legend: { position: "bottom" }
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: gradeData.some(n => n > 0)
+                    }
                 }
             }
         });
     }
 
-    // TOP STUDENTS
-    const sorted = [...list]
-        .map(s => ({ s, avg: studentAverage(s) }))
-        .sort((a, b) => b.avg - a.avg)
-        .slice(0, 5);
-
-    if (topCanvas) {
-        topChartInstance = new Chart(topCanvas, {
-            type: "bar",
-            data: {
-                labels: sorted.map(x => studentDisplayName(x.s)),
-                datasets: [{
-                    label: "Average %",
-                    data: sorted.map(x => Number(x.avg.toFixed(1))),
-                    backgroundColor: "#f472b6"
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: { display: true }
-                },
-                scales: {
-                    y: { beginAtZero: true, max: 100 }
-                }
-            }
-        });
-    }
-
-    // SUBJECT AVERAGE — compute from real student marks when possible
-    const term = document.getElementById("dashTermFilter")?.value
-        || ((typeof activeTerm !== "undefined" && activeTerm) ? activeTerm : "term1");
+    // SUBJECT AVERAGE — colourful bars
     const subjectTotals = {};
     const subjectCounts = {};
     list.forEach(s => {
@@ -3182,11 +3193,11 @@ function drawCharts(){
     let subjectData = subjectLabels.map(sub =>
         Number((subjectTotals[sub] / subjectCounts[sub]).toFixed(1))
     );
-    // Fallback sample labels if no marks yet
     if (!subjectLabels.length) {
         subjectLabels = ["Math", "English", "Science", "ICT"];
         subjectData = [0, 0, 0, 0];
     }
+    const barPalette = ["#3b82f6", "#22c55e", "#a855f7", "#f59e0b", "#14b8a6", "#f43f5e", "#6366f1"];
 
     if (subjectCanvas) {
         subjectChartInstance = new Chart(subjectCanvas, {
@@ -3194,43 +3205,93 @@ function drawCharts(){
             data: {
                 labels: subjectLabels,
                 datasets: [{
-                    label: "Subject Average %",
+                    label: "Average %",
                     data: subjectData,
-                    backgroundColor: "#fb7185"
+                    backgroundColor: subjectLabels.map((_, i) => barPalette[i % barPalette.length]),
+                    borderRadius: 8,
+                    maxBarThickness: 36
                 }]
             },
             options: {
                 plugins: {
-                    legend: { display: true }
+                    legend: { display: false }
                 },
                 scales: {
-                    y: { beginAtZero: true, max: 100 }
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: "rgba(148,163,184,.25)" },
+                        ticks: { color: "#64748b" }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: "#64748b", maxRotation: 45, minRotation: 0 }
+                    }
                 }
             }
         });
     }
 
-    // PASS FAIL
+    // PASS RATE BY CLASS (doughnut of class pass rates) or Pass vs Fail fallback
     if (passCanvas) {
-        passChartInstance = new Chart(passCanvas, {
-            type: "bar",
-            data: {
-                labels: ["Pass", "Fail"],
-                datasets: [{
-                    label: "Students",
-                    data: [pass, fail],
-                    backgroundColor: ["#4ade80", "#f87171"]
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: { display: true }
-                },
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                }
-            }
+        const byClass = {};
+        list.forEach(s => {
+            const cls = String(s.studentclass || s.class || "").trim() || "—";
+            if (!byClass[cls]) byClass[cls] = [];
+            byClass[cls].push(s);
         });
+        const classKeys = Object.keys(byClass).sort((a, b) =>
+            a.localeCompare(b, undefined, { numeric: true })
+        );
+        if (classKeys.length > 1) {
+            const passRates = classKeys.map(cls => {
+                const group = byClass[cls];
+                const n = group.length || 1;
+                const p = group.filter(s => studentAverage(s) >= 50).length;
+                return Number(((p / n) * 100).toFixed(1));
+            });
+            passChartInstance = new Chart(passCanvas, {
+                type: "doughnut",
+                data: {
+                    labels: classKeys,
+                    datasets: [{
+                        data: passRates,
+                        backgroundColor: classKeys.map((_, i) => barPalette[i % barPalette.length]),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: "70%",
+                    plugins: {
+                        legend: {
+                            position: "bottom",
+                            labels: { boxWidth: 10, font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        } else {
+            passChartInstance = new Chart(passCanvas, {
+                type: "doughnut",
+                data: {
+                    labels: ["Pass", "Fail"],
+                    datasets: [{
+                        data: (pass + fail) > 0 ? [pass, fail] : [1, 0],
+                        backgroundColor: ["#22c55e", "#f43f5e"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: "70%",
+                    plugins: {
+                        legend: {
+                            position: "bottom",
+                            labels: { boxWidth: 10, font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
     }
 }
 

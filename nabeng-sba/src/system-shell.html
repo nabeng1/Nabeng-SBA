@@ -538,22 +538,23 @@
   <div class="container sba-page-container" id="sbaPageContainer">
 
 
-<div id="dashboardPage" class="page">
+<div id="dashboardPage" class="page dash-page-modern">
 
-  <!-- Welcome strip -->
-  <div class="dash-welcome-strip">
-    <div class="dash-welcome-left">
+  <!-- Top bar: school + filters -->
+  <div class="dash-topbar">
+    <div class="dash-topbar-brand">
       <img id="schoolLogoPreview" src="" onclick="uploadLogo()" alt="School logo" class="dash-school-logo" title="Click to change logo">
       <input type="file" id="schoolLogoInput" accept="image/*" style="display:none;">
       <div>
-        <h2 id="dashWelcomeUser">Welcome</h2>
+        <div class="dash-brand-title">Student Result Dashboard</div>
         <p class="dash-school-line">
           <span id="schoolNameText">School</span>
           <span id="editSchoolIcon" onclick="editSchoolName()" style="cursor:pointer;display:none;" title="Edit school name">✏️</span>
         </p>
+        <h2 id="dashWelcomeUser" class="dash-welcome-inline">Welcome</h2>
       </div>
     </div>
-    <div class="dash-welcome-filters">
+    <div class="dash-topbar-filters">
       <div class="dash-filter">
         <label>Term</label>
         <select id="dashTermFilter" onchange="updateDashboard()">
@@ -573,60 +574,58 @@
     </div>
   </div>
 
-  <!-- KPI cards -->
+  <!-- KPI cards — light cards with colored icons (mockup style) -->
   <div class="dash-kpi-row">
-    <!-- Admin / school-wide total (hidden for teachers) -->
-    <div class="dash-kpi dash-kpi-blue" id="dashKpiTotalAll">
+    <div class="dash-kpi dash-kpi-soft dash-kpi-blue" id="dashKpiTotalAll">
       <div class="dash-kpi-icon"><i class="fas fa-user-graduate"></i></div>
-      <div>
+      <div class="dash-kpi-body">
         <span class="dash-kpi-label">Total Students</span>
         <strong id="totalStudents">0</strong>
       </div>
     </div>
-    <!-- Teacher: main class vs extra subject classes (separate counts) -->
-    <div class="dash-kpi dash-kpi-blue" id="dashKpiMainClass" style="display:none;">
+    <div class="dash-kpi dash-kpi-soft dash-kpi-blue" id="dashKpiMainClass" style="display:none;">
       <div class="dash-kpi-icon"><i class="fas fa-chalkboard-teacher"></i></div>
-      <div>
+      <div class="dash-kpi-body">
         <span class="dash-kpi-label">Main Class</span>
         <strong id="dashMainClassCount">0</strong>
         <small id="dashMainClassName">Your class</small>
       </div>
     </div>
-    <div class="dash-kpi dash-kpi-indigo" id="dashKpiExtraClass" style="display:none;">
+    <div class="dash-kpi dash-kpi-soft dash-kpi-indigo" id="dashKpiExtraClass" style="display:none;">
       <div class="dash-kpi-icon"><i class="fas fa-users"></i></div>
-      <div>
+      <div class="dash-kpi-body">
         <span class="dash-kpi-label">Extra Class(es)</span>
         <strong id="dashExtraClassCount">0</strong>
         <small id="dashExtraClassHint">Subject classes only</small>
       </div>
     </div>
-    <div class="dash-kpi dash-kpi-teal">
+    <div class="dash-kpi dash-kpi-soft dash-kpi-teal">
       <div class="dash-kpi-icon"><i class="fas fa-graduation-cap"></i></div>
-      <div>
+      <div class="dash-kpi-body">
         <span class="dash-kpi-label">Students Passed</span>
         <strong id="dashPassedCount">0</strong>
         <small id="passRate">0% Pass Rate</small>
       </div>
     </div>
-    <div class="dash-kpi dash-kpi-purple">
+    <div class="dash-kpi dash-kpi-soft dash-kpi-purple">
       <div class="dash-kpi-icon"><i class="fas fa-award"></i></div>
-      <div>
-        <span class="dash-kpi-label">Distinctions (A)</span>
+      <div class="dash-kpi-body">
+        <span class="dash-kpi-label">Distinctions</span>
         <strong id="dashDistinctions">0</strong>
         <small id="dashDistinctionPct">0% of total</small>
       </div>
     </div>
-    <div class="dash-kpi dash-kpi-orange">
+    <div class="dash-kpi dash-kpi-soft dash-kpi-orange">
       <div class="dash-kpi-icon"><i class="fas fa-chart-line"></i></div>
-      <div>
+      <div class="dash-kpi-body">
         <span class="dash-kpi-label">Average Score</span>
         <strong id="avgScore">0%</strong>
         <small id="highestScore">Highest 0%</small>
       </div>
     </div>
-    <div class="dash-kpi dash-kpi-pink">
+    <div class="dash-kpi dash-kpi-soft dash-kpi-pink">
       <div class="dash-kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
-      <div>
+      <div class="dash-kpi-body">
         <span class="dash-kpi-label">Fail Rate</span>
         <strong id="dashFailRate">0%</strong>
         <small id="dashFailCount">0 students</small>
@@ -634,11 +633,20 @@
     </div>
   </div>
 
-  <!-- Main grid -->
+  <!-- Main grid: Result Summary | Subject Avg | Top Students -->
   <div class="dash-main-grid">
     <div class="dash-card">
       <h4>Result Summary</h4>
-      <div class="dash-chart-wrap"><canvas id="gradeChart"></canvas></div>
+      <div class="dash-result-summary">
+        <div class="dash-chart-wrap dash-chart-donut">
+          <canvas id="gradeChart"></canvas>
+          <div class="dash-donut-center">
+            <strong id="dashGradeCenterTotal">0</strong>
+            <span>TOTAL</span>
+          </div>
+        </div>
+        <ul class="dash-grade-legend" id="dashGradeLegend"></ul>
+      </div>
     </div>
     <div class="dash-card">
       <h4>Average Score by Subject</h4>
@@ -649,7 +657,6 @@
       <ol id="dashTopStudents" class="dash-top-list">
         <li class="dash-top-empty">No student averages yet</li>
       </ol>
-      <!-- keep hidden canvas for compatibility -->
       <canvas id="topChart" style="display:none;"></canvas>
     </div>
   </div>
@@ -662,8 +669,8 @@
           <thead>
             <tr>
               <th>Class</th>
-              <th>Students</th>
-              <th>Average</th>
+              <th>Total Students</th>
+              <th>Average Score</th>
               <th>Pass Rate</th>
               <th>Distinctions</th>
               <th>Fail Rate</th>
@@ -677,13 +684,21 @@
     </div>
     <div class="dash-side-col">
       <div class="dash-card">
-        <h4>Pass vs Fail</h4>
-        <div class="dash-chart-wrap dash-chart-sm"><canvas id="passChart"></canvas></div>
+        <h4>Pass Rate by Class</h4>
+        <div class="dash-chart-wrap dash-chart-sm dash-chart-donut">
+          <canvas id="passChart"></canvas>
+          <div class="dash-donut-center dash-donut-center-sm">
+            <strong id="dashPassCenterRate">0%</strong>
+            <span>OVERALL</span>
+          </div>
+        </div>
       </div>
       <div class="dash-quote-card">
         <div class="dash-quote-icon"><i class="fas fa-trophy"></i></div>
-        <p>“Education is the key to success. Keep learning, keep growing!”</p>
-        <small>Nabeng-SBA</small>
+        <div>
+          <p>“Education is the key to success. Keep learning, keep growing!”</p>
+          <small>Keep up the great work!</small>
+        </div>
       </div>
     </div>
   </div>
