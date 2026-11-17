@@ -1948,12 +1948,15 @@ async function showPage(id){
     // Close mobile drawer after navigation
     if(typeof closeSbaSidebar === 'function') closeSbaSidebar();
 
-    // Academic Year block: admin only
+    // Academic Year block: admin only; refresh class-activity selects for all roles
     if (id === "profileTermPage") {
         const yearPanel = document.getElementById("academicYearPanel") || document.querySelector("#profileTermPage .academic-year-panel");
         const role = String(currentUser?.role || "").toLowerCase().trim();
         if (yearPanel) {
             yearPanel.style.display = (role === "admin") ? "" : "none";
+        }
+        if (typeof populateClassActivitiesSelects === "function") {
+            try { await populateClassActivitiesSelects(); } catch (e) {}
         }
     }
 
@@ -2485,7 +2488,37 @@ function updateDashboard(){
         return "F";
     }
 
-    const list = students.slice();
+    const isTeacher = String(currentUser?.role || "").toLowerCase() === "teacher";
+    const allAssigned = (
+        isTeacher &&
+        Array.isArray(window.teacherStudentsAllClasses) &&
+        window.teacherStudentsAllClasses.length
+            ? window.teacherStudentsAllClasses
+            : students
+    ).slice();
+
+    // Main class vs extra subject classes (teachers only) — counted separately, not summed
+    const mainClassName = isTeacher
+        ? (typeof getTeacherMainClass === "function" ? getTeacherMainClass(currentUser) : "")
+        : "";
+    const mainList = isTeacher
+        ? (typeof filterStudentsToTeacherMainClass === "function"
+            ? filterStudentsToTeacherMainClass(allAssigned, currentUser)
+            : allAssigned.filter((s) =>
+                typeof classNamesMatch === "function"
+                    ? classNamesMatch(s.studentclass || s.class, mainClassName)
+                    : String(s.studentclass || "") === String(mainClassName)
+            ))
+        : allAssigned.slice();
+    const mainIds = new Set(mainList.map((s) => s && s.id).filter(Boolean));
+    const extraList = isTeacher
+        ? allAssigned.filter((s) => s && s.id && !mainIds.has(s.id))
+        : [];
+
+    // Performance KPIs still use the full relevant pool
+    // Teachers: main class for pass/fail stats (class teacher view)
+    // Admin: whole school
+    const list = isTeacher ? mainList.slice() : allAssigned.slice();
     const total = list.length;
     const avgs = list.map(studentAvg);
     const passed = avgs.filter(x => x >= 50).length;
@@ -2496,7 +2529,35 @@ function updateDashboard(){
     const passRate = total ? (passed / total) * 100 : 0;
     const failRate = total ? (failed / total) * 100 : 0;
 
-    setText("totalStudents", String(total));
+    // Toggle KPI cards: teachers see Main + Extra; admin sees Total
+    const kpiAll = document.getElementById("dashKpiTotalAll");
+    const kpiMain = document.getElementById("dashKpiMainClass");
+    const kpiExtra = document.getElementById("dashKpiExtraClass");
+    if (isTeacher) {
+        if (kpiAll) kpiAll.style.display = "none";
+        if (kpiMain) kpiMain.style.display = "";
+        if (kpiExtra) kpiExtra.style.display = "";
+        setText("dashMainClassCount", String(mainList.length));
+        setText("dashMainClassName", mainClassName ? ("Class " + mainClassName) : "Your main class");
+        setText("dashExtraClassCount", String(extraList.length));
+        const extraClasses = [...new Set(
+            extraList.map((s) => String(s.studentclass || s.class || "").trim()).filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+        setText(
+            "dashExtraClassHint",
+            extraClasses.length
+                ? extraClasses.slice(0, 4).join(", ") + (extraClasses.length > 4 ? "…" : "")
+                : "No extra classes"
+        );
+        // Keep legacy id updated for any other code that reads it
+        setText("totalStudents", String(mainList.length));
+    } else {
+        if (kpiAll) kpiAll.style.display = "";
+        if (kpiMain) kpiMain.style.display = "none";
+        if (kpiExtra) kpiExtra.style.display = "none";
+        setText("totalStudents", String(allAssigned.length));
+    }
+
     setText("dashPassedCount", String(passed));
     setText("passRate", passRate.toFixed(1) + "% Pass Rate");
     setText("dashDistinctions", String(distinctions));
@@ -3272,7 +3333,8 @@ function loadStudentsTable(){
         document.getElementById("searchStudent")?.value
         .toLowerCase() || "";
 
-    // students is already main-class for teachers after loadStudents
+    // Students management page: main class only for teachers
+    // (extra classes appear on Subjects for marking; attendance stays main-class)
     let source = (students || []).filter((s) => isValidStudentRecord(s));
     if (String(currentUser?.role || "").toLowerCase() === "teacher") {
         source = filterStudentsToTeacherMainClass(source, currentUser);
@@ -5998,13 +6060,89 @@ if (term === "term3") {
 //showTeacherSubjects();
 //populateStudentList();
 
+const isAdminViewer =
+    String(currentUser?.role || "").toLowerCase() === "admin";
+
 html = `
-<h3 style="color:#22c55e;">Editing: ${s.name}</h3>
+<h3 style="color:${isAdminViewer ? "#38bdf8" : "#22c55e"};">
+    ${isAdminViewer ? "Viewing" : "Editing"}: ${s.name}
+</h3>
 ` + html;
+
+if (isAdminViewer) {
+    html += `
+    <div class="marks-readonly-banner" role="status">
+        <i class="fas fa-eye"></i>
+        <span>Admin view — results are <strong>read only</strong>. Teachers enter and edit scores.</span>
+    </div>`;
+}
 
 document.getElementById("subjectForm").innerHTML = html;
 
 document.getElementById("marksModal").style.display = "flex";
+
+applyMarksModalAccessMode();
+}
+
+/**
+ * Admins may open the marks popup to review results only.
+ * Teachers keep full edit access.
+ */
+function applyMarksModalAccessMode() {
+    const isAdmin = String(currentUser?.role || "").toLowerCase() === "admin";
+    const form = document.getElementById("subjectForm");
+    const saveBtn = document.getElementById("saveMarksBtn");
+    const modal = document.getElementById("marksModal");
+    const headerP = modal?.querySelector(".marks-modal-header p");
+    const headerH2 = modal?.querySelector(".marks-modal-header h2");
+    const badge = modal?.querySelector(".marks-modal-header .modal-badge");
+    const cancelBtn = modal?.querySelector(".marks-cancel-btn");
+
+    if (saveBtn) {
+        saveBtn.style.display = isAdmin ? "none" : "";
+        saveBtn.disabled = !!isAdmin;
+    }
+    if (cancelBtn) {
+        cancelBtn.innerHTML = isAdmin
+            ? `<i class="fas fa-times"></i> Close`
+            : `<i class="fas fa-times"></i> Cancel`;
+    }
+    if (headerP) {
+        headerP.textContent = isAdmin
+            ? "Review assessment scores and performance (read only)."
+            : "Enter assessment scores and student performance details.";
+    }
+    if (headerH2) {
+        headerH2.innerHTML = isAdmin
+            ? `<i class="fas fa-clipboard-list"></i> Student Results`
+            : `<i class="fas fa-clipboard-check"></i> Student Marks`;
+    }
+    if (badge) {
+        badge.textContent = isAdmin ? "READ ONLY" : "STUDENT ASSESSMENT";
+    }
+    if (modal) {
+        modal.classList.toggle("marks-modal-readonly", !!isAdmin);
+    }
+    if (!form) return;
+
+    if (isAdmin) {
+        form.querySelectorAll("input, select, textarea").forEach((el) => {
+            // Term switch stays enabled so admin can review each term
+            if (el.id === "termSelect") {
+                el.disabled = false;
+                return;
+            }
+            el.disabled = true;
+            el.setAttribute("readonly", "readonly");
+            el.classList.add("marks-field-readonly");
+        });
+    } else {
+        form.querySelectorAll("input, select, textarea").forEach((el) => {
+            el.disabled = false;
+            el.removeAttribute("readonly");
+            el.classList.remove("marks-field-readonly");
+        });
+    }
 }
 
 async function getPromotionClassOptions(selected = "") {
@@ -6140,13 +6278,36 @@ async function changeTerm() {
 
     const term = document.getElementById("termSelect").value;
 
+    if (!currentStudent) return;
     currentStudent.currentTerm = term;
 
-    await saveStudents();
+    // Teachers may persist term preference; admins only re-render read-only view
+    const isAdmin = String(currentUser?.role || "").toLowerCase() === "admin";
+    if (!isAdmin) {
+        try { await saveStudents(); } catch (_) {}
+    }
 
-    selectStudent(
-        students.findIndex(s => s.id === currentStudent.id)
-    );
+    // Resolve student from the correct pool (main or extra class)
+    const pool =
+        (Array.isArray(window.teacherStudentsAllClasses) && window.teacherStudentsAllClasses.length)
+            ? window.teacherStudentsAllClasses
+            : students;
+    let idx = (students || []).findIndex(s => s && s.id === currentStudent.id);
+    let arr = students;
+    if (idx === -1) {
+        idx = (pool || []).findIndex(s => s && s.id === currentStudent.id);
+        arr = pool;
+    }
+    if (idx === -1 && Array.isArray(filteredStudents)) {
+        idx = filteredStudents.findIndex(s => s && s.id === currentStudent.id);
+        arr = filteredStudents;
+    }
+    if (idx === -1) {
+        // Fall back: rebuild form from the current object via a one-item array
+        selectStudent(0, [currentStudent]);
+        return;
+    }
+    selectStudent(idx, arr);
 }
 
 let termSettings = {};
@@ -6251,6 +6412,15 @@ async function loadTermSettings() {
     }
 
     updatePromotionButtonVisibility();
+
+    // Fill Class Activities CSV class dropdowns
+    if (typeof populateClassActivitiesSelects === "function") {
+        try {
+            await populateClassActivitiesSelects();
+        } catch (e) {
+            console.warn("populateClassActivitiesSelects:", e);
+        }
+    }
 }
 
 async function saveTermSettings() {
@@ -6436,6 +6606,463 @@ async function saveTermSettings() {
 }
 
 
+/* ============================================================
+   CLASS ACTIVITIES CSV — export / import assessment marks
+   (Term Settings section)
+   ============================================================ */
+
+/**
+ * Normalize a class name for flexible matching.
+ * "Basic 1", "basic 1", "1", "Class 1" → "1"
+ * "Basic 1A", "1A", "1a" → "1a"
+ */
+function normalizeClassLevel(className) {
+    return String(className || "")
+        .toLowerCase()
+        .replace(/\bbasic\b/g, "")
+        .replace(/\bclass\b/g, "")
+        .replace(/\s+/g, "")
+        .replace(/^0+(?=\d)/, "")
+        .trim();
+}
+
+/**
+ * True when source and target represent the same class level / stream group.
+ * Examples that match:
+ *   Basic 1  ↔  1, 1A, 1B, 1C, Basic 1A
+ *   Basic 2  ↔  2, 2A
+ *   JHS 1    ↔  jhs1, JHS 1A
+ */
+function classesMatchForActivities(sourceClass, targetClass) {
+    const a = normalizeClassLevel(sourceClass);
+    const b = normalizeClassLevel(targetClass);
+    if (!a || !b) return false;
+    if (a === b) return true;
+
+    // Extract leading number + optional letter stream
+    const parse = (s) => {
+        const m = s.match(/^([a-z]*)(\d+)([a-z]*)$/i);
+        if (!m) return null;
+        return { prefix: m[1] || "", num: m[2], stream: m[3] || "" };
+    };
+    const pa = parse(a);
+    const pb = parse(b);
+    if (!pa || !pb) {
+        // fallback: one starts with the other
+        return a.startsWith(b) || b.startsWith(a);
+    }
+    // Same numeric level (and same optional letter prefix like "jhs")
+    if (pa.num !== pb.num) return false;
+    if (pa.prefix && pb.prefix && pa.prefix !== pb.prefix) return false;
+    return true;
+}
+
+async function getClassesForActivitiesPanel() {
+    let list = await getOfficialSchoolClasses();
+    if (!list.length) {
+        list = [...new Set(
+            (students || [])
+                .map(s => String(s.studentclass || "").trim())
+                .filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }
+    // Teachers: restrict to assigned classes when available
+    if (currentUser?.role === "teacher" && Array.isArray(currentUser.classes) && currentUser.classes.length) {
+        const allowed = new Set(currentUser.classes.map(c => String(c).trim()));
+        list = list.filter(c => allowed.has(c));
+    }
+    return list;
+}
+
+async function populateClassActivitiesSelects() {
+    const exportSel = document.getElementById("activitiesExportClass");
+    const importSel = document.getElementById("activitiesImportClass");
+    if (!exportSel && !importSel) return;
+
+    const classes = await getClassesForActivitiesPanel();
+    const fill = (sel, placeholder) => {
+        if (!sel) return;
+        const prev = sel.value;
+        sel.innerHTML =
+            `<option value="">${placeholder}</option>` +
+            classes.map(c =>
+                `<option value="${String(c).replace(/"/g, "&quot;")}">${String(c).replace(/</g, "&lt;")}</option>`
+            ).join("");
+        if (prev && classes.includes(prev)) sel.value = prev;
+    };
+    fill(exportSel, "Select class");
+    fill(importSel, "Select class to apply to");
+}
+
+/**
+ * Export all subject assessment activities for every student in a class.
+ * One CSV row per student + subject + term.
+ */
+async function exportClassActivitiesCSV() {
+    const className = (document.getElementById("activitiesExportClass")?.value || "").trim();
+    const termFilter = (document.getElementById("activitiesExportTerm")?.value || "all").trim();
+
+    if (!className) {
+        alert("Please select a class to download.");
+        return;
+    }
+
+    const list = (students || []).filter(
+        s => String(s.studentclass || "").trim() === className
+    );
+
+    if (!list.length) {
+        alert("No students found in class \"" + className + "\".");
+        return;
+    }
+
+    const terms = termFilter === "all"
+        ? ["term1", "term2", "term3"]
+        : [termFilter];
+
+    const header = [
+        "StudentID",
+        "Name",
+        "Class",
+        "Subject",
+        "Term",
+        "Test1",
+        "Test2",
+        "Project",
+        "Group",
+        "Exam",
+        "ClassScore",
+        "ExamScore",
+        "Total",
+        "Grade",
+        "Remark"
+    ];
+    const rows = [header];
+
+    list.forEach(s => {
+        const name = s.name || [s.firstname, s.surname].filter(Boolean).join(" ").trim() || "";
+        const sid = s.studentid || s.id || "";
+        const cls = s.studentclass || className;
+        const subjects = s.subjects || {};
+        const subjectNames = Object.keys(subjects);
+
+        if (!subjectNames.length) {
+            // Still emit a blank row so the class structure is visible
+            terms.forEach(term => {
+                rows.push([sid, name, cls, "", term, "", "", "", "", "", "", "", "", "", ""]);
+            });
+            return;
+        }
+
+        subjectNames.forEach(subName => {
+            terms.forEach(term => {
+                const mark = subjects[subName]?.[term] || {};
+                rows.push([
+                    sid,
+                    name,
+                    cls,
+                    subName,
+                    term,
+                    mark.test1 ?? "",
+                    mark.test2 ?? "",
+                    mark.project ?? "",
+                    mark.group ?? "",
+                    mark.exam ?? "",
+                    mark.classScore ?? "",
+                    mark.examScore ?? "",
+                    mark.totalScore ?? "",
+                    mark.grade || "",
+                    mark.remark || ""
+                ]);
+            });
+        });
+    });
+
+    const safeClass = className.replace(/[^\w\-]+/g, "_");
+    const termPart = termFilter === "all" ? "all_terms" : termFilter;
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCSV(`class_activities_${safeClass}_${termPart}_${date}.csv`, rows);
+}
+
+/**
+ * Parse a CSV string into rows of objects using the first row as headers.
+ */
+function parseActivitiesCSV(text) {
+    const lines = String(text || "")
+        .replace(/^\uFEFF/, "")
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+    if (lines.length < 2) return { headers: [], rows: [] };
+
+    const splitLine = (line) => {
+        const cells = [];
+        let cur = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (inQuotes) {
+                if (ch === '"' && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else if (ch === '"') {
+                    inQuotes = false;
+                } else {
+                    cur += ch;
+                }
+            } else if (ch === '"') {
+                inQuotes = true;
+            } else if (ch === ",") {
+                cells.push(cur);
+                cur = "";
+            } else {
+                cur += ch;
+            }
+        }
+        cells.push(cur);
+        return cells;
+    };
+
+    const headers = splitLine(lines[0]).map(h => h.trim());
+    const rows = lines.slice(1).map(line => {
+        const cells = splitLine(line);
+        const obj = {};
+        headers.forEach((h, i) => {
+            obj[h] = cells[i] != null ? String(cells[i]).trim() : "";
+        });
+        return obj;
+    });
+    return { headers, rows };
+}
+
+function setActivitiesImportStatus(message, isError) {
+    const el = document.getElementById("activitiesImportStatus");
+    if (!el) return;
+    el.textContent = message || "";
+    el.classList.toggle("error", !!isError);
+}
+
+/**
+ * Import assessment activities from CSV into the selected target class.
+ * Matches students by StudentID first, then by Name (case-insensitive).
+ * Source class in the CSV may be a parallel class (Basic 1 → 1A, 1B, …).
+ */
+async function importClassActivitiesCSV() {
+    const targetClass = (document.getElementById("activitiesImportClass")?.value || "").trim();
+    const fileInput = document.getElementById("activitiesImportFile");
+    const file = fileInput?.files?.[0];
+
+    setActivitiesImportStatus("");
+
+    if (!targetClass) {
+        alert("Please select the target class to install activities into.");
+        return;
+    }
+    if (!file) {
+        alert("Please choose a CSV file to import.");
+        return;
+    }
+
+    const targetStudents = (students || []).filter(
+        s => String(s.studentclass || "").trim() === targetClass
+    );
+
+    if (!targetStudents.length) {
+        alert("No students found in target class \"" + targetClass + "\".");
+        return;
+    }
+
+    let text;
+    try {
+        text = await file.text();
+    } catch (e) {
+        console.error(e);
+        alert("Could not read the CSV file.");
+        return;
+    }
+
+    const { headers, rows } = parseActivitiesCSV(text);
+    if (!rows.length) {
+        alert("CSV file is empty or has no data rows.");
+        return;
+    }
+
+    // Flexible header lookup
+    const findCol = (...names) => {
+        const lower = headers.map(h => h.toLowerCase().replace(/\s+/g, ""));
+        for (const n of names) {
+            const idx = lower.indexOf(n.toLowerCase().replace(/\s+/g, ""));
+            if (idx !== -1) return headers[idx];
+        }
+        return null;
+    };
+
+    const colId = findCol("StudentID", "studentid", "ID", "Student Id");
+    const colName = findCol("Name", "StudentName", "student name");
+    const colClass = findCol("Class", "studentclass", "ClassName");
+    const colSubject = findCol("Subject");
+    const colTerm = findCol("Term");
+    const colTest1 = findCol("Test1", "Test 1");
+    const colTest2 = findCol("Test2", "Test 2");
+    const colProject = findCol("Project");
+    const colGroup = findCol("Group", "GroupWork", "Group Work");
+    const colExam = findCol("Exam");
+
+    if (!colSubject || !colTerm) {
+        alert("CSV must include Subject and Term columns (as produced by Download Class Activities CSV).");
+        return;
+    }
+    if (!colName && !colId) {
+        alert("CSV must include Name or StudentID columns.");
+        return;
+    }
+
+    // Optional: verify class compatibility using first non-empty class in file
+    if (colClass) {
+        const sampleClass = rows.map(r => r[colClass]).find(c => c && String(c).trim());
+        if (sampleClass && !classesMatchForActivities(sampleClass, targetClass)) {
+            const ok = confirm(
+                `The CSV class "${sampleClass}" does not look like target class "${targetClass}".\n\n` +
+                `Continue anyway? (Matching is flexible: Basic 1 can install into 1, 1A, 1B, 1C, etc.)`
+            );
+            if (!ok) return;
+        }
+    }
+
+    const byId = new Map();
+    const byName = new Map();
+    targetStudents.forEach(s => {
+        if (s.studentid) byId.set(String(s.studentid).trim().toLowerCase(), s);
+        if (s.id) byId.set(String(s.id).trim().toLowerCase(), s);
+        const nm = (s.name || [s.firstname, s.surname].filter(Boolean).join(" ").trim() || "")
+            .toLowerCase()
+            .replace(/\s+/g, " ")
+            .trim();
+        if (nm) byName.set(nm, s);
+    });
+
+    let updated = 0;
+    let skipped = 0;
+    let unmatched = 0;
+    const touched = new Set();
+
+    const numOrEmpty = (v) => {
+        if (v === undefined || v === null || String(v).trim() === "") return null;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    rows.forEach(row => {
+        const subject = (row[colSubject] || "").trim();
+        let term = (row[colTerm] || "").trim().toLowerCase().replace(/\s+/g, "");
+        if (!subject || !term) {
+            skipped++;
+            return;
+        }
+        // Normalize term labels
+        if (term === "1" || term === "term 1") term = "term1";
+        if (term === "2" || term === "term 2") term = "term2";
+        if (term === "3" || term === "term 3") term = "term3";
+        if (!["term1", "term2", "term3"].includes(term)) {
+            skipped++;
+            return;
+        }
+
+        let student = null;
+        if (colId && row[colId]) {
+            student = byId.get(String(row[colId]).trim().toLowerCase()) || null;
+        }
+        if (!student && colName && row[colName]) {
+            const nm = String(row[colName]).toLowerCase().replace(/\s+/g, " ").trim();
+            student = byName.get(nm) || null;
+        }
+        if (!student) {
+            unmatched++;
+            return;
+        }
+
+        const test1 = numOrEmpty(colTest1 ? row[colTest1] : "");
+        const test2 = numOrEmpty(colTest2 ? row[colTest2] : "");
+        const project = numOrEmpty(colProject ? row[colProject] : "");
+        const group = numOrEmpty(colGroup ? row[colGroup] : "");
+        const exam = numOrEmpty(colExam ? row[colExam] : "");
+
+        // Skip completely empty score rows
+        if (test1 === null && test2 === null && project === null && group === null && exam === null) {
+            skipped++;
+            return;
+        }
+
+        if (!student.subjects) student.subjects = {};
+        if (!student.subjects[subject]) student.subjects[subject] = {};
+
+        const payload = {
+            test1: test1 ?? 0,
+            test2: test2 ?? 0,
+            project: project ?? 0,
+            group: group ?? 0,
+            exam: exam ?? 0
+        };
+        const result = calculateSubjectResult(payload);
+        result._entered = {
+            test1: test1 !== null,
+            test2: test2 !== null,
+            project: project !== null,
+            group: group !== null,
+            exam: exam !== null
+        };
+        student.subjects[subject][term] = result;
+        calculateStudentAverage(student, term);
+
+        // Keep global students array in sync
+        const idx = students.findIndex(st => st.id === student.id);
+        if (idx !== -1) students[idx] = student;
+
+        touched.add(student.id || student.studentid || student.name);
+        updated++;
+    });
+
+    if (updated === 0) {
+        setActivitiesImportStatus(
+            `No marks applied. Unmatched students: ${unmatched}. Skipped rows: ${skipped}.`,
+            true
+        );
+        alert(
+            "Import finished but no marks were applied.\n\n" +
+            "Check that student names or IDs in the CSV match students in the target class."
+        );
+        return;
+    }
+
+    try {
+        await saveStudents();
+    } catch (e) {
+        console.error("importClassActivitiesCSV save error:", e);
+        setActivitiesImportStatus("Marks applied in memory but failed to save to the server.", true);
+        alert("Could not save imported activities to the server. Please try again.");
+        return;
+    }
+
+    // Refresh UI if on subjects page
+    if (typeof populateStudentList === "function") {
+        try { populateStudentList(); } catch (_) {}
+    }
+    if (typeof updateDashboard === "function") {
+        try { updateDashboard(); } catch (_) {}
+    }
+
+    const msg =
+        `Installed activities for ${touched.size} student(s) in ${targetClass}. ` +
+        `Rows applied: ${updated}. Unmatched: ${unmatched}. Skipped: ${skipped}.`;
+    setActivitiesImportStatus(msg, false);
+    alert(msg);
+
+    // Clear file input so the same file can be re-selected if needed
+    if (fileInput) fileInput.value = "";
+}
+
+
 function getTermFromDate(dateStr) {
 
     if (!dateStr || !termSettings) {
@@ -6602,6 +7229,11 @@ async function initializeSystem(){
 
 async function saveMarks() {
 
+    if (String(currentUser?.role || "").toLowerCase() === "admin") {
+        alert("Administrators can only view results. Teachers enter and edit scores.");
+        return;
+    }
+
     if (currentStudent === null) {
         alert("Please select a student.");
         return;
@@ -6758,23 +7390,33 @@ async function saveMarks() {
     calculateStudentAverage(s, term);
 
     // ============================
-    // UPDATE STUDENT ARRAY
+    // UPDATE ALL IN-MEMORY POOLS
+    // (main class + extra classes the teacher marks)
     // ============================
 
-    const index =
-        students.findIndex(st => st.id === s.id);
-
-    if (index !== -1) {
-
-        students[index] = s;
-
-    }
+    syncStudentRecord(s);
 
     // ============================
     // SAVE TO SUPABASE
+    // Always upsert this student so extra-class marks persist
+    // even when they are not in the teacher main-class array.
     // ============================
 
-    await saveStudents();
+    const inMainList = (students || []).some(st => st && st.id === s.id);
+    if (inMainList && String(currentUser?.role || "").toLowerCase() !== "teacher") {
+        await saveStudents();
+    } else {
+        const { error } = await saveSingleStudentRecord(s);
+        if (error) {
+            console.error("Save marks error:", error);
+            alert("Failed to save marks: " + (error.message || "Unknown error"));
+            return;
+        }
+        // Teachers still refresh main-class batch when the student belongs there
+        if (inMainList) {
+            try { await saveStudents(); } catch (_) {}
+        }
+    }
 
     // ============================
     // REFRESH UI
@@ -7097,7 +7739,16 @@ async function generateReportWithTerm(
     let formattedEnd = formatDate(endDate);
     let formattedNext = formatDate(nextDate);
 
-    let totalStudents = students.length;
+    // Total on the report = students in THIS class only (not whole school)
+    const reportClass = String(s.studentclass || s.class || "").trim();
+    const reportPool =
+        (Array.isArray(window.teacherStudentsAllClasses) && window.teacherStudentsAllClasses.length)
+            ? window.teacherStudentsAllClasses
+            : (students || []);
+    const reportClassmates = (reportPool || []).filter((st) =>
+        classNamesMatch(st.studentclass || st.class, reportClass)
+    );
+    let totalStudents = reportClassmates.length || 1;
     let position = getStudentPosition(s, term);
 
     const { jsPDF } = window.jspdf;
@@ -12265,10 +12916,15 @@ if (profilePicInput) {
 
 function getStudentPosition(student, term){
 
-
+    // Rank within the student's own class (use full school/assigned pool when available)
+    const pool =
+        (Array.isArray(window.teacherStudentsAllClasses) && window.teacherStudentsAllClasses.length)
+            ? window.teacherStudentsAllClasses
+            : (students || []);
+    const classKey = student?.studentclass || student?.class || "";
     let classStudents =
-    students.filter(
-        s => s.studentclass === student.studentclass
+    pool.filter(
+        s => classNamesMatch(s.studentclass || s.class, classKey)
     );
 
 
@@ -12396,11 +13052,15 @@ async function loadClassFilter(){
 
   
 
-    // Only teachers are restricted
-    if(currentUser.role === "teacher"){
-        classes = classes.filter(c =>
-            (currentUser.classes || []).includes(c)
-        );
+    // Only teachers are restricted (soft match + include assigned names)
+    if(String(currentUser?.role || "").toLowerCase() === "teacher"){
+        const assigned = Array.isArray(currentUser.classes) ? currentUser.classes : [];
+        classes = classes.filter(c => teacherIsAssignedToClass(c, currentUser));
+        assigned.forEach((c) => {
+            const name = String(c || "").trim();
+            if (!name) return;
+            if (!classes.some((x) => classNamesMatch(x, name))) classes.push(name);
+        });
     }
 
     let html = `<option value="">Select Class</option>`;
@@ -12556,6 +13216,64 @@ async function filterStudentsByClass(){
    Opens the subject marks form, NOT the student profile
 ========================================================= */
 
+/**
+ * All students a teacher may mark (every assigned class).
+ * Main `students` stays main-class-only for attendance / class-teacher duties.
+ */
+function getTeacherMarkingPool() {
+    if (
+        String(currentUser?.role || "").toLowerCase() === "teacher" &&
+        Array.isArray(window.teacherStudentsAllClasses) &&
+        window.teacherStudentsAllClasses.length
+    ) {
+        return window.teacherStudentsAllClasses;
+    }
+    return students || [];
+}
+
+/** Keep the same student object in sync across in-memory pools. */
+function syncStudentRecord(student) {
+    if (!student || !student.id) return;
+    const apply = (arr) => {
+        if (!Array.isArray(arr)) return;
+        const i = arr.findIndex((st) => st && st.id === student.id);
+        if (i !== -1) arr[i] = student;
+    };
+    apply(students);
+    apply(window.teacherStudentsAllClasses);
+    apply(filteredStudents);
+}
+
+/** Persist one student row (used when the student is outside the main-class array). */
+async function saveSingleStudentRecord(student) {
+    if (!student || !currentUser?.schoolid) return { error: new Error("Missing student or school") };
+
+    let studentID = student.studentid;
+    let studentPassword = student.studentpassword;
+    if (!studentID) {
+        studentID = await generateStudentId();
+        studentPassword = generatePassword();
+    }
+
+    const row = {
+        ...student,
+        schoolid: currentUser.schoolid,
+        teacher:
+            currentUser.role === "admin"
+                ? student.teacher || null
+                : currentUser.username,
+        studentid: studentID,
+        studentpassword: studentPassword,
+        passwordchanged: student.passwordchanged || false
+    };
+
+    student.studentid = studentID;
+    student.studentpassword = studentPassword;
+
+    const { error } = await supabaseClient.from("students").upsert([row]);
+    return { error, row };
+}
+
 function selectSubjectStudent(index) {
 
     const student = filteredStudents[index];
@@ -12571,22 +13289,32 @@ function selectSubjectStudent(index) {
         return;
     }
 
-    // Find the student's real index in the main students array
-    const originalIndex = students.findIndex(
-        s => s.id === student.id
+    // Prefer main class list, then full assigned-class pool, then filtered list
+    const pool = getTeacherMarkingPool();
+    let originalIndex = (students || []).findIndex(
+        s => s && s.id === student.id
     );
+    let sourceArray = students;
 
     if (originalIndex === -1) {
-        alert("Student record not found");
-        return;
+        originalIndex = (pool || []).findIndex(
+            s => s && s.id === student.id
+        );
+        sourceArray = pool;
     }
 
-    // Store current student
+    if (originalIndex === -1) {
+        // Student is in filteredStudents only (fresh Supabase fetch)
+        originalIndex = index;
+        sourceArray = filteredStudents;
+    }
+
+    // Store current student (object reference for marks save)
     currentStudentIndex = originalIndex;
     currentStudent = student;
 
-    // Open SUBJECT MARKS form
-    selectStudent(originalIndex, students);
+    // Open SUBJECT MARKS form from the array that actually contains them
+    selectStudent(originalIndex, sourceArray);
 }
 
 
@@ -12631,26 +13359,26 @@ async function loadClassOptions(){
         return;
     }
 
-    classes = classes.map(c => c.classname);
+    classes = classes.map(c => c.classname).filter(Boolean);
 
 
-    // Teacher should only see assigned classes
-    if(currentUser.role === "teacher"){
+    // Teacher should only see assigned classes (main + subject classes)
+    if(String(currentUser?.role || "").toLowerCase() === "teacher"){
 
-        classes.forEach(c => {
-            console.log(
-                "Checking:",
-                c,
-                "Match:",
-                (currentUser.classes || []).includes(c)
-            );
-        });
+        const assigned = Array.isArray(currentUser.classes) ? currentUser.classes : [];
 
         classes = classes.filter(c =>
-            (currentUser.classes || []).includes(c)
+            teacherIsAssignedToClass(c, currentUser)
         );
 
-        
+        // Ensure every assigned class name appears even if missing from classes table
+        assigned.forEach((c) => {
+            const name = String(c || "").trim();
+            if (!name) return;
+            if (!classes.some((x) => classNamesMatch(x, name))) {
+                classes.push(name);
+            }
+        });
     }
 
     let html = `<option value="">Select Class</option>`;
@@ -13138,6 +13866,94 @@ function lessonEl(id) {
     return document.getElementById(id);
 }
 
+/** Current preview type shown in the shared modal: "plan" | "note" | null */
+window.__lessonPreviewType = window.__lessonPreviewType || null;
+
+function closeLessonPreviewModal() {
+    const modal = document.getElementById("lessonPreviewModal");
+    if (!modal) return;
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("lesson-preview-open");
+    window.__lessonPreviewType = null;
+}
+
+if (typeof window !== "undefined" && !window.__lessonPreviewEscBound) {
+    window.__lessonPreviewEscBound = true;
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && document.getElementById("lessonPreviewModal")?.classList.contains("is-open")) {
+            closeLessonPreviewModal();
+        }
+    });
+}
+
+/**
+ * Copy host element HTML into the popup and open it.
+ * type: "plan" | "note"
+ */
+function openLessonPreviewModal(type, title, metaText) {
+    const hostId = type === "note" ? "noteOutput" : "planOutput";
+    const host = document.getElementById(hostId);
+    const modal = document.getElementById("lessonPreviewModal");
+    const body = document.getElementById("lessonPreviewBody");
+    const titleEl = document.getElementById("lessonPreviewTitle");
+    const metaEl = document.getElementById("lessonPreviewMeta");
+    const badge = document.getElementById("lessonPreviewBadge");
+    const exportBtn = document.getElementById("lessonPreviewExportBtn");
+    const printBtn = document.getElementById("lessonPreviewPrintBtn");
+
+    if (!modal || !body || !host) return;
+
+    body.innerHTML = host.innerHTML || "";
+    window.__lessonPreviewType = type === "note" ? "note" : "plan";
+
+    if (titleEl) {
+        titleEl.textContent = title || (type === "note" ? "Lesson note" : "Lesson plan");
+    }
+    if (metaEl) {
+        metaEl.textContent = metaText || "";
+    }
+    if (badge) {
+        badge.textContent = type === "note" ? "LESSON NOTE" : "LESSON PLAN";
+    }
+    if (exportBtn) {
+        exportBtn.onclick = () => exportLessonDocument(window.__lessonPreviewType || "plan");
+    }
+    if (printBtn) {
+        printBtn.onclick = () => printLessonDocument(window.__lessonPreviewType || "plan");
+    }
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("lesson-preview-open");
+}
+
+/**
+ * Write HTML into planOutput or noteOutput and open the popup.
+ * type: "plan" | "note"
+ * options: { title, meta, open }  open defaults true
+ */
+function setLessonOutput(type, html, options = {}) {
+    const hostId = type === "note" ? "noteOutput" : "planOutput";
+    const host = document.getElementById(hostId);
+    if (!host) return null;
+    host.innerHTML = html;
+    const shouldOpen = options.open !== false;
+    if (shouldOpen) {
+        openLessonPreviewModal(type, options.title, options.meta);
+    } else if (window.__lessonPreviewType === type) {
+        // Keep open modal in sync if already showing this type
+        const body = document.getElementById("lessonPreviewBody");
+        if (body) body.innerHTML = html;
+    }
+    return host;
+}
+
+/** Open popup from whatever is currently in planOutput / noteOutput. */
+function revealLessonOutput(type, title, meta) {
+    openLessonPreviewModal(type === "note" ? "note" : "plan", title, meta);
+}
+
 
 /* =========================================================
    TERM LABEL
@@ -13206,16 +14022,15 @@ async function generateLessonPlan() {
         return;
     }
 
-    const output = lessonEl("planOutput");
     const status = lessonEl("planStatus");
 
-    output.innerHTML = `
+    setLessonOutput("plan", `
         <div class="lesson-empty">
             <div class="lesson-empty-icon">⏳</div>
             <h3>Generating lesson plan...</h3>
             <p>Please wait while AI prepares your lesson plan.</p>
         </div>
-    `;
+    `, { title: "Lesson plan", meta: "Generating…" });
 
     status.innerHTML = "🧠 AI is preparing your lesson plan...";
 
@@ -13278,7 +14093,7 @@ async function generateLessonPlan() {
             );
         }
 
-        output.innerHTML = formatLessonContent(
+        setLessonOutput("plan", formatLessonContent(
             data.result,
             "Lesson Plan",
             {
@@ -13290,7 +14105,10 @@ async function generateLessonPlan() {
                 subtopic,
                 duration
             }
-        );
+        ), {
+            title: topic || subject || "Lesson plan",
+            meta: [subject, getTermLabel(term), week, className].filter(Boolean).join(" · ")
+        });
 
         // Keep raw plan text so we can prepare a note from it later
         try {
@@ -13320,7 +14138,7 @@ async function generateLessonPlan() {
                 "The AI lesson-plan server is not running or cannot be reached.";
         }
 
-        output.innerHTML = `
+        setLessonOutput("plan", `
             <div class="lesson-empty">
                 <div class="lesson-empty-icon">❌</div>
 
@@ -13338,7 +14156,7 @@ async function generateLessonPlan() {
                     🔄 Try Again
                 </button>
             </div>
-        `;
+        `, { title: "Lesson plan", meta: "Error" });
 
         status.innerHTML =
             "❌ Failed to generate lesson plan.";
@@ -13378,16 +14196,15 @@ async function generateLessonNote() {
         return;
     }
 
-    const output = lessonEl("noteOutput");
     const status = lessonEl("noteStatus");
 
-    output.innerHTML = `
+    setLessonOutput("note", `
         <div class="lesson-empty">
             <div class="lesson-empty-icon">🧠</div>
             <h3>Generating lesson note...</h3>
             <p>Please wait.</p>
         </div>
-    `;
+    `, { title: "Lesson note", meta: "Generating…" });
 
     status.innerHTML =
         "🧠 AI is preparing your lesson note...";
@@ -13447,7 +14264,7 @@ async function generateLessonNote() {
             );
         }
 
-        output.innerHTML = formatLessonContent(
+        setLessonOutput("note", formatLessonContent(
             data.result,
             "Lesson Note",
             {
@@ -13459,7 +14276,10 @@ async function generateLessonNote() {
                 subtopic,
                 duration
             }
-        );
+        ), {
+            title: topic || subject || "Lesson note",
+            meta: [subject, getTermLabel(term), week, className].filter(Boolean).join(" · ")
+        });
 
         status.innerHTML =
             "✅ Lesson note generated successfully.";
@@ -13471,13 +14291,13 @@ async function generateLessonNote() {
             error
         );
 
-        output.innerHTML = `
+        setLessonOutput("note", `
             <div class="lesson-empty">
                 <div class="lesson-empty-icon">❌</div>
                 <h3>Unable to generate lesson note</h3>
                 <p>${escapeLessonHTML(error.message)}</p>
             </div>
-        `;
+        `, { title: "Lesson note", meta: "Error" });
 
         status.innerHTML =
             "❌ Failed to generate lesson note.";
@@ -14774,19 +15594,26 @@ function selectPlanUnit(index) {
         topic: unit.topic
     };
 
-    // Preview on plan page
-    const out = document.getElementById("planOutput");
-    if (out) {
-        out.innerHTML = formatLessonContent(unit.content || "", "Plan unit", {
-            subject: unit.subject,
-            term: unit.term,
-            week: unit.week,
-            className: unit.className,
-            topic: unit.topic,
-            subtopic: "",
-            duration: ""
-        });
-    }
+    // Preview in popup
+    const planHtml = formatLessonContent(unit.content || "", "Plan unit", {
+        subject: unit.subject,
+        term: unit.term,
+        week: unit.week,
+        className: unit.className,
+        topic: unit.topic,
+        subtopic: "",
+        duration: ""
+    });
+    const metaBits = [
+        unit.subject,
+        unit.term ? getTermLabel(unit.term) : "",
+        unit.week ? normalizeWeekLabel(unit.week) : "",
+        unit.className
+    ].filter(Boolean).join(" · ");
+    setLessonOutput("plan", planHtml, {
+        title: unit.topic || unit.subject || "Plan unit",
+        meta: metaBits
+    });
 
     // Sync note selectors if present
     const noteSubject = document.getElementById("noteSubject");
@@ -15175,18 +16002,16 @@ async function generateNoteFromPlanText(planText, meta = {}, options = {}) {
         "60 minutes";
 
     const noteMeta = { subject, term, week, className, topic, subtopic, duration };
-
-    const output = lessonEl("noteOutput");
     const status = lessonEl("noteStatus");
+    const noteTitle = topic || subject || "Lesson note";
+    const noteMetaLine = [subject, getTermLabel(term), week, className].filter(Boolean).join(" · ");
 
-    if (output) {
-        output.innerHTML = `
+    setLessonOutput("note", `
             <div class="lesson-empty">
                 <div class="lesson-empty-icon">📝</div>
                 <h3>Preparing lesson note…</h3>
                 <p>Building a standard note from your plan unit. AI is optional.</p>
-            </div>`;
-    }
+            </div>`, { title: noteTitle, meta: "Preparing…" });
     if (status) status.innerHTML = "⏳ Preparing standard lesson note from the selected unit…";
 
     // 1) Always build a local standard note (works offline)
@@ -15197,21 +16022,20 @@ async function generateNoteFromPlanText(planText, meta = {}, options = {}) {
     const aiNote = await tryAiLessonNote(text, noteMeta);
 
     if (aiNote) {
-        if (output) {
-            output.innerHTML = renderPreparedNoteHtml(aiNote, noteMeta, "Source: AI-enhanced from your weekly plan unit.");
-        }
+        setLessonOutput("note", renderPreparedNoteHtml(aiNote, noteMeta, "Source: AI-enhanced from your weekly plan unit."), {
+            title: noteTitle,
+            meta: noteMetaLine
+        });
         if (status) status.innerHTML = "✅ Lesson note prepared with AI. You can save, export, or print it.";
         return;
     }
 
     // 3) Offline / AI unavailable — use local standard form
-    if (output) {
-        output.innerHTML = renderPreparedNoteHtml(
+    setLessonOutput("note", renderPreparedNoteHtml(
             localNote,
             noteMeta,
             "Source: Standard note built locally from your weekly plan (AI server not required)."
-        );
-    }
+        ), { title: noteTitle, meta: noteMetaLine });
     if (status) {
         status.innerHTML =
             "✅ Lesson note prepared offline from your plan unit. You can edit after saving, or export / print.";
@@ -15377,16 +16201,14 @@ async function prepareNoteFromFreeTopic() {
         subtopic: ""
     };
 
-    const output = lessonEl("noteOutput");
     const status = lessonEl("noteStatus");
+    const freeMetaLine = [subject, className, style].filter(Boolean).join(" · ");
     if (status) status.innerHTML = "⏳ Preparing " + style + " note for topic: " + topic + "…";
-    if (output) {
-        output.innerHTML = `
+    setLessonOutput("note", `
             <div class="lesson-empty">
                 <div class="lesson-empty-icon">✨</div>
                 <h3>Preparing note for “${escapeLessonHTML(topic)}”…</h3>
-            </div>`;
-    }
+            </div>`, { title: topic, meta: "Preparing…" });
 
     // Local note always
     const localNote = buildNoteFromFreeTopic(topic, noteMeta, style);
@@ -15399,25 +16221,21 @@ async function prepareNoteFromFreeTopic() {
     const aiNote = await tryAiLessonNote(aiSeed, noteMeta);
 
     if (aiNote) {
-        if (output) {
-            output.innerHTML = renderPreparedNoteHtml(
+        setLessonOutput("note", renderPreparedNoteHtml(
                 aiNote,
                 noteMeta,
                 "Source: AI-enhanced free topic (“" + topic + "”)."
-            );
-        }
+            ), { title: topic, meta: freeMetaLine });
         if (status) status.innerHTML = "✅ Note prepared with AI for topic: " + topic;
         return;
     }
 
-    if (output) {
-        output.innerHTML = renderPreparedNoteHtml(
+    setLessonOutput("note", renderPreparedNoteHtml(
             localNote,
             noteMeta,
             "Source: " + (style === "brief" ? "Brief" : "Standard") +
                 " note built offline from free topic (“" + topic + "”)."
-        );
-    }
+        ), { title: topic, meta: freeMetaLine });
     if (status) {
         status.innerHTML =
             "✅ " + (style === "brief" ? "Brief" : "Standard") +
@@ -15775,14 +16593,13 @@ async function loadPlans() {
         return;
     }
 
-    const output = lessonEl("planOutput");
-
-    output.innerHTML = `
+    setLessonOutput("plan", `
         <div class="lesson-empty">
             <div class="lesson-empty-icon">⏳</div>
             <h3>Loading saved plans...</h3>
         </div>
-    `;
+    `, { title: "Saved plans", meta: "Loading…" });
+    const output = lessonEl("planOutput");
 
     try {
 
@@ -15807,13 +16624,13 @@ async function loadPlans() {
 
         if (!plans || plans.length === 0) {
 
-            output.innerHTML = `
+            setLessonOutput("plan", `
                 <div class="lesson-empty">
                     <div class="lesson-empty-icon">📚</div>
                     <h3>No saved lesson plans</h3>
                     <p>Generate and save a lesson plan first.</p>
                 </div>
-            `;
+            `, { title: "Saved plans", meta: "None yet" });
 
             return;
         }
@@ -15873,7 +16690,10 @@ async function loadPlans() {
 
         html += `</div>`;
 
-        output.innerHTML = html;
+        setLessonOutput("plan", html, {
+            title: "Saved plans",
+            meta: plans.length + " plan(s)"
+        });
 
         window.savedLessonPlans = plans;
 
@@ -15884,7 +16704,7 @@ async function loadPlans() {
             error
         );
 
-        output.innerHTML = `
+        setLessonOutput("plan", `
             <div class="lesson-empty">
                 <div class="lesson-empty-icon">❌</div>
                 <h3>Unable to load saved plans</h3>
@@ -15892,7 +16712,7 @@ async function loadPlans() {
                     error.message
                 )}</p>
             </div>
-        `;
+        `, { title: "Saved plans", meta: "Error" });
     }
 }
 
@@ -15908,8 +16728,18 @@ function viewSavedPlan(index) {
 
     if (!plan) return;
 
-    lessonEl("planOutput").innerHTML =
-        plan.content || "";
+    const metaBits = [
+        plan.subject,
+        plan.term ? getTermLabel(plan.term) : "",
+        plan.week,
+        plan.className || plan.class_name,
+        plan.topic
+    ].filter(Boolean).join(" · ");
+
+    setLessonOutput("plan", plan.content || "", {
+        title: plan.topic || plan.subject || "Saved plan",
+        meta: metaBits
+    });
 
     if (lessonEl("planSubject")) {
         lessonEl("planSubject").value =
@@ -15949,14 +16779,12 @@ async function loadNotes() {
         return;
     }
 
-    const output = lessonEl("noteOutput");
-
-    output.innerHTML = `
+    setLessonOutput("note", `
         <div class="lesson-empty">
             <div class="lesson-empty-icon">⏳</div>
             <h3>Loading saved notes...</h3>
         </div>
-    `;
+    `, { title: "Saved notes", meta: "Loading…" });
 
     try {
 
@@ -15981,12 +16809,12 @@ async function loadNotes() {
 
         if (!notes || notes.length === 0) {
 
-            output.innerHTML = `
+            setLessonOutput("note", `
                 <div class="lesson-empty">
                     <div class="lesson-empty-icon">📚</div>
                     <h3>No saved lesson notes</h3>
                 </div>
-            `;
+            `, { title: "Saved notes", meta: "None yet" });
 
             return;
         }
@@ -16048,7 +16876,10 @@ async function loadNotes() {
 
         html += `</div>`;
 
-        output.innerHTML = html;
+        setLessonOutput("note", html, {
+            title: "Saved notes",
+            meta: notes.length + " note(s)"
+        });
 
     } catch (error) {
 
@@ -16057,7 +16888,7 @@ async function loadNotes() {
             error
         );
 
-        output.innerHTML = `
+        setLessonOutput("note", `
             <div class="lesson-empty">
                 <div class="lesson-empty-icon">❌</div>
                 <h3>Unable to load saved notes</h3>
@@ -16065,7 +16896,7 @@ async function loadNotes() {
                     error.message
                 )}</p>
             </div>
-        `;
+        `, { title: "Saved notes", meta: "Error" });
     }
 }
 
@@ -16081,8 +16912,18 @@ function viewSavedNote(index) {
 
     if (!note) return;
 
-    lessonEl("noteOutput").innerHTML =
-        note.content || "";
+    const metaBits = [
+        note.subject,
+        note.term ? getTermLabel(note.term) : "",
+        note.week,
+        note.className,
+        note.topic
+    ].filter(Boolean).join(" · ");
+
+    setLessonOutput("note", note.content || "", {
+        title: note.topic || note.subject || "Saved note",
+        meta: metaBits
+    });
 
     if (lessonEl("noteSubject")) {
         lessonEl("noteSubject").value =
@@ -16115,12 +16956,23 @@ function viewSavedNote(index) {
    WORD EXPORT
 ========================================================= */
 
+function getLessonOutputElement(type) {
+    const modalBody = document.getElementById("lessonPreviewBody");
+    if (
+        window.__lessonPreviewType === type &&
+        modalBody &&
+        modalBody.innerText.trim()
+    ) {
+        return modalBody;
+    }
+    return type === "note"
+        ? lessonEl("noteOutput")
+        : lessonEl("planOutput");
+}
+
 async function exportLessonDocument(type) {
 
-    const output =
-        type === "note"
-            ? lessonEl("noteOutput")
-            : lessonEl("planOutput");
+    const output = getLessonOutputElement(type);
 
     if (!output || !output.innerText.trim()) {
 
@@ -16252,10 +17104,7 @@ async function exportLessonDocument(type) {
 
 function printLessonDocument(type) {
 
-    const output =
-        type === "note"
-            ? lessonEl("noteOutput")
-            : lessonEl("planOutput");
+    const output = getLessonOutputElement(type);
 
     if (!output || !output.innerText.trim()) {
 

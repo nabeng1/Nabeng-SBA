@@ -575,11 +575,29 @@
 
   <!-- KPI cards -->
   <div class="dash-kpi-row">
-    <div class="dash-kpi dash-kpi-blue">
+    <!-- Admin / school-wide total (hidden for teachers) -->
+    <div class="dash-kpi dash-kpi-blue" id="dashKpiTotalAll">
       <div class="dash-kpi-icon"><i class="fas fa-user-graduate"></i></div>
       <div>
         <span class="dash-kpi-label">Total Students</span>
         <strong id="totalStudents">0</strong>
+      </div>
+    </div>
+    <!-- Teacher: main class vs extra subject classes (separate counts) -->
+    <div class="dash-kpi dash-kpi-blue" id="dashKpiMainClass" style="display:none;">
+      <div class="dash-kpi-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+      <div>
+        <span class="dash-kpi-label">Main Class</span>
+        <strong id="dashMainClassCount">0</strong>
+        <small id="dashMainClassName">Your class</small>
+      </div>
+    </div>
+    <div class="dash-kpi dash-kpi-indigo" id="dashKpiExtraClass" style="display:none;">
+      <div class="dash-kpi-icon"><i class="fas fa-users"></i></div>
+      <div>
+        <span class="dash-kpi-label">Extra Class(es)</span>
+        <strong id="dashExtraClassCount">0</strong>
+        <small id="dashExtraClassHint">Subject classes only</small>
       </div>
     </div>
     <div class="dash-kpi dash-kpi-teal">
@@ -4230,6 +4248,78 @@
 
             </div>
 
+            <!-- =========================
+                 CLASS ACTIVITIES CSV
+                 Export / Import assessment activities for a class
+            ========================== -->
+            <section id="classActivitiesPanel" class="class-activities-panel">
+                <div class="class-activities-heading">
+                    <div class="class-activities-icon">
+                        <i class="fa-solid fa-file-csv"></i>
+                    </div>
+                    <div>
+                        <span class="class-activities-eyebrow">BULK TRANSFER</span>
+                        <h3>Class Activities (CSV)</h3>
+                        <p>
+                            Download all assessment activities (Test 1, Test 2, Project, Group Work, Exam)
+                            for a class, or import them into a matching class
+                            (e.g. Basic 1 → 1, 1A, 1B, 1C).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="class-activities-grid">
+                    <!-- EXPORT -->
+                    <div class="class-activities-card">
+                        <h4><i class="fa-solid fa-download"></i> Download activities</h4>
+                        <div class="class-activities-field">
+                            <label for="activitiesExportClass">Class</label>
+                            <select id="activitiesExportClass">
+                                <option value="">Select class</option>
+                            </select>
+                        </div>
+                        <div class="class-activities-field">
+                            <label for="activitiesExportTerm">Term</label>
+                            <select id="activitiesExportTerm">
+                                <option value="all">All terms</option>
+                                <option value="term1">Term 1</option>
+                                <option value="term2">Term 2</option>
+                                <option value="term3">Term 3</option>
+                            </select>
+                        </div>
+                        <button type="button" class="class-activities-btn primary" onclick="exportClassActivitiesCSV()">
+                            <i class="fa-solid fa-file-csv"></i>
+                            Download Class Activities CSV
+                        </button>
+                    </div>
+
+                    <!-- IMPORT -->
+                    <div class="class-activities-card">
+                        <h4><i class="fa-solid fa-upload"></i> Import activities</h4>
+                        <div class="class-activities-field">
+                            <label for="activitiesImportClass">Target class</label>
+                            <select id="activitiesImportClass">
+                                <option value="">Select class to apply to</option>
+                            </select>
+                            <small>Accepts parallel classes (Basic 1 works for 1, 1A, 1B, 1C, etc.)</small>
+                        </div>
+                        <div class="class-activities-field">
+                            <label for="activitiesImportFile">CSV file</label>
+                            <input
+                                type="file"
+                                id="activitiesImportFile"
+                                accept=".csv,text/csv"
+                            >
+                        </div>
+                        <button type="button" class="class-activities-btn secondary" onclick="importClassActivitiesCSV()">
+                            <i class="fa-solid fa-file-import"></i>
+                            Import &amp; Install Activities
+                        </button>
+                        <p id="activitiesImportStatus" class="class-activities-status" role="status"></p>
+                    </div>
+                </div>
+            </section>
+
         </div>
 
     </div>
@@ -4240,119 +4330,125 @@
 <!-- =========================================================
      LESSON PLAN PAGE  (upload → split → cloud library)
 ========================================================= -->
-<div id="profilePlanPage" class="page">
+<div id="profilePlanPage" class="page lesson-workspace">
 
-    <div class="lesson-header">
-        <div>
+    <div class="lesson-hero plan-hero">
+        <div class="lesson-hero-copy">
             <span class="lesson-badge">ACADEMIC WORK</span>
-            <h2>📗 Lesson Plans</h2>
-            <p>Upload a term or weekly plan. The system saves it to the cloud and splits it by subject and week.</p>
+            <h2><i class="fa-solid fa-book-open"></i> Lesson Plans</h2>
+            <p>Upload a term or weekly plan. Units are split by subject and week, saved to the cloud, and opened in a popup preview.</p>
+        </div>
+        <div class="lesson-hero-aside">
+            <div class="lesson-hero-stat">
+                <i class="fa-solid fa-cloud"></i>
+                <span>Cloud library</span>
+            </div>
         </div>
     </div>
 
-    <div class="lesson-form-grid">
-        <div class="lesson-field">
-            <label for="planTerm">Term</label>
-            <select id="planTerm">
-                <option value="term1">Term 1</option>
-                <option value="term2">Term 2</option>
-                <option value="term3">Term 3</option>
-            </select>
+    <div class="lesson-panel">
+        <div class="lesson-panel-title">
+            <h3><i class="fa-solid fa-sliders"></i> Plan details</h3>
+            <p>Set term and class before uploading</p>
         </div>
-
-        <div class="lesson-field">
-            <label for="planClass">Class</label>
-            <input type="text" id="planClass" placeholder="e.g. Basic 5">
+        <div class="lesson-form-grid">
+            <div class="lesson-field">
+                <label for="planTerm">Term</label>
+                <select id="planTerm">
+                    <option value="term1">Term 1</option>
+                    <option value="term2">Term 2</option>
+                    <option value="term3">Term 3</option>
+                </select>
+            </div>
+            <div class="lesson-field">
+                <label for="planClass">Class</label>
+                <input type="text" id="planClass" placeholder="e.g. Basic 5">
+            </div>
+            <!-- kept for compatibility with older scripts / note prep meta -->
+            <select id="planSubject" style="display:none;"></select>
+            <input type="hidden" id="planWeek" value="">
+            <input type="hidden" id="planTopic" value="">
+            <input type="hidden" id="planSubtopic" value="">
+            <input type="hidden" id="planDuration" value="">
         </div>
-
-        <!-- kept for compatibility with older scripts / note prep meta -->
-        <select id="planSubject" style="display:none;"></select>
-        <input type="hidden" id="planWeek" value="">
-        <input type="hidden" id="planTopic" value="">
-        <input type="hidden" id="planSubtopic" value="">
-        <input type="hidden" id="planDuration" value="">
     </div>
 
-    <div class="lesson-plan-upload-card lesson-plan-upload-card-lg">
-        <h4><i class="fas fa-cloud-upload-alt"></i> Upload full term or weekly plan</h4>
-        <p>
-            Supported: <strong>.pdf, .docx, .txt, .md, .html</strong>.
-            After upload, the system (or AI) splits the plan into subjects and weeks, then saves each unit to the cloud.
-        </p>
-        <div class="lesson-plan-upload-row">
-            <label class="lesson-plan-file-label" for="planUploadFile">
-                <i class="fas fa-file-alt"></i>
-                Choose plan file
-                <input
-                    type="file"
-                    id="planUploadFile"
-                    accept=".pdf,.txt,.md,.html,.htm,.docx,application/pdf,text/plain,text/html,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onchange="handleTermPlanFileSelected(event)"
-                >
-            </label>
-            <span id="planUploadFileName" class="lesson-plan-file-name">No file selected</span>
-            <button type="button" class="lesson-btn primary" onclick="uploadAndSplitTermPlan()">
-                <i class="fas fa-magic"></i> Upload &amp; Split to Cloud
+    <div class="lesson-panel lesson-upload-panel">
+        <div class="lesson-panel-title">
+            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Upload plan</h3>
+            <p>PDF, DOCX, TXT, MD or HTML — then split to the cloud</p>
+        </div>
+        <div class="lesson-plan-upload-card lesson-plan-upload-card-lg">
+            <div class="lesson-plan-upload-row">
+                <label class="lesson-plan-file-label" for="planUploadFile">
+                    <i class="fas fa-file-alt"></i>
+                    Choose plan file
+                    <input
+                        type="file"
+                        id="planUploadFile"
+                        accept=".pdf,.txt,.md,.html,.htm,.docx,application/pdf,text/plain,text/html,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onchange="handleTermPlanFileSelected(event)"
+                    >
+                </label>
+                <span id="planUploadFileName" class="lesson-plan-file-name">No file selected</span>
+                <button type="button" class="lesson-btn primary" onclick="uploadAndSplitTermPlan()">
+                    <i class="fas fa-magic"></i> Upload &amp; Split
+                </button>
+            </div>
+        </div>
+        <div class="lesson-actions lesson-actions-compact">
+            <button type="button" class="lesson-btn secondary" onclick="refreshPlanLibrary()">
+                <i class="fas fa-sync-alt"></i> Refresh library
+            </button>
+            <button type="button" class="lesson-btn ghost" onclick="exportLessonDocument('plan')">
+                <i class="fa-solid fa-file-export"></i> Export open preview
+            </button>
+            <button type="button" class="lesson-btn ghost" onclick="printLessonDocument('plan')">
+                <i class="fa-solid fa-print"></i> Print open preview
             </button>
         </div>
+        <div id="planStatus" class="lesson-status"></div>
     </div>
 
-    <div class="lesson-actions">
-        <button type="button" class="lesson-btn secondary" onclick="refreshPlanLibrary()">
-            <i class="fas fa-sync-alt"></i> Refresh library
-        </button>
-        <button type="button" class="lesson-btn" onclick="exportLessonDocument('plan')">
-            📄 Export preview
-        </button>
-        <button type="button" class="lesson-btn" onclick="printLessonDocument('plan')">
-            🖨️ Print preview
-        </button>
-    </div>
-
-    <div id="planStatus" class="lesson-status"></div>
-
-    <!-- Library filters -->
-    <div class="plan-library-toolbar">
-        <div class="lesson-field">
-            <label for="planLibSubjectFilter">Subject</label>
-            <select id="planLibSubjectFilter" onchange="renderPlanLibrary()">
-                <option value="">All subjects</option>
-            </select>
+    <div class="lesson-panel">
+        <div class="lesson-panel-title">
+            <h3><i class="fa-solid fa-layer-group"></i> Plan library</h3>
+            <p>Filter units, then open a popup preview</p>
         </div>
-        <div class="lesson-field">
-            <label for="planLibWeekFilter">Week</label>
-            <select id="planLibWeekFilter" onchange="renderPlanLibrary()">
-                <option value="">All weeks</option>
-            </select>
+        <div class="plan-library-toolbar">
+            <div class="lesson-field">
+                <label for="planLibSubjectFilter">Subject</label>
+                <select id="planLibSubjectFilter" onchange="renderPlanLibrary()">
+                    <option value="">All subjects</option>
+                </select>
+            </div>
+            <div class="lesson-field">
+                <label for="planLibWeekFilter">Week</label>
+                <select id="planLibWeekFilter" onchange="renderPlanLibrary()">
+                    <option value="">All weeks</option>
+                </select>
+            </div>
+            <div class="lesson-field">
+                <label for="planLibTermFilter">Term</label>
+                <select id="planLibTermFilter" onchange="renderPlanLibrary()">
+                    <option value="">All terms</option>
+                    <option value="term1">Term 1</option>
+                    <option value="term2">Term 2</option>
+                    <option value="term3">Term 3</option>
+                </select>
+            </div>
         </div>
-        <div class="lesson-field">
-            <label for="planLibTermFilter">Term</label>
-            <select id="planLibTermFilter" onchange="renderPlanLibrary()">
-                <option value="">All terms</option>
-                <option value="term1">Term 1</option>
-                <option value="term2">Term 2</option>
-                <option value="term3">Term 3</option>
-            </select>
-        </div>
-    </div>
-
-    <div id="planLibraryList" class="plan-library-list">
-        <div class="lesson-empty">
-            <div class="lesson-empty-icon">📚</div>
-            <h3>Your plan library is empty</h3>
-            <p>Upload a term plan to split it by subject and week.</p>
+        <div id="planLibraryList" class="plan-library-list">
+            <div class="lesson-empty lesson-empty-compact">
+                <div class="lesson-empty-icon">📚</div>
+                <h3>Your plan library is empty</h3>
+                <p>Upload a term plan to split it by subject and week.</p>
+            </div>
         </div>
     </div>
 
-    <div
-        id="planOutput"
-        class="lesson-output">
-        <div class="lesson-empty">
-            <div class="lesson-empty-icon">📗</div>
-            <h3>Unit preview</h3>
-            <p>Select a subject and week from the library to preview that part of the plan.</p>
-        </div>
-    </div>
+    <!-- Hidden host for content; visible only inside popup -->
+    <div id="planOutput" class="lesson-output-host" aria-hidden="true"></div>
 
 </div>
 
@@ -4360,142 +4456,167 @@
 <!-- =========================================================
      LESSON NOTE PAGE  (select unit → prepare note on command)
 ========================================================= -->
-<div id="profileNotePage" class="page">
+<div id="profileNotePage" class="page lesson-workspace">
 
-    <div class="lesson-header">
-        <div>
+    <div class="lesson-hero note-hero">
+        <div class="lesson-hero-copy">
             <span class="lesson-badge">ACADEMIC WORK</span>
-            <h2>📝 Lesson Notes</h2>
-            <p>Pick a subject and week from your saved plans, then prepare a lesson note when you are ready.</p>
+            <h2><i class="fa-solid fa-pen-to-square"></i> Lesson Notes</h2>
+            <p>Pick a unit from your plan library or type any topic. Prepared notes open in a clean popup.</p>
+        </div>
+        <div class="lesson-hero-aside">
+            <div class="lesson-hero-stat">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>AI-ready notes</span>
+            </div>
         </div>
     </div>
 
-    <div class="lesson-form-grid">
-        <div class="lesson-field">
-            <label for="noteTerm">Term</label>
-            <select id="noteTerm" onchange="syncNoteUnitSelectors()">
-                <option value="term1">Term 1</option>
-                <option value="term2">Term 2</option>
-                <option value="term3">Term 3</option>
-            </select>
+    <div class="lesson-panel">
+        <div class="lesson-panel-title">
+            <h3><i class="fa-solid fa-list-check"></i> From plan unit</h3>
+            <p>Choose subject and week from your cloud library</p>
         </div>
-
-        <div class="lesson-field">
-            <label for="noteClass">Class</label>
-            <input id="noteClass" placeholder="e.g. Basic 5">
-        </div>
-
-        <div class="lesson-field">
-            <label for="noteSubject">Subject</label>
-            <select id="noteSubject" onchange="onNoteSubjectChanged()"></select>
-        </div>
-
-        <div class="lesson-field">
-            <label for="noteWeek">Week</label>
-            <select id="noteWeek" onchange="onNoteWeekChanged()">
-                <option value="">Select week</option>
-            </select>
-        </div>
-
-        <div class="lesson-field">
-            <label for="noteTopic">Topic</label>
-            <input id="noteTopic" placeholder="From plan unit or type your own">
-        </div>
-
-        <div class="lesson-field">
-            <label for="noteSubtopic">Sub-topic</label>
-            <input id="noteSubtopic" placeholder="Optional">
-        </div>
-
-        <div class="lesson-field">
-            <label for="noteDuration">Duration</label>
-            <input id="noteDuration" placeholder="e.g. 60 minutes">
-        </div>
-    </div>
-
-    <div id="noteSelectedUnitPreview" class="note-unit-preview">
-        <div class="lesson-empty" style="padding:16px;">
-            <h3 style="margin:0 0 6px;font-size:15px;">No plan unit selected</h3>
-            <p style="margin:0;font-size:13px;opacity:.8;">Choose subject and week from your cloud library (upload plans on the Plan page first).</p>
-        </div>
-    </div>
-
-    <div class="lesson-actions">
-        <button type="button" class="lesson-btn primary" onclick="prepareNoteFromSelectedUnit()">
-            🧠 Prepare Lesson Note
-        </button>
-
-        <button type="button" class="lesson-btn success" onclick="saveNote()">
-            💾 Save Note
-        </button>
-
-        <button type="button" class="lesson-btn" onclick="exportLessonDocument('note')">
-            📄 Export Word
-        </button>
-
-        <button type="button" class="lesson-btn" onclick="printLessonDocument('note')">
-            🖨️ Print
-        </button>
-
-        <button type="button" class="lesson-btn secondary" onclick="loadNotes()">
-            📚 Saved Notes
-        </button>
-
-        <button type="button" class="lesson-btn secondary" onclick="refreshPlanLibrary(true)">
-            <i class="fas fa-sync-alt"></i> Reload plan units
-        </button>
-    </div>
-
-    <!-- Free topic note (does not require a plan unit) -->
-    <div class="free-topic-card" style="margin:18px 0;padding:16px 18px;border:1px solid rgba(99,102,241,.25);border-radius:14px;background:linear-gradient(180deg,rgba(99,102,241,.06),rgba(255,255,255,.4));">
-        <h3 style="margin:0 0 6px;font-size:15px;">✨ Generate note from any topic</h3>
-        <p style="margin:0 0 12px;font-size:13px;opacity:.85;">
-            Type a topic that is <strong>not</strong> in your plan (e.g. <em>Nouns</em>, <em>Photosynthesis</em>, <em>Place value</em>) and get a brief or standard lesson note.
-        </p>
-        <div class="lesson-form-grid">
+        <div class="lesson-form-grid lesson-form-grid-3">
             <div class="lesson-field">
-                <label for="freeNoteSubject">Subject (optional)</label>
-                <input id="freeNoteSubject" placeholder="e.g. English Language">
-            </div>
-            <div class="lesson-field">
-                <label for="freeNoteTopic">Topic *</label>
-                <input id="freeNoteTopic" placeholder="e.g. Nouns">
-            </div>
-            <div class="lesson-field">
-                <label for="freeNoteClass">Class (optional)</label>
-                <input id="freeNoteClass" placeholder="e.g. Basic 1">
-            </div>
-            <div class="lesson-field">
-                <label for="freeNoteDuration">Duration</label>
-                <input id="freeNoteDuration" placeholder="e.g. 60 minutes" value="60 minutes">
-            </div>
-            <div class="lesson-field">
-                <label for="freeNoteStyle">Note style</label>
-                <select id="freeNoteStyle">
-                    <option value="standard">Standard (full lesson note)</option>
-                    <option value="brief">Brief (short outline)</option>
+                <label for="noteTerm">Term</label>
+                <select id="noteTerm" onchange="syncNoteUnitSelectors()">
+                    <option value="term1">Term 1</option>
+                    <option value="term2">Term 2</option>
+                    <option value="term3">Term 3</option>
                 </select>
             </div>
+            <div class="lesson-field">
+                <label for="noteClass">Class</label>
+                <input id="noteClass" placeholder="e.g. Basic 5">
+            </div>
+            <div class="lesson-field">
+                <label for="noteSubject">Subject</label>
+                <select id="noteSubject" onchange="onNoteSubjectChanged()"></select>
+            </div>
+            <div class="lesson-field">
+                <label for="noteWeek">Week</label>
+                <select id="noteWeek" onchange="onNoteWeekChanged()">
+                    <option value="">Select week</option>
+                </select>
+            </div>
+            <div class="lesson-field">
+                <label for="noteTopic">Topic</label>
+                <input id="noteTopic" placeholder="From plan unit or type your own">
+            </div>
+            <div class="lesson-field">
+                <label for="noteSubtopic">Sub-topic</label>
+                <input id="noteSubtopic" placeholder="Optional">
+            </div>
+            <div class="lesson-field">
+                <label for="noteDuration">Duration</label>
+                <input id="noteDuration" placeholder="e.g. 60 minutes">
+            </div>
         </div>
-        <div class="lesson-actions" style="margin-top:8px;">
-            <button type="button" class="lesson-btn primary" onclick="prepareNoteFromFreeTopic()">
-                ✨ Prepare note from topic
+
+        <div id="noteSelectedUnitPreview" class="note-unit-preview">
+            <div class="lesson-empty lesson-empty-compact">
+                <h3>No plan unit selected</h3>
+                <p>Choose subject and week from your cloud library (upload plans on the Plan page first).</p>
+            </div>
+        </div>
+
+        <div class="lesson-actions">
+            <button type="button" class="lesson-btn primary" onclick="prepareNoteFromSelectedUnit()">
+                <i class="fa-solid fa-brain"></i> Prepare Lesson Note
             </button>
+            <button type="button" class="lesson-btn success" onclick="saveNote()">
+                <i class="fa-solid fa-floppy-disk"></i> Save Note
+            </button>
+            <button type="button" class="lesson-btn ghost" onclick="exportLessonDocument('note')">
+                <i class="fa-solid fa-file-word"></i> Export
+            </button>
+            <button type="button" class="lesson-btn ghost" onclick="printLessonDocument('note')">
+                <i class="fa-solid fa-print"></i> Print
+            </button>
+            <button type="button" class="lesson-btn secondary" onclick="loadNotes()">
+                <i class="fa-solid fa-book"></i> Saved Notes
+            </button>
+            <button type="button" class="lesson-btn secondary" onclick="refreshPlanLibrary(true)">
+                <i class="fas fa-sync-alt"></i> Reload units
+            </button>
+        </div>
+    </div>
+
+    <div class="lesson-panel free-topic-panel">
+        <div class="lesson-panel-title">
+            <h3><i class="fa-solid fa-sparkles"></i> From any topic</h3>
+            <p>Generate a note without a plan unit</p>
+        </div>
+        <div class="free-topic-card">
+            <div class="lesson-form-grid lesson-form-grid-3">
+                <div class="lesson-field">
+                    <label for="freeNoteSubject">Subject (optional)</label>
+                    <input id="freeNoteSubject" placeholder="e.g. English Language">
+                </div>
+                <div class="lesson-field">
+                    <label for="freeNoteTopic">Topic *</label>
+                    <input id="freeNoteTopic" placeholder="e.g. Nouns">
+                </div>
+                <div class="lesson-field">
+                    <label for="freeNoteClass">Class (optional)</label>
+                    <input id="freeNoteClass" placeholder="e.g. Basic 1">
+                </div>
+                <div class="lesson-field">
+                    <label for="freeNoteDuration">Duration</label>
+                    <input id="freeNoteDuration" placeholder="e.g. 60 minutes" value="60 minutes">
+                </div>
+                <div class="lesson-field">
+                    <label for="freeNoteStyle">Note style</label>
+                    <select id="freeNoteStyle">
+                        <option value="standard">Standard (full lesson note)</option>
+                        <option value="brief">Brief (short outline)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="lesson-actions lesson-actions-compact">
+                <button type="button" class="lesson-btn primary" onclick="prepareNoteFromFreeTopic()">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Prepare note from topic
+                </button>
+            </div>
         </div>
     </div>
 
     <div id="noteStatus" class="lesson-status"></div>
 
-    <div
-        id="noteOutput"
-        class="lesson-output">
-        <div class="lesson-empty">
-            <div class="lesson-empty-icon">📝</div>
-            <h3>Your lesson note will appear here</h3>
-            <p>Select a subject and week from your plan, <strong>or</strong> enter any topic below and prepare a note.</p>
+    <!-- Hidden host for content; visible only inside popup -->
+    <div id="noteOutput" class="lesson-output-host" aria-hidden="true"></div>
+
+</div>
+
+<!-- Shared lesson preview popup (Plan + Note) -->
+<div id="lessonPreviewModal" class="lesson-preview-modal" aria-hidden="true" onclick="if(event.target===this)closeLessonPreviewModal()">
+    <div class="lesson-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="lessonPreviewTitle">
+        <div class="lesson-preview-header">
+            <div>
+                <span class="lesson-preview-badge" id="lessonPreviewBadge">PREVIEW</span>
+                <h2 id="lessonPreviewTitle">Lesson preview</h2>
+                <p id="lessonPreviewMeta"></p>
+            </div>
+            <div class="lesson-preview-header-actions">
+                <button type="button" class="lesson-btn ghost" id="lessonPreviewExportBtn" title="Export">
+                    <i class="fa-solid fa-file-export"></i>
+                </button>
+                <button type="button" class="lesson-btn ghost" id="lessonPreviewPrintBtn" title="Print">
+                    <i class="fa-solid fa-print"></i>
+                </button>
+                <button type="button" class="lesson-preview-close" onclick="closeLessonPreviewModal()" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="lesson-preview-body" id="lessonPreviewBody">
+            <!-- planOutput / noteOutput content is mirrored here -->
+        </div>
+        <div class="lesson-preview-footer">
+            <button type="button" class="lesson-btn secondary" onclick="closeLessonPreviewModal()">Close</button>
         </div>
     </div>
-
 </div>
 
 
